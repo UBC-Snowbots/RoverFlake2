@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'joint_turntable', 'joint_axis1', 'joint_axis2', 'joint_axis3', 'joint_axis4', 'joint_ender', ]
