@@ -38,22 +38,22 @@ generate_parameter_library(
   config/servo_parameters.yaml
 )
 
-# This library provides a C++ interface for sending realtime twist or joint commands to a robot
-add_library(moveit_servo_lib_cpp SHARED
-  src/collision_monitor.cpp
-  src/servo.cpp
-  src/utils/common.cpp
-  src/utils/command.cpp
+# # This library provides a C++ interface for sending realtime twist or joint commands to a robot
+# add_library(moveit_servo_lib_cpp SHARED
+#   src/collision_monitor.cpp
+#   src/servo.cpp
+#   src/utils/common.cpp
+#   src/utils/command.cpp
 
-)
+# )
 
 
 
-rclcpp_components_register_node(
-  moveit_servo_lib_ros
-  PLUGIN "moveit_servo::ServoNode"
-  EXECUTABLE servo_node
-)
+# rclcpp_components_register_node(
+#   moveit_servo_lib_ros
+#   PLUGIN "moveit_servo::ServoNode"
+#   EXECUTABLE servo_node
+# )
 
 
 # uncomment the following section in order to fill in
