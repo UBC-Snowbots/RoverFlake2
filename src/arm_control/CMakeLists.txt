@@ -11,6 +11,7 @@ moveit_package()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   control_msgs
+  rover_msgs
   geometry_msgs
   moveit_core
   moveit_msgs
@@ -33,10 +34,10 @@ foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
 endforeach()
 
 # This library provides a way of loading parameters for servo
-generate_parameter_library(
-  moveit_servo_lib_parameters
-  config/servo_parameters.yaml
-)
+# generate_parameter_library(
+#   moveit_servo_lib_parameters
+#   config/servo_parameters.yaml
+# )
 
 # # This library provides a C++ interface for sending realtime twist or joint commands to a robot
 # add_library(moveit_servo_lib_cpp SHARED
@@ -59,12 +60,12 @@ generate_parameter_library(
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
-add_executable(old_arm_servo src/old_arm_servo.cpp)
-ament_target_dependencies(old_arm_servo  rclcpp std_msgs moveit_common)
+# add_executable(old_arm_servo src/old_arm_servo.cpp)
+# ament_target_dependencies(old_arm_servo  rclcpp std_msgs moveit_common)
 
 install(
   TARGETS
-    old_arm_servo
+    # old_arm_servo
     # servo_cpp_interface_demo
   DESTINATION
     lib/${PROJECT_NAME}

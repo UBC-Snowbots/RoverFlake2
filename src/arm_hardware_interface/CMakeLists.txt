@@ -17,7 +17,7 @@ include_directories(
   include
 )
 
-add_executable(arm_serial_driver src/ArmSerialDriver.cpp include/ArmSerialDriver.h)
+add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h)
 ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial)
 
 if(BUILD_TESTING)
