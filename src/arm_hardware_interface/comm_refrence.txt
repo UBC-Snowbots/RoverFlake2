@@ -1,0 +1,33 @@
+This file is to document the communication with the arm:
+
+All commands must start with $ and end with )
+Also, all commands should be sent with \n, and or \0, and or \r to terminate
+
+INPUT COMMANDS:
+    Home Commands:
+        $h(A) -> home all
+        $h(1) -> home axis 1, (or 1,2,3,4,5,6)
+
+    Position Control Commands:
+        absolute:
+            $P(list of target angles)
+        ex $P(10.0, 10.0, 10.0, 10.0, 10.0, 10.0)
+        P is absolute
+        i is incremental:
+            $i(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+    
+    Settings Commands:
+        Set Velocity:
+            $SV(15.0, 15.0, 15.0, 15.0, 15.0, 15.0)
+    
+        Set Communication:
+            Set Position feedback:
+                $SCP(0) -> turn off
+                $SCP(1) -> turn on
+            Set Speed feedback:
+                $SCS(0) -> turn off
+                $SCS(1) -> turn on
+
+OUTPUT COMMANDS:
+    Position Feedback: 
+        $my_angleP(00.00, 00.00, 00.00 ...)

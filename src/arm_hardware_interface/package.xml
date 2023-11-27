@@ -16,6 +16,7 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>serial</depend>
+  <depend>rover_msgs</depend>
 
 
   <export>

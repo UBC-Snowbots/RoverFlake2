@@ -1,3 +1,3 @@
-char cmd_type
+int status
 float64[] positions
 float64[] velocities
