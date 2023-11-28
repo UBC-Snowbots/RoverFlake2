@@ -1,10 +1,14 @@
+
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
 #include "ui_mainwindow.h"  // This will be generated from your .ui file
+#include <rclcpp/rclcpp.hpp>
+#include <rover_msgs/msg/arm_command.hpp>
 
-class MainWindow : public QMainWindow {
+//MainWindow inherits QT and rclcpp
+class MainWindow : public QMainWindow, public rclcpp::Node {
     Q_OBJECT
 
 public:
@@ -12,6 +16,14 @@ public:
 
 private:
     Ui::MainWindow ui;  // Replace 'ArmControl' with the actual class name from your .ui file
+
+
+    void onHomeButtonClicked();
+    void onSendTargetButtonClicked();
+    void ArmCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
+    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
+    
+
 };
 
 #endif // MAIN_WINDOW_H
@@ -26,7 +38,7 @@ private:
 
 
 
-
+  
 
 // #include "../include/mainwindow.h"
 // #include "ui_mainwindow.h"

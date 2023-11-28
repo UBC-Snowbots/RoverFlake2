@@ -13,6 +13,8 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>qt_build</depend>
+  <depend>rclcpp</depend>
+  <depend>rover_msgs</depend>
   
 
   <export>

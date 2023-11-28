@@ -20,6 +20,10 @@
 #define AXIS_5_DIR 1
 #define AXIS_6_DIR 1
 
+#define HOME_CMD 'h'
+#define ABS_POS_CMD 'P'
+#define COMM_CMD 'C'
+
 
 #define CONTROL_RATE 60.0
 #define COMM_POLL_RATE 1000.0
@@ -29,8 +33,6 @@
 #define GEAR_NEUTRAL 1
 #define GEAR_1 2 //or drive
 #define GEAR_2 3 //guessing this is how autoware deals with manual cars
-
-#define RX_UART_BUFF 90
 
 using std::string;
 
@@ -66,6 +68,7 @@ private:
       float speed;
     };
 
+    void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Axis axes[NUM_JOINTS];
 
@@ -86,36 +89,47 @@ private:
   float target_position[NUM_JOINTS];
 
     int homed = 0;
+    bool homing = false;
     float EE = 0;
     float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
    
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;
+    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
+
+
+
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
 
     rclcpp::TimerBase::SharedPtr timer_;
 
-    void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-        //RCLCPP_INFO(this->get_logger(), "Joy Recieved");
+    
 
-        int home_button = msg->buttons[2];
+    // void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
+    //     //RCLCPP_INFO(this->get_logger(), "Joy Recieved");
+    //   if(!homing){
+    //     int home_button = msg->buttons[2];
 
-        if(!home_button && homed){
-        target_position[0] = msg->axes[0]*10;
-        target_position[1] = msg->axes[1]*10;
-        target_position[2] = msg->axes[3]*10;
-        target_position[3] = msg->axes[4]*10;
-        target_position[4] = msg->axes[0]*10;
-        target_position[5] = msg->axes[0]*10;
-        send_position_command(target_position);
+    //     if(!home_button && homed){
+    //     target_position[0] = msg->axes[0]*10;
+    //     target_position[1] = msg->axes[1]*10;
+    //     target_position[2] = msg->axes[3]*10;
+    //     target_position[3] = msg->axes[4]*10;
+    //     target_position[4] = msg->axes[0]*10;
+    //     target_position[5] = msg->axes[0]*10;
+    //     send_position_command(target_position);
 
-        }else{
-            homed = 1;
-            sendCommCmd();
-            sendHomeCmd();
-        }
+    //     }else{
+    //         homing = true;
+    //         sendCommCmd();
+    //         sendHomeCmd();
+    //     }
+    //   }else{
+
+    //   }
        
-    }
+    // }
     std::thread serialRxThread;
+
+
 
     void serial_rx(){
     //rclcpp::Rate loop_rate(50);
@@ -136,6 +150,7 @@ private:
         if (buffer.size() > 0){
         if(buffer.find("Arm Ready") != std::string::npos){
         homed = true;
+        homing = false;
        // fresh_rx_angle = true;
      }else if(buffer.find("my_angleP") != std::string::npos){
         parseArmAngleUart(buffer);

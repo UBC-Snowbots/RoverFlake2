@@ -25,6 +25,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_srvs
   tf2_eigen
   trajectory_msgs
+  rover_msgs
 )
 
 find_package(ament_cmake REQUIRED)
@@ -55,17 +56,21 @@ endforeach()
 #   PLUGIN "moveit_servo::ServoNode"
 #   EXECUTABLE servo_node
 # )
+include_directories(include)
 
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
-# find_package(<dependency> REQUIRED)
+# find_package(<dependency> REQUIRED
 # add_executable(old_arm_servo src/old_arm_servo.cpp)
 # ament_target_dependencies(old_arm_servo  rclcpp std_msgs moveit_common)
+add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
+ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs)
 
 install(
   TARGETS
     # old_arm_servo
+    joy_arm_control
     # servo_cpp_interface_demo
   DESTINATION
     lib/${PROJECT_NAME}

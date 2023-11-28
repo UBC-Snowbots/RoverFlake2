@@ -7,14 +7,16 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
-        arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/status", qos);
+        arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
        double period = 1.0/COMM_POLL_RATE;
 
         current_arm_status.positions.resize(NUM_JOINTS);
 
+        command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
+            "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
 
-        joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&ArmSerial::joy_callback, this, std::placeholders::_1));
+        // joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
+        //     "/joy", 10, std::bind(&ArmSerial::joy_callback, this, std::placeholders::_1));
         teensy.setPort(port);
         teensy.open();
       //  teensy.setDTR(true);
@@ -25,6 +27,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         // while(rclcpp::ok()){
         //     recieveMsg();
         // }
+        //set serial rx on a quick polling timer
         timer_ = this->create_wall_timer(
         std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
 
@@ -75,16 +78,38 @@ void ArmSerial::sendMsg(std::string outMsg) {
 }
 
 void ArmSerial::sendHomeCmd() {
-  //send home command
+  //send home request
   std::string msg = "$h(A)\n";
   sendMsg(msg);
 
 }
 
 void ArmSerial::sendCommCmd() {
-  //send home command
+  //send communication request
   std::string msg = "$SCP(1)\n";
   sendMsg(msg);
+
+}
+
+void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
+  char type = msg->cmd_type;
+  switch (type)
+  {
+  case HOME_CMD:
+    sendHomeCmd();
+    break;
+  case COMM_CMD:
+    sendCommCmd();
+    break;
+  case ABS_POS_CMD:
+    float target_positions[NUM_JOINTS];
+    for (int i = 0; i < NUM_JOINTS; i++){
+      target_positions[i] = msg->positions[i];
+    }
+    send_position_command(target_positions);
+  default:
+    break;
+  }
 
 }
 
