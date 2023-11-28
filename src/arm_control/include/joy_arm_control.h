@@ -63,17 +63,24 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
 
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-        // rover_msgs::
+        rover_msgs::msg::ArmCommand target;
+        target.positions.resize(NUM_JOINTS);
+        target.cmd_type = 'P';
         float target_positions[6];
         float inputs[6];
 
-        inputs[0] = msg->axes[0]*5;
-
+        inputs[2] = msg->axes[0];
+        inputs[1] = msg->axes[1];
+        inputs[0] = msg->axes[5] - msg->axes[2];
+        inputs[3] = msg->axes[3];
+        inputs[4] = msg->axes[4];
+        inputs[5] = msg->axes[6];
+        
         for (int i = 0; i < NUM_JOINTS; i++){
-            target_positions[i] = axes[i].position + inputs[i];
+            target.positions[i] = axes[i].position + inputs[i] * 10;
         }
 
-        // arm_publisher.publish
+         arm_publisher->publish(target);
 
     }
 
