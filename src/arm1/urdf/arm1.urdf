@@ -99,7 +99,7 @@
   </joint>
   <joint
     name="joint_turntable"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.75729581407264 -0.598615888399153 -0.307790852884674"
       rpy="0 0 -1.5707963267949" />
@@ -109,6 +109,8 @@
       link="link_turntable" />
     <axis
       xyz="0.751654206505026 0.300853226584914 -0.586944026204157" />
+    <limit lower="-1.4" upper="1.4" effort="5.0" velocity="2.0" acceleration="1.0" />
+
   </joint>
   <link
     name="link_axis1">
