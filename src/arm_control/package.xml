@@ -24,6 +24,8 @@
   <depend>tf2_eigen</depend>
   <depend>rover_msgs</depend>
   <depend>trajectory_msgs</depend>
+  <depend>moveit_servo</depend>
+
 
 
   <exec_depend>controller_manager</exec_depend>

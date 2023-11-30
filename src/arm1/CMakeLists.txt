@@ -5,9 +5,7 @@ project(arm1)
 # Find the ament_cmake package
 find_package(ament_cmake REQUIRED)
 
-# There's no direct counterpart of roslaunch in ROS 2 as in ROS 1. 
-# Instead, you'll use launch files written in Python. 
-# If you have launch files, you can find the launch package.
+
 # find_package(launch_ros REQUIRED)
 
 # Install directories

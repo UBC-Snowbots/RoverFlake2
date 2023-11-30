@@ -17,7 +17,7 @@
   <depend>joint_state_publisher</depend>
   <depend>joint_state_publisher_gui</depend>
   <depend>gazebo_ros_pkgs</depend>
-  <!-- <depend>launch_ros</depend> -->
+  <depend>launch_ros</depend>
 
   <!-- Export tag for indicating that the package is architecture independent -->
   <export>

@@ -4,11 +4,13 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
   name="arm1">
+  <link 
+    name="base_base_link"/>
   <link
     name="base_link">
     <inertial>
       <origin
-        xyz="-0.0 -0.0 0.0"
+        xyz="-0.75118 -0.35506 0.6181"
         rpy="0 0 0" />
       <mass
         value="0.48809" />
@@ -84,11 +86,22 @@
       </geometry>
     </collision>
   </link>
+    <joint
+    name="base_joint"
+    type="fixed">
+    <origin
+      xyz="0.75729581407264 0.598615888399153 0.307790852884674"
+      rpy="0 0 0" />
+    <parent
+      link="base_base_link" />
+    <child
+      link="base_link" />
+  </joint>
   <joint
     name="joint_turntable"
     type="continuous">
     <origin
-      xyz="-0.0 -0.0 -0.0"
+      xyz="-0.75729581407264 -0.598615888399153 -0.307790852884674"
       rpy="0 0 -1.5707963267949" />
     <parent
       link="base_link" />
