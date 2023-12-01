@@ -31,6 +31,7 @@ public:
     QProgressBar *progressBar;
     QPushButton *homeButton;
     QPushButton *pushButton_2;
+    QPushButton *commButton;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -58,10 +59,13 @@ public:
         progressBar->setValue(24);
         homeButton = new QPushButton(centralwidget);
         homeButton->setObjectName(QString::fromUtf8("homeButton"));
-        homeButton->setGeometry(QRect(530, 300, 171, 81));
+        homeButton->setGeometry(QRect(530, 210, 171, 81));
         pushButton_2 = new QPushButton(centralwidget);
         pushButton_2->setObjectName(QString::fromUtf8("pushButton_2"));
-        pushButton_2->setGeometry(QRect(530, 210, 171, 81));
+        pushButton_2->setGeometry(QRect(530, 300, 171, 81));
+        commButton = new QPushButton(centralwidget);
+        commButton->setObjectName(QString::fromUtf8("commButton"));
+        commButton->setGeometry(QRect(530, 120, 171, 81));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
@@ -82,6 +86,7 @@ public:
         label->setText(QCoreApplication::translate("MainWindow", "Arm Control", nullptr));
         homeButton->setText(QCoreApplication::translate("MainWindow", "Home Request", nullptr));
         pushButton_2->setText(QCoreApplication::translate("MainWindow", "Send Target Pos", nullptr));
+        commButton->setText(QCoreApplication::translate("MainWindow", "POS COMM ON", nullptr));
     } // retranslateUi
 
 };

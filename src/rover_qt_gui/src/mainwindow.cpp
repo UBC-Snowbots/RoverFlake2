@@ -4,17 +4,29 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), rclcpp::Node("gui
     ui.setupUi(this);  // This sets up the GUI as designed in Qt Designer
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
 
-    // arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
+    arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
     arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
     "/arm/feedback", 10, std::bind(&MainWindow::ArmCallback, this, std::placeholders::_1));
     // Connect signals to slots here, for example:
     connect(ui.homeButton, &QPushButton::clicked, this, &MainWindow::onHomeButtonClicked);
+    connect(ui.commButton, &QPushButton::clicked, this, &MainWindow::onCommButtonClicked);
+
 }
 
 
 void MainWindow::onHomeButtonClicked(){
- RCLCPP_INFO(this->get_logger(), "Homing");
- 
+ RCLCPP_INFO(this->get_logger(), "Homing, if the arm wants to");
+ rover_msgs::msg::ArmCommand home_msg;
+ home_msg.cmd_type = HOME_CMD;
+ arm_publisher->publish(home_msg);
+   
+}
+
+void MainWindow::onCommButtonClicked(){
+ RCLCPP_INFO(this->get_logger(), "Comming");
+ rover_msgs::msg::ArmCommand comm_msg;
+ comm_msg.cmd_type = COMM_CMD;
+ arm_publisher->publish(comm_msg);
    
 }
 

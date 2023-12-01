@@ -7,6 +7,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
 
+#define HOME_CMD 'h'
+#define ABS_POS_CMD 'P'
+#define COMM_CMD 'C'
+
+
 //MainWindow inherits QT and rclcpp
 class MainWindow : public QMainWindow, public rclcpp::Node {
     Q_OBJECT
@@ -19,9 +24,11 @@ private:
 
 
     void onHomeButtonClicked();
+    void onCommButtonClicked();
     void onSendTargetButtonClicked();
     void ArmCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
     
 
 };
