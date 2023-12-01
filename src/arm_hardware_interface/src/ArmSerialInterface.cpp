@@ -8,6 +8,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
+        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
        double period = 1.0/COMM_POLL_RATE;
 
         current_arm_status.positions.resize(NUM_JOINTS);
@@ -39,18 +40,31 @@ void ArmSerial::recieveMsg() {
 
 }
 
+float ArmSerial::degToRad(float deg){
+  float rad = deg * 3.14159265359/180;
+
+  return(rad);
+}
+
  void ArmSerial::parseArmAngleUart(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
-       
+       sensor_msgs::msg::JointState joint_states_;
+       joint_states_.position.resize(NUM_JOINTS);
+       joint_states_.name.resize(NUM_JOINTS);
+
+
 	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos) == 6)
 	{
 		// All axes angles are in axes[i].des_angle_pos
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
          for(int i = 0; i < NUM_JOINTS; i++){
         current_arm_status.positions[i] = axes[i].curr_pos;
-
+        joint_states_.name[i] = joint_names[i];
+        joint_states_.position[i] = degToRad(axes[i].curr_pos);
          }
+         joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
+         joint_state_publisher_->publish(joint_states_);
         //RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Update Successfull");
         //fresh_rx_angle = true;
 

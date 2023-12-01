@@ -1,5 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include "sensor_msgs/msg/joy.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+
 #include <rover_msgs/msg/arm_command.hpp>
 #include <thread>
 #include <chrono>
@@ -56,6 +58,10 @@ public:
 
 
 private:
+    string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"};
+
+    float degToRad(float deg);
+
    unsigned long baud = 19200;
     string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100C6224069D7-if00";
 
@@ -95,6 +101,7 @@ private:
    
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
 
+    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 
 
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
