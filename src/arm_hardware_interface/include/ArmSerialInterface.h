@@ -36,6 +36,10 @@
 #define GEAR_1 2 //or drive
 #define GEAR_2 3 //guessing this is how autoware deals with manual cars
 
+
+
+
+
 using std::string;
 
 
@@ -61,6 +65,8 @@ private:
     string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"};
 
     float degToRad(float deg);
+    float firmToMoveitOffset(float deg, int axis);
+
 
    unsigned long baud = 19200;
     string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100C6224069D7-if00";
@@ -72,11 +78,15 @@ private:
       float curr_pos;
       float target_pos;
       float speed;
+      float zero_rad;
+      float max_rad;
+      int dir;
     };
 
     void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Axis axes[NUM_JOINTS];
+
 
     void send_position_command(float pos[NUM_JOINTS]) {
 

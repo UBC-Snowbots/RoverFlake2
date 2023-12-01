@@ -109,7 +109,7 @@
       link="link_turntable" />
     <axis
       xyz="0.751654206505026 0.300853226584914 -0.586944026204157" />
-    <limit lower="-1.4" upper="1.4" effort="5.0" velocity="2.0" acceleration="1.0" />
+    <limit lower="-1.308" upper="1.83359" effort="5.0" velocity="2.0" acceleration="1.0" />
 
   </joint>
   <link
@@ -154,7 +154,7 @@
   </link>
   <joint
     name="joint_axis1"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.0655207637557417 0.0577180534779368 0.0734579500015488"
       rpy="0 0 0" />
@@ -164,6 +164,8 @@
       link="link_axis1" />
     <axis
       xyz="0.328543830326874 -0.942430072702363 -0.0623258342933837" />
+    <limit lower="-1.091" upper="1.409" effort="5.0" velocity="2.0" acceleration="1.0" />
+
   </joint>
   <link
     name="link_axis2">
@@ -207,7 +209,7 @@
   </link>
   <joint
     name="joint_axis2"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.119315742016965 -0.0911363032403798 0.328341244367117"
       rpy="0 0 0" />
@@ -217,6 +219,7 @@
       link="link_axis2" />
     <axis
       xyz="0.328543830326874 -0.942430072702362 -0.062325834293384" />
+    <limit lower="-0.696" upper="1.74746" effort="5.0" velocity="2.0" acceleration="1.0" />
   </joint>
   <link
     name="link_axis3">
@@ -260,7 +263,7 @@
   </link>
   <joint
     name="joint_axis3"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.018218 -0.048216 -0.0027262"
       rpy="0 0 0" />
@@ -270,6 +273,8 @@
       link="link_axis3" />
     <axis
       xyz="-0.87281 -0.27773 -0.40132" />
+    <limit lower="-1.59659" upper="1.545" effort="5.0" velocity="2.0" acceleration="1.0" />
+
   </joint>
   <link
     name="link_axis4">
@@ -313,7 +318,7 @@
   </link>
   <joint
     name="joint_axis4"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.39197 0.16869 0.18931"
       rpy="0 0 0" />
@@ -323,6 +328,8 @@
       link="link_axis4" />
     <axis
       xyz="0.3295 -0.94193 -0.064754" />
+    <limit lower="-1.002" upper="2.03959265359" effort="5.0" velocity="2.0" acceleration="1.0" />
+
   </joint>
   <link
     name="link_ender">
@@ -366,7 +373,7 @@
   </link>
   <joint
     name="joint_ender"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.069889 -0.019771 -0.0053796"
       rpy="0 0 0" />
@@ -377,4 +384,5 @@
     <axis
       xyz="-0.94201 -0.3326 0.044705" />
   </joint>
+    <limit lower="-1.375" upper="0.76459265359" effort="5.0" velocity="2.0" acceleration="1.0" />
 </robot>

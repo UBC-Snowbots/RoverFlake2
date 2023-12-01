@@ -8,7 +8,7 @@
   </description>
   <maintainer email="zawadzkirowan@gmail.com">Rowan Zawadzki</maintainer>
 
-  <license>BSD-3-Clause</license>
+  <license>BSD</license>
 
   <url type="website">http://moveit.ros.org/</url>
   <url type="bugtracker">https://github.com/ros-planning/moveit2/issues</url>

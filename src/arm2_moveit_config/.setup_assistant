@@ -7,7 +7,7 @@ moveit_setup_assistant_config:
   package_settings:
     author_name: Rowan Zawadzki
     author_email: zawadzkirowan@gmail.com
-    generated_timestamp: 1701314954
+    generated_timestamp: 1701466120
   control_xacro:
     command:
       - position

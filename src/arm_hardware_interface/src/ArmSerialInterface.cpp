@@ -4,6 +4,25 @@
 
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
+
+
+    axes[0].zero_rad = -1.308;
+    axes[0].dir = 1;
+
+    axes[1].zero_rad = 1.409;
+    axes[1].dir = -1;
+
+    axes[2].zero_rad = -0.696;
+    axes[2].dir = 1;
+
+    axes[3].zero_rad = 1.545;
+    axes[3].dir = -1;
+
+    axes[4].zero_rad = -1.002;
+    axes[4].dir = 1;
+
+    axes[5].zero_rad = -1.375;
+    axes[5].dir = 1;
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
@@ -32,6 +51,8 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         timer_ = this->create_wall_timer(
         std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
 
+
+
     }
 
 void ArmSerial::recieveMsg() {
@@ -44,6 +65,14 @@ float ArmSerial::degToRad(float deg){
   float rad = deg * 3.14159265359/180;
 
   return(rad);
+}
+
+float ArmSerial::firmToMoveitOffset(float deg, int i){
+
+float rad = degToRad(deg);
+
+return ((rad) + (axes[i].zero_rad*axes[i].dir));
+
 }
 
  void ArmSerial::parseArmAngleUart(std::string msg){
@@ -60,7 +89,7 @@ float ArmSerial::degToRad(float deg){
          for(int i = 0; i < NUM_JOINTS; i++){
         current_arm_status.positions[i] = axes[i].curr_pos;
         joint_states_.name[i] = joint_names[i];
-        joint_states_.position[i] = degToRad(axes[i].curr_pos);
+        joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
