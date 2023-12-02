@@ -1,11 +1,12 @@
 arm:
   joint_turntable: 
-    zero_pos: -1.308 #1 rad
+    zero_pos: 0.984 #1.103
+    rst: -1.308 #1 rad
     max_pos: #TODO add max pos from firmware 1.83359
     dir: 1
   joint_axis1: 
     zero_pos: 1.409 #2
-    dir: -1
+    dir: 1
   joint_axis2:
     zero_pos: -0.696 #3
     dir: 1

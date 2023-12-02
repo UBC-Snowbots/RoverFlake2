@@ -6,8 +6,8 @@
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
 
-    axes[0].zero_rad = -1.308;
-    axes[0].dir = 1;
+    axes[0].zero_rad = 0.984;
+    axes[0].dir = -1;
 
     axes[1].zero_rad = 1.409;
     axes[1].dir = -1;
@@ -15,7 +15,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
     axes[2].zero_rad = -0.696;
     axes[2].dir = 1;
 
-    axes[3].zero_rad = 1.545;
+    axes[3].zero_rad = 1.8067995;
     axes[3].dir = -1;
 
     axes[4].zero_rad = -1.002;
@@ -71,7 +71,7 @@ float ArmSerial::firmToMoveitOffset(float deg, int i){
 
 float rad = degToRad(deg);
 
-return ((rad) + (axes[i].zero_rad*axes[i].dir));
+return ((rad*axes[i].dir) + (axes[i].zero_rad));
 
 }
 

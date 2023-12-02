@@ -14,9 +14,9 @@ def generate_launch_description():
     # - name: (optional) a custom name for the node
     # - output: where to output the node's log messages, e.g., 'screen'
     sample_node = Node(
-        package='arm_hardware_interface',
-        executable='arm_serial_driver',
-        name='arm_serial_driver',
+        package='sample_package',
+        executable='sample_node',
+        name='sample_node',
         output='screen'
     )
 

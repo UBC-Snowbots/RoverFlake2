@@ -109,7 +109,7 @@
       link="link_turntable" />
     <axis
       xyz="0.751654206505026 0.300853226584914 -0.586944026204157" />
-    <limit lower="-1.308" upper="1.83359" effort="5.0" velocity="2.0" acceleration="1.0" />
+    <limit lower="-2.03859" upper="0.984" effort="5.0" velocity="2.0" acceleration="1.0" />
 
   </joint>
   <link
@@ -273,7 +273,7 @@
       link="link_axis3" />
     <axis
       xyz="-0.87281 -0.27773 -0.40132" />
-    <limit lower="-1.59659" upper="1.545" effort="5.0" velocity="2.0" acceleration="1.0" />
+    <limit lower="-1.33479" upper="1.8067995" effort="5.0" velocity="2.0" acceleration="1.0" />
 
   </joint>
   <link
@@ -383,6 +383,7 @@
       link="link_ender" />
     <axis
       xyz="-0.94201 -0.3326 0.044705" />
-  </joint>
     <limit lower="-1.375" upper="0.76459265359" effort="5.0" velocity="2.0" acceleration="1.0" />
+
+  </joint>
 </robot>
