@@ -15,3 +15,22 @@ int main(int argc, char *argv[]) {
     rclcpp::shutdown();
     return 0;
 }
+
+float ArmMoveitControl::radToDeg(float rad){
+  float deg = (rad *180.0) / 3.14159265359;
+
+  return(deg);
+}
+
+float ArmMoveitControl::moveitToFirmwareOffset(float rad, int i){
+
+float deg;
+
+  deg = (rad - axes[i].zero_rad)*axes[i].dir;
+    
+deg = radToDeg(deg);
+
+return (deg);
+
+
+}
