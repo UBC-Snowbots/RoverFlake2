@@ -68,7 +68,7 @@ ament_target_dependencies(old_arm_servo rclcpp std_msgs moveit_common moveit_ser
 add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
 ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs)
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h)
-ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs)
+ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs)
 
 install(
   TARGETS

@@ -10,6 +10,8 @@
 
 #include <serial/serial.h>
 
+#define SIMULATE true
+
 #define NUM_JOINTS 6
 
 #define TX_UART_BUFF 128

@@ -13,11 +13,11 @@ def generate_launch_description():
         robot_description_content = file.read()
 
     return LaunchDescription([
-        Node(
-            package='joint_state_publisher_gui',
-            executable='joint_state_publisher_gui',
-            name='joint_state_publisher_gui'
-        ),
+        # Node(
+        #     package='joint_state_publisher_gui',
+        #     executable='joint_state_publisher_gui',
+        #     name='joint_state_publisher_gui'
+        # ),
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',

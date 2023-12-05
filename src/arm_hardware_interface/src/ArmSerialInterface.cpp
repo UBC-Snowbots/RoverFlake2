@@ -27,7 +27,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
-        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_statesDISABLE", qos);
+        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
        double period = 1.0/COMM_POLL_RATE;
 
         current_arm_status.positions.resize(NUM_JOINTS);
@@ -37,8 +37,10 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
         // joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
         //     "/joy", 10, std::bind(&ArmSerial::joy_callback, this, std::placeholders::_1));
+        if(!SIMULATE){
         teensy.setPort(port);
         teensy.open();
+        }
       //  teensy.setDTR(true);
       //  teensy.setRTS(false);
         sleep(0.1);
@@ -147,9 +149,25 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   case ABS_POS_CMD:
     float target_positions[NUM_JOINTS];
     for (int i = 0; i < NUM_JOINTS; i++){
-      target_positions[i] = msg->positions[i];
+      target_positions[i] = msg->positions[i]*1.03;
     }
-    send_position_command(target_positions);
+    if(SIMULATE){
+       sensor_msgs::msg::JointState joint_states_;
+       joint_states_.position.resize(NUM_JOINTS);
+       joint_states_.name.resize(NUM_JOINTS);
+        for(int i = 0; i < NUM_JOINTS; i++){
+        joint_states_.name[i] = joint_names[i];
+        joint_states_.position[i] = firmToMoveitOffset(target_positions[i], i);
+         }
+         joint_states_.header.stamp = rclcpp::Clock().now();
+
+         joint_state_publisher_->publish(joint_states_);
+
+    }else{
+          send_position_command(target_positions);
+
+    }
+    break;
   default:
     break;
   }
