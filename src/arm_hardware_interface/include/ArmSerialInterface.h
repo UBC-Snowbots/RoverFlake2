@@ -10,7 +10,7 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE true
+#define SIMULATE false
 
 #define NUM_JOINTS 6
 
@@ -27,6 +27,7 @@
 #define HOME_CMD 'h'
 #define ABS_POS_CMD 'P'
 #define COMM_CMD 'C'
+#define ABS_VEL_CMD 'V'
 
 
 #define CONTROL_RATE 60.0
@@ -97,7 +98,17 @@ private:
         sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]);
 
         sendMsg(tx_msg);
-        RCLCPP_INFO(this->get_logger(), "Command Sent %s", tx_msg);
+        RCLCPP_INFO(this->get_logger(), "Positions Sent %s", tx_msg);
+        
+    }
+    void send_velocity_command(float vel[NUM_JOINTS]) {
+
+        char tx_msg[TX_UART_BUFF];
+     
+        sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5]);
+
+        sendMsg(tx_msg);
+        RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
     }
 

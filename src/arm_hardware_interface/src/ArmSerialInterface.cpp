@@ -149,7 +149,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   case ABS_POS_CMD:
     float target_positions[NUM_JOINTS];
     for (int i = 0; i < NUM_JOINTS; i++){
-      target_positions[i] = msg->positions[i]*1.03;
+      target_positions[i] = msg->positions[i];
     }
     if(SIMULATE){
        sensor_msgs::msg::JointState joint_states_;
@@ -167,6 +167,14 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
           send_position_command(target_positions);
 
     }
+    break;
+    case ABS_VEL_CMD:
+      float target_velocities[NUM_JOINTS];
+        for (int i = 0; i < NUM_JOINTS; i++){
+      target_velocities[i] = msg->velocities[i];
+    }
+          send_velocity_command(target_velocities);
+
     break;
   default:
     break;

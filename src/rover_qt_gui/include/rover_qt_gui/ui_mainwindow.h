@@ -28,10 +28,17 @@ public:
     QWidget *centralwidget;
     QLCDNumber *test_lcd;
     QLabel *label;
-    QProgressBar *progressBar;
+    QProgressBar *axis1_pos;
     QPushButton *homeButton;
     QPushButton *pushButton_2;
     QPushButton *commButton;
+    QProgressBar *axis2_pos;
+    QProgressBar *axis3_pos;
+    QProgressBar *axis4_pos;
+    QProgressBar *axis5_pos;
+    QProgressBar *axis6_pos;
+    QPushButton *commButton_2;
+    QPushButton *commButton_3;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -195,10 +202,10 @@ public:
         font.setPointSize(34);
         label->setFont(font);
         label->setTextFormat(Qt::PlainText);
-        progressBar = new QProgressBar(centralwidget);
-        progressBar->setObjectName(QString::fromUtf8("progressBar"));
-        progressBar->setGeometry(QRect(10, 220, 211, 41));
-        progressBar->setValue(24);
+        axis1_pos = new QProgressBar(centralwidget);
+        axis1_pos->setObjectName(QString::fromUtf8("axis1_pos"));
+        axis1_pos->setGeometry(QRect(50, 210, 211, 41));
+        axis1_pos->setValue(24);
         homeButton = new QPushButton(centralwidget);
         homeButton->setObjectName(QString::fromUtf8("homeButton"));
         homeButton->setGeometry(QRect(530, 210, 171, 81));
@@ -208,6 +215,32 @@ public:
         commButton = new QPushButton(centralwidget);
         commButton->setObjectName(QString::fromUtf8("commButton"));
         commButton->setGeometry(QRect(530, 120, 171, 81));
+        axis2_pos = new QProgressBar(centralwidget);
+        axis2_pos->setObjectName(QString::fromUtf8("axis2_pos"));
+        axis2_pos->setGeometry(QRect(50, 260, 211, 41));
+        axis2_pos->setValue(24);
+        axis3_pos = new QProgressBar(centralwidget);
+        axis3_pos->setObjectName(QString::fromUtf8("axis3_pos"));
+        axis3_pos->setGeometry(QRect(50, 310, 211, 41));
+        axis3_pos->setValue(24);
+        axis4_pos = new QProgressBar(centralwidget);
+        axis4_pos->setObjectName(QString::fromUtf8("axis4_pos"));
+        axis4_pos->setGeometry(QRect(50, 360, 211, 41));
+        axis4_pos->setValue(24);
+        axis5_pos = new QProgressBar(centralwidget);
+        axis5_pos->setObjectName(QString::fromUtf8("axis5_pos"));
+        axis5_pos->setGeometry(QRect(50, 410, 211, 41));
+        axis5_pos->setValue(24);
+        axis6_pos = new QProgressBar(centralwidget);
+        axis6_pos->setObjectName(QString::fromUtf8("axis6_pos"));
+        axis6_pos->setGeometry(QRect(50, 460, 211, 41));
+        axis6_pos->setValue(24);
+        commButton_2 = new QPushButton(centralwidget);
+        commButton_2->setObjectName(QString::fromUtf8("commButton_2"));
+        commButton_2->setGeometry(QRect(260, 510, 141, 31));
+        commButton_3 = new QPushButton(centralwidget);
+        commButton_3->setObjectName(QString::fromUtf8("commButton_3"));
+        commButton_3->setGeometry(QRect(340, 120, 171, 81));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
@@ -229,6 +262,8 @@ public:
         homeButton->setText(QCoreApplication::translate("MainWindow", "Home Request", nullptr));
         pushButton_2->setText(QCoreApplication::translate("MainWindow", "Send Target Pos", nullptr));
         commButton->setText(QCoreApplication::translate("MainWindow", "POS COMM ON", nullptr));
+        commButton_2->setText(QCoreApplication::translate("MainWindow", "save pos", nullptr));
+        commButton_3->setText(QCoreApplication::translate("MainWindow", "JOYSTICK ACTIVATE", nullptr));
     } // retranslateUi
 
 };

@@ -5,6 +5,11 @@
 
 #define NUM_JOINTS 6
 
+#define POSITION_CONTROL 1
+#define VELOCITY_CONTROL 2
+
+#define CONTROL_MODE 2
+
 class ArmJoy : public rclcpp::Node {
 public:
     ArmJoy() : Node("arm_joy_control") {
@@ -65,7 +70,7 @@ private:
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         rover_msgs::msg::ArmCommand target;
         target.positions.resize(NUM_JOINTS);
-        target.cmd_type = 'P';
+        target.velocities.resize(NUM_JOINTS);
         float target_positions[6];
         float inputs[6];
 
@@ -76,8 +81,17 @@ private:
         inputs[4] = msg->axes[4];
         inputs[5] = msg->axes[6];
         
+        if(CONTROL_MODE == POSITION_CONTROL){
+            target.cmd_type = 'P';
+
         for (int i = 0; i < NUM_JOINTS; i++){
             target.positions[i] = axes[i].position + inputs[i] * 10;
+        }
+        }else if(CONTROL_MODE == VELOCITY_CONTROL){
+            target.cmd_type = 'V';
+        for (int i = 0; i < NUM_JOINTS; i++){
+            target.velocities[i] = inputs[i] * 100;
+        }
         }
 
          arm_publisher->publish(target);
@@ -88,6 +102,7 @@ private:
 
         for (int i = 0; i < NUM_JOINTS; i++){
             axes[i].position = msg->positions[i];
+            // axes[i].velocity = msg->velocities
 
         }
     }

@@ -6,6 +6,7 @@
 #include "ui_mainwindow.h"  // This will be generated from your .ui file
 #include <rclcpp/rclcpp.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 #define HOME_CMD 'h'
 #define ABS_POS_CMD 'P'
@@ -27,7 +28,11 @@ private:
     void onCommButtonClicked();
     void onSendTargetButtonClicked();
     void ArmCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
+    void JointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg);
+
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber;
+    
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
     
 
