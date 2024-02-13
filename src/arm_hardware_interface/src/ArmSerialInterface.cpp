@@ -86,7 +86,7 @@ return ((rad*axes[i].dir) + (axes[i].zero_rad));
 
 	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos) == 6)
 	{
-		// All axes angles are in axes[i].des_angle_pos
+		// All axes angles are in axes[i].des_angle_pos 
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
          for(int i = 0; i < NUM_JOINTS; i++){
         current_arm_status.positions[i] = axes[i].curr_pos;
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
     RCLCPP_INFO(node->get_logger(), "ArmSerial init");
     //std::thread arm_thread(ArmSerial::SerialRxThread, std::ref(node));
 
-   
+     
 
     rclcpp::spin(node);
     
