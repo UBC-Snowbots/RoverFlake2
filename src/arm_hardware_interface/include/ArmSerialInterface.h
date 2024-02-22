@@ -62,10 +62,10 @@ public:
     // void start_rx() {
     //     serialRxThread = std::thread(&ArmSerial::serial_rx(), this);
     // }
+    string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"};
 
 
 private:
-    string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"};
 
     float degToRad(float deg);
     float firmToMoveitOffset(float deg, int axis);
