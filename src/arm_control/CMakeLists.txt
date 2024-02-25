@@ -63,8 +63,8 @@ include_directories(include)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED
-add_executable(old_arm_servo src/old_arm_servo.cpp)
-ament_target_dependencies(old_arm_servo rclcpp std_msgs moveit_common moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
+#add_executable(old_arm_servo src/old_arm_servo.cpp)
+#ament_target_dependencies(old_arm_servo rclcpp std_msgs moveit_common moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
 ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs moveit_servo  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h)

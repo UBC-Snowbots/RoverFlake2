@@ -1,8 +1,21 @@
+/*
+Created by: Rowan Zawadzki (Roozki)
+Created on a date i dont remember
+purpose: to handle moveit control, as well as servo. 
+*/
+
+//ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
 
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "control_msgs/msg/joint_trajectory_controller_state.hpp"
+
+
+// Servo
+#include <moveit_servo/servo_parameters.h>
+#include <moveit_servo/servo.h>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
 
 #define NUM_JOINTS 6

@@ -41,6 +41,7 @@
 
 #include <chrono>
 #include <moveit_servo/servo.h>
+#include <moveit_servo/servo_parameters.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -62,8 +63,8 @@ int main(int argc, char* argv[])
 
   // Get the servo parameters.
   const std::string param_namespace = "moveit_servo";
-  const std::shared_ptr<const servo::ParamListener> servo_param_listener =
-      std::make_shared<const servo::ParamListener>(demo_node, param_namespace);
+  const std::make_shared<const servo::ParamListener> servo_param_listener =
+      std::SharedPtr<const servo::ParamListener>(demo_node, param_namespace);
   const servo::Params servo_params = servo_param_listener->get_params();
 
   // The publisher to send trajectory message to the robot controller.
