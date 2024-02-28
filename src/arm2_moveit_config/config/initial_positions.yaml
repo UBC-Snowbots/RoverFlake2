@@ -1,0 +1,9 @@
+# Default initial positions for arm1's ros2_control fake system
+
+initial_positions:
+  joint_axis1: 0
+  joint_axis2: 0
+  joint_axis3: 0
+  joint_axis4: 0
+  joint_ender: 0
+  joint_turntable: 0
