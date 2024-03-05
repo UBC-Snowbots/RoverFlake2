@@ -2,6 +2,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), rclcpp::Node("gui_node") {
     ui.setupUi(this);  // This sets up the GUI as designed in Qt Designer
+   // auto node = std::make_shared<MainWindow>();
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
     arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
@@ -15,6 +16,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), rclcpp::Node("gui
     connect(ui.homeButton, &QPushButton::clicked, this, &MainWindow::onHomeButtonClicked);
     connect(ui.commButton, &QPushButton::clicked, this, &MainWindow::onCommButtonClicked);
 
+    ui.axis1_pos->setValue(0.0);
+    ui.axis2_pos->setValue(0.0);
+    ui.axis3_pos->setValue(0.0);
+    ui.axis4_pos->setValue(0.0);
+    ui.axis5_pos->setValue(0.0);
+    ui.axis6_pos->setValue(0.0);
+    //MainWindow::spin();
+  //  Node::spin();
+      //rclcpp::spin(node);
 }
 
 
