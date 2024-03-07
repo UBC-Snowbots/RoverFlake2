@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>usb_parser2</name>
+  <version>0.0.0</version>
+  <description>Package designed to complete the usb parsing portion of the search and rescue task. Launch file sets set pose movement in motion, which plugs usb into port, then parser script is run which finally will alert the driver of which reactor has malfunctioned.</description>
+  <maintainer email="cameronbasara@gmail.com">Cameron Basara</maintainer>
+  <license>MIT</license> 
+
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rclp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+
