@@ -54,7 +54,6 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
 
 
-
     }
 
 void ArmSerial::recieveMsg() {

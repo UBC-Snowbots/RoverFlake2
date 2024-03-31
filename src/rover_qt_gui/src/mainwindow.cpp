@@ -40,6 +40,8 @@ void MainWindow::ArmCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
 }
 
 void MainWindow::JointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg){
+    RCLCPP_INFO(this->get_logger(), "joints");
+  
     ui.axis1_pos->setValue(msg->position[0]);
     ui.axis2_pos->setValue(msg->position[1]);
     ui.axis3_pos->setValue(msg->position[2]);
