@@ -1,3 +1,5 @@
 {
-    "cmake.sourceDirectory": "/home/cameron/Desktop/RoverFlake2/src/arm_control"
+    "cmake.sourceDirectory": "/home/cameron/Desktop/RoverFlake2/src/arm_control",
+    "ros.distro": "humble",
+    "cmake.configureOnOpen": true
 }

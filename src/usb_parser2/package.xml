@@ -7,11 +7,18 @@
   <maintainer email="cameronbasara@gmail.com">Cameron Basara</maintainer>
   <license>MIT</license> 
 
-  <exec_depend>launch_ros</exec_depend>
-  <exec_depend>rclp</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>usb_parser_node</exec_depend>
 
+  <depend>rclpy</depend>
+  <depend>launch_ros</depend>
+  <depend>std_msgs</depend>
+  <depend>ros2launch</depend>
+  <depend>os</depend>
+  <depend>re</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
 

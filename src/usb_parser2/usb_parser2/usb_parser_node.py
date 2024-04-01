@@ -5,6 +5,7 @@ Purpose: To retrieve data from a usb-drive, and intepret the data regarding a CI
 Log file format: [ISO 8601 Timestamp] [Severity] Cell [Number] Diagnostic [OK/FAIL] [message]
                   2023-12-12T23:45:06.3743Z WARN Cell 2 Diagnostic FAIL Short Detected.
 """
+#!/usr/bin/env python3
 
 import os
 import re
@@ -13,11 +14,11 @@ from rclpy.node import Node
 from std_msgs.msg import String
 
 
-
 class usbParserNode(Node):
     def __init__(self):
         super().__init__("usb_parser")
-        self.publisher = self.create_publisher(String, 'usb_parsed_data', 30)
+        self.publisher = self.create_publisher(String, '/usb_parsed_data', 30)
+        self.get_logger().info('Running Diagnostic...')
 
     def message_callback(self, data):
          # This method publishes the parsed data to 'usb_parsed_data'
@@ -42,16 +43,17 @@ def usbParser():
             if hold is not None:
                 message.append(line[:-1])
         
-        return message
-
+        return str(message)
 
 def main(args=None):
     # Initialize our node, 
     rclpy.init(args=args)
     node = usbParserNode()
 
+    # Publish callback
     try:
         data = usbParser()
+        # data = "Test data"
         node.message_callback(data)
         rclpy.spin(node)
 
@@ -61,13 +63,11 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
-
-
-
 
 
 

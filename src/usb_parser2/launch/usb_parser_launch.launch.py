@@ -7,14 +7,14 @@ from launch_ros.actions import Node
 def generate_launch_description():
     ld = LaunchDescription()
     
-    # Add more nodes as needed
-    parserNode = Node(
-            package='usb_parser.scripts',
-            executable='data_parsing',
-            name='data_parsing',
+    # Data Parsing Node
+    usbParserNode = Node(
+            package='usb_parser2',
+            executable='usb_parser_node',
+            name='usbParserNode',
             output='both',
         )
         
-    ld.add_action(parserNode)
+    ld.add_action(usbParserNode)
     return ld
     
