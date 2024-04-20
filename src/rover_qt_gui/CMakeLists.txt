@@ -16,12 +16,12 @@ include_directories(include/${PROJECT_NAME} ${rclcpp_INCLUDE_DIRS})
 qt5_wrap_ui(UI_HEADERS ui/mainwindow.ui)
 
 # Add executable
-add_executable(rds_qt src/mainwindow.cpp src/main.cpp include/${PROJECT_NAME}/mainwindow.h include/${PROJECT_NAME}/ui_mainwindow.h ${UI_HEADERS})
-target_link_libraries(rds_qt Qt5::Widgets ${rclcpp_LIBRARIES})
-ament_target_dependencies(rds_qt rover_msgs sensor_msgs)
+add_executable(arm_window src/mainwindow.cpp src/main.cpp include/${PROJECT_NAME}/mainwindow.h include/${PROJECT_NAME}/ui_mainwindow.h ${UI_HEADERS})
+target_link_libraries(arm_window Qt5::Widgets ${rclcpp_LIBRARIES})
+ament_target_dependencies(arm_window rover_msgs sensor_msgs rclcpp)
 # Install rules, etc.
 install(TARGETS 
-rds_qt
+arm_window
 DESTINATION 
 lib/${PROJECT_NAME}
 )

@@ -1,6 +1,6 @@
 
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
+#ifndef ARM_WINDOW_H
+#define ARM_WINDOW_H
 
 #include <QMainWindow>
 #include "ui_mainwindow.h"  // This will be generated from your .ui file
@@ -14,14 +14,26 @@
 
 
 //MainWindow inherits QT and rclcpp
-class MainWindow : public QMainWindow, public rclcpp::Node {
+class ArmWindow : public QMainWindow, public rclcpp::Node {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    ArmWindow(QWidget *parent = nullptr);
+        void init(){
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+    arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
+
+    arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
+    "/arm/feedback", 10, std::bind(&ArmWindow::ArmCallback, this, std::placeholders::_1));
+
+    joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
+    "/joint_states", 10, std::bind(&ArmWindow::JointStateCallback, this, std::placeholders::_1));
+
+        }
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
 
 private:
-    Ui::MainWindow ui;  // Replace 'ArmControl' with the actual class name from your .ui file
+    Ui::ArmWindow ui;  // Replace 'ArmControl' with the actual class name from your .ui file
 
 
     void onHomeButtonClicked();
@@ -33,12 +45,11 @@ private:
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber;
     
-    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
     
 
 };
 
-#endif // MAIN_WINDOW_H
+#endif // ARM_WINDOW_H
 
 
 

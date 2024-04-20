@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(arm1)
+project(arm1_moveit_config)
 
 # Find the ament_cmake package
 find_package(ament_cmake REQUIRED)
