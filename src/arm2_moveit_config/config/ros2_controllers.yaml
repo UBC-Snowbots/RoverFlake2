@@ -3,14 +3,14 @@ controller_manager:
   ros__parameters:
     update_rate: 100  # Hz
 
-    arm_controller:
+    arm2_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
 
-    # joint_state_broadcaster:
-    #   type: joint_state_broadcaster/JointStateBroadcaster
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
 
-arm_controller:
+arm2_controller:
   ros__parameters:
     joints:
       - joint_turntable
