@@ -2,24 +2,60 @@
 #include "moveit_control.h"
 
 void ArmMoveitControl::publishCommands(){
+// 	if (count_ < 100)
+// {
+//   auto msg = std::make_unique<control_msgs::msg::JointJog>();
+//   msg->header.stamp = this->get_clock()->now();
+//   msg->joint_names.push_back("joint_turntable");
+//   msg->velocities.push_back(0.3);
+//   joint_cmd_publisher->publish(std::move(msg));
+//   ++count_;
+// }  else
+//   {
+//     auto msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+//     msg->header.stamp = this->get_clock()->now();
+//     msg->header.frame_id = "base_base_link";
+//     msg->twist.linear.x = 0.3;
+//     msg->twist.angular.z = 0.5;
+//     twist_cmd_publisher->publish(std::move(msg));
+    
+//   }
 
-	if (count_ < 100)
-{
-  auto msg = std::make_unique<control_msgs::msg::JointJog>();
-  msg->header.stamp = this->node.now();
-  msg->joint_names.push_back("panda_joint1");
-  msg->velocities.push_back(0.3);
-  joint_cmd_publisher->publish(std::move(msg));
-  ++count_;
-}  else
-  {
-    auto msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
-    msg->header.stamp = this->node.now();
-    msg->header.frame_id = "base_link";
-    msg->twist.linear.x = 0.3;
-    msg->twist.angular.z = 0.5;
-    twist_cmd_publisher->publish(std::move(msg));
+}
+void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg){
+  switch (joyControlMode)  {
+    case CARTESIAN_BASE_FRAME:
+    {
+      auto base_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+      base_msg->header.stamp = this->get_clock()->now();
+      base_msg->header.frame_id = "base_base_link";
+      base_msg->twist.linear.x = -joy_msg->axes[0];
+      base_msg->twist.linear.y = joy_msg->axes[1];
+      base_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
+      base_msg->twist.angular.x = joy_msg->axes[3];
+      base_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[2];
+      base_msg->twist.angular.z = joy_msg->axes[4];
+      twist_cmd_publisher->publish(std::move(base_msg));
+      break;
+    }
+    case CARTESIAN_EE_FRAME:
+        auto ee_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+        ee_msg->header.stamp = this->get_clock()->now();
+        ee_msg->header.frame_id = "link_ender";
+        ee_msg->twist.linear.x = -joy_msg->axes[0];
+        ee_msg->twist.linear.y = joy_msg->axes[1];
+        ee_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
+        ee_msg->twist.angular.x = joy_msg->axes[3];
+        ee_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[2];
+        ee_msg->twist.angular.z = joy_msg->axes[4];
+        twist_cmd_publisher->publish(std::move(ee_msg));
+      break;
+
   }
+
+
+
+
 }
 
 
@@ -56,7 +92,6 @@ else
 auto servo = std::make_unique<moveit_servo::Servo>(node, servo_parameters, planning_scene_monitor);
 servo->start();
 
-rclcpp::TimerBase::SharedPtr timer = node->create_wall_timer(50ms, publishCommands);
 
 
 rclcpp::spin(node);

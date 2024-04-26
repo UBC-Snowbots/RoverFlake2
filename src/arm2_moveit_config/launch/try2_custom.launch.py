@@ -160,6 +160,12 @@ def generate_launch_description():
     custom_servo_node = Node(
         package="arm_control",
         executable="moveit_control",
+        parameters=[
+            servo_params,
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+        ]
     )
     return LaunchDescription(
         [
@@ -168,6 +174,7 @@ def generate_launch_description():
             joint_state_broadcaster_spawner,
             arm_controller_spawner,
      #       servo_node,
+            custom_servo_node,
             container,
         ]
     )
