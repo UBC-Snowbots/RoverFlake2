@@ -1,0 +1,20 @@
+<launch>
+
+  <node
+    name="joint_state_publisher_gui"
+    pkg="joint_state_publisher_gui"
+    exec="joint_state_publisher_gui" />
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    exec="robot_state_publisher">
+    <param
+      name="robot_description"
+      command="xacro $(find-pkg-share arm1)/urdf/arm1.urdf"/>
+  </node>
+  <node
+    name="rviz"
+    pkg="rviz2"
+    exec="rviz2"
+    args="-d $(find-pkg-share arm1)/urdf.rviz" />
+</launch>

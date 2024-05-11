@@ -1,0 +1,3 @@
+[submodule "src/external_pkgs/dear_im_gui"]
+	path = src/external_pkgs/dear_im_gui
+	url = https://github.com/ocornut/imgui.git

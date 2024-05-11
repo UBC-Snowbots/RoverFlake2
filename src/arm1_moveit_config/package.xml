@@ -1,0 +1,27 @@
+<package format="3">
+  <name>arm1_moveit_config</name>
+  <version>1.0.0</version>
+  <description>URDF Description package for arm1. This package contains configuration data, 3D models, and launch files for arm1 robot.</description>
+  <author>TODO</author>
+  <maintainer email="TODO@email.com">TODO</maintainer>
+  <license>BSD</license>
+
+  <!-- Build and run-time dependencies for ROS 2 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <!-- ROS 2 does not use roslaunch. If you have launch files, they would now be in Python format and you would depend on launch_ros -->
+  <!-- <depend>launch_ros</depend> -->
+  <depend>robot_state_publisher</depend>
+  <depend>rviz2</depend>
+  <!-- joint_state_publisher_gui still exists in ROS 2, but it's typically used in combination with the joint_state_publisher package -->
+  <depend>joint_state_publisher</depend>
+  <depend>joint_state_publisher_gui</depend>
+  <depend>gazebo_ros_pkgs</depend>
+  <depend>launch_ros</depend>
+
+  <!-- Export tag for indicating that the package is architecture independent -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+
