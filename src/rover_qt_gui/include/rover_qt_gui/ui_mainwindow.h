@@ -22,7 +22,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow
+class Ui_ArmWindow
 {
 public:
     QWidget *centralwidget;
@@ -42,11 +42,11 @@ public:
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
-    void setupUi(QMainWindow *MainWindow)
+    void setupUi(QMainWindow *ArmWindow)
     {
-        if (MainWindow->objectName().isEmpty())
-            MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(800, 600);
+        if (ArmWindow->objectName().isEmpty())
+            ArmWindow->setObjectName(QString::fromUtf8("ArmWindow"));
+        ArmWindow->resize(800, 600);
         QPalette palette;
         QBrush brush(QColor(255, 255, 255, 255));
         brush.setStyle(Qt::SolidPattern);
@@ -120,8 +120,8 @@ public:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         palette.setBrush(QPalette::Disabled, QPalette::PlaceholderText, brush8);
 #endif
-        MainWindow->setPalette(palette);
-        centralwidget = new QWidget(MainWindow);
+        ArmWindow->setPalette(palette);
+        centralwidget = new QWidget(ArmWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         test_lcd = new QLCDNumber(centralwidget);
         test_lcd->setObjectName(QString::fromUtf8("test_lcd"));
@@ -241,35 +241,35 @@ public:
         commButton_3 = new QPushButton(centralwidget);
         commButton_3->setObjectName(QString::fromUtf8("commButton_3"));
         commButton_3->setGeometry(QRect(340, 120, 171, 81));
-        MainWindow->setCentralWidget(centralwidget);
-        menubar = new QMenuBar(MainWindow);
+        ArmWindow->setCentralWidget(centralwidget);
+        menubar = new QMenuBar(ArmWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
-        menubar->setGeometry(QRect(0, 0, 800, 22));
-        MainWindow->setMenuBar(menubar);
-        statusbar = new QStatusBar(MainWindow);
+        menubar->setGeometry(QRect(0, 0, 800, 23));
+        ArmWindow->setMenuBar(menubar);
+        statusbar = new QStatusBar(ArmWindow);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
-        MainWindow->setStatusBar(statusbar);
+        ArmWindow->setStatusBar(statusbar);
 
-        retranslateUi(MainWindow);
+        retranslateUi(ArmWindow);
 
-        QMetaObject::connectSlotsByName(MainWindow);
+        QMetaObject::connectSlotsByName(ArmWindow);
     } // setupUi
 
-    void retranslateUi(QMainWindow *MainWindow)
+    void retranslateUi(QMainWindow *ArmWindow)
     {
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        label->setText(QCoreApplication::translate("MainWindow", "Arm Control", nullptr));
-        homeButton->setText(QCoreApplication::translate("MainWindow", "Home Request", nullptr));
-        pushButton_2->setText(QCoreApplication::translate("MainWindow", "Send Target Pos", nullptr));
-        commButton->setText(QCoreApplication::translate("MainWindow", "POS COMM ON", nullptr));
-        commButton_2->setText(QCoreApplication::translate("MainWindow", "save pos", nullptr));
-        commButton_3->setText(QCoreApplication::translate("MainWindow", "JOYSTICK ACTIVATE", nullptr));
+        ArmWindow->setWindowTitle(QCoreApplication::translate("ArmWindow", "MainWindow", nullptr));
+        label->setText(QCoreApplication::translate("ArmWindow", "Arm Control", nullptr));
+        homeButton->setText(QCoreApplication::translate("ArmWindow", "Home Request", nullptr));
+        pushButton_2->setText(QCoreApplication::translate("ArmWindow", "Send Target Pos", nullptr));
+        commButton->setText(QCoreApplication::translate("ArmWindow", "POS COMM ON", nullptr));
+        commButton_2->setText(QCoreApplication::translate("ArmWindow", "save pos", nullptr));
+        commButton_3->setText(QCoreApplication::translate("ArmWindow", "JOYSTICK ACTIVATE", nullptr));
     } // retranslateUi
 
 };
 
 namespace Ui {
-    class MainWindow: public Ui_MainWindow {};
+    class ArmWindow: public Ui_ArmWindow {};
 } // namespace Ui
 
 QT_END_NAMESPACE

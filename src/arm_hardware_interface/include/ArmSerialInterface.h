@@ -31,13 +31,8 @@
 
 
 #define CONTROL_RATE 60.0
-#define COMM_POLL_RATE 1000.0
+#define COMM_POLL_RATE 1000.0 //idea is to poll serial faster than arm can send messages. We don't wan't to miss any messages. 
 
-#define GEAR_REVERSE 20
-#define GEAR_PARKING 22
-#define GEAR_NEUTRAL 1
-#define GEAR_1 2 //or drive
-#define GEAR_2 3 //guessing this is how autoware deals with manual cars
 
 
 

@@ -7,10 +7,10 @@ purpose: to handle moveit control, as well as servo.
 //ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
-
+#include "sensor_msgs/msg/joy.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "control_msgs/msg/joint_trajectory_controller_state.hpp"
-#include "sensor_msgs/msg/joy.hpp"
+
 
 // Servo
 #include <moveit_servo/servo_parameters.h>
@@ -20,15 +20,9 @@ purpose: to handle moveit control, as well as servo.
 
 #define NUM_JOINTS 6
 
-#define JOINT_JOG 1
-#define CARTESIAN_EE_FRAME 2
-#define CARTESIAN_BASE_FRAME 3
-
-class ArmMoveitControl : public rclcpp::Node {
+class ArmServoControl : public rclcpp::Node {
 public:
-    //rclcpp::NodeOptions node_options;
-    //node_options.use_intra_process_comms(false);
-    ArmMoveitControl() : Node("arm_moveit_control") {
+    ArmServoControl() : Node("arm_servo_control") {
     axes[0].zero_rad = 0.984;
     axes[0].dir = -1;
 
@@ -48,29 +42,21 @@ public:
     axes[5].dir = 1;
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
-        arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
+        servo_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
         // joy_vibrator = this->create_publisher<sensor_msgs::msg::JoyFeedback>("/joy/feedback", qos);
 
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
-            "/arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
-        joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
-        
-	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>("/arm_moveit_control/delta_joint_cmds", 10);
-	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("/arm_moveit_control/delta_twist_cmds", 10);
+            "/arm_controller/controller_state", 10, std::bind(&ArmServoControl::jointTrajectoryCallback, this, std::placeholders::_1));
+ 
+
         // arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
         //     "/arm/feedback", 10, std::bind(&ArmMoveitControl::arm_callback, this, std::placeholders::_1));
-// timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ArmMoveitControl::publishCommands, this));
-
     }
 
-int count_ = 0;    
-void publishCommands();	
-void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
-int joyControlMode = CARTESIAN_EE_FRAME;
+    
 
     // void test_send(){
     //     send_command(0.5, 1.0, 1.0, 0.5);
@@ -79,7 +65,7 @@ int joyControlMode = CARTESIAN_EE_FRAME;
     // }
 
 private:
-    // rclcpp::TimerBase::SharedPtr timer;
+    
    float radToDeg(float rad);
    float moveitToFirmwareOffset(float rad, int i);
 //    float moveitToFirmwareOffset(float rad, int i);
@@ -96,10 +82,8 @@ private:
 
     // rclcpp::Publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr command_publisher_;
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
-    rclcpp::Publisher<control_msgs::msg::JointJog>::SharedPtr joint_cmd_publisher;
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_cmd_publisher;
+
     rclcpp::Subscription<control_msgs::msg::JointTrajectoryControllerState>::SharedPtr trajectory_subscriber;
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;
     // rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr trajectory_subscriber;
 
     // rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
@@ -108,6 +92,7 @@ private:
 
 
     rclcpp::TimerBase::SharedPtr timer_;
+
     void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg){
         rover_msgs::msg::ArmCommand target;
         target.positions.resize(NUM_JOINTS);

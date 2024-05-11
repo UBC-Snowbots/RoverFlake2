@@ -11,7 +11,7 @@ moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControll
 
 moveit_simple_controller_manager:
   controller_names:
-    - arm_controller
+    - arm2_controller
 
   arm_controller:
     type: FollowJointTrajectory
