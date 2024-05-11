@@ -8,7 +8,13 @@ from launch_ros.descriptions import ComposableNode
 from launch.actions import ExecuteProcess
 import xacro
 from moveit_configs_utils import MoveItConfigsBuilder
+from xacro import process_file
 
+def xacro_to_urdf(package_name, file_path):
+    package_path = get_package_share_directory(package_name)
+    absolute_file_path = os.path.join(package_path, file_path)
+    robot_description = process_file(absolute_file_path).toxml()
+    return robot_description
 
 def load_file(package_name, file_path):
     package_path = get_package_share_directory(package_name)
@@ -35,18 +41,21 @@ def load_yaml(package_name, file_path):
 def generate_launch_description():
     moveit_config = (
         MoveItConfigsBuilder("arm2")
-        .robot_description(file_path="config/arm1.urdf.xacro")
+        .robot_description(file_path="config/arm2.urdf.xacro")
+        #.robot_description_semantics(file_path"config/arm1.srdf")
+        .robot_description_kinematics(file_path="config/kinematics.yaml")
         .to_moveit_configs()
     )
 
     # Get parameters for the Servo node
-    servo_yaml = load_yaml("moveit_servo", "config/rover_servo_params.yaml")
+    servo_yaml = load_yaml("arm2_moveit_config", "config/rover_servo_params.yaml")
     servo_params = {"moveit_servo": servo_yaml}
 
     # RViz
     rviz_config_file = (
         get_package_share_directory("moveit_servo") + "/config/demo_rviz_config.rviz"
     )
+
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -121,11 +130,12 @@ def generate_launch_description():
                 name="static_tf2_broadcaster",
                 parameters=[{"child_frame_id": "/base_base_link", "frame_id": "/world"}],
             ),
-            ComposableNode(
-                package="moveit_servo",
-                plugin="moveit_servo::JoyToServoPub",
-                name="controller_to_servo_node",
-            ),
+#            ComposableNode(
+ #               package="moveit_servo",
+  #              plugin="moveit_servo::JoyToServoPub",
+   #             name="controller_to_servo_node",
+    #            parameters=[moveit_config.robot_description],
+     #       ),
             ComposableNode(
                 package="joy",
                 plugin="joy::Joy",
@@ -147,14 +157,24 @@ def generate_launch_description():
         ],
         output="screen",
     )
-
+    custom_servo_node = Node(
+        package="arm_control",
+        executable="moveit_control",
+        parameters=[
+            servo_params,
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+        ]
+    )
     return LaunchDescription(
         [
             rviz_node,
             ros2_control_node,
             joint_state_broadcaster_spawner,
             arm_controller_spawner,
-            servo_node,
+     #       servo_node,
+            custom_servo_node,
             container,
         ]
     )
