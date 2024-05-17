@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Full_Assembly">
+  <link
+    name="Chassis_Frame">
+    <inertial>
+      <origin
+        xyz="0.0752154867174881 -0.267968897733309 -0.165219734896984"
+        rpy="0 0 0" />
+      <mass
+        value="16.2612895685876" />
+      <inertia
+        ixx="0.137291641953633"
+        ixy="-8.1420557815172E-07"
+        ixz="5.78919817795369E-06"
+        iyy="0.197546865909456"
+        iyz="-1.99254410930218E-06"
+        izz="0.280705150169245" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Chassis_Frame.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Chassis_Frame.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Left_Bogie">
+    <inertial>
+      <origin
+        xyz="0.0073280863678214 0.263181233440572 -0.170423697737644"
+        rpy="0 0 0" />
+      <mass
+        value="3.34124121849343" />
+      <inertia
+        ixx="0.00818279019634651"
+        ixy="8.02314083106796E-09"
+        ixz="8.47383063921132E-11"
+        iyy="0.00569849669310304"
+        iyz="0.00105538423329303"
+        izz="0.00691925842668569" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left_Connect"
+    type="continuous">
+    <origin
+      xyz="-0.248729166875268 0.369784478188223 -0.345807860434498"
+      rpy="0.51304684994759 0 3.14159265358979" />
+    <parent
+      link="Chassis_Frame" />
+    <child
+      link="Left_Bogie" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Left_Bogie_Front_Wheel">
+    <inertial>
+      <origin
+        xyz="0.130564845809255 0.0138364458137181 0.0507999999999999"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="4.33680868994202E-19"
+        ixz="-7.49449804390759E-19"
+        iyy="0.0201202982558325"
+        iyz="3.12256934504413E-18"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie_Front_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie_Front_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left_Connect_Front"
+    type="continuous">
+    <origin
+      xyz="0.0829250000000001 -0.0743919967284671 -0.0455554713072941"
+      rpy="1.5707963267949 0.618626537467851 1.5707963267949" />
+    <parent
+      link="Left_Bogie" />
+    <child
+      link="Left_Bogie_Front_Wheel" />
+    <axis
+      xyz="0.994431640250643 0.105383646114637 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Left_Bogie_Back_Wheel">
+    <inertial>
+      <origin
+        xyz="0.11938 -5.55111512312578E-17 -0.0508000000000001"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="-1.37812516427891E-33"
+        ixz="7.34366271496856E-19"
+        iyy="0.0201202982558325"
+        iyz="3.09652182247156E-18"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie_Back_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Left_Bogie_Back_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left_Connect_Back"
+    type="continuous">
+    <origin
+      xyz="0.0829250000000004 0.32306401672449 -0.274881622694233"
+      rpy="-1.5707963267949 0.51304684994759 1.5707963267949" />
+    <parent
+      link="Left_Bogie" />
+    <child
+      link="Left_Bogie_Back_Wheel" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Right_Bogie">
+    <inertial>
+      <origin
+        xyz="-0.313254747777612 -0.18264536433249 0.0354994663678213"
+        rpy="0 0 0" />
+      <mass
+        value="3.34124121849343" />
+      <inertia
+        ixx="0.00508994978325339"
+        ixy="2.48144667793758E-05"
+        ixz="6.94859351828119E-09"
+        iyy="0.00752780533653533"
+        iyz="4.011859605829E-09"
+        izz="0.0081827901963465" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Right_Connect"
+    type="continuous">
+    <origin
+      xyz="0.365966373124733 0.366267486623604 -0.182466340171182"
+      rpy="1.5707963267949 0 1.5707963267949" />
+    <parent
+      link="Chassis_Frame" />
+    <child
+      link="Right_Bogie" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Right_Bogie_Front_Wheel">
+    <inertial>
+      <origin
+        xyz="-0.0904301784153555 5.55111512312578E-17 0.0508000000000001"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="-4.89110791271853E-33"
+        ixz="-7.34366271496863E-19"
+        iyy="0.0201202982558325"
+        iyz="1.27619897151731E-17"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie_Front_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie_Front_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Right_Connect_Front"
+    type="continuous">
+    <origin
+      xyz="0 -0.244262138749221 0.11109638"
+      rpy="0 0 0" />
+    <parent
+      link="Right_Bogie" />
+    <child
+      link="Right_Bogie_Front_Wheel" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Right_Bogie_Back_Wheel">
+    <inertial>
+      <origin
+        xyz="-0.130564845809256 -0.013836445813718 0.0508"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="4.33680868994202E-19"
+        ixz="-2.06450675522236E-18"
+        iyy="0.0201202982558325"
+        iyz="1.26266851207273E-17"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie_Back_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Right_Bogie_Back_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Right_Connect_Back"
+    type="continuous">
+    <origin
+      xyz="-0.406064141803662 -0.239545992505552 0.11109638"
+      rpy="0 0 -0.105579687520261" />
+    <parent
+      link="Right_Bogie" />
+    <child
+      link="Right_Bogie_Back_Wheel" />
+    <axis
+      xyz="0.994431640250643 0.105383646114637 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Back_Bogie">
+    <inertial>
+      <origin
+        xyz="-0.000289279887737193 0.0636173838408471 -0.0148260057036792"
+        rpy="0 0 0" />
+      <mass
+        value="2.03126342918492" />
+      <inertia
+        ixx="0.0076939410308437"
+        ixy="-1.47557141759033E-05"
+        ixz="-6.6684282943362E-09"
+        iyy="0.00629537083030239"
+        iyz="2.25382545208118E-08"
+        izz="0.00234582536528961" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Back_Connect"
+    type="continuous">
+    <origin
+      xyz="0.055470277282733 -0.512439057564754 -0.421614058115213"
+      rpy="1.5602438137183 -0.0105513381921141 -1.57068498159409" />
+    <parent
+      link="Chassis_Frame" />
+    <child
+      link="Back_Bogie" />
+    <axis
+      xyz="-0.999772994789274 0.0211020967603054 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Back_Bogie_Left_Wheel">
+    <inertial>
+      <origin
+        xyz="-1.14531348801572E-05 -0.00108536680223514 -0.0520615041256314"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="-5.42101086242752E-20"
+        ixz="-1.75552403538904E-17"
+        iyy="0.0201202982558325"
+        iyz="-1.1895911365396E-17"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie_Left_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie_Left_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Back_Connect_Left"
+    type="continuous">
+    <origin
+      xyz="0 -0.000691989544948202 0.327180673083095"
+      rpy="3.14159265358979 0 3.12048880228838" />
+    <parent
+      link="Back_Bogie" />
+    <child
+      link="Back_Bogie_Left_Wheel" />
+    <axis
+      xyz="0.00011133900256751 0.0105511424118299 0.999944328949083" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Back_Bogie_Right_Wheel">
+    <inertial>
+      <origin
+        xyz="-1.11022302462516E-16 -0.00108528771922412 0.0520482833385267"
+        rpy="0 0 0" />
+      <mass
+        value="4.54890356187038" />
+      <inertia
+        ixx="0.0201202982558325"
+        ixy="-1.56128184385634E-21"
+        ixz="6.18841737345298E-18"
+        iyy="0.0201202982558325"
+        iyz="1.35498166506376E-16"
+        izz="0.0324145415197282" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie_Right_Wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Back_Bogie_Right_Wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Back_Connect_Right"
+    type="continuous">
+    <origin
+      xyz="-3.02068909376896E-05 -0.0028625836475128 -0.356845710106984"
+      rpy="3.14159265358926 0 -0.0105519256507057" />
+    <parent
+      link="Back_Bogie" />
+    <child
+      link="Back_Bogie_Right_Wheel" />
+    <axis
+      xyz="0 0.0105517298382485 -0.999944328949077" />
+  </joint>
+  <link
+    name="Arm">
+    <inertial>
+      <origin
+        xyz="-0.0477985055997259 -0.0352326124467944 0.003129556082442"
+        rpy="0 0 0" />
+      <mass
+        value="0.232083853065316" />
+      <inertia
+        ixx="0.000808900388660283"
+        ixy="-0.00045117057053435"
+        ixz="3.23058256055578E-19"
+        iyy="0.00108878956515546"
+        iyz="2.88705620092326E-19"
+        izz="0.0018961637397099" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Arm.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full_Assembly/meshes/Arm.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Arm"
+    type="fixed">
+    <origin
+      xyz="0.0726472931247326 0.0460194024352475 -0.0975250000000328"
+      rpy="3.14159265358979 0 2.20588191770284" />
+    <parent
+      link="Chassis_Frame" />
+    <child
+      link="Arm" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+</robot>
