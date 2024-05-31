@@ -1,6 +1,9 @@
 sudo apt update
 sudo apt upgrade
 
+
 #for motor controllers
-sudo apt install libphidget22
+curl -fsSL https://www.phidgets.com/downloads/setup_linux | sudo -E bash -
+sudo apt-get install -y libphidget22
+sudo apt-get install -y libphidget22-dev
 
