@@ -12,8 +12,8 @@ find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
-
-include_directories(/usr/include/libphidget22)
+#! not sure how to find dependencies for phid
+include_directories(/usr/include/)
 include_directories(include)
 add_executable(drive_node src/drive_control.cpp include/drive_control.h)
 ament_target_dependencies(drive_node rclcpp geometry_msgs)
