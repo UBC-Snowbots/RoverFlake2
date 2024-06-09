@@ -17,6 +17,7 @@ include_directories(/usr/include/)
 include_directories(include)
 add_executable(drive_node src/drive_control.cpp include/drive_control.h)
 ament_target_dependencies(drive_node rclcpp geometry_msgs)
+target_link_libraries(drive_node phidget22)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
