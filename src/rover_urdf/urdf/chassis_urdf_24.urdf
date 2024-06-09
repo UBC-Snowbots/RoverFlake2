@@ -3,10 +3,24 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="rover_urdf">
+  name="chassis_24">
+
+    <gazebo reference="base_link">
+        <material>Gazebo/Green</material>
+    </gazebo>
+
+    <gazebo reference="chassis_link">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <gazebo reference="back_bogie_link">
+        <material>Gazebo/Orange</material>
+    </gazebo>
+
+
   <link
     name="base_link">
-    <inertial>
+    <!-- <inertial>
       <origin
         xyz="0.281480000000005 -9.85322934354826E-16 -0.0750000000000002"
         rpy="0 0 0" />
@@ -42,7 +56,7 @@
         <mesh
           filename="package://rover_urdf/meshes/base_link.STL" />
       </geometry>
-    </collision>
+    </collision> -->
   </link>
   <link
     name="chassis_link">
@@ -168,7 +182,7 @@
         ixy="-1.08937077959432E-19"
         ixz="7.62806346074387E-19"
         iyy="0.0178347294732951"
-        iyz="0"
+        iyz="0.001"
         izz="0.0289167430570026" />
     </inertial>
     <visual>
@@ -371,11 +385,11 @@
       link="left_front_wheel_link" />
     <axis
       xyz="0 0 1" />
-    <limit
+    <!-- <limit
       lower="-1.5"
       upper="1.5"
       effort="5"
-      velocity="5" />
+      velocity="5" /> -->
   </joint>
   <link
     name="left_mid_wheel_link">
