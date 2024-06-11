@@ -56,7 +56,7 @@ def generate_launch_description():
     )
 
     urdf_file_path = (
-        get_package_share_directory("rover_urdf") + "/urdf/chassis_urdf_24.urdf"
+        get_package_share_directory("rover_urdf") + "/urdf/chassis_urdf_24_rviz.urdf"
     )
 
     rviz_node = Node(

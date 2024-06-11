@@ -27,7 +27,7 @@ if(BUILD_TESTING)
 endif()
 
 install(
-  DIRECTORY launch include params gazebo_worlds models
+  DIRECTORY launch include params gazebo_worlds models config
   DESTINATION share/${PROJECT_NAME}
 )
 
