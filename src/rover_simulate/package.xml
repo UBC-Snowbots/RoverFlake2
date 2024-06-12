@@ -16,6 +16,7 @@
   <depend>gazebo_ros</depend>
   <depend>rover_urdf</depend>
   <depend>trajectory_msgs</depend>
+  <depend>std_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

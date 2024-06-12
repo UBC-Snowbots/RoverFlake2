@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(rover_urdf REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
