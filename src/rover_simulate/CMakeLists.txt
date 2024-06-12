@@ -10,9 +10,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(rover_urdf REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+add_executable(chassis_sim_demo src/chassis_sim_demo.cpp)
+ament_target_dependencies(chassis_sim_demo rclcpp trajectory_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,6 +29,11 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+install(
+  TARGETS chassis_sim_demo
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(
   DIRECTORY launch include params gazebo_worlds models config

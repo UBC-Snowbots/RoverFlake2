@@ -3,7 +3,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-
+# from launch_ros.substitutions import ParameterValue
 
 from launch_ros.actions import Node
 import xacro
@@ -19,7 +19,7 @@ def generate_launch_description():
     # Use xacro to process the file, even though its just a urdf file
     xacro_file = os.path.join(get_package_share_directory(raw_urdf_pkg_name),file_subpath)
     robot_description_raw = xacro.process_file(xacro_file).toxml()
-
+    # robot_description_ros2_dont_like_raw = ParameterValue(robot_description_raw, value_type=str) # which parses the param as YAML instead of string
 
     # Configure the node
     node_robot_state_publisher = Node(
@@ -27,7 +27,7 @@ def generate_launch_description():
         executable='robot_state_publisher',
         output='screen',
         parameters=[{'robot_description': robot_description_raw,
-        'use_sim_time': False}] # add other parameters here if required
+        'use_sim_time': True}] # add other parameters here if required
     )
 
 
@@ -59,7 +59,13 @@ def generate_launch_description():
     control_node = Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['joint_velocity_controller', '--controller-manager', '/controller_manager'],
+            arguments=['velocity_controller', '--controller-manager', '/controller_manager'], 
+        )
+    
+    joint_pubber = Node(
+            package='controller_manager',
+            executable='spawner',
+            arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
         )
     
 
@@ -72,6 +78,7 @@ def generate_launch_description():
     # Run the node
     return LaunchDescription([
         gazebo,
+        joint_pubber,
         node_robot_state_publisher,
         spawn_entity,
         controller_manager_node,
