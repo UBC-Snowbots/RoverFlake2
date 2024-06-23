@@ -23,7 +23,7 @@ include_directories(${GTKMM_INCLUDE_DIRS})
 link_directories(${GTKMM_LIBRARY_DIRS})
 
 
-add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h) # 1080p
+add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_functions.cpp)
 # add_executable(right_screen src/right_screen.cpp)  # 1080p
 # add_executable(middle_screen src/middle_screen.cpp) # 1440p
 ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs)
@@ -50,6 +50,8 @@ install(TARGETS
 install(DIRECTORY 
   glade_files
   DESTINATION share/${PROJECT_NAME}/)
-
+  install(DIRECTORY 
+  css_files
+  DESTINATION share/${PROJECT_NAME}/)
 
 ament_package()
