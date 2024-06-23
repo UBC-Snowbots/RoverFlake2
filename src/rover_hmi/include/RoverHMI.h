@@ -37,6 +37,14 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
 
             //* Setup GTK widgets
             builder->get_widget("middle_window", middle_window);
+            builder->get_widget("middle_stack", middle_stack);
+
+            middle_stack->set_visible_child("system_overview_card");
+                // m_stack.set_visible_child_name(page_name);
+            rclcpp::sleep(4);
+            middle_stack->set_visible_child("full_control_card");
+
+
         }
 
 
@@ -57,6 +65,7 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Gtk::Window* middle_window;
+    Gtk::Stack* middle_stack; //Like a deck of cards, each card is a different screen we can view
     std::string package_share_dir;
     
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_subscriber;
