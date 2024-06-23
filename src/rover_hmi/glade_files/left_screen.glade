@@ -10,6 +10,7 @@
         <property name="can-focus">False</property>
         <child>
           <object class="GtkLayout" id="system_overview_card">
+            <property name="name">system_overview_card</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
@@ -112,12 +113,13 @@
             </child>
           </object>
           <packing>
-            <property name="name">page0</property>
+            <property name="name">system_overview_card</property>
             <property name="title" translatable="yes">page0</property>
           </packing>
         </child>
         <child>
           <object class="GtkLayout" id="full_control_card">
+            <property name="name">full_control_card</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
@@ -138,7 +140,7 @@
             </child>
           </object>
           <packing>
-            <property name="name">page1</property>
+            <property name="name">full_control_card</property>
             <property name="title" translatable="yes">page1</property>
             <property name="position">1</property>
           </packing>

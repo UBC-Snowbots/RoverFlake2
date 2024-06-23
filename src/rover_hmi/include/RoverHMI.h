@@ -7,6 +7,7 @@
 #include <chrono>
 #include <ctime>
 #include <memory>
+#include <thread>
 
 #define QUEUE_SIZE 20
 
@@ -39,11 +40,7 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
             builder->get_widget("middle_window", middle_window);
             builder->get_widget("middle_stack", middle_stack);
 
-            middle_stack->set_visible_child("system_overview_card");
-                // m_stack.set_visible_child_name(page_name);
-            rclcpp::sleep(4);
-            middle_stack->set_visible_child("full_control_card");
-
+            changeCard("full_control_card");
 
         }
 
@@ -51,6 +48,9 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
     void run(){
         app->run(*middle_window);
     }
+    std::string current_middle_card = "system_overview_card";
+    void changeCard(std::string target_card);
+
 
     Glib::RefPtr<Gtk::Application> app;
     void load_css(const Glib::RefPtr<Gtk::CssProvider>& css_provider);
@@ -58,7 +58,6 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
     private:
     std::string main_css_file_path;
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
-    
     // rclcpp::TimerBase
 
     
@@ -70,3 +69,4 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
     
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_subscriber;
 };
+
