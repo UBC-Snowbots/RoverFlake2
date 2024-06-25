@@ -12,7 +12,7 @@
 
 #define QUEUE_SIZE 20
 
-class MainHMINode : public rclcpp::Node, Gtk::Window
+class MainHMINode : public rclcpp::Node, public Gtk::Window
 {
     public: 
         MainHMINode() : Node("main_hmi_node") {
@@ -52,11 +52,11 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
                 builder->get_widget("drive_online_status_label", drive_online_status_label);
                 builder->get_widget("ptz_online_status_label", ptz_online_status_label);
 
-                builder->get_widget("comms_online_status_label", comms_online_status_label);
-                builder->get_widget("arm_online_status_label", arm_online_status_label);
-                builder->get_widget("drive_online_status_label", drive_online_status_label);
-                builder->get_widget("ptz_online_status_label", ptz_online_status_label);
-            // builder->get_widget("navig_online_status_label", ptz_online_status_label);
+                builder->get_widget("comms_misc_status_label", comms_misc_status_label);
+                builder->get_widget("arm_misc_status_label", arm_misc_status_label);
+                builder->get_widget("drive_misc_status_label", drive_misc_status_label);
+                builder->get_widget("ptz_misc_status_label", ptz_misc_status_label);
+            // builder->get_widget("navig_misc_status_label", ptz_misc_status_label);
 
             // changeCard("full_control_card");
             RCLCPP_INFO(this->get_logger(), "Meowing complete");
@@ -79,7 +79,7 @@ class MainHMINode : public rclcpp::Node, Gtk::Window
     void load_css(const Glib::RefPtr<Gtk::CssProvider>& css_provider);
     //*Draw functions, can redraw widgets based on this node's data
     bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
-
+    
     private:
     std::string main_css_file_path;
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
