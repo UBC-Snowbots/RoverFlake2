@@ -18,7 +18,7 @@ int main(int argc, char* argv[]){
         return true;
     }, 20);
 
-        Glib::signal_timeout().connect([&node]() -> bool {
+    Glib::signal_timeout().connect([&node]() -> bool {
         if(node->current_middle_card == "full_control_card"){
             node->current_middle_card = "system_overview_card";
             node->changeCard(node->current_middle_card);
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]){
         return true;
     }, 2000);
 
-
+    node->app = app;
     node->run();
     return 0;
 }
