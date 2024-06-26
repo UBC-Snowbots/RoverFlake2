@@ -11,6 +11,7 @@
 // #include <signal.h>
 
 #define QUEUE_SIZE 20
+#define RCL_SPIN_RATE 30
 
 class MainHMINode : public rclcpp::Node, public Gtk::Window
 {
@@ -45,17 +46,17 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             builder->get_widget("middle_stack", middle_stack);
 
             //*build the system overview card
-            builder->get_widget("subsystem_status_grid", subsystem_status_grid);
-            subsystem_status_grid->signal_draw().connect(sigc::mem_fun(*this, &MainHMINode::handleSubsystemStatusGridDraw));
-                builder->get_widget("comms_online_status_label", comms_online_status_label);
-                builder->get_widget("arm_online_status_label", arm_online_status_label);
-                builder->get_widget("drive_online_status_label", drive_online_status_label);
-                builder->get_widget("ptz_online_status_label", ptz_online_status_label);
+            builder->get_widget("subsystem_status_grid", subsys_grid.grid);
+            subsys_grid.grid->signal_draw().connect(sigc::mem_fun(*this, &MainHMINode::handleSubsystemStatusGridDraw));
+                builder->get_widget("comms_online_status_label", subsys_grid.comms_online_status_label);
+                builder->get_widget("arm_online_status_label", subsys_grid.arm_online_status_label);
+                builder->get_widget("drive_online_status_label", subsys_grid.drive_online_status_label);
+                builder->get_widget("ptz_online_status_label", subsys_grid.ptz_online_status_label);
 
-                builder->get_widget("comms_misc_status_label", comms_misc_status_label);
-                builder->get_widget("arm_misc_status_label", arm_misc_status_label);
-                builder->get_widget("drive_misc_status_label", drive_misc_status_label);
-                builder->get_widget("ptz_misc_status_label", ptz_misc_status_label);
+                builder->get_widget("comms_misc_status_label", subsys_grid.comms_misc_status_label);
+                builder->get_widget("arm_misc_status_label", subsys_grid.arm_misc_status_label);
+                builder->get_widget("drive_misc_status_label", subsys_grid.drive_misc_status_label);
+                builder->get_widget("ptz_misc_status_label", subsys_grid.ptz_misc_status_label);
             // builder->get_widget("navig_misc_status_label", ptz_misc_status_label);
 
             // changeCard("full_control_card");
@@ -93,20 +94,45 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
 
     //* System Overview
-    Gtk::Grid* subsystem_status_grid;
-        Gtk::Label* comms_online_status_label; 
-        Gtk::Label* arm_online_status_label; 
-        Gtk::Label* drive_online_status_label; 
-        Gtk::Label* ptz_online_status_label; 
-        Gtk::Label* navigation_online_status_label; 
-        Gtk::Label* lights_online_status_label; 
+    struct SubsystemGrid{
+        Gtk::Grid* grid;
+            Gtk::Label* comms_online_status_label; 
+                Gtk::Label* comms_misc_status_label; 
+                std::string comms_online_status_string = "NULL ERR";
+                std::string comms_misc_status_string = "NULL ERR";
+         
+            Gtk::Label* arm_online_status_label; 
+                Gtk::Label* arm_misc_status_label;
+                std::string arm_online_status_string = "NULL ERR";
+                std::string arm_misc_status_string = "NULL ERR";
+         
+            Gtk::Label* drive_online_status_label; 
+                Gtk::Label* drive_misc_status_label;
+                std::string drive_online_status_string = "NULL ERR";
+                std::string drive_misc_status_string = "NULL ERR";
+         
+            Gtk::Label* ptz_online_status_label; 
+                Gtk::Label* ptz_misc_status_label;
+                std::string ptz_online_status_string = "NULL ERR"; 
+                std::string ptz_misc_status_string = "NULL ERR";
 
-        Gtk::Label* comms_misc_status_label;    
-        Gtk::Label* arm_misc_status_label;
-        Gtk::Label* drive_misc_status_label;
-        Gtk::Label* ptz_misc_status_label;
-        Gtk::Label* navigation_misc_status_label;
-        Gtk::Label* lights_misc_status_label;
+            Gtk::Label* navigation_online_status_label; 
+                Gtk::Label* navigation_misc_status_label;
+                std::string navigation_online_status_string = "NULL ERR";
+                std::string navigation_misc_status_string = "NULL ERR";
+
+            Gtk::Label* lights_online_status_label; 
+                Gtk::Label* lights_misc_status_label;
+                std::string lights_online_status_string = "NULL ERR";
+                std::string lights_misc_status_string = "NULL ERR";
+    };
+
+    SubsystemGrid subsys_grid;
+
+
+    
+
+
 
 
 
@@ -119,3 +145,17 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_subscriber;
 };
 
+
+/* Topics to sub to
+
+    - Joint states. if we want arm stuff, or pure rviz?
+    - Enviroment data
+    - BMS data
+
+
+
+
+
+
+
+ */

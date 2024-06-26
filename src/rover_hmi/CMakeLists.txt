@@ -14,6 +14,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
+find_package(tf2_eigen REQUIRED)
 # find_package(rover_utils REQUIRED)
 include_directories(include)
 # Add the include directories
@@ -24,9 +26,11 @@ link_directories(${GTKMM_LIBRARY_DIRS})
 
 
 add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_functions.cpp src/system_overview_functions.cpp)
+add_executable(middle_rover_viz_node src/RoverViz.cpp include/RoverViz.h)
 # add_executable(right_screen src/right_screen.cpp)  # 1080p
 # add_executable(middle_screen src/middle_screen.cpp) # 1440p
 ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs)
+ament_target_dependencies(middle_rover_viz_node rclcpp ament_index_cpp std_msgs rover_msgs rviz_visual_tools)
 target_link_libraries(main_hmi_node ${GTKMM_LIBRARIES})
 
 
@@ -44,6 +48,7 @@ endif()
 
 install(TARGETS 
   main_hmi_node
+  middle_rover_viz_node
   DESTINATION lib/${PROJECT_NAME}/
   )
 

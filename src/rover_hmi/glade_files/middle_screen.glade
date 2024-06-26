@@ -22,9 +22,9 @@
                 <property name="height-request">71</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">System Overview</property>
+                <property name="label" translatable="yes">system overview</property>
                 <attributes>
-                  <attribute name="font-desc" value="Uroob 25"/>
+                  <attribute name="font-desc" value="Uroob 50"/>
                 </attributes>
               </object>
               <packing>
@@ -33,12 +33,14 @@
               </packing>
             </child>
             <child>
-              <!-- n-columns=2 n-rows=3 -->
+              <!-- n-columns=2 n-rows=4 -->
               <object class="GtkGrid" id="temp_grid">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
+                <property name="width-request">157</property>
+                <property name="height-request">113</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="row-spacing">4</property>
+                <property name="column-spacing">20</property>
                 <child>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
@@ -47,7 +49,7 @@
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
-                    <property name="top-attach">0</property>
+                    <property name="top-attach">1</property>
                   </packing>
                 </child>
                 <child>
@@ -58,7 +60,7 @@
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
-                    <property name="top-attach">1</property>
+                    <property name="top-attach">2</property>
                   </packing>
                 </child>
                 <child>
@@ -69,7 +71,7 @@
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
-                    <property name="top-attach">2</property>
+                    <property name="top-attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -80,7 +82,7 @@
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
-                    <property name="top-attach">0</property>
+                    <property name="top-attach">1</property>
                   </packing>
                 </child>
                 <child>
@@ -91,7 +93,7 @@
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
-                    <property name="top-attach">1</property>
+                    <property name="top-attach">2</property>
                   </packing>
                 </child>
                 <child>
@@ -102,7 +104,22 @@
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
-                    <property name="top-attach">2</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">enviroment</property>
+                    <attributes>
+                      <attribute name="font-desc" value="Uroob 24"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                    <property name="width">2</property>
                   </packing>
                 </child>
                 <style>
@@ -110,8 +127,8 @@
                 </style>
               </object>
               <packing>
-                <property name="x">522</property>
-                <property name="y">124</property>
+                <property name="x">533</property>
+                <property name="y">151</property>
               </packing>
             </child>
             <child>
@@ -121,6 +138,8 @@
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="row-spacing">3</property>
+                <property name="column-spacing">10</property>
                 <child>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
@@ -181,7 +200,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Navigation</property>
+                    <property name="label" translatable="yes">Lights</property>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
@@ -244,7 +263,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="navigation_online_status_label">
+                  <object class="GtkLabel" id="lights_online_status_label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">OFFLINE</property>
@@ -288,7 +307,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="navigation_misc_status_label">
+                  <object class="GtkLabel" id="lights_misc_status_label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">--</property>
@@ -302,6 +321,83 @@
               <packing>
                 <property name="x">95</property>
                 <property name="y">225</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="width-request">157</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">BATTERY MONITOR</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkDrawingArea" id="bms_">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="x">94</property>
+                <property name="y">408</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=2 n-rows=1 -->
+              <object class="GtkGrid">
+                <property name="width-request">308</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">TASK TIME LEFT: </property>
+                    <attributes>
+                      <attribute name="font-desc" value="Uroob 24"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="task_time_left_label">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">-99.00</property>
+                    <attributes>
+                      <attribute name="font-desc" value="Uroob 24"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="x">641</property>
+                <property name="y">22</property>
               </packing>
             </child>
             <style>
@@ -332,6 +428,74 @@
               <packing>
                 <property name="x">58</property>
                 <property name="y">57</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=3 n-rows=4 -->
+              <object class="GtkGrid">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">ACTUATOR STATUS</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                    <property name="width">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">ARM</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">DRIVE</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="x">229</property>
+                <property name="y">256</property>
               </packing>
             </child>
           </object>
