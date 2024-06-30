@@ -14,7 +14,7 @@ public:
         #ifdef VERBOSE
             RCLCPP_INFO(this->get_logger(), "Drive Control Initiated");
         #endif
-
+    double position = 0.0;
         // PhidgetReturnCode ret;
     for (int i = 0; i < NUM_MOTORS; i++) {
 
@@ -26,7 +26,7 @@ public:
             RCLCPP_ERROR(this->get_logger(), "Error at set hub (%d) for port %d: %s", errorCode, i, errorString);
             return;
         }else{
-            RCLCPP_INFO(this->get_logger(), "hub attached succsesfully at %d", i);
+            RCLCPP_INFO(this->get_logger(), "hub attached succesfully at %d", i);
          //   pub_vitals(STANDBY);
         }
         ret = Phidget_openWaitForAttachment((PhidgetHandle) motors[i], 5000);
@@ -48,8 +48,16 @@ public:
         //     PhidgetBLDCMotor_create(&motors[i]);
 
         // }
+        
         PhidgetBLDCMotor_setTargetVelocity((PhidgetBLDCMotorHandle) motors[0], 0.5);
-        PhidgetBLDCMotor_enableFailsafe((PhidgetBLDCMotorHandle) motors[0], 1000);
+        PhidgetBLDCMotor_enableFailsafe((PhidgetBLDCMotorHandle) motors[0], 612);
+        PhidgetBLDCMotor_getPosition(motors[0], &position);
+        RCLCPP_INFO(this->get_logger(), "Position: %f", position);
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(100),
+            std::bind(&DriveControlNode::check_motor_positions, this)
+        );
+        
     }
 
     ~DriveControlNode(){
@@ -57,6 +65,16 @@ public:
             RCLCPP_WARN(this->get_logger(), "Drive Control Offline");
         #endif 
     }
+void check_motor_positions()
+{
+    double position = 0.0;
+    double scaled_position = 0.0;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        PhidgetBLDCMotor_getPosition(motors[i], &position);
+        scaled_position = position *1.3666;
+        RCLCPP_INFO(this->get_logger(), "Motor %d Position: %f", i, scaled_position);
+    }
+}
 
 private:
 
@@ -75,6 +93,6 @@ private:
     const char* errorString;
     char errorDetail[100];
     size_t errorDetailLen = 100;
-
+    rclcpp::TimerBase::SharedPtr timer_;
 
 };
