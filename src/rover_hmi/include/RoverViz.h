@@ -6,10 +6,12 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 
+#define UPDATE_INTERVAL_SECONDS 0.5
 
 namespace rvt = rviz_visual_tools;
 
-//?demo https://github.com/PickNikRobotics/rviz_visual_tools/blob/ros2/src/rviz_visual_tools_demo.cpp
+//? demo https://github.com/PickNikRobotics/rviz_visual_tools/blob/ros2/src/rviz_visual_tools_demo.cpp
+//? documentation http://docs.ros.org/en/melodic/api/rviz_visual_tools/html/namespacerviz__visual__tools.html
 
 class RoverViz : public rclcpp::Node {
 public:
@@ -20,32 +22,85 @@ public:
         // initializeVisualTools();
 
     // Allow time for RViz to start
-    rclcpp::sleep_for(std::chrono::seconds(3));
-    visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("base_frame","/rviz_visual_markers", this));
-    //   visual_tools_->loadMarkerPub();
-    //       bool has_sub = visual_tools_->waitForMarkerSub(10.0);
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    base_link_visual_tool.reset(new rvt::RvizVisualTools("base_link","/base_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    left_bogie_visual_tool.reset(new rvt::RvizVisualTools("left_bogie_link","/base_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // left_front_visual_tool.reset(new rvt::RvizVisualTools("left_front_wheel_link", "/left_front_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // left_middle_visual_tool.reset(new rvt::RvizVisualTools("left_mid_wheel_link", "/left_middle_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // right_bogie_visual_tool.reset(new rvt::RvizVisualTools("right_bogie_link", "/right_bogie_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // right_front_visual_tool.reset(new rvt::RvizVisualTools("right_front_wheel_link", "/right_front_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // right_middle_visual_tool.reset(new rvt::RvizVisualTools("right_mid_wheel_link", "/right_middle_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // back_bogie_visual_tool.reset(new rvt::RvizVisualTools("back_bogie_link", "/back_bogie_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // back_right_visual_tool.reset(new rvt::RvizVisualTools("back_right_wheel_link", "/back_right_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+    // back_left_visual_tool.reset(new rvt::RvizVisualTools("back_left_wheel_link", "/back_left_wheel_link_markers", dynamic_cast<rclcpp::Node*>(this)));
+  
+    base_link_visual_tool->loadMarkerPub();
+    left_bogie_visual_tool->loadMarkerPub();
+    // left_front_visual_tool->loadMarkerPub();
+    // left_middle_visual_tool->loadMarkerPub();
+    // right_bogie_visual_tool->loadMarkerPub();
+    // right_front_visual_tool->loadMarkerPub();
+    // right_middle_visual_tool->loadMarkerPub();
+    // back_bogie_visual_tool->loadMarkerPub();
+    // back_right_visual_tool->loadMarkerPub();
+    // back_left_visual_tool->loadMarkerPub();
+
+    //     bool has_sub = base_link_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = left_bogie_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = left_front_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = left_middle_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = right_bogie_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = right_front_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = right_middle_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = back_bogie_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = back_right_visual_tool->waitForMarkerPub(10.0);
+    //     // has_sub = back_left_visual_tool->waitForMarkerPub(10.0);
     // if (!has_sub)
     //   RCLCPP_INFO(get_logger(), "/rviz_visual_tools does not have a subscriber after 10s. "
     //                             "Visualizations may be lost");
-    cam_tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
-    // // Clear messages
-    visual_tools_->deleteAllMarkers();
-    visual_tools_->enableBatchPublishing();
-    // Define the position for the label
-    Eigen::Isometry3d text_pose = Eigen::Isometry3d::Identity();
-    text_pose.translation().x() = 1;  // Adjust the x position
-    text_pose.translation().y() = 1;  // Adjust the y position
-    // text_pose.translation().z() = 1;  // Adjust the z position
+    // // cam_tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
+    // // // Clear messages
+    base_link_visual_tool->deleteAllMarkers();
+    left_bogie_visual_tool->deleteAllMarkers();
+    // left_front_visual_tool->deleteAllMarkers();
+    // left_middle_visual_tool->deleteAllMarkers();
+    // right_bogie_visual_tool->deleteAllMarkers();
+    // right_front_visual_tool->deleteAllMarkers();
+    // right_middle_visual_tool->deleteAllMarkers();
+    // back_bogie_visual_tool->deleteAllMarkers();
+    // back_right_visual_tool->deleteAllMarkers();
+    // back_left_visual_tool->deleteAllMarkers();
 
-    // Publish the text label
+    base_link_visual_tool->enableBatchPublishing();
+    left_bogie_visual_tool->enableBatchPublishing();
+    // left_front_visual_tool->enableBatchPublishing();
+    // left_middle_visual_tool->enableBatchPublishing();
+    // right_bogie_visual_tool->enableBatchPublishing();
+    // right_front_visual_tool->enableBatchPublishing();
+    // right_middle_visual_tool->enableBatchPublishing();
+    // back_bogie_visual_tool->enableBatchPublishing();
+    // back_right_visual_tool->enableBatchPublishing();
+    // back_left_visual_tool->enableBatchPublishing();
 
-//    std::string labelmeow = "meow";
-    visual_tools_->publishText(text_pose, "labelmeow", rvt::WHITE, rvt::XXLARGE, false);
-    // Trigger the visual tools to actually display the text
-    visual_tools_->trigger();
 
-        camera_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("tf", 10);
-        camera_pose_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&RoverViz::update_camera_pose, this));
+        // back_bogie_visual_tool->trigger();
+        // back_right_visual_tool->trigger();
+        // back_left_visual_tool->trigger();
+    base_link_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    left_bogie_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    left_front_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    left_middle_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    right_bogie_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    right_front_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    right_middle_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    back_bogie_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    back_right_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+    back_left_visual_tool->setLifetime(UPDATE_INTERVAL_SECONDS);
+
+
+
+        // camera_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("tf", 10);
+        camera_pose_timer_ = this->create_wall_timer(std::chrono::milliseconds(500), std::bind(&RoverViz::update_camera_pose, this));
     }
 
     ~RoverViz(){
@@ -61,8 +116,20 @@ private:
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
     void update_camera_pose();
 
-    rvt::RvizVisualToolsPtr visual_tools_;
-        rclcpp::TimerBase::SharedPtr camera_pose_timer_;
+    std::string rover_status = "OFFLINE";
+
+    rvt::RvizVisualToolsPtr base_link_visual_tool;
+    rvt::RvizVisualToolsPtr left_bogie_visual_tool;
+    rvt::RvizVisualToolsPtr left_front_visual_tool;
+    rvt::RvizVisualToolsPtr left_middle_visual_tool;
+    rvt::RvizVisualToolsPtr right_bogie_visual_tool;
+    rvt::RvizVisualToolsPtr right_front_visual_tool;
+    rvt::RvizVisualToolsPtr right_middle_visual_tool;
+    rvt::RvizVisualToolsPtr back_bogie_visual_tool;
+    rvt::RvizVisualToolsPtr back_right_visual_tool;
+    rvt::RvizVisualToolsPtr back_left_visual_tool;
+
+    rclcpp::TimerBase::SharedPtr camera_pose_timer_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr camera_publisher_;
-        std::shared_ptr<tf2_ros::TransformBroadcaster> cam_tf_broadcaster_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> cam_tf_broadcaster_;
 };

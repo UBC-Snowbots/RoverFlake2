@@ -54,6 +54,7 @@ install(TARGETS
 
 install(DIRECTORY 
   glade_files
+  config
   DESTINATION share/${PROJECT_NAME}/)
   install(DIRECTORY 
   css_files
