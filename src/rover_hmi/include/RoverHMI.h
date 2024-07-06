@@ -4,6 +4,13 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
 
+//opencv and image processing
+#include <opencv2/opencv.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <cv_bridge/cv_bridge.h>
+
+
+//standard c++ stuff, some may alreaddy be included in rclcpp
 #include <chrono>
 #include <ctime>
 #include <memory>
@@ -25,8 +32,13 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             RCLCPP_INFO(this->get_logger(), glade_file_path.c_str());
             auto builder = Gtk::Builder::create_from_file(glade_file_path.c_str());
             auto qos = rclcpp::QoS(rclcpp::KeepLast(QUEUE_SIZE)).transient_local();
-            arm_status_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>("/arm/feedback", qos, std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
+            arm_status_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
+                "/arm/feedback", qos, 
+                std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
 
+            image_feed_subscription = this->create_subscription<sensor_msgs::msg::Image>(
+                "image_topic", 10,
+                std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
     
             //* css files
             main_css_file_path = this->package_share_dir + "/css_files/main_style.css";
@@ -52,13 +64,16 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
                 builder->get_widget("arm_online_status_label", subsys_grid.arm_online_status_label);
                 builder->get_widget("drive_online_status_label", subsys_grid.drive_online_status_label);
                 builder->get_widget("ptz_online_status_label", subsys_grid.ptz_online_status_label);
+                builder->get_widget("lights_online_status_label", subsys_grid.lights_online_status_label);
 
                 builder->get_widget("comms_misc_status_label", subsys_grid.comms_misc_status_label);
                 builder->get_widget("arm_misc_status_label", subsys_grid.arm_misc_status_label);
                 builder->get_widget("drive_misc_status_label", subsys_grid.drive_misc_status_label);
                 builder->get_widget("ptz_misc_status_label", subsys_grid.ptz_misc_status_label);
+                builder->get_widget("lights_misc_status_label", subsys_grid.lights_misc_status_label);
             // builder->get_widget("navig_misc_status_label", ptz_misc_status_label);
-
+            
+            builder->get_widget("image_draw_area", image_draw_area);
             // changeCard("full_control_card");
             RCLCPP_INFO(this->get_logger(), "Meowing complete");
 
@@ -81,6 +96,9 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     //*Draw functions, can redraw widgets based on this node's data
     bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
     
+    bool handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr);
+    void image_feed_callback(const sensor_msgs::msg::Image::SharedPtr msg);
+
     private:
     std::string main_css_file_path;
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
@@ -92,6 +110,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     Gtk::Window* middle_window;
     Gtk::Stack* middle_stack; //Like a deck of cards, each card is a different screen we can view
 
+    Gtk::Widget* image_draw_area;
 
     //* System Overview
     struct SubsystemGrid{
@@ -143,6 +162,10 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     std::string package_share_dir;
     
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_subscriber;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_subscription;
+    cv::Mat image_;
+    Glib::RefPtr<Gdk::Pixbuf> pixbuf_;
+    std::mutex image_mutex_;
 };
 
 

@@ -19,6 +19,20 @@
   <link
     name="base_link">
   </link>
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <!-- <link name="hoyuko_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link> -->
   <link
     name="chassis_link">
     <inertial>
@@ -59,6 +73,16 @@
       </geometry>
     </collision>
   </link>
+  <joint name="imu_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <!-- <joint name="hoyuko_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="hoyuko_link"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint> -->
   <joint
     name="chassis_joint"
     type="fixed">
@@ -654,6 +678,15 @@
       <robot_param_node>robot_state_publisher</robot_param_node>
       <parameters>$(find rover_simulate)/config/chassis_controller_params.yaml</parameters>
     </plugin>
+    <!-- <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <bodyName>imu_link</bodyName>
+      <topicName>/imu</topicName>
+      <gaussianNoise>0.01</gaussianNoise>
+      <xyzOffset>0 0 0</xyzOffset>
+      <rpyOffset>0 0 0</rpyOffset>
+    </plugin> -->
   </gazebo>
   <gazebo reference="imu_link">
     <gravity>true</gravity>
@@ -675,6 +708,64 @@
       <pose>0 0 0 0 0 0</pose>
     </sensor>
   </gazebo>
+
+  <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>__default_topic__</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
+
+    <!-- hokuyo 2d lidar -->
+   <!-- <gazebo reference="hokuyo_link">
+    <sensor type="gpu_ray" name="head_hokuyo_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>false</visualize>
+      <update_rate>40</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.10</min>
+          <max>30.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          Noise parameters based on published spec for Hokuyo laser
+               achieving "+-30mm" accuracy at range < 10m.  A mean of 0.0m and
+               stddev of 0.01m will put 99.7% of samples within 0.03m of the true
+               reading.
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_gpu_laser.so">
+        <topicName>/laser/scan</topicName>
+        <frameName>hokuyo_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>  -->
 
   <ros2_control name="GazeboSystem" type="system">
     <hardware>
@@ -751,6 +842,26 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+    <joint name="back_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="left_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="right_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
   </ros2_control>
-
 </robot>

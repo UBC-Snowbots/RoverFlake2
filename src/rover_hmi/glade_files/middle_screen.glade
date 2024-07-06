@@ -400,6 +400,18 @@
                 <property name="y">22</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkDrawingArea">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+              </object>
+              <packing>
+                <property name="x">839</property>
+                <property name="y">427</property>
+              </packing>
+            </child>
             <style>
               <class name="base_window"/>
             </style>
