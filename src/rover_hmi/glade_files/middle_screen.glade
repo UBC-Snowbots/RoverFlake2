@@ -127,15 +127,15 @@
                 </style>
               </object>
               <packing>
-                <property name="x">533</property>
-                <property name="y">151</property>
+                <property name="x">26</property>
+                <property name="y">273</property>
               </packing>
             </child>
             <child>
               <!-- n-columns=3 n-rows=6 -->
               <object class="GtkGrid" id="subsystem_status_grid">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
+                <property name="width-request">180</property>
+                <property name="height-request">135</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="row-spacing">3</property>
@@ -319,8 +319,8 @@
                 </child>
               </object>
               <packing>
-                <property name="x">95</property>
-                <property name="y">225</property>
+                <property name="x">24</property>
+                <property name="y">115</property>
               </packing>
             </child>
             <child>
@@ -355,8 +355,8 @@
                 </child>
               </object>
               <packing>
-                <property name="x">94</property>
-                <property name="y">408</property>
+                <property name="x">23</property>
+                <property name="y">412</property>
               </packing>
             </child>
             <child>
@@ -401,15 +401,15 @@
               </packing>
             </child>
             <child>
-              <object class="GtkDrawingArea">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
+              <object class="GtkDrawingArea" id="image_draw_area">
+                <property name="width-request">1000</property>
+                <property name="height-request">800</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
               </object>
               <packing>
-                <property name="x">839</property>
-                <property name="y">427</property>
+                <property name="x">499</property>
+                <property name="y">58</property>
               </packing>
             </child>
             <style>

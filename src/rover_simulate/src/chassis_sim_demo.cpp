@@ -37,7 +37,7 @@ public:
     // };
     simple_msg.data.resize(6);
     for (int i = 0; i < 6; i++){
-    simple_msg.data[i] = 2; //spin 
+    simple_msg.data[i] = 3; //spin 
     }
 
     // trajectory_msgs::msg::JointTrajectoryPoint point;

@@ -37,7 +37,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
                 std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
 
             image_feed_subscription = this->create_subscription<sensor_msgs::msg::Image>(
-                "image_topic", 10,
+                "/camera1/image_raw", 10,
                 std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
     
             //* css files
@@ -74,6 +74,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             // builder->get_widget("navig_misc_status_label", ptz_misc_status_label);
             
             builder->get_widget("image_draw_area", image_draw_area);
+                image_draw_area->signal_draw().connect(sigc::mem_fun(*this, &MainHMINode::handleVideoFrameDraw));
             // changeCard("full_control_card");
             RCLCPP_INFO(this->get_logger(), "Meowing complete");
 

@@ -4,18 +4,18 @@
 [submodule "src/external_pkgs/serial"]
 	path = src/external_pkgs/serial
 	url = https://github.com/RoverRobotics-forks/serial-ros2.git
-[submodule "src/external_pkgs/serial"]
-	path = src/external_pkgs/serial
-	url = https://github.com/wjwwood/serial.git
-[submodule "src/external_pkgs/ipcam"]
-	path = src/external_pkgs/ipcam
-	url = https://github.com/surfertas/ros2_ipcamera.git
-[submodule "src/external_pkgs/axis_camera"]
-	path = src/external_pkgs/axis_camera
-	url = https://github.com/ros-drivers/axis_camera.git
-[submodule "src/external_pkgs/ptz_action_server"]
-	path = src/external_pkgs/ptz_action_server
-	url = https://github.com/clearpathrobotics/ptz_action_server.git
-[submodule "src/external_pkgs/camera_info_manager"]
-	path = src/external_pkgs/camera_info_manager
-	url = https://github.com/clearpathrobotics/camera_info_manager_py.git
+#[submodule "src/external_pkgs/serial"]
+#	path = src/external_pkgs/serial
+#	url = https://github.com/wjwwood/serial.git
+#[submodule "src/external_pkgs/ipcam"]
+#	path = src/external_pkgs/ipcam
+#	url = https://github.com/surfertas/ros2_ipcamera.git
+#[submodule "src/external_pkgs/axis_camera"]
+#	path = src/external_pkgs/axis_camera
+#	url = https://github.com/ros-drivers/axis_camera.git
+#[submodule "src/external_pkgs/ptz_action_server"]
+#	path = src/external_pkgs/ptz_action_server
+#	url = https://github.com/clearpathrobotics/ptz_action_server.git
+#[submodule "src/external_pkgs/camera_info_manager"]
+#	path = src/external_pkgs/camera_info_manager
+#	url = https://github.com/clearpathrobotics/camera_info_manager_py.git
