@@ -3,6 +3,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
 
 //opencv and image processing
 #include <opencv2/opencv.hpp>
@@ -32,13 +34,16 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             RCLCPP_INFO(this->get_logger(), glade_file_path.c_str());
             auto builder = Gtk::Builder::create_from_file(glade_file_path.c_str());
             auto qos = rclcpp::QoS(rclcpp::KeepLast(QUEUE_SIZE)).transient_local();
-            arm_status_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
+            arm_status_sub = this->create_subscription<rover_msgs::msg::ArmCommand>(
                 "/arm/feedback", qos, 
                 std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
 
-            image_feed_subscription = this->create_subscription<sensor_msgs::msg::Image>(
+            image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
                 "/camera1/image_raw", 10,
                 std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
+            cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+                "/cmd_vel", 10,
+                std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
     
             //* css files
             main_css_file_path = this->package_share_dir + "/css_files/main_style.css";
@@ -104,7 +109,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     std::string main_css_file_path;
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
     // rclcpp::TimerBase
-
+    void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
     
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
@@ -162,8 +167,10 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
     std::string package_share_dir;
     
-    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_subscriber;
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_subscription;
+    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_sub;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_monitor_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr six_motor_monitor_sub;
     cv::Mat image_;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf_;
     std::mutex image_mutex_;

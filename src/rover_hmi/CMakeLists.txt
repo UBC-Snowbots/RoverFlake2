@@ -20,6 +20,7 @@ find_package(tf2_eigen REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(geometry_msgs REQUIRED)
 # find_package(rover_utils REQUIRED)
 include_directories(include)
 # Add the include directories
@@ -33,7 +34,7 @@ add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_func
 add_executable(middle_rover_viz_node src/RoverViz.cpp include/RoverViz.h)
 # add_executable(right_screen src/right_screen.cpp)  # 1080p
 # add_executable(middle_screen src/middle_screen.cpp) # 1440p
-ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge)
+ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs)
 ament_target_dependencies(middle_rover_viz_node rclcpp ament_index_cpp std_msgs rover_msgs rviz_visual_tools)
 target_link_libraries(main_hmi_node ${GTKMM_LIBRARIES})
 

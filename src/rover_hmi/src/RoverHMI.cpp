@@ -72,6 +72,11 @@ void MainHMINode::armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedP
     RCLCPP_INFO(this->get_logger(), "meow arm");
 }
 
+void MainHMINode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg){
+    // lights_status
+    RCLCPP_INFO(this->get_logger(), "meow cmdvel");
+}
+
 void MainHMINode::changeCard(std::string target_card){
      middle_stack->set_visible_child(target_card.c_str());
                 // m_stack.set_visible_child_name(page_name);
