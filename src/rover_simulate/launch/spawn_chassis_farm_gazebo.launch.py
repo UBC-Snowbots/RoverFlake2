@@ -68,7 +68,10 @@ def generate_launch_description():
             arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
         )
     
-
+    cmd_vel_ctrl = Node(
+            package='rover_simulate',
+            executable='chassis_cmd_vel',
+        )
 
 
 
@@ -82,7 +85,8 @@ def generate_launch_description():
         node_robot_state_publisher,
         spawn_entity,
         controller_manager_node,
-        control_node
+        control_node,
+        cmd_vel_ctrl
     ])
 
 # meow
