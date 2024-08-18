@@ -5,7 +5,6 @@
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
-
     axes[0].zero_rad = 0.984;
     axes[0].dir = -1;
 
@@ -88,9 +87,9 @@ return ((rad*axes[i].dir) + (axes[i].zero_rad));
 		// All axes angles are in axes[i].des_angle_pos 
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
          for(int i = 0; i < NUM_JOINTS; i++){
-        current_arm_status.positions[i] = axes[i].curr_pos;
-        joint_states_.name[i] = joint_names[i];
-        joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
+          current_arm_status.positions[i] = axes[i].curr_pos;
+          joint_states_.name[i] = joint_names[i];
+          joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
