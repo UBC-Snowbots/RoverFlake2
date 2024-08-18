@@ -6,6 +6,16 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
+#define REAR_BIAS 1.1
+
+#define MOTOR_0_DIR 1
+#define MOTOR_1_DIR 1
+#define MOTOR_2_DIR 1
+#define MOTOR_3_DIR -1
+#define MOTOR_4_DIR -1
+#define MOTOR_5_DIR -1
+
+
 
 
 class GazeboChassisController : public rclcpp::Node
@@ -64,15 +74,15 @@ private:
 void GazeboChassisController::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg){
   RCLCPP_INFO(this->get_logger(), "Meow");
     std_msgs::msg::Float64MultiArray out_msg;
-    float right_vel = msg->linear.x + msg->angular.z;
-    float left_vel = -msg->linear.x + msg->angular.z;
+    float right_vel = msg->linear.x - msg->angular.z;  //? Positive velosity refers to the motor pushing the chassis forward. 
+    float left_vel = msg->linear.x + msg->angular.z;
     out_msg.data.resize(6);
-    out_msg.data[0] = right_vel;
-    out_msg.data[1] = right_vel;
-    out_msg.data[2] = right_vel;
-    out_msg.data[3] = left_vel;
-    out_msg.data[4] = left_vel;
-    out_msg.data[5] = left_vel;
+    out_msg.data[0] = right_vel*MOTOR_0_DIR * REAR_BIAS;
+    out_msg.data[1] = right_vel*MOTOR_1_DIR;
+    out_msg.data[2] = right_vel*MOTOR_2_DIR;
+    out_msg.data[3] = left_vel*MOTOR_3_DIR;
+    out_msg.data[4] = left_vel*MOTOR_4_DIR;
+    out_msg.data[5] = left_vel*MOTOR_5_DIR * REAR_BIAS;
     sim_motors_pub->publish(out_msg);
 }
 

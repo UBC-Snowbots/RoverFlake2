@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -18,6 +19,10 @@ include_directories(include)
 add_executable(drive_node src/drive_control.cpp include/drive_control.h)
 ament_target_dependencies(drive_node rclcpp geometry_msgs)
 target_link_libraries(drive_node phidget22)
+
+add_executable(chassis_joy_ctrl src/chassis_joy_ctrl.cpp include/chassis_joy_ctrl.h)
+ament_target_dependencies(chassis_joy_ctrl rclcpp geometry_msgs sensor_msgs)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -33,6 +38,7 @@ endif()
 
 install(TARGETS
   drive_node
+  chassis_joy_ctrl
   DESTINATION lib/${PROJECT_NAME}
 )
 
