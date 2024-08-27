@@ -24,7 +24,7 @@ class CameraPublisher(Node):
         self.publisher_ = self.create_publisher(Image, '/usb_cam', 10) # Initialize pub
         self.timer_period = 0.1  # seconds
         self.timer = self.create_timer(self.timer_period, self.timer_callback) # Timer
-        self.bridge = CvBridge() # Converts between ROS image messages and Cv images 
+        self.bridge = CvBridge() # init bridge 
         self.cap = cv2.VideoCapture(device_path)
 
         if not self.cap.isOpened():
@@ -33,8 +33,11 @@ class CameraPublisher(Node):
 
     def timer_callback(self):
         ret, frame = self.cap.read()
+        
         if ret:
-            msg = self.bridge.cv2_to_imgmsg(frame, 'rgb8') # Using the bridge as to convert OpenCv images -> ROS im
+            # Convert BGR to RGB
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            msg = self.bridge.cv2_to_imgmsg(frame, encoding="rgb8") # Using the bridge as to convert OpenCv images -> ROS im
             self.publisher_.publish(msg)
         else:
             self.get_logger().error('Error capturing frame')

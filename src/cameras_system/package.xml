@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>cameras_system</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="cameronbasara@gmail.com">cameron</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>libopencv-dev</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>compressed_image_transport</depend>
+  
+  <exec_depend>python3-opencv</exec_depend>
+  
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  
+  <build_export_depend>ament_cmake</build_export_depend>
+  <exec_depend>ament_cmake</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

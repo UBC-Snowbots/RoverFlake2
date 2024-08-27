@@ -14,24 +14,25 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     ld = LaunchDescription()
 
-    # # Declare the 'videonum' launch argument (if needed for identifying the camera)
-    # videonum_arg = DeclareLaunchArgument(
-    #     'videonum',
-    #     default_value='0',
-    #     description='Video device number.'
-    # )
+    # Declare launch arguments for camera topics
+    camera_topics = [
+        '/usb_cam',
+        'red_mask_topic',
+        'redmask_detection_topic',  # Add as many camera topics as needed
+    ]
 
-    # Define the 'image_view' node using 'showimage' from 'image_tools'
-    image_view_node = Node(
-        package='image_tools',
-        executable='showimage',
-        name='image_view',
-        output='screen',
-        remappings=[
-            ('image', '/usb_cam')  # Adjust the topic if necessary
-        ],
-    )
-    ld.add_action(image_view_node)
+    # Create an image_view node for each camera topic
+    for i, topic in enumerate(camera_topics):
+        image_view_node = Node(
+            package='image_tools',
+            executable='showimage',
+            name=f'image_view_{i}',
+            output='screen',
+            remappings=[ 
+                ('image', topic)  # Adjust the topic for each camera
+            ],
+        )
+        ld.add_action(image_view_node)
 
     # Return the LaunchDescription object
     return ld

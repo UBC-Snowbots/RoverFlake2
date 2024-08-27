@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp"
+    }
+}

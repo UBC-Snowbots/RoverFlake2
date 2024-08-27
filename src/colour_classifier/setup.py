@@ -1,8 +1,6 @@
 from setuptools import find_packages, setup
-import os 
-import glob
 
-package_name = 'cameras'
+package_name = 'colour_classifier'
 
 setup(
     name=package_name,
@@ -12,19 +10,16 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob.glob(os.path.join('launch/*.launch.py'))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='cameron',
     maintainer_email='cameronbasara@gmail.com',
-    description='Launch Files for opening cameras in ROS2, converting from SnowBots repo',
-    license='MIT',
+    description='TODO: Package description',
+    license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'camera_publisher = cameras.camera_publisher:main',
-            'camera_publisher_full = cameras.camera_publisher_full:main'
         ],
     },
 )

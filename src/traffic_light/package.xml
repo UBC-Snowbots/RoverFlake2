@@ -1,27 +1,26 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>usb_parser2</name>
+  <name>traffic_light</name>
   <version>0.0.0</version>
-  <description>Package designed to complete the usb parsing portion of the search and rescue task. Launch file sets set pose movement in motion, which plugs usb into port, then parser script is run which finally will alert the driver of which reactor has malfunctioned.</description>
-  <maintainer email="cameronbasara@gmail.com">Cameron Basara</maintainer>
-  <license>MIT</license> 
-
+  <description>traffic light for color detection</description>
+  <maintainer email="cameronbasara@gmail.com">cameron</maintainer>
+  <license>TODO: License declaration</license>
 
   <depend>rclpy</depend>
-  <depend>launch_ros</depend>
   <depend>std_msgs</depend>
-  <depend>ros2launch</depend>
- 
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>libopencv-dev</depend>
   
+  <exec_depend>python3-opencv</exec_depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
-
   <export>
     <build_type>ament_python</build_type>
   </export>
 </package>
-
