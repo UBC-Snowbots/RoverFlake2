@@ -28,6 +28,8 @@ int main(int argc, char* argv[]){
     //     }
     //     return true;
     // }, 2000);
+    node->current_middle_card = "full_control_card";
+    node->changeCard(node->current_middle_card);
 
     node->app = app;
     node->run();
@@ -44,6 +46,26 @@ bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
     }
     return true;
 }
+
+void MainHMINode::handleHomeAllButtonClick(){
+
+    RCLCPP_WARN(this->get_logger(), "Home all button clicked!");
+    RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
+
+}
+void MainHMINode::handlePosFeedOnButtonClick(){
+
+    RCLCPP_WARN(this->get_logger(), "Position Feed On button clicked!");
+    RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
+
+}
+void MainHMINode::handlePosFeedOffButtonClick(){
+
+    RCLCPP_WARN(this->get_logger(), "Position Feed Off Button clicked!");
+    RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
+
+}
+
 void MainHMINode::image_feed_callback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     std::lock_guard<std::mutex> lock(image_mutex_);
@@ -70,6 +92,10 @@ void MainHMINode::image_feed_callback(const sensor_msgs::msg::Image::SharedPtr m
 
 void MainHMINode::armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
     RCLCPP_INFO(this->get_logger(), "meow arm");
+    for(int i = 0; i < msg->positions.size(); i++){
+        this->axis_pos_label[i]->set_label(std::to_string(msg->positions[i]));
+    }
+   
 }
 
 void MainHMINode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg){

@@ -60,7 +60,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
             //* Setup GTK widgets
             builder->get_widget("middle_window", middle_window);
-            builder->get_widget("middle_stack", middle_stack);
+            builder->get_widget("middle_stack", middle_stack);\
 
             //*build the system overview card
             builder->get_widget("subsystem_status_grid", subsys_grid.grid);
@@ -81,6 +81,22 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             builder->get_widget("image_draw_area", image_draw_area);
                 image_draw_area->signal_draw().connect(sigc::mem_fun(*this, &MainHMINode::handleVideoFrameDraw));
             // changeCard("full_control_card");
+
+            builder->get_widget("home_all_button", home_all_button);
+                home_all_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handleHomeAllButtonClick));
+            builder->get_widget("pos_feed_on_button", pos_feed_on_button);
+                pos_feed_on_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handlePosFeedOnButtonClick));
+            builder->get_widget("pos_feed_off_button", pos_feed_off_button);
+                pos_feed_off_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handlePosFeedOffButtonClick));
+            builder->get_widget("a1_readout_pos", axis_pos_label[0]);
+            builder->get_widget("a2_readout_pos", axis_pos_label[1]);
+            builder->get_widget("a3_readout_pos", axis_pos_label[2]);
+            builder->get_widget("a4_readout_pos", axis_pos_label[3]);
+            builder->get_widget("a5_readout_pos", axis_pos_label[4]);
+            builder->get_widget("a6_readout_pos", axis_pos_label[5]);
+            
+
+
             RCLCPP_INFO(this->get_logger(), "Meowing complete");
 
         }
@@ -110,6 +126,9 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
     // rclcpp::TimerBase
     void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+    void handleHomeAllButtonClick();
+    void handlePosFeedOnButtonClick();
+    void handlePosFeedOffButtonClick();
     
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
@@ -118,6 +137,11 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
     Gtk::Widget* image_draw_area;
 
+    Gtk::Label* axis_pos_label[6];
+
+    Gtk::Button* home_all_button;
+    Gtk::Button* pos_feed_on_button;
+    Gtk::Button* pos_feed_off_button;
     //* System Overview
     struct SubsystemGrid{
         Gtk::Grid* grid;
