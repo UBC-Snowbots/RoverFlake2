@@ -20,7 +20,7 @@
 #define AXIS_1_DIR 1
 #define AXIS_2_DIR 1
 #define AXIS_3_DIR 1
-#define AXIS_4_DIR 1
+#define AXIS_4_DIR 1 
 #define AXIS_5_DIR 1
 #define AXIS_6_DIR 1
 
