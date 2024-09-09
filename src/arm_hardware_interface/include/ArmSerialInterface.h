@@ -6,7 +6,6 @@
 #include <thread>
 #include <chrono>
 
-#include <arm_hardware_interface/ArmSerialProtocol.h>
 
 
 #include <serial/serial.h>
@@ -21,12 +20,18 @@
 #define AXIS_1_DIR 1
 #define AXIS_2_DIR 1
 #define AXIS_3_DIR 1
-#define AXIS_4_DIR 1 
+#define AXIS_4_DIR 1
 #define AXIS_5_DIR 1
 #define AXIS_6_DIR 1
 
+#define HOME_CMD 'h'
+#define ABS_POS_CMD 'P'
+#define COMM_CMD 'C'
+#define ABS_VEL_CMD 'V'
 
 
+#define CONTROL_RATE 60.0
+#define COMM_POLL_RATE 1000.0 //idea is to poll serial faster than arm can send messages. We don't wan't to miss any messages. 
 
 
 
@@ -41,8 +46,8 @@ class ArmSerial : public rclcpp::Node {
 public:
     ArmSerial();
     void recieveMsg();
-    void sendHomeCmd(int target_axis);
-    void sendCommCmd(int target_state);
+    void sendHomeCmd();
+    void sendCommCmd();
     void sendMsg(std::string outMsg);
     void parseArmAngleUart(std::string msg);
 
@@ -100,13 +105,6 @@ private:
         sendMsg(tx_msg);
         RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
-    }
-    void send_test_limits_command(){
-      char tx_msg[TX_UART_BUFF];
-      sprintf(tx_msg, "$t()\n");
-      sendMsg(tx_msg);
-      RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
-
     }
 
     void send_gear_command(int gear){

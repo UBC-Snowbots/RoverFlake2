@@ -16,8 +16,7 @@ int main(int argc, char *argv[]) {
     
     ArmWindow window;
     window.show();
-
-    return app.exec(); // Start the Qt event loop; 
+    return app.exec();  // Start the Qt event loop
 }
 
 
