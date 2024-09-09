@@ -18,7 +18,10 @@ include_directories(
   include
 )
 
-add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h)
+
+add_library(${PROJECT_NAME} src/armprotocol.cpp include/arm_hardware_interface/ArmSerialProtocol.h)
+
+add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
 ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial rover_msgs)
 
 if(BUILD_TESTING)
@@ -37,8 +40,22 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/launch
 )
 
+# Install headers for other packages (for arm serial protocol)
+install(
+  DIRECTORY include/
+  DESTINATION include/
+)
+
 install(TARGETS
   arm_serial_driver
+  ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+
+
 ament_package()

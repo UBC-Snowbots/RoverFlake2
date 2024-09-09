@@ -5,7 +5,6 @@
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
-
     axes[0].zero_rad = 0.984;
     axes[0].dir = -1;
 
@@ -23,7 +22,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
     axes[5].zero_rad = -1.375;
     axes[5].dir = 1;
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(); //Very hack way of only using "live" messages - iffy, and may still operate off of one stale message. in the future we should use a time stamped message, and check the stamp time against current time to make sure msg is not stale.
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
@@ -88,9 +87,9 @@ return ((rad*axes[i].dir) + (axes[i].zero_rad));
 		// All axes angles are in axes[i].des_angle_pos 
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
          for(int i = 0; i < NUM_JOINTS; i++){
-        current_arm_status.positions[i] = axes[i].curr_pos;
-        joint_states_.name[i] = joint_names[i];
-        joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
+          current_arm_status.positions[i] = axes[i].curr_pos;
+          joint_states_.name[i] = joint_names[i];
+          joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
@@ -121,16 +120,28 @@ void ArmSerial::sendMsg(std::string outMsg) {
    teensy.flushOutput();
 }
 
-void ArmSerial::sendHomeCmd() {
+void ArmSerial::sendHomeCmd(int target_axis) {
   //send home request
-  std::string msg = "$h(A)\n";
-  sendMsg(msg);
+    std::string home_msg;
+  if(target_axis != HOME_ALL_ID){
+    home_msg = "$h(" + std::to_string(target_axis) + ")\n";
+  }else{
+    home_msg = "$h(A)\n";
+  }
+
+  sendMsg(home_msg);
 
 }
 
-void ArmSerial::sendCommCmd() {
+void ArmSerial::sendCommCmd(int target_state) {
   //send communication request
-  std::string msg = "$SCP(1)\n";
+  std::string msg;
+  if(target_state){
+    msg = "$SCP(1)\n";
+  }else{
+    msg = "$SCP(0)\n";
+  }
+ 
   sendMsg(msg);
 
 }
@@ -140,10 +151,13 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   switch (type)
   {
   case HOME_CMD:
-    sendHomeCmd();
+    sendHomeCmd(msg->cmd_value);
     break;
   case COMM_CMD:
-    sendCommCmd();
+    sendCommCmd(msg->cmd_value);
+    break;
+  case TEST_LIMITS_CMD:
+    send_test_limits_command();
     break;
   case ABS_POS_CMD:
     float target_positions[NUM_JOINTS];
