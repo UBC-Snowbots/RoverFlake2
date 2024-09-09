@@ -5,11 +5,18 @@
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 
 //opencv and image processing
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <cv_bridge/cv_bridge.h>
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>  // For std::setprecision
+
+
 
 
 //standard c++ stuff, some may alreaddy be included in rclcpp
@@ -37,6 +44,8 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             arm_status_sub = this->create_subscription<rover_msgs::msg::ArmCommand>(
                 "/arm/feedback", qos, 
                 std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
+            arm_cmd_pub = this->create_publisher<rover_msgs::msg::ArmCommand>(
+                "/arm/command", qos);
 
             image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
                 "/camera1/image_raw", 10,
@@ -88,13 +97,42 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
                 pos_feed_on_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handlePosFeedOnButtonClick));
             builder->get_widget("pos_feed_off_button", pos_feed_off_button);
                 pos_feed_off_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handlePosFeedOffButtonClick));
+            builder->get_widget("test_limits_button", test_limits_button);
+                test_limits_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handleTestLimitsButtonClick));
+
+            builder->get_widget("arm_abort_button", arm_abort_button);
+                arm_abort_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handleArmAbortButtonClick));      
             builder->get_widget("a1_readout_pos", axis_pos_label[0]);
             builder->get_widget("a2_readout_pos", axis_pos_label[1]);
             builder->get_widget("a3_readout_pos", axis_pos_label[2]);
             builder->get_widget("a4_readout_pos", axis_pos_label[3]);
             builder->get_widget("a5_readout_pos", axis_pos_label[4]);
             builder->get_widget("a6_readout_pos", axis_pos_label[5]);
+
+            builder->get_widget("inc_axis_1_button", inc_axis_button[0]);
+            builder->get_widget("inc_axis_2_button", inc_axis_button[1]);
+            builder->get_widget("inc_axis_3_button", inc_axis_button[2]);
+            builder->get_widget("inc_axis_4_button", inc_axis_button[3]);
+            builder->get_widget("inc_axis_5_button", inc_axis_button[4]);
+            builder->get_widget("inc_axis_6_button", inc_axis_button[5]);
             
+
+            builder->get_widget("dec_axis_1_button", dec_axis_button[0]);
+            builder->get_widget("dec_axis_2_button", dec_axis_button[1]);
+            builder->get_widget("dec_axis_3_button", dec_axis_button[2]);
+            builder->get_widget("dec_axis_4_button", dec_axis_button[3]);
+            builder->get_widget("dec_axis_5_button", dec_axis_button[4]);
+            builder->get_widget("dec_axis_6_button", dec_axis_button[5]);
+
+            for(int i = 0; i < 6; i++){
+                inc_axis_button[i]->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIncAxisButtonClick), i));
+                inc_axis_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+                dec_axis_button[i]->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleDecAxisButtonClick), i));
+                dec_axis_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+
+            }
+
+
 
 
             RCLCPP_INFO(this->get_logger(), "Meowing complete");
@@ -117,7 +155,8 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void load_css(const Glib::RefPtr<Gtk::CssProvider>& css_provider);
     //*Draw functions, can redraw widgets based on this node's data
     bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
-    
+    std::string floatToStringTruncate(float value, int decimals);
+
     bool handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr);
     void image_feed_callback(const sensor_msgs::msg::Image::SharedPtr msg);
 
@@ -129,6 +168,11 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void handleHomeAllButtonClick();
     void handlePosFeedOnButtonClick();
     void handlePosFeedOffButtonClick();
+    void handleIncAxisButtonClick(int index); //RELATIVE VELOCITIERSs
+    void handleDecAxisButtonClick(int index);
+    void handleAxisButtonRelease();
+    void handleArmAbortButtonClick();
+    void handleTestLimitsButtonClick();
     
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
@@ -142,6 +186,16 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     Gtk::Button* home_all_button;
     Gtk::Button* pos_feed_on_button;
     Gtk::Button* pos_feed_off_button;
+    Gtk::Button* test_limits_button;
+
+
+    Gtk::Button* arm_abort_button; //! Arm Abort Button
+
+    Gtk::Button* dec_axis_button[6];
+    Gtk::Button* inc_axis_button[6];
+  
+
+
     //* System Overview
     struct SubsystemGrid{
         Gtk::Grid* grid;
@@ -192,9 +246,12 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     std::string package_share_dir;
     
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_pub;
+
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_sub;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_monitor_sub;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr six_motor_monitor_sub;
+    
     cv::Mat image_;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf_;
     std::mutex image_mutex_;

@@ -15,6 +15,7 @@
   <depend>ament_index_cpp</depend>
   <depend>rviz_visual_tools</depend>
   <depend>tf2_eigen</depend>
+  <depend>arm_hardware_interface</depend>
   <!-- <depend>rover_utils</depend> -->
 
   <test_depend>ament_lint_auto</test_depend>

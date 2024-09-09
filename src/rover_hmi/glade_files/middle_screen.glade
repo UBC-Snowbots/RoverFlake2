@@ -523,8 +523,8 @@
             <child>
               <!-- n-columns=4 n-rows=4 -->
               <object class="GtkGrid">
-                <property name="width-request">217</property>
-                <property name="height-request">173</property>
+                <property name="width-request">243</property>
+                <property name="height-request">182</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="row-spacing">6</property>
@@ -693,8 +693,8 @@
                 </child>
               </object>
               <packing>
-                <property name="x">346</property>
-                <property name="y">592</property>
+                <property name="x">297</property>
+                <property name="y">586</property>
               </packing>
             </child>
             <child>
@@ -703,14 +703,15 @@
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">be careful with me</property>
                 <property name="label" translatable="yes">Arm</property>
                 <attributes>
                   <attribute name="font-desc" value="Uroob 25"/>
                 </attributes>
               </object>
               <packing>
-                <property name="x">191</property>
-                <property name="y">498</property>
+                <property name="x">114</property>
+                <property name="y">502</property>
               </packing>
             </child>
             <child>
@@ -721,10 +722,16 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Home all axes at the same time.
+
+sends $h(A)</property>
+                <style>
+                  <class name="home_all_button"/>
+                </style>
               </object>
               <packing>
-                <property name="x">124</property>
-                <property name="y">817</property>
+                <property name="x">41</property>
+                <property name="y">774</property>
               </packing>
             </child>
             <child>
@@ -732,15 +739,15 @@
                 <property name="label" translatable="yes">Position
 Feedback
 ON</property>
-                <property name="width-request">100</property>
+                <property name="width-request">114</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
               </object>
               <packing>
-                <property name="x">606</property>
-                <property name="y">869</property>
+                <property name="x">51</property>
+                <property name="y">885</property>
               </packing>
             </child>
             <child>
@@ -748,15 +755,469 @@ ON</property>
                 <property name="label" translatable="yes">Position
 Feedback
 OFF</property>
-                <property name="width-request">100</property>
+                <property name="width-request">114</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
               </object>
               <packing>
-                <property name="x">438</property>
-                <property name="y">968</property>
+                <property name="x">51</property>
+                <property name="y">972</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=1 n-rows=2 -->
+              <object class="GtkGrid">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">MODE</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="mode_readout_label">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">ERROR</property>
+                    <attributes>
+                      <attribute name="font-desc" value="Sawasdee Bold 16"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="x">55</property>
+                <property name="y">562</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=6 n-rows=2 -->
+              <object class="GtkGrid">
+                <property name="width-request">1043</property>
+                <property name="height-request">190</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="row-spacing">30</property>
+                <property name="column-spacing">25</property>
+                <property name="row-homogeneous">True</property>
+                <property name="column-homogeneous">True</property>
+                <child>
+                  <object class="GtkButton" id="inc_axis_1_button">
+                    <property name="label" translatable="yes">A1 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_1_button">
+                    <property name="label" translatable="yes">A1 DECREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="inc_axis_2_button">
+                    <property name="label" translatable="yes">A2 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="inc_axis_3_button">
+                    <property name="label" translatable="yes">A3 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="inc_axis_4_button">
+                    <property name="label" translatable="yes">A4 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="inc_axis_5_button">
+                    <property name="label" translatable="yes">A5 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">4</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="inc_axis_6_button">
+                    <property name="label" translatable="yes">A6 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">5</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_2_button">
+                    <property name="label" translatable="yes">A2 INCREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_3_button">
+                    <property name="label" translatable="yes">A3 DECREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_4_button">
+                    <property name="label" translatable="yes">A4 DECREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_5_button">
+                    <property name="label" translatable="yes">A5 DECREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">4</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dec_axis_6_button">
+                    <property name="label" translatable="yes">A6 DECREASE</property>
+                    <property name="width-request">146</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">5</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="x">313</property>
+                <property name="y">820</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="arm_not_homed_readou">
+                <property name="width-request">232</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ARM NOT HOMED</property>
+                <attributes>
+                  <attribute name="font-desc" value="Sawasdee Bold 16"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="x">31</property>
+                <property name="y">649</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=4 n-rows=4 -->
+              <object class="GtkGrid">
+                <property name="width-request">243</property>
+                <property name="height-request">182</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="row-spacing">6</property>
+                <property name="column-spacing">15</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Limit Switch Test:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                    <property name="width">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A1:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A2:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A4:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A4:</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A5</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">A6</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a1_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a2_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a3_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a4_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a5_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="a6_readout_limitswitch">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">?</property>
+                    <attributes>
+                      <attribute name="font-desc" value="TeX Gyre Heros Italic 20"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left-attach">3</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="x">757</property>
+                <property name="y">599</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="arm_abort_button">
+                <property name="label" translatable="yes">ARM ABORT</property>
+                <property name="width-request">298</property>
+                <property name="height-request">103</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Immediatley sends command to stop arm movement. Safe to spam. NOT A REPLACEMENT FOR THE PHYSICAL EMERGENCY STOP.</property>
+                <style>
+                  <class name="arm_emergency_stop_button"/>
+                </style>
+              </object>
+              <packing>
+                <property name="x">387</property>
+                <property name="y">458</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="test_limits_button">
+                <property name="label" translatable="yes">Test Limit Switches</property>
+                <property name="width-request">204</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Home all axes at the same time.
+
+sends $h(A)</property>
+                <style>
+                  <class name="home_all_button"/>
+                </style>
+              </object>
+              <packing>
+                <property name="x">733</property>
+                <property name="y">512</property>
               </packing>
             </child>
           </object>
