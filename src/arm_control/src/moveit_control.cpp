@@ -34,8 +34,8 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
       base_msg->twist.linear.y = joy_msg->axes[1];
       base_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
       base_msg->twist.angular.x = joy_msg->axes[3];
-      base_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[2];
-      base_msg->twist.angular.z = joy_msg->axes[4];
+      base_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[4];
+      base_msg->twist.angular.z = joy_msg->axes[2];
       twist_cmd_publisher->publish(std::move(base_msg));
       break;
     }
@@ -43,13 +43,13 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
         auto ee_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
         ee_msg->header.stamp = this->get_clock()->now();
         // ee_msg->header.frame_id = "link_ender";
-        ee_msg->header.frame_id = "link_ee";
+        ee_msg->header.frame_id = "link_tt";
         ee_msg->twist.linear.x = -joy_msg->axes[0];
         ee_msg->twist.linear.y = joy_msg->axes[1];
         ee_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
         ee_msg->twist.angular.x = joy_msg->axes[3];
-        ee_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[2];
-        ee_msg->twist.angular.z = joy_msg->axes[4];
+        ee_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[4];
+        ee_msg->twist.angular.z = joy_msg->axes[2];
         twist_cmd_publisher->publish(std::move(ee_msg));
       break;
 

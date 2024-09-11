@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dev_arm">
     <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
 
-    <!-- Import dev_arm_v2 urdf file -->
+    <!-- Import dev_arm urdf file -->
     <xacro:include filename="$(find dev_arm)/urdf/dev_arm.urdf" />
 
     <!-- Import control_xacro -->

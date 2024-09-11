@@ -4,11 +4,17 @@
   <name>dev_arm_moveit_config</name>
   <version>0.3.0</version>
   <description>
-     An automatically generated package with all the configuration and launch files for using the dev_arm_v2 with the MoveIt Motion Planning Framework
+     An automatically generated package with all the configuration and launch files for using the dev_arm with the MoveIt Motion Planning Framework
   </description>
-  <maintainer email="TODO@todo.com">Roozki</maintainer>
+  <maintainer email="meow@gmail.com">Roozki</maintainer>
 
   <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org/</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit2/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit2</url>
+
+  <author email="meow@gmail.com">Roozki</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -25,7 +31,7 @@
   <!-- <exec_depend>joint_trajectory_controller</exec_depend> -->
   <!-- <exec_depend>gazebo_ros_control</exec_depend> -->
   <exec_depend>controller_manager</exec_depend>
-  <exec_depend>dev_arm_v2</exec_depend>
+  <exec_depend>dev_arm</exec_depend>
   <exec_depend>moveit_configs_utils</exec_depend>
   <exec_depend>moveit_ros_move_group</exec_depend>
   <exec_depend>moveit_ros_visualization</exec_depend>

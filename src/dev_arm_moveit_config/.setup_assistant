@@ -6,22 +6,18 @@ moveit_setup_assistant_config:
     relative_path: config/dev_arm.srdf
   package_settings:
     author_name: Roozki
-    author_email: ""
-    generated_timestamp: 1726011255
+    author_email: meow@gmail.com
+    generated_timestamp: 1726090193
   control_xacro:
     command:
       - position
-      - velocity
     state:
       - position
-      - velocity
   modified_urdf:
     xacros:
       - control_xacro
   control_xacro:
     command:
       - position
-      - velocity
     state:
       - position
-      - velocity

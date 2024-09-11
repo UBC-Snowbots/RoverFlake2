@@ -16,7 +16,7 @@ scale:
 # override_velocity_scaling_factor = 0.0 # valid range [0.0:1.0]
 
 ## Properties of outgoing commands
-publish_period: 0.034  # 1/Nominal publish rate [seconds]
+publish_period: 0.01  # 1/Nominal publish rate [seconds]
 low_latency_mode: false  # Set this to true to publish as soon as an incoming Twist command is received (publish_period is ignored)
 
 # What type of topic does your robot driver expect?
@@ -42,8 +42,8 @@ move_group_name:  dev_arm  # Often 'manipulator' or 'arm'
 planning_frame: link_0  # The MoveIt planning frame. Often 'base_link' or 'world'
 
 ## Other frames
-ee_frame_name: link_ee  # The name of the end effector link, used to return the EE pose
-robot_link_command_frame:  link_0  # commands must be given in the frame of a robot link. Usually either the base or end effector
+ee_frame_name: link_tt  # The name of the end effector link, used to return the EE pose
+robot_link_command_frame:  link_tt  # commands must be given in the frame of a robot link. Usually either the base or end effector
 
 ## Stopping behaviour
 incoming_command_timeout:  3.1  # Stop servoing if X seconds elapse without a new command
