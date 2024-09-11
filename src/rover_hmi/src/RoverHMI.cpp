@@ -59,13 +59,13 @@ void MainHMINode::handleHomeAllButtonClick(){
 
 void MainHMINode::handleIncAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = 'v';
+    vel_msg.cmd_type = ABS_VEL_CMD;
     vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
-            vel_msg.velocities[i] = 5.0;
+            vel_msg.velocities[i] = axis_hmi_speed[i];
 
         }
 
@@ -76,7 +76,7 @@ void MainHMINode::handleIncAxisButtonClick(int index){
 
 void MainHMINode::handleAxisButtonRelease(){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = 'V';
+    vel_msg.cmd_type = ABS_VEL_CMD;
     vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
         vel_msg.velocities[i] = 0;
@@ -95,7 +95,7 @@ void MainHMINode::handleDecAxisButtonClick(int index){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
-            vel_msg.velocities[i] = -5.0;
+            vel_msg.velocities[i] = -1 * axis_hmi_speed[i];
 
         }
 
@@ -103,7 +103,16 @@ void MainHMINode::handleDecAxisButtonClick(int index){
     arm_cmd_pub->publish(vel_msg);
 }
 
-void MainHMINode::handleArmAbortButtonClick(){
+
+void MainHMINode::handleAxisSpeedUpdate(int i) {
+  
+        double new_value = axis_speed_spinbutton[i]->get_value();
+        axis_hmi_speed[i] = new_value;
+        RCLCPP_INFO(this->get_logger(), "Axis %i speed changed to %f", i, new_value);
+    
+}
+
+void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
             vel_msg.velocities.resize(6);

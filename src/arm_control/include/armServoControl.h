@@ -17,7 +17,8 @@ purpose: to handle moveit control, as well as servo.
 #include <moveit_servo/servo.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
-
+#define VELOCITY_BASED 1
+#define POSITION_BASED 2
 #define NUM_JOINTS 6
 
 class ArmServoControl : public rclcpp::Node {
@@ -49,7 +50,7 @@ public:
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
-            "/arm_controller/controller_state", 10, std::bind(&ArmServoControl::jointTrajectoryCallback, this, std::placeholders::_1));
+            "/dev_arm_controller/controller_state", 10, std::bind(&ArmServoControl::jointTrajectoryCallback, this, std::placeholders::_1));
  
 
         // arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
@@ -63,7 +64,7 @@ public:
     //     // rclcpp::logger
 
     // }
-
+    int control_mode = 0;
 private:
     
    float radToDeg(float rad);

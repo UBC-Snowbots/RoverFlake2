@@ -39,6 +39,8 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         if(!SIMULATE){
         teensy.setPort(port);
         teensy.open();
+        timer_ = this->create_wall_timer(
+          std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
         }
       //  teensy.setDTR(true);
       //  teensy.setRTS(false);
@@ -49,9 +51,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         //     recieveMsg();
         // }
         //set serial rx on a quick polling timer
-        timer_ = this->create_wall_timer(
-        std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
-
+ 
 
     }
 
@@ -73,6 +73,20 @@ float rad = degToRad(deg);
 
 return ((rad*axes[i].dir) + (axes[i].zero_rad));
 
+}
+
+void ArmSerial::parseLimitSwitchTest(std::string msg){
+  int axis = 0;
+  int value = 5;
+  if (sscanf(msg.c_str(), "Limit Switch %d is %d.", &axis, &value) == 2){
+    if(axis >= 1 && axis <= 6){
+      if(value == 1 || value == 0){
+        this->current_limit_switches[axis -1];
+        RCLCPP_INFO(this->get_logger(), "limit switches updated");
+      }
+    }
+        RCLCPP_ERROR(this->get_logger(), "Arm limit switch parsing failed");
+  }
 }
 
  void ArmSerial::parseArmAngleUart(std::string msg){
@@ -151,13 +165,19 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   switch (type)
   {
   case HOME_CMD:
-    sendHomeCmd(msg->cmd_value);
+    if(!SIMULATE){
+      sendHomeCmd(msg->cmd_value);
+    }
     break;
   case COMM_CMD:
-    sendCommCmd(msg->cmd_value);
+    if(!SIMULATE){
+      sendCommCmd(msg->cmd_value);
+    }
     break;
   case TEST_LIMITS_CMD:
-    send_test_limits_command();
+    if(!SIMULATE){
+      send_test_limits_command();
+    }
     break;
   case ABS_POS_CMD:
     float target_positions[NUM_JOINTS];
@@ -186,13 +206,27 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
         for (int i = 0; i < NUM_JOINTS; i++){
       target_velocities[i] = msg->velocities[i];
     }
-          send_velocity_command(target_velocities);
+     if(SIMULATE){
+       sensor_msgs::msg::JointState joint_states_;
+       joint_states_.velocity.resize(NUM_JOINTS);
+       joint_states_.name.resize(NUM_JOINTS);
+        for(int i = 0; i < NUM_JOINTS; i++){
+        joint_states_.name[i] = joint_names[i];
+        joint_states_.velocity[i] = firmToMoveitOffset(target_velocities[i], i);
+        
+         }
+         joint_states_.header.stamp = rclcpp::Clock().now();
 
+         joint_state_publisher_->publish(joint_states_);
+
+    }else{
+          send_velocity_command(target_velocities);
+    }
     break;
   default:
     break;
-  }
-
+  
+ }
 }
 
 // void ArmSerial::sendCommCmd() {

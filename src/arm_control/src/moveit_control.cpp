@@ -28,7 +28,8 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
     {
       auto base_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
       base_msg->header.stamp = this->get_clock()->now();
-      base_msg->header.frame_id = "base_base_link";
+      // base_msg->header.frame_id = "base_base_link";
+      base_msg->header.frame_id = "link_0";
       base_msg->twist.linear.x = -joy_msg->axes[0];
       base_msg->twist.linear.y = joy_msg->axes[1];
       base_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
@@ -41,7 +42,8 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
     case CARTESIAN_EE_FRAME:
         auto ee_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
         ee_msg->header.stamp = this->get_clock()->now();
-        ee_msg->header.frame_id = "link_ender";
+        // ee_msg->header.frame_id = "link_ender";
+        ee_msg->header.frame_id = "link_ee";
         ee_msg->twist.linear.x = -joy_msg->axes[0];
         ee_msg->twist.linear.y = joy_msg->axes[1];
         ee_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
@@ -52,8 +54,6 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
       break;
 
   }
-
-
 
 
 }

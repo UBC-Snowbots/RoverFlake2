@@ -11,7 +11,7 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE false
+#define SIMULATE true
 
 #define NUM_JOINTS 6
 
@@ -28,11 +28,6 @@
 
 
 
-
-
-
-
-
 using std::string;
 
 
@@ -45,6 +40,8 @@ public:
     void sendCommCmd(int target_state);
     void sendMsg(std::string outMsg);
     void parseArmAngleUart(std::string msg);
+    void parseLimitSwitchTest(std::string msg);
+    // float firm
 
    rover_msgs::msg::ArmCommand current_arm_status;
 
@@ -117,8 +114,8 @@ private:
     int homed = 0;
     bool homing = false;
     float EE = 0;
-    float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-   
+    volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+    volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1};
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
@@ -181,6 +178,8 @@ private:
        // fresh_rx_angle = true;
      }else if(buffer.find("my_angleP") != std::string::npos){
         parseArmAngleUart(buffer);
+     }else if(buffer.find("Limit Switch")){
+        parseLimitSwitchTest(buffer);
      }
 
 

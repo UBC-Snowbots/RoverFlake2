@@ -11,3 +11,7 @@
 #define TEST_LIMITS_CMD 't'
 
 //TODO implement arm abort
+
+
+//? Limit switch feedback looks like: 
+//? sprintf(tmpmsg, "Limit Switch %d, is %d.  \n\r\0", i + 1, get_gpio(axes[i].LIMIT_PIN[0], axes[i].LIMIT_PIN[1]));

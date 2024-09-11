@@ -1,9 +1,27 @@
 .base_window {
     background-color: rgb(20, 20, 20);
     color: burlywood;
-    
 }
 
+.home_all_button {
+    background-image: none;
+    background-color: rgb(255, 199, 110);
+    color: rgb(0, 0, 0);
+}
+
+.arm_abort_button {
+    background-image: none;
+    background-color: rgb(179, 0, 0);
+    color: rgb(255, 236, 236);
+    font-size: 30;
+}
+
+.test_limits_button {
+    background-image: none;
+    background-color: rgb(110, 151, 255);
+    color: rgb(0, 0, 0);
+}
 .temp_grid {
     color: ghostwhite;
 }
+

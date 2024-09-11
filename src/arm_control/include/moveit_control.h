@@ -16,9 +16,7 @@ purpose: to handle moveit control, as well as servo.
 #include <moveit_servo/servo_parameters.h>
 #include <moveit_servo/servo.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
-
-
-#define NUM_JOINTS 6
+#include <armControlParams.h>
 
 #define JOINT_JOG 1
 #define CARTESIAN_EE_FRAME 2
@@ -55,7 +53,7 @@ public:
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
-            "/arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
+            "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
         joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
         
@@ -108,22 +106,22 @@ private:
 
 
     rclcpp::TimerBase::SharedPtr timer_;
-    void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg){
-        rover_msgs::msg::ArmCommand target;
-        target.positions.resize(NUM_JOINTS);
-        target.cmd_type = 'P';
-        float target_positions[6];
-        float inputs[6];
+    // void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg){
+    //     rover_msgs::msg::ArmCommand target;
+    //     target.positions.resize(NUM_JOINTS);
+    //     target.cmd_type = 'P';
+    //     float target_positions[6];
+    //     float inputs[6];
 
     
-        for (int i = 0; i < NUM_JOINTS; i++){
-            // float temp_pos = msg->position[i];
-            target.positions[i] = moveitToFirmwareOffset(msg->position[i], i);
-        }
+    //     for (int i = 0; i < NUM_JOINTS; i++){
+    //         // float temp_pos = msg->position[i];
+    //         target.positions[i] = moveitToFirmwareOffset(msg->position[i], i);
+    //     }
 
-         arm_publisher->publish(target);
+    //      arm_publisher->publish(target);
 
-    }
+    // }
 
     void jointTrajectoryCallback(const control_msgs::msg::JointTrajectoryControllerState::SharedPtr msg){
         rover_msgs::msg::ArmCommand target;

@@ -69,7 +69,8 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
             //* Setup GTK widgets
             builder->get_widget("middle_window", middle_window);
-            builder->get_widget("middle_stack", middle_stack);\
+            builder->get_widget("middle_stack", middle_stack);
+
 
             //*build the system overview card
             builder->get_widget("subsystem_status_grid", subsys_grid.grid);
@@ -132,6 +133,18 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
             }
 
+            builder->get_widget("axis_1_speed_spinbutton", axis_speed_spinbutton[0]);
+            builder->get_widget("axis_2_speed_spinbutton", axis_speed_spinbutton[1]);
+            builder->get_widget("axis_3_speed_spinbutton", axis_speed_spinbutton[2]);
+            builder->get_widget("axis_4_speed_spinbutton", axis_speed_spinbutton[3]);
+            builder->get_widget("axis_5_speed_spinbutton", axis_speed_spinbutton[4]);
+            builder->get_widget("axis_6_speed_spinbutton", axis_speed_spinbutton[5]);
+            for(int i = 0; i < 6; i++){
+                axis_speed_spinbutton[i]->set_range(0.0, 90.0);
+                axis_speed_spinbutton[i]->set_value(5.0);
+                axis_speed_spinbutton[i]->signal_value_changed().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleAxisSpeedUpdate) , i));
+            }
+
 
 
 
@@ -173,6 +186,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void handleAxisButtonRelease();
     void handleArmAbortButtonClick();
     void handleTestLimitsButtonClick();
+    void handleAxisSpeedUpdate(int i);
     
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
@@ -188,12 +202,15 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     Gtk::Button* pos_feed_off_button;
     Gtk::Button* test_limits_button;
 
+    Gtk::SpinButton* axis_speed_spinbutton[6];
+
 
     Gtk::Button* arm_abort_button; //! Arm Abort Button
 
     Gtk::Button* dec_axis_button[6];
     Gtk::Button* inc_axis_button[6];
   
+    float axis_hmi_speed[6] = {5.0, 5.0, 5.0, 5.0, 5.0, 5.0};
 
 
     //* System Overview
