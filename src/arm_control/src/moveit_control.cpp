@@ -118,3 +118,14 @@ return (deg);
 
 
 }
+
+float ArmMoveitControl::moveitVelocityToFirmwareOffset(float rad, int i){
+
+float deg;
+    
+deg = radToDeg(rad) * axes[i].dir;
+
+return (deg);
+
+
+}

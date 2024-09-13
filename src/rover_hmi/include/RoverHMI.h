@@ -187,6 +187,8 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void handleArmAbortButtonClick();
     void handleTestLimitsButtonClick();
     void handleAxisSpeedUpdate(int i);
+
+    void handleIKTestButtonClick();
     
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 

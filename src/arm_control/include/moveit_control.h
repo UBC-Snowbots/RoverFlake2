@@ -80,6 +80,7 @@ private:
     // rclcpp::TimerBase::SharedPtr timer;
    float radToDeg(float rad);
    float moveitToFirmwareOffset(float rad, int i);
+   float moveitVelocityToFirmwareOffset(float rad, int i);
 //    float moveitToFirmwareOffset(float rad, int i);
 
 
@@ -125,15 +126,20 @@ private:
 
     void jointTrajectoryCallback(const control_msgs::msg::JointTrajectoryControllerState::SharedPtr msg){
         rover_msgs::msg::ArmCommand target;
-        target.positions.resize(NUM_JOINTS);
-        target.cmd_type = 'P';
-        float target_positions[6];
-        float inputs[6];
+        //TODO position or vel
+        // target.positions.resize(NUM_JOINTS);
+        target.velocities.resize(NUM_JOINTS);
+        target.cmd_type = 'V';
+        // float target_positions[NUM_JOINTS];
+        // float target_velocities[NUM_JOINTS];
+        float inputs[NUM_JOINTS];
 
     
         for (int i = 0; i < NUM_JOINTS; i++){
             // float temp_pos = msg->position[i];
-            target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
+            // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
+            target.velocities[i] = moveitVelocityToFirmwareOffset(msg->reference.velocities[i], i);
+
         }
 
          arm_publisher->publish(target);
