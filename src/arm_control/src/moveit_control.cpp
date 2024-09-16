@@ -101,7 +101,7 @@ rclcpp::spin(node);
 }
 
 float ArmMoveitControl::radToDeg(float rad){
-  float deg = (rad *180.0) / 3.14159265359;
+  float deg = (rad *180.0) / 3.14159; //265359
 
   return(deg);
 }

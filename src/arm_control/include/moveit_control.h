@@ -27,23 +27,58 @@ public:
     //rclcpp::NodeOptions node_options;
     //node_options.use_intra_process_comms(false);
     ArmMoveitControl() : Node("arm_moveit_control") {
-    axes[0].zero_rad = 0.984;
-    axes[0].dir = -1;
+        //? new arm offsets
+  //? Axis 1
+  //? -0.68 -> from online app thing
+  //?  0.2808234691619873 -> read in 
+    axes[0].zero_rad = -0.9608; //? pree good
+    axes[0].dir = 1;
 
-    axes[1].zero_rad = 1.409;
-    axes[1].dir = -1;
+  //? Axis 2 
+  //? -1.01   ISH - fack
+  //? 0.9290387630462646
+    axes[1].zero_rad = -1.9390; //? ISH
+    axes[1].dir = 1;
 
-    axes[2].zero_rad = -0.696;
+  //? Axis 3
+  //? -0.60 from online app
+  //? 0.7459537386894226
+    axes[2].zero_rad = -1.3460;
     axes[2].dir = 1;
 
-    axes[3].zero_rad = 1.8067995;
+  //? Axis 4
+  //? 0.037 from online app
+  //? 2.447824239730835
+    axes[3].zero_rad = -2.4108; //? gear reduction probably wrong
     axes[3].dir = -1;
 
-    axes[4].zero_rad = -1.002;
+  //? Axis 5
+  //? -0.62 from online app
+  //? 1.585980772972107
+    axes[4].zero_rad = -2.2060;
     axes[4].dir = 1;
 
-    axes[5].zero_rad = -1.375;
+  //? Axis 6
+    axes[5].zero_rad = 0.0;
     axes[5].dir = 1;
+    //?old arm offsets
+    // axes[0].zero_rad = 0.984;
+    // axes[0].dir = -1;
+
+    // axes[1].zero_rad = 1.409;
+    // axes[1].dir = -1;
+
+    // axes[2].zero_rad = -0.696;
+    // axes[2].dir = 1;
+
+    // axes[3].zero_rad = 1.8067995;
+    // axes[3].dir = -1;
+
+    // axes[4].zero_rad = -1.002;
+    // axes[4].dir = 1;
+
+    // axes[5].zero_rad = -1.375;
+    // axes[5].dir = 1;
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
@@ -149,7 +184,8 @@ private:
     void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
 
         for (int i = 0; i < NUM_JOINTS; i++){
-            axes[i].position = msg->positions[i];
+            // axes[i].position = msg->positions[i];
+            // axes[i].position = msg->positions[i];
 
         }
     }

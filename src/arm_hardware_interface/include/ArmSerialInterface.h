@@ -11,7 +11,7 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE true
+#define SIMULATE false
 
 #define NUM_JOINTS 6
 
@@ -49,13 +49,15 @@ public:
     // void start_rx() {
     //     serialRxThread = std::thread(&ArmSerial::serial_rx(), this);
     // }
-    string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"};
+    // string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"}; //? old arm urdf
+    string joint_names[6] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"}; //? newest (Sep 2024) arm urdf
 
 
 private:
 
     float degToRad(float deg);
-    float firmToMoveitOffset(float deg, int axis);
+    float firmToMoveitOffsetPos(float deg, int axis);
+    float firmToMoveitOffsetVel(float deg, int axis);
 
 
    unsigned long baud = 19200;
@@ -93,7 +95,11 @@ private:
         char tx_msg[TX_UART_BUFF];
      
         sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5]);
-
+        for(int i = 0; i < NUM_JOINTS; i++){
+          current_velocity[i] = vel[i];
+        }
+        
+        
         sendMsg(tx_msg);
         RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
@@ -114,6 +120,7 @@ private:
     int homed = 0;
     bool homing = false;
     float EE = 0;
+    volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
     volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
     volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1};
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;

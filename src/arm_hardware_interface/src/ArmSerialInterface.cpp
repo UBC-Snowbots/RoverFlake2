@@ -4,24 +4,59 @@
 
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
+  //? new arm offsets
+  //? Axis 1
+  //? -0.68 -> from online app thing
+  //?  0.2808234691619873 -> read in 
+    axes[0].zero_rad = -0.9608; //? pree good
+    axes[0].dir = 1;
 
-    axes[0].zero_rad = 0.984;
-    axes[0].dir = -1;
+  //? Axis 2 
+  //? -1.01   ISH - fack
+  //? 0.9290387630462646
+    axes[1].zero_rad = -1.9390; //? ISH
+    axes[1].dir = 1;
 
-    axes[1].zero_rad = 1.409;
-    axes[1].dir = -1;
-
-    axes[2].zero_rad = -0.696;
+  //? Axis 3
+  //? -0.60 from online app
+  //? 0.7459537386894226
+    axes[2].zero_rad = -1.3460;
     axes[2].dir = 1;
 
-    axes[3].zero_rad = 1.8067995;
+  //? Axis 4
+  //? 0.037 from online app
+  //? 2.447824239730835
+    axes[3].zero_rad = -2.4108; //? gear reduction probably wrong
     axes[3].dir = -1;
 
-    axes[4].zero_rad = -1.002;
+  //? Axis 5
+  //? -0.62 from online app
+  //? 1.585980772972107
+    axes[4].zero_rad = -2.2060;
     axes[4].dir = 1;
 
-    axes[5].zero_rad = -1.375;
+  //? Axis 6
+    axes[5].zero_rad = 0.0;
     axes[5].dir = 1;
+    //?old arm offsets
+    // axes[0].zero_rad = 0.984; 
+    // axes[0].dir = -1;
+
+    // axes[1].zero_rad = 1.409;
+    // axes[1].dir = -1;
+
+    // axes[2].zero_rad = -0.696;
+    // axes[2].dir = 1;
+
+    // axes[3].zero_rad = 1.8067995;
+    // axes[3].dir = -1;
+
+    // axes[4].zero_rad = -1.002;
+    // axes[4].dir = 1;
+
+    // axes[5].zero_rad = -1.375;
+    // axes[5].dir = 1;
+
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(); //Very hack way of only using "live" messages - iffy, and may still operate off of one stale message. in the future we should use a time stamped message, and check the stamp time against current time to make sure msg is not stale.
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
@@ -62,16 +97,24 @@ void ArmSerial::recieveMsg() {
 }
 
 float ArmSerial::degToRad(float deg){
-  float rad = deg * 3.14159265359/180;
+  float rad = deg * 3.14159/180; //14159265359
 
   return(rad);
 }
 
-float ArmSerial::firmToMoveitOffset(float deg, int i){
+float ArmSerial::firmToMoveitOffsetPos(float deg, int i){
 
 float rad = degToRad(deg);
 
 return ((rad*axes[i].dir) + (axes[i].zero_rad));
+
+}
+
+float ArmSerial::firmToMoveitOffsetVel(float deg, int i){
+
+float rad = degToRad(deg);
+
+return ((rad*axes[i].dir));
 
 }
 
@@ -93,6 +136,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
        joint_states_.position.resize(NUM_JOINTS);
+       joint_states_.velocity.resize(NUM_JOINTS);
        joint_states_.name.resize(NUM_JOINTS);
 
 
@@ -103,7 +147,8 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
          for(int i = 0; i < NUM_JOINTS; i++){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
-          joint_states_.position[i] = firmToMoveitOffset(axes[i].curr_pos, i);
+          joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
+          joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
@@ -190,7 +235,8 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
        joint_states_.name.resize(NUM_JOINTS);
         for(int i = 0; i < NUM_JOINTS; i++){
         joint_states_.name[i] = joint_names[i];
-        joint_states_.position[i] = firmToMoveitOffset(target_positions[i], i);
+        joint_states_.position[i] = firmToMoveitOffsetPos(target_positions[i], i);
+        joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
 
@@ -205,6 +251,8 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
       float target_velocities[NUM_JOINTS];
         for (int i = 0; i < NUM_JOINTS; i++){
       target_velocities[i] = msg->velocities[i];
+      current_velocity[i] = msg->velocities[i];
+
     }
      if(SIMULATE){
        sensor_msgs::msg::JointState joint_states_;
@@ -212,7 +260,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
        joint_states_.name.resize(NUM_JOINTS);
         for(int i = 0; i < NUM_JOINTS; i++){
         joint_states_.name[i] = joint_names[i];
-        joint_states_.velocity[i] = firmToMoveitOffset(target_velocities[i], i);
+        joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
         
          }
          joint_states_.header.stamp = rclcpp::Clock().now();

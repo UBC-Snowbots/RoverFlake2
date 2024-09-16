@@ -84,6 +84,7 @@ def generate_launch_description():
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
+        name="fake_joint_publisher",
         arguments=[
             "joint_state_broadcaster",
             "--controller-manager-timeout",
@@ -91,6 +92,9 @@ def generate_launch_description():
             "--controller-manager",
             "/controller_manager",
         ],
+        # remappings=[
+        #     ('/joint_states', '/fake_joint_states'),
+        # ]
     )
 
     arm_controller_spawner = Node(
@@ -171,9 +175,9 @@ def generate_launch_description():
         [
             rviz_node,
             ros2_control_node,
-            joint_state_broadcaster_spawner,
+            # joint_state_broadcaster_spawner,
             arm_controller_spawner,
-     #       servo_node,
+      #      servo_node,
             custom_servo_node,
             container,
         ]
