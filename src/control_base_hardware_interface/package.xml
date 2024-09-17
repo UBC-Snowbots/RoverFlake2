@@ -4,10 +4,14 @@
   <name>control_base_hardware_interface</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="zawadzkirowan@gmail.com">rowan</maintainer>
+  <maintainer email="nahal.jodhsingh@gmail.com">jodh</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+<depend>rclcpp</depend>
+<depend>std_msgs</depend>
+<depend>serial</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
