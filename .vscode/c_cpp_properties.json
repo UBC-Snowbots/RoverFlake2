@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/jodh/RoverFlake2/install/rover_msgs/include/**",
+        "/opt/ros/foxy/include/**",
+        "/home/jodh/RoverFlake2/src/arm_control/include/**",
+        "/home/jodh/RoverFlake2/src/arm_hardware_interface/include/**",
+        "/home/jodh/RoverFlake2/src/external_pkgs/serial/include/**",
+        "/home/jodh/RoverFlake2/src/rover_manager/include/**",
+        "/home/jodh/RoverFlake2/src/rover_qt_gui/include/**",
+        "/home/jodh/RoverFlake2/src/rover_samples/rv_sample_package/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

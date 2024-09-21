@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(
   include
@@ -23,11 +24,15 @@ include_directories(
 
 # Add executable
 add_executable(arduino_serial_publisher src/arduino_serial_publisher.cpp)
+add_executable(fake_robot_arm_publisher src/fake_robot_arm_publisher.cpp)
 ament_target_dependencies(arduino_serial_publisher rclcpp std_msgs serial rover_msgs)
+ament_target_dependencies(fake_robot_arm_publisher rclcpp serial sensor_msgs)
+
 
 # Install
 install(TARGETS
   arduino_serial_publisher
+  fake_robot_arm_publisher
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
