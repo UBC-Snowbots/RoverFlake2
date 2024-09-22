@@ -61,7 +61,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
-        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
+        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_statesMEOW", qos);
        double period = 1.0/COMM_POLL_RATE;
 
         current_arm_status.positions.resize(NUM_JOINTS);
