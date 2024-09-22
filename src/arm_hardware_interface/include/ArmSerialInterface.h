@@ -11,7 +11,7 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE false
+#define SIMULATE true
 
 #define NUM_JOINTS 6
 

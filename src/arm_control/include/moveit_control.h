@@ -11,6 +11,7 @@ purpose: to handle moveit control, as well as servo.
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "control_msgs/msg/joint_trajectory_controller_state.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "trajectory_msgs/msg/joint_trajectory.hpp"
 
 // Servo
 #include <moveit_servo/servo_parameters.h>
@@ -87,10 +88,12 @@ public:
 
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
-        trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
-            "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
-        joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
+        // trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
+        //     "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
+         joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
+          servo_output_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
+            "/dev_arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
         
 	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>("/arm_moveit_control/delta_joint_cmds", 10);
 	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("/arm_moveit_control/delta_twist_cmds", 10);
@@ -134,6 +137,7 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_cmd_publisher;
     rclcpp::Subscription<control_msgs::msg::JointTrajectoryControllerState>::SharedPtr trajectory_subscriber;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;
+    rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr servo_output_subscriber;
     // rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr trajectory_subscriber;
 
     // rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
@@ -168,17 +172,47 @@ private:
         // float target_positions[NUM_JOINTS];
         // float target_velocities[NUM_JOINTS];
         float inputs[NUM_JOINTS];
-
-    
-        for (int i = 0; i < NUM_JOINTS; i++){
+        if(msg->output.velocities.size() == NUM_JOINTS){
+     for (int i = 0; i < NUM_JOINTS; i++){
             // float temp_pos = msg->position[i];
             // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
-            target.velocities[i] = moveitVelocityToFirmwareOffset(msg->reference.velocities[i], i);
+            //target.velocities[i] = moveitVelocityToFirmwareOffset(msg->desired.velocities[i], i);
 
         }
 
-         arm_publisher->publish(target);
+        // arm_publisher->publish(target);
+        }else{
+          RCLCPP_ERROR(this->get_logger(), "Joint Trajrectory Controller going wack. Output does not match size of joints. Ignoring this message.");
+        }
+    
+   
 
+    }
+
+    void servoCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg){
+              rover_msgs::msg::ArmCommand target;
+        //TODO position or vel
+        // target.positions.resize(NUM_JOINTS);
+        target.velocities.resize(NUM_JOINTS);
+        target.cmd_type = 'V';
+        // float target_positions[NUM_JOINTS];
+        // float target_velocities[NUM_JOINTS];
+        float inputs[NUM_JOINTS];
+        if(msg->points[0].velocities.size() == NUM_JOINTS){
+     for (int i = 0; i < NUM_JOINTS; i++){
+            // float temp_pos = msg->position[i];
+            // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
+            target.velocities[i] = moveitVelocityToFirmwareOffset(msg->points[0].velocities[i], i);
+
+        }   
+         arm_publisher->publish(target);
+          // RCLCPP_INFO(this->get_logger(), "Joint Trajrectory Controller good. Servo is commanding arm!");
+
+    
+        }else{
+          RCLCPP_ERROR(this->get_logger(), "Joint Trajrectory Controller going wack. Output does not match size of joints. Ignoring this message.");
+        }
+    
     }
 
     void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg){

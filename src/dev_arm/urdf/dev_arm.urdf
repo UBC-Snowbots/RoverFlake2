@@ -6,7 +6,7 @@
   name="dev_arm">
   <link
     name="link_0">
-    <inertial>
+    <!-- <inertial>
       <origin
         xyz="-0.75120510490016 -0.355484104743571 0.618102827199024"
         rpy="0 0 0" />
@@ -19,7 +19,7 @@
         iyy="0.0011477531623159"
         iyz="-0.000592201056189933"
         izz="0.00160357951968222" />
-    </inertial>
+    </inertial> -->
     <visual>
       <origin
         xyz="0 0 0"

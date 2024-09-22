@@ -136,7 +136,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
        joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.velocity.resize(NUM_JOINTS);
+      //  joint_states_.velocity.resize(NUM_JOINTS);
        joint_states_.name.resize(NUM_JOINTS);
 
 
@@ -148,7 +148,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
-          joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
+          // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
