@@ -176,7 +176,7 @@ def generate_launch_description():
         [
             rviz_node,
             ros2_control_node,
-            joint_state_broadcaster_spawner,
+            # joint_state_broadcaster_spawner,
             arm_controller_spawner,
       #      servo_node,
             custom_servo_node,

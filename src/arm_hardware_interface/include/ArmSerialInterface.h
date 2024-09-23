@@ -11,7 +11,7 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE false
+#define SIMULATE true
 
 #define NUM_JOINTS 6
 
@@ -65,7 +65,8 @@ private:
 
     serial::Serial teensy;
     serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000); // E.g., 1000 ms or 1 second
-   
+    
+
     struct Axis{
       float curr_pos;
       float target_pos;
@@ -127,7 +128,7 @@ private:
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 
-
+    sensor_msgs::msg::JointState prev_joint_states; //for sim
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
 
     rclcpp::TimerBase::SharedPtr timer_;
