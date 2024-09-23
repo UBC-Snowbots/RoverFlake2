@@ -256,6 +256,8 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
       // double sim_target_velocities[NUM_JOINTS];
         for (int i = 0; i < NUM_JOINTS; i++){
       target_velocities[i] = msg->velocities[i];
+        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
+
       // current_velocity[i] = msg->velocities[i];
 
     }
@@ -270,7 +272,6 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
         for(int i = 0; i < NUM_JOINTS; i++){
         joint_states_.name[i] = joint_names[i];
         joint_states_.velocity[i] = target_velocities[i];//firmToMoveitOffsetVel(target_velocities[i], i);
-        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, target_velocities[i]);
         rclcpp::Time current_time(joint_states_.header.stamp);
         rclcpp::Time prev_time(prev_joint_states.header.stamp);
         joint_states_.position[i] = prev_joint_states.position[i] + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
