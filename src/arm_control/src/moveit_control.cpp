@@ -41,10 +41,10 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
   }
       servo_msg->twist.linear.x = -joy_msg->axes[0];
       servo_msg->twist.linear.y = joy_msg->axes[1];
-      servo_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11])/2;
+      servo_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[4] - joy_msg->buttons[5])/2;
       servo_msg->twist.angular.x = joy_msg->axes[3];
-      servo_msg->twist.angular.y = (-joy_msg->axes[5] + joy_msg->axes[4])/2;
-      servo_msg->twist.angular.z = joy_msg->axes[2];
+      servo_msg->twist.angular.y = (-joy_msg->axes[5] + joy_msg->axes[2])/2;
+      servo_msg->twist.angular.z = joy_msg->axes[4];
       twist_cmd_publisher->publish(std::move(servo_msg));
 
 

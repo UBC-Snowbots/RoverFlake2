@@ -98,7 +98,7 @@ def generate_launch_description():
         # ]
     )
 
-    arm_controller_spawner = Node(
+    dev_arm_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["dev_arm_controller", "-c", "/controller_manager"],
@@ -196,7 +196,7 @@ def generate_launch_description():
             rviz_node,
             ros2_control_node,
             # joint_state_broadcaster_spawner,
-            arm_controller_spawner,
+          #  dev_arm_controller_spawner,
       #      servo_node,
             custom_servo_node,
             container,

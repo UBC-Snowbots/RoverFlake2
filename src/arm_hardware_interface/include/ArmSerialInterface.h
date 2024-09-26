@@ -117,6 +117,7 @@ private:
       
     }
   float target_position[NUM_JOINTS];
+   double target_velocities[NUM_JOINTS];
 
     int homed = 0;
     bool homing = false;

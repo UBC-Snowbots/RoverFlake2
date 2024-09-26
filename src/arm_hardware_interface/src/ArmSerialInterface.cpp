@@ -153,6 +153,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
           joint_states_.name[i] = joint_names[i];
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
           // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
+          joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i); //TODO make based off of real velocity from firmware
          }
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
@@ -252,7 +253,6 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
     }
     break;
     case ABS_VEL_CMD:
-      double target_velocities[NUM_JOINTS];
       // double sim_target_velocities[NUM_JOINTS];
         for (int i = 0; i < NUM_JOINTS; i++){
       target_velocities[i] = msg->velocities[i];
@@ -271,17 +271,19 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
        joint_states_.name.resize(NUM_JOINTS);
         for(int i = 0; i < NUM_JOINTS; i++){
         joint_states_.name[i] = joint_names[i];
-        joint_states_.velocity[i] = target_velocities[i];//firmToMoveitOffsetVel(target_velocities[i], i);
+        joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
         rclcpp::Time current_time(joint_states_.header.stamp);
         rclcpp::Time prev_time(prev_joint_states.header.stamp);
-        joint_states_.position[i] = prev_joint_states.position[i] + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
+        joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
         prev_joint_states.position[i] = joint_states_.position[i];
+        joint_states_.position[i] -= axes[i].zero_rad;
          }
           prev_joint_states.header.stamp = joint_states_.header.stamp;
          joint_state_publisher_->publish(joint_states_);
 
     }else{
-          // send_velocity_command(target_velocities);
+   
+         // send_velocity_command(target_velocities); //!
     }
     break;
   default:
