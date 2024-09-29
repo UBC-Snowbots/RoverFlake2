@@ -23,12 +23,13 @@ purpose: to handle moveit control, as well as servo.
 #define CARTESIAN_EE_FRAME 2
 #define CARTESIAN_BASE_FRAME 3
 
+#define PI 3.14159
 class ArmMoveitControl : public rclcpp::Node {
 public:
     //rclcpp::NodeOptions node_options;
     //node_options.use_intra_process_comms(false);
     ArmMoveitControl() : Node("arm_moveit_control") {
-        //? new arm offsets
+        //? new arm offsets. 
   //? Axis 1
   //? -0.68 -> from online app thing
   //?  0.2808234691619873 -> read in 
@@ -50,14 +51,14 @@ public:
   //? Axis 4
   //? 0.037 from online app
   //? 2.447824239730835
-    axes[3].zero_rad = -2.4108; //? gear reduction probably wrong
+    axes[3].zero_rad = 2.4108 - PI; //? gear reduction probably wrong
     axes[3].dir = -1;
 
   //? Axis 5
   //? -0.62 from online app
   //? 1.585980772972107
-    axes[4].zero_rad = -2.2060;
-    axes[4].dir = 1;
+    axes[4].zero_rad = 2.2060 - PI/2;
+    axes[4].dir = -1;
 
   //? Axis 6
     axes[5].zero_rad = 0.0;

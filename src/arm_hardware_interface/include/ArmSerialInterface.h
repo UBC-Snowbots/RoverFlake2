@@ -11,8 +11,8 @@
 
 #include <serial/serial.h>
 
-#define SIMULATE true
-
+#define SIMULATE false
+#define PI 3.14159
 #define NUM_JOINTS 6
 
 #define TX_UART_BUFF 128
@@ -102,7 +102,7 @@ private:
         
         
         sendMsg(tx_msg);
-        RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
+        // RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
     }
     void send_test_limits_command(){
@@ -117,7 +117,7 @@ private:
       
     }
   float target_position[NUM_JOINTS];
-   double target_velocities[NUM_JOINTS];
+   float target_velocities[NUM_JOINTS];
 
     int homed = 0;
     bool homing = false;

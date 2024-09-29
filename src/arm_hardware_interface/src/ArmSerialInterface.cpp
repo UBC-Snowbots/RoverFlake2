@@ -1,7 +1,7 @@
 //TODO: make a good comment
 #include "ArmSerialInterface.h"
 
-
+#define PI 3.14159
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? new arm offsets
@@ -25,14 +25,14 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? Axis 4
   //? 0.037 from online app
   //? 2.447824239730835
-    axes[3].zero_rad = -2.4108; //? gear reduction probably wrong
+    axes[3].zero_rad = 2.4108 - PI; //? gear reduction probably wrong
     axes[3].dir = -1;
 
   //? Axis 5
   //? -0.62 from online app
   //? 1.585980772972107
-    axes[4].zero_rad = -2.2060;
-    axes[4].dir = 1;
+    axes[4].zero_rad = 2.2060 - PI/2;
+    axes[4].dir = -1;
 
   //? Axis 6
     axes[5].zero_rad = 0.0;
@@ -140,7 +140,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
        joint_states_.position.resize(NUM_JOINTS);
-      //  joint_states_.velocity.resize(NUM_JOINTS);
+       joint_states_.velocity.resize(NUM_JOINTS);
        joint_states_.name.resize(NUM_JOINTS);
 
 
@@ -154,7 +154,14 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
           // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
           joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i); //TODO make based off of real velocity from firmware
+          // joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
+          // prev_joint_states.position[i] = joint_states_.position[i];
+          // joint_states_.position[i] -= axes[i].zero_rad;
          }
+             rclcpp::Time current_time(joint_states_.header.stamp);
+        rclcpp::Time prev_time(prev_joint_states.header.stamp);
+
+
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
          joint_state_publisher_->publish(joint_states_);
@@ -180,7 +187,7 @@ void ArmSerial::sendMsg(std::string outMsg) {
   //  std::string str_outMsg(reinterpret_cast<const char*>(outMsg), TX_UART_BUFF);
     //std::to_string(str_outMsg);  // +1 to copy the null-terminator
     teensy.write(outMsg);
-   RCLCPP_ERROR(this->get_logger(), "Sent via serial: %s", outMsg.c_str());
+  //  RCLCPP_ERROR(this->get_logger(), "Sent via serial: %s", outMsg.c_str());
    teensy.flushOutput();
 }
 
@@ -283,7 +290,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
 
     }else{
    
-         // send_velocity_command(target_velocities); //!
+        send_velocity_command(target_velocities); //!
     }
     break;
   default:
