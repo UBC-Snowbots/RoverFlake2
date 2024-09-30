@@ -204,7 +204,7 @@ private:
             // float temp_pos = msg->position[i];
             // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
             target.velocities[i] = moveitVelocityToFirmwareOffset(msg->points[0].velocities[i], i);
-        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, target.velocities[i]);
+        // RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, target.velocities[i]);
 
         }   
          arm_publisher->publish(target);
