@@ -24,5 +24,18 @@ This script will install ros2.
 
 
 ### COMMON ISSUES & TROUBLESHOOTING
+ 
+> 'Could not find a package configuration file provided by "serial" with any of the following names:'
+> 'serialConfig.cmake'
+> '...'
+**if src/external_pkgs/serial is empty, you need to update your git submodules:**
+> 'git submodule init'
+> 'git submodule update'
+_This is only needed if you did not clone recursivley._
+'serial' is a ros2 package, its also a git repository. Instead of just copying the code into our repository, git submodules makes it easier to manage different git repositories.
 
-> ' '
+This error means CMake cannot find a package, specifically a ROS2 package. In the above error example CMake cannot find the serial package, which is an external package we use to communicate over USB connections.
+If you get this error for another package, you may just need to install it:
+
+> 'sudo apt install ros-humble-<package>-<name>'
+ 
