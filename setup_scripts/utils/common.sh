@@ -9,8 +9,10 @@ is_package_installed(){
         # Get the package version
         package_version=$(dpkg-query -W -f='${Version}' "$package_name")
         echo "Package '$package_name' is already installed. Version: $package_version"
+        return 0
     else
-        echo "Package '$package_name' is not installed."
+        return 1
+        # echo "Package '$package_name' is not installed."
     fi
 }
 
