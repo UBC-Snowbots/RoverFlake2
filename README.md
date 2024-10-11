@@ -5,7 +5,7 @@ RoverFlake1 is old.
 ### Setting up this repo on your computer
 _Reccomended/Required: Ubuntu 22.04_
 
-SSH authentication is the easiest way to get authorized to push code. 
+SSH authentication is the easiest way to get authorized to push code. \n
 To set up SSH keys on your computer, follow this tutorial: 
 [Generating a new SSH key and adding it to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent) 
 
