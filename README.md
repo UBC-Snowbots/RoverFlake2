@@ -46,5 +46,5 @@ _This is only needed if you did not clone recursivley._
 This error means CMake cannot find a package, specifically a ROS2 package. In the above error example CMake cannot find the serial package, which is an external package we use to communicate over USB connections.
 If you get this error for another package, you may just need to install it:
 
-> 'sudo apt install ros-humble-<package>-<name>'
+> 'sudo apt install ros-humble-<package_name>'
  
