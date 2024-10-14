@@ -17,6 +17,10 @@ echo Will install ros2 humble, vscode, btop, tmux and other useful tools.
 # sleep 1
 echo This script will NOT install discord. run install-discord.sh if you want discord.
 sleep 1.0
+echo starting with ros2...
+
+#sudo apt update
+bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
 
 
 apt_packages_to_install=(
