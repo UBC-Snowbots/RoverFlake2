@@ -24,9 +24,11 @@ apt_packages_to_install=(
     "git"
     "btop"
     "tmux"
-    
-    # add more packages as needed
+    "libgtkmm-3.0-dev"
+    "python3-rosdep"
 )
+
+
 
 # Loop through the package list and install missing packages
 for package in "${apt_packages_to_install[@]}"; do
@@ -44,3 +46,23 @@ for package in "${apt_packages_to_install[@]}"; do
         fi
     fi
 done
+
+#install ros2 packages
+sudo rosdep init
+rosdep update
+rosdep install --from-paths src -y --ignore-src
+# for package in "${ros_packages_to_install[@]}"; do
+#     if is_package_installed "$package"; then
+#         echo "Package '$package' is already installed."
+#     else
+#         echo "Installing package '$package'..."
+#         # sudo apt update
+#         sudo apt install -y "$package"
+        
+#         if [ $? -eq 0 ]; then
+#             echo "Package '$package' installed successfully."
+#         else
+#             echo "Failed to install package '$package'."
+#         fi
+#     fi
+# done
