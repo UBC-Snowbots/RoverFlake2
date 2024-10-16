@@ -20,6 +20,8 @@ sleep 1.0
 echo starting with ros2...
 
 #sudo apt update
+cd $HOME/RoverFlake2/setup_scripts/
+bash install_dependencies.sh
 bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
 
 
@@ -50,7 +52,8 @@ for package in "${apt_packages_to_install[@]}"; do
         fi
     fi
 done
-
+cd $HOME/RoverFlake2/
+source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
 rosdep update
