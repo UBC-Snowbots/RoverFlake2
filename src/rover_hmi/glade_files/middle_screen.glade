@@ -1342,9 +1342,80 @@ sends $h(A)</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLayout">
+          <!-- n-columns=5 n-rows=3 -->
+          <object class="GtkGrid" id="Arm_Testing_Card">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="row-homogeneous">True</property>
+            <property name="column-homogeneous">True</property>
+            <child>
+              <object class="GtkButton" id="arm_abort_button1">
+                <property name="label" translatable="yes">ARM ABORT</property>
+                <property name="width-request">298</property>
+                <property name="height-request">124</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Immediatley sends command to stop arm movement. Safe to spam. NOT A REPLACEMENT FOR THE PHYSICAL EMERGENCY STOP.</property>
+                <style>
+                  <class name="arm_abort_button"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">arm testing panel</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="name">page0</property>
