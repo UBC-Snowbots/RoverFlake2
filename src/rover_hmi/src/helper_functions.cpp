@@ -1,10 +1,11 @@
 #include <RoverHMI.h>
 
 
-void MainHMINode::load_css(const Glib::RefPtr<Gtk::CssProvider>& provider){
+void load_css(const Glib::RefPtr<Gtk::CssProvider>& provider, std::string css_file_path){
     try {
-        provider->load_from_path(main_css_file_path);
+        provider->load_from_path(css_file_path);
     } catch (const Glib::Error& err) {
-        RCLCPP_ERROR(this->get_logger(), "Css load failed: %s", err.what().c_str());
+        // RCLCPP_ERROR(this->get_logger(), "Css load failed: %s", err.what().c_str());
+        std::cout << "Css load fail" << std::endl;
     }
 }
