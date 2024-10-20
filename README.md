@@ -13,7 +13,8 @@ To set up SSH keys on your computer, follow this tutorial:
 Then, set up the newly generated SSH in github with this tutorial: [Adding a new SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
 
 Now, you can clone the repo, with SSH, **NOT HTTPS**:
-> `Install into your home directory`
+> `#Install into your home directory`
+> 
 > `git clone --recurse-submodules git@github.com:UBC-Snowbots/RoverFlake2.git`
 
 _Obviously you are welcome to use HTTPS or another form of authentication (like GitHub Desktop) if you prefer_
