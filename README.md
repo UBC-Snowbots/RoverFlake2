@@ -13,16 +13,16 @@ To set up SSH keys on your computer, follow this tutorial:
 Then, set up the newly generated SSH in github with this tutorial: [Adding a new SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
 
 Now, you can clone the repo, with SSH, **NOT HTTPS**:
-
+> `Install into your home directory`
 > `git clone --recurse-submodules git@github.com:UBC-Snowbots/RoverFlake2.git`
 
 _Obviously you are welcome to use HTTPS or another form of authentication (like GitHub Desktop) if you prefer_
 
 Then cd in, and we can use setup scripts from here. 
 
-> `bash setup_scripts/install_ros2.sh`
+> `bash setup_scripts/setup_everything_common.sh`
 
-This script will install ros2. 
+This script will install ros2, as well as other common dependencies. 
 
 
 ### COMMON ISSUES & TROUBLESHOOTING
