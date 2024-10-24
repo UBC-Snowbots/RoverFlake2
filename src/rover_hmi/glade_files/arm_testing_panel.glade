@@ -35,8 +35,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_1_button">
                 <property name="label" translatable="yes">A1 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -49,8 +47,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_1_button">
                 <property name="label" translatable="yes">A1 DECREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -63,8 +59,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_2_button">
                 <property name="label" translatable="yes">A2 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -77,8 +71,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_3_button">
                 <property name="label" translatable="yes">A3 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -91,8 +83,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_4_button">
                 <property name="label" translatable="yes">A4 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -105,8 +95,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_5_button">
                 <property name="label" translatable="yes">A5 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -119,8 +107,6 @@
             <child>
               <object class="GtkButton" id="inc_axis_6_button">
                 <property name="label" translatable="yes">A6 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -133,8 +119,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_2_button">
                 <property name="label" translatable="yes">A2 INCREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -147,8 +131,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_3_button">
                 <property name="label" translatable="yes">A3 DECREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -161,8 +143,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_4_button">
                 <property name="label" translatable="yes">A4 DECREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -175,8 +155,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_5_button">
                 <property name="label" translatable="yes">A5 DECREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -189,8 +167,6 @@
             <child>
               <object class="GtkButton" id="dec_axis_6_button">
                 <property name="label" translatable="yes">A6 DECREASE</property>
-                <property name="width-request">146</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -202,8 +178,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_1_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">100</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -220,8 +194,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_2_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -238,8 +210,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_3_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">100</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -256,8 +226,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_4_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -274,8 +242,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_5_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -292,8 +258,6 @@
             </child>
             <child>
               <object class="GtkSpinButton" id="axis_6_speed_spinbutton">
-                <property name="width-request">100</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="width-chars">5</property>
@@ -327,8 +291,6 @@
             <child>
               <object class="GtkButton" id="arm_abort_button">
                 <property name="label" translatable="yes">ARM ABORT</property>
-                <property name="width-request">298</property>
-                <property name="height-request">124</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -346,8 +308,6 @@
             <child>
               <object class="GtkButton" id="test_limits_button">
                 <property name="label" translatable="yes">Test Limit Switches</property>
-                <property name="width-request">204</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -368,8 +328,6 @@ sends $h(A)</property>
                 <property name="label" translatable="yes">Position
 Feedback
 ON</property>
-                <property name="width-request">114</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -384,8 +342,6 @@ ON</property>
                 <property name="label" translatable="yes">Position
 Feedback
 OFF</property>
-                <property name="width-request">114</property>
-                <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -426,8 +382,6 @@ sends $h(A)</property>
         <child>
           <!-- n-columns=4 n-rows=4 -->
           <object class="GtkGrid">
-            <property name="width-request">243</property>
-            <property name="height-request">182</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="row-spacing">6</property>
@@ -603,8 +557,6 @@ sends $h(A)</property>
         <child>
           <!-- n-columns=4 n-rows=4 -->
           <object class="GtkGrid">
-            <property name="width-request">243</property>
-            <property name="height-request">182</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="row-spacing">6</property>
