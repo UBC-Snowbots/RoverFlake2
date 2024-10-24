@@ -57,8 +57,8 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS 
-  main_hmi_node
-  middle_rover_viz_node
+  #main_hmi_node
+  #middle_rover_viz_node
   arm_hmi_node
   DESTINATION lib/${PROJECT_NAME}/
   )
