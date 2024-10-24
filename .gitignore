@@ -48,7 +48,7 @@ qtcreator-*
 .#*
 
 # Glade temp file
-*.glade*
+#*.glade*
 
 # Catkin custom files
 CATKIN_IGNORE
