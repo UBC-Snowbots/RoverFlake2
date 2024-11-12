@@ -69,12 +69,15 @@ add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h
 ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs moveit_servo  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h include/armControlParams.h)
 ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
+add_executable(sim_helper src/sim_helper_node.cpp)
+ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs)
 
 install(
   TARGETS
  #   old_arm_servo
     joy_arm_control
     moveit_control
+    sim_helper
     # servo_cpp_interface_demo
   DESTINATION
     lib/${PROJECT_NAME}
