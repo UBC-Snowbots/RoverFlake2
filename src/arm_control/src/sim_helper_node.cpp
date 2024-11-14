@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp" // Include your custom message
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 
 class ArmCommandNode : public rclcpp::Node
 {
@@ -15,6 +16,10 @@ public:
         // Publisher to /arm/sim_command
         sim_command_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
             "/arm/sim_command", 10);
+        
+        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>(
+            "/joint_states", 10);
+        
     }
 
 private:
@@ -34,8 +39,13 @@ private:
         sim_command_publisher_->publish(sim_command_msg);
     }
 
+    void armFeedbackCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg){
+        // sensor_msgs::msg::JointState joint_states_msg = 
+    }
+
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_command_subscriber_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr sim_command_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 };
 
 int main(int argc, char **argv)
