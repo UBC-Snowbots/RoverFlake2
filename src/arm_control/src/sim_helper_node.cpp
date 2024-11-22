@@ -2,7 +2,8 @@
 #include "rover_msgs/msg/arm_command.hpp" // Include your custom message
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
-
+#include "armControlParams.h"
+#include "rover_utils/include/fancyOutput.h"
 class ArmCommandNode : public rclcpp::Node
 {
 public:
@@ -10,16 +11,27 @@ public:
     {
         // Subscriber to /arm/command
         arm_command_subscriber_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
-            "/arm/command", 10,
+            ArmConstants::command_topic, 10,
             std::bind(&ArmCommandNode::armCommandCallback, this, std::placeholders::_1));
 
         // Publisher to /arm/sim_command
         sim_command_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
-            "/arm/sim_command", 10);
+            ArmConstants::sim_command_topic, 10);
         
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>(
-            "/joint_states", 10);
+            ArmConstants::joint_sates_topic, 10);
+
+        #ifdef SIM_STARTEND_MSGS
+            RCLCPP_INFO(this->get_logger(), "Arm sim helper node is now %s%sonline!", ConsoleFormat::bold(), ConsoleFormat::green());
+        #endif
         
+    }
+
+    ~ArmCommandNode(){
+        #ifdef SIM_STARTEND_MSGS
+                       RCLCPP_INFO(this->get_logger(), "Arm sim helper node has gone %s%soffline", ConsoleFormat::bold(), ConsoleFormat::red());
+
+        #endif
     }
 
 private:

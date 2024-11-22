@@ -1,8 +1,10 @@
 // Parameters for the arm. Specific to our hardware and firmware
-
+// May want to move to rover_utils for better standardization
+#include <string_view>
 //* Debug levels - comment out what you don't want to see in the terminal
 
 #define PRINTOUT_AXIS_PARAMS
+#define SIM_STARTEND_MSGS
 
 
 #define VELOCITY_BASED 1
@@ -24,13 +26,19 @@ struct ArmConstants{
                                                      1,
                                                      1};
 
+    // static constexpr std::string_view command_topic = "/arm/command";
+    static constexpr char command_topic[] = "/arm/command";
+
+    static constexpr char sim_command_topic[] = "/arm/sim_command";
+    static constexpr char joint_sates_topic[] = "/joint_states";
+
 };
 
 
 //Can use a namespace if we want:
 namespace ArmParams{
 
-    
+
 }
 
 //From moveit_control.h (the one we use)
