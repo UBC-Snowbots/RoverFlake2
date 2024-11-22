@@ -29,7 +29,7 @@ public:
 
     ~ArmCommandNode(){
         #ifdef SIM_STARTEND_MSGS
-                       RCLCPP_INFO(this->get_logger(), "Arm sim helper node has gone %s%soffline", ConsoleFormat::bold(), ConsoleFormat::red());
+            RCLCPP_INFO(this->get_logger(), "Arm sim helper node has gone %s%soffline", ConsoleFormat::bold(), ConsoleFormat::red());
 
         #endif
     }

@@ -43,7 +43,7 @@ public:
 
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
-        arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
+        arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>(ArmConstants::command_topic, qos);
 
         // joy_vibrator = this->create_publisher<sensor_msgs::msg::JoyFeedback>("/joy/feedback", qos);
 
@@ -52,7 +52,7 @@ public:
         trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>(
             "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
         joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
+            ArmConstants::joy_topic, 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
         
 	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>("/arm_moveit_control/delta_joint_cmds", 10);
 	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("/arm_moveit_control/delta_twist_cmds", 10);

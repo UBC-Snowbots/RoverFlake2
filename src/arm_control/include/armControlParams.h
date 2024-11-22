@@ -26,11 +26,17 @@ struct ArmConstants{
                                                      1,
                                                      1};
 
-    // static constexpr std::string_view command_topic = "/arm/command";
+    // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
     static constexpr char command_topic[] = "/arm/command";
 
     static constexpr char sim_command_topic[] = "/arm/sim_command";
     static constexpr char joint_sates_topic[] = "/joint_states";
+    static constexpr char joy_topic[] = "/joy";
+    
+    //Moveit topics
+    static constexpr char servo_ik_topic[] = "/arm_moveit_control/delta_twist_cmds"; //inverse kinematics
+    static constexpr char servo_fk_topic[] = "/arm_moveit_control/delta_joint_cmds"; //forward kinematics (joint space)
+
 
 };
 

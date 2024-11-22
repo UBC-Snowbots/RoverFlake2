@@ -61,6 +61,7 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
 
 
 int main(int argc, char *argv[]) {
+  // ArmConstants instance;
     rclcpp::init(argc, argv);
     auto node = std::make_shared<ArmMoveitControl>();
 rclcpp::sleep_for(std::chrono::seconds(4));
@@ -77,7 +78,7 @@ auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningS
     node, "robot_description", tf_buffer, "planning_scene_monitor");   
 if (planning_scene_monitor->getPlanningScene())
 {
-  planning_scene_monitor->startStateMonitor("/joint_states");
+  planning_scene_monitor->startStateMonitor("/joint_states"); //!not sure why ArmConstants struct doesn't work here.
   planning_scene_monitor->setPlanningScenePublishingFrequency(25);
   planning_scene_monitor->startPublishingPlanningScene(planning_scene_monitor::PlanningSceneMonitor::UPDATE_SCENE,
                                                        "/servo_node/publish_planning_scene");
