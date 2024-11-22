@@ -47,6 +47,9 @@ qtcreator-*
 # Emacs
 .#*
 
+# Glade temp file
+#*.glade*
+
 # Catkin custom files
 CATKIN_IGNORE
 install/
