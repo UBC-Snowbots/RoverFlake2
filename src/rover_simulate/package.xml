@@ -14,7 +14,7 @@
 
   <depend>rclcpp</depend>
   <depend>gazebo_ros</depend>
-  <depend>rover_urdf</depend>
+  <depend>rover_description</depend>
   <depend>trajectory_msgs</depend>
   <depend>std_msgs</depend>
 

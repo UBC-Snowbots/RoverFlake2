@@ -12,7 +12,7 @@ import xacro
 def generate_launch_description():
 
     # Specify the name of the package and path to xacro file within the package
-    raw_urdf_pkg_name = 'rover_urdf'
+    raw_urdf_pkg_name = 'rover_description'
     file_subpath = 'urdf/chassis_urdf_24_gazebo.urdf'
 
 
