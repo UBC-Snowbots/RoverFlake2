@@ -1,5 +1,5 @@
 <package format="3">
-  <name>dev_arm</name>
+  <name>dev_arm_description</name>
   <version>1.0.0</version>
   <description>
     <p>URDF Description package for dev_arm</p>
@@ -15,8 +15,8 @@ for URDF RevA.SLDASM robot</p>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <!-- <exec_depend>joint_state_publisher_gui</exec_depend> -->
-  <exec_depend>gazebo_ros</exec_depend>
-
+  <exec_depend>gazebo_ros</exec_depend> 
+<!-- gazebo_ros is probably not needed -->
   <!-- Export settings -->
   <export>
     <build_type>ament_cmake</build_type>

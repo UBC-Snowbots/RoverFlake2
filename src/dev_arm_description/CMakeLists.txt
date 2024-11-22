@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(dev_arm)
+project(dev_arm_description)
 
 # Find necessary packages
 find_package(ament_cmake REQUIRED)
