@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include "sensor_msgs/msg/joy.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "arm_control/include/armControlParams.h"
 
 #include "rover_msgs/msg/arm_command.hpp"
 #include <thread>

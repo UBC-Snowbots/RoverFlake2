@@ -17,6 +17,7 @@
   <depend>sensor_msgs</depend>
   <depend>serial</depend>
   <depend>rover_msgs</depend>
+  <depend>arm_control</depend>
 
 
   <export>

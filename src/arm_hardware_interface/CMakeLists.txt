@@ -11,18 +11,20 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(arm_control REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 include_directories(
   include
+  ${arm_control_INCLUDE_DIRS}
 )
 
 
 add_library(${PROJECT_NAME} src/armprotocol.cpp include/arm_hardware_interface/ArmSerialProtocol.h)
 
 add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
-ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial rover_msgs)
+ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial rover_msgs arm_control)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
