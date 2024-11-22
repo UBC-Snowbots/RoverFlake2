@@ -54,8 +54,8 @@ public:
         joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             ArmConstants::joy_topic, 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
         
-	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>("/arm_moveit_control/delta_joint_cmds", 10);
-	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("/arm_moveit_control/delta_twist_cmds", 10);
+	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>(ArmConstants::servo_fk_topic, 10);
+	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(ArmConstants::servo_ik_topic, 10);
         // arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
         //     "/arm/feedback", 10, std::bind(&ArmMoveitControl::arm_callback, this, std::placeholders::_1));
 // timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ArmMoveitControl::publishCommands, this));

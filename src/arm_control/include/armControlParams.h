@@ -30,7 +30,7 @@ struct ArmConstants{
     static constexpr char command_topic[] = "/arm/command";
 
     static constexpr char sim_command_topic[] = "/arm/sim_command";
-    static constexpr char joint_sates_topic[] = "/joint_states";
+    static constexpr char joint_states_topic[] = "/joint_states";
     static constexpr char joy_topic[] = "/joy";
     
     //Moveit topics

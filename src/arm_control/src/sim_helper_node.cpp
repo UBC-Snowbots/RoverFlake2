@@ -19,7 +19,7 @@ public:
             ArmConstants::sim_command_topic, 10);
         
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>(
-            ArmConstants::joint_sates_topic, 10);
+            ArmConstants::joint_states_topic, 10);
 
         #ifdef SIM_STARTEND_MSGS
             RCLCPP_INFO(this->get_logger(), "Arm sim helper node is now %s%sonline!", ConsoleFormat::bold(), ConsoleFormat::green());
