@@ -51,3 +51,6 @@ qtcreator-*
 CATKIN_IGNORE
 install/
 log/
+
+**/.vscode/
+**/TODO.md
