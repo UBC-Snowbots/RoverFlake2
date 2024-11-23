@@ -189,12 +189,27 @@ def generate_launch_description():
             ('/joy', '/joy'),  # Remap topics if necessary
         ],
     )
+    hmi_node = Node(
+        package='rover_hmi',
+        executable='main_hmi_node',  # Replace with the correct executable name if different
+		name='hmi_node',
+		output='screen',
+	)
+    arm_hardware_interface_node = Node(
+        package='arm_hardware_interface',
+        executable='arm_serial_driver',  # Replace with the correct executable name if different
+        name='arm_hardware_interface_node',
+        #output='log',
+	)
+   
 
     return LaunchDescription(
         [
             joy_node,
             rviz_node,
             ros2_control_node,
+            #hmi_node,
+           # arm_hardware_interface_node,
             # joint_state_broadcaster_spawner,
           #  dev_arm_controller_spawner,
       #      servo_node,

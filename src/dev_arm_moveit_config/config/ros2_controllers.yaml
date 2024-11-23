@@ -5,7 +5,7 @@ joint_state_broadcaster:
 
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz
+    update_rate: 25  # Hz
 
     dev_arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController

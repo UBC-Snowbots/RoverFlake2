@@ -65,7 +65,7 @@ private:
 
     serial::Serial teensy;
     serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000); // E.g., 1000 ms or 1 second
-    
+
 
     struct Axis{
       float curr_pos;
