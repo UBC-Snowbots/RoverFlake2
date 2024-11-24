@@ -189,7 +189,6 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void handleAxisSpeedUpdate(int i);
 
     void handleIKTestButtonClick();
-    
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Gtk::Window* middle_window;

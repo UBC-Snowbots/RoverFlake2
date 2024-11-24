@@ -1,4 +1,5 @@
 #include "RoverHMI.h"
+#include <arm_control/include/armControlParams.h>
 
 
 class ArmHMINode : public rclcpp::Node, public Gtk::Window
@@ -106,7 +107,7 @@ class ArmHMINode : public rclcpp::Node, public Gtk::Window
             builder->get_widget("axis_6_speed_spinbutton", axis_speed_spinbutton[5]);
             for(int i = 0; i < 6; i++){
                 axis_speed_spinbutton[i]->set_range(0.0, 90.0);
-                axis_speed_spinbutton[i]->set_value(5.0);
+                axis_speed_spinbutton[i]->set_value(axis_hmi_speed[i]);
                 axis_speed_spinbutton[i]->signal_value_changed().connect(sigc::bind(sigc::mem_fun(*this, &ArmHMINode::handleAxisSpeedUpdate) , i));
             }
 
@@ -161,22 +162,22 @@ class ArmHMINode : public rclcpp::Node, public Gtk::Window
 
     Gtk::Widget* image_draw_area;
 
-    Gtk::Label* axis_pos_label[6];
+    Gtk::Label* axis_pos_label[NUM_JOINTS];
 
     Gtk::Button* home_all_button;
     Gtk::Button* pos_feed_on_button;
     Gtk::Button* pos_feed_off_button;
     Gtk::Button* test_limits_button;
 
-    Gtk::SpinButton* axis_speed_spinbutton[6];
+    Gtk::SpinButton* axis_speed_spinbutton[NUM_JOINTS];
 
 
     Gtk::Button* arm_abort_button; //! Arm Abort Button
 
-    Gtk::Button* dec_axis_button[6];
-    Gtk::Button* inc_axis_button[6];
+    Gtk::Button* dec_axis_button[NUM_JOINTS];
+    Gtk::Button* inc_axis_button[NUM_JOINTS];
   
-    float axis_hmi_speed[6] = {5.0, 5.0, 5.0, 5.0, 5.0, 5.0};
+    float axis_hmi_speed[NUM_JOINTS] = {15.0, 12.0, 15.0, 30.0, 15.0, 80.0}; //Set axis default speeds here. In degrees per second
 
 
     //* System Overview

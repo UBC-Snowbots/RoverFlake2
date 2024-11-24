@@ -174,7 +174,7 @@ void MainHMINode::image_feed_callback(const sensor_msgs::msg::Image::SharedPtr m
 
 
 void MainHMINode::armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
-    RCLCPP_INFO(this->get_logger(), "meow arm");
+    // RCLCPP_INFO(this->get_logger(), "meow arm");
     for(int i = 0; i < msg->positions.size(); i++){
         
         this->axis_pos_label[i]->set_label(floatToStringTruncate(msg->positions[i], 2));
@@ -184,7 +184,7 @@ void MainHMINode::armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedP
 
 void MainHMINode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg){
     // lights_status
-    RCLCPP_INFO(this->get_logger(), "meow cmdvel");
+    // RCLCPP_INFO(this->get_logger(), "meow cmdvel");
 }
 
 void MainHMINode::changeCard(std::string target_card){
