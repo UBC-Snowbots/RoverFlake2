@@ -10,20 +10,20 @@
 #define VELOCITY_BASED 1
 #define POSITION_BASED 2
 #define NUM_JOINTS 6
-
+#define PI 3.14
 struct ArmConstants{
     static constexpr float axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
                                                     -1.9390,          //* Axis 2 Offset
                                                     -1.3460,         //* Axis 3 Offset
-                                                    -2.4108,      // Axis 4 Offset
-                                                     -2.2060,         //* Axis 5 Offset
+                                                    -2.4108, //+PI      // Axis 4 Offset 
+                                                     -2.2060,//+PI         //* Axis 5 Offset
                                                     0};        //? Axis 6 Offset
     
     static constexpr int axis_dirs[NUM_JOINTS] =          {-1,
-                                                     -1, 
                                                      1, 
-                                                     -1,
+                                                     1, 
                                                      1,
+                                                     -1,
                                                      1};
 
     // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
