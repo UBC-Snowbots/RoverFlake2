@@ -759,10 +759,10 @@
       </plugin>
     </sensor>
   </gazebo>
-    <gazebo reference="ptz_link">
+  <!-- <gazebo reference="ptz_link">
     <sensor type="camera" name="ptz">
       <update_rate>30.0</update_rate>
-      <camera name="head">
+      <camera name="ptz">
         <horizontal_fov>1.3962634</horizontal_fov>
         <image>
           <width>1000</width>
@@ -775,9 +775,9 @@
         </clip>
         <noise>
           <type>gaussian</type>
-          <!-- Noise is sampled independently per pixel on each frame.
+          Noise is sampled independently per pixel on each frame.
                That pixel's noise value is added to each of its color
-               channels, which at that point lie in the range [0,1]. -->
+               channels, which at that point lie in the range [0,1]. 
           <mean>0.0</mean>
           <stddev>0.007</stddev>
         </noise>
@@ -797,8 +797,8 @@
         <distortionT2>0.0</distortionT2>
       </plugin>
     </sensor>
-  </gazebo>
-  <!-- <gazebo reference="imu_link">
+  </gazebo> 
+  <gazebo reference="imu_link">
     <gravity>true</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
@@ -817,10 +817,10 @@
       </plugin>
       <pose>0 0 0 0 0 0</pose>
     </sensor>
-  </gazebo> -->
+  </gazebo> 
 
-    <!-- hokuyo 2d lidar -->
-   <!-- <gazebo reference="hokuyo_link">
+  hokuyo 2d lidar
+   <gazebo reference="hokuyo_link">
     <sensor type="gpu_ray" name="head_hokuyo_sensor">
       <pose>0 0 0 0 0 0</pose>
       <visualize>false</visualize>

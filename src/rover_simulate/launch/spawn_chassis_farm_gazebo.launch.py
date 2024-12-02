@@ -25,6 +25,7 @@ def generate_launch_description():
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
+        # name='chassis_spawner',
         output='screen',
         parameters=[{'robot_description': robot_description_raw,
         'use_sim_time': False}] # add other parameters here if required
@@ -35,7 +36,7 @@ def generate_launch_description():
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
-            launch_arguments={'world': os.path.join(get_package_share_directory('rover_simulate'), 'gazebo_worlds', 'basic.world')}.items(),
+            launch_arguments={'world': os.path.join(get_package_share_directory('rover_simulate'), 'gazebo_worlds', 'farm.world')}.items(),
         )
 
     controller_manager_node = Node(
@@ -52,7 +53,7 @@ def generate_launch_description():
         arguments=['-topic', 'robot_description',
                     '-entity', 'chassis_24',
                     '-x', '0.0', '-y', '0.0', '-z', '3.0',
-                    '-timeout', '100.0'],
+                    '-timeout', '10000.0'],
         output='screen')
     
 
