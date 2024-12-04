@@ -10,7 +10,7 @@ find_package(urdf REQUIRED)
 find_package(robot_state_publisher REQUIRED)
 find_package(rviz2 REQUIRED)
 # find_package(joint_state_publisher_gui REQUIRED)
-find_package(gazebo_ros REQUIRED)
+# find_package(gazebo_ros REQUIRED)
 
 # Install directories for configuration, launch files, meshes, and URDFs
 install(
