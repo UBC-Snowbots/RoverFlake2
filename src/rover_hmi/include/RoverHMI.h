@@ -70,6 +70,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             //* Setup GTK widgets
             builder->get_widget("middle_window", middle_window);
             builder->get_widget("middle_stack", middle_stack);
+            // RCLCPP_INFO(this->get_logger(), "Meowing builder");
 
 
             //*build the system overview card
