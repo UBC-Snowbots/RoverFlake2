@@ -5,7 +5,8 @@
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
-#include <arm_hardware_interface/ArmSerialProtocol.h>
+#include <arm_hardware_interface/ArmSerialProtocol.h> //? Shouldn't be included here, but leave it for now. armControlParams is meant to be the common header for all arm parameters.
+#include <arm_control/include/armControlParams.h>
 
 //opencv and image processing
 #include <opencv2/opencv.hpp>
@@ -32,6 +33,7 @@ void load_css(const Glib::RefPtr<Gtk::CssProvider>& provider, std::string css_fi
 class MainHMINode : public rclcpp::Node, public Gtk::Window
 {
     public: 
+
         MainHMINode() : Node("main_hmi_node") {
             set_title("middle");
             
@@ -141,30 +143,34 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
             builder->get_widget("axis_5_speed_spinbutton", axis_speed_spinbutton[4]);
             builder->get_widget("axis_6_speed_spinbutton", axis_speed_spinbutton[5]);
             for(int i = 0; i < 6; i++){
-                axis_speed_spinbutton[i]->set_range(0.0, 90.0);
+                axis_speed_spinbutton[i]->set_range(0.0, MainHMINode::max_speeds[i]);
                 axis_speed_spinbutton[i]->set_value(5.0);
                 axis_speed_spinbutton[i]->signal_value_changed().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleAxisSpeedUpdate) , i));
             }
 
+            builder->get_widget("next_panel_button", next_panel_button);
+                next_panel_button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleCardButtonSwitch), true));
+            builder->get_widget("prev_panel_button", prev_panel_button);
+                prev_panel_button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleCardButtonSwitch), false));
 
 
-
-            RCLCPP_INFO(this->get_logger(), "Meowing complete");
+            RCLCPP_INFO(this->get_logger(), "Builder complete");
 
         }
 
 
     void run(){
-            RCLCPP_INFO(this->get_logger(), "Meowing start");
+            RCLCPP_INFO(this->get_logger(), "Start");
 
         app->run(*middle_window);
-            RCLCPP_INFO(this->get_logger(), "Meowing run");
+            RCLCPP_INFO(this->get_logger(), "App Run Success");
 
     }
     std::string current_middle_card = "system_overview_card";
+    // void changeCard(cards target_card);
     void changeCard(std::string target_card);
 
-
+    
     Glib::RefPtr<Gtk::Application> app;
     // void load_css(const Glib::RefPtr<Gtk::CssProvider>& css_provider);
     //*Draw functions, can redraw widgets based on this node's data
@@ -173,9 +179,20 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
 
     bool handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr);
     void image_feed_callback(const sensor_msgs::msg::Image::SharedPtr msg);
+    enum class cards{ //? HMI functions like a stack of cards, every card is a different panel we can view. HMI can only show one card at a time.
+        system_overview, 
+        full_control,
+        arm_testing, //? Panel used for running the arm
+        //? add a new card here if needed
 
+        num_cards //! Always keep at the end of this enumerator.
+    };
+    const std::string available_cards[static_cast<int>(cards::num_cards)] = {"system_overview_card", "full_control_card", "arm_testing_card"}; //? Manually set, refer to glade/gtk widget ID
     private:
     std::string main_css_file_path;
+
+    int current_card_i = 0;
+    std::string current_card = available_cards[0];
     void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
     // rclcpp::TimerBase
     void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
@@ -188,6 +205,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     void handleArmAbortButtonClick();
     void handleTestLimitsButtonClick();
     void handleAxisSpeedUpdate(int i);
+    void handleCardButtonSwitch(bool next);
 
     void handleIKTestButtonClick();
     // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
@@ -200,6 +218,8 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     Gtk::Label* axis_pos_label[6];
 
     Gtk::Button* home_all_button;
+    Gtk::Button* next_panel_button;
+    Gtk::Button* prev_panel_button;
     Gtk::Button* pos_feed_on_button;
     Gtk::Button* pos_feed_off_button;
     Gtk::Button* test_limits_button;
@@ -213,6 +233,7 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
     Gtk::Button* inc_axis_button[6];
   
     float axis_hmi_speed[6] = {5.0, 5.0, 5.0, 5.0, 5.0, 5.0};
+    float max_speeds[NUM_JOINTS] = {90.0, 60.0, 90.0, 100.0, 100.0, 180.0};
 
 
     //* System Overview

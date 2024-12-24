@@ -28,13 +28,40 @@ int main(int argc, char* argv[]){
     //     }
     //     return true;
     // }, 2000);
-    node->current_middle_card = "full_control_card";
-    node->changeCard(node->current_middle_card);
+    // node->current_middle_card = "full_control_card";
+    // node->changeCard(node->available_cards[0]);
 
     node->app = app;
     node->run();
     return 0;
 }
+
+//* @brief Switches cards
+//* @param bool next, if true switches to next card, if false switches to previous card
+//* If at end of cards, rollback to first card
+void MainHMINode::handleCardButtonSwitch(bool next){
+    // cards target_card;
+    
+    RCLCPP_INFO(this->get_logger(), "Card Switch Detected");
+    if(next){
+        //? Switch to next card
+        current_card_i++;
+
+        if(current_card_i >= static_cast<int>(cards::num_cards)){ 
+        current_card_i = 0;
+        }
+    }else{
+        //? Switch to previous card
+        current_card_i--;
+    if(current_card_i < 0){
+        current_card_i = static_cast<int>(cards::num_cards) - 1;
+    }
+    
+    }
+    
+    changeCard(available_cards[current_card_i]); 
+}
+
 
 bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
 {
@@ -187,12 +214,12 @@ void MainHMINode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
     // RCLCPP_INFO(this->get_logger(), "meow cmdvel");
 }
 
+// void MainHMINode::changeCard(cards target_card){
+//     std::string target_card_name = available_cards[static_cast<int>(target_card)];
+//      middle_stack->set_visible_child(target_card_name.c_str());
+// }
 void MainHMINode::changeCard(std::string target_card){
      middle_stack->set_visible_child(target_card.c_str());
-                // m_stack.set_visible_child_name(page_name);
-            // rclcpp::delay(4);
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
-        // middle_stack->set_visible_child("full_control_card");
 }
 
 std::string MainHMINode::floatToStringTruncate(float value, int decimals) {
