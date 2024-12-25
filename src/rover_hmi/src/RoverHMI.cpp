@@ -144,7 +144,7 @@ void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     vel_msg.cmd_type = 'V';
             vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
-            vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call
+            vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
     arm_cmd_pub->publish(vel_msg);
     RCLCPP_ERROR(this->get_logger(), "Arm Movements Abort Demanded.");

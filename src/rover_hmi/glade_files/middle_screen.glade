@@ -121,6 +121,9 @@
           <object class="GtkStack" id="middle_stack">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="margin-top">5</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="transition-type">crossfade</property>
             <child>
               <object class="GtkLayout" id="system_overview_card">
@@ -525,6 +528,22 @@
                     <property name="y">58</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="width-request">497</property>
+                    <property name="height-request">94</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">UNFINISHED</property>
+                    <attributes>
+                      <attribute name="font-desc" value="Sans 48"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="x">49</property>
+                    <property name="y">609</property>
+                  </packing>
+                </child>
                 <style>
                   <class name="base_window"/>
                 </style>
@@ -621,6 +640,22 @@
                   <packing>
                     <property name="x">229</property>
                     <property name="y">256</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="width-request">100</property>
+                    <property name="height-request">80</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">UNFINISHED</property>
+                    <attributes>
+                      <attribute name="font-desc" value="Sans 48"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="x">255</property>
+                    <property name="y">436</property>
                   </packing>
                 </child>
               </object>
@@ -1412,6 +1447,79 @@ sends $h(A)</property>
                 <property name="name">arm_testing_card</property>
                 <property name="title" translatable="yes">arm_testing_panel</property>
                 <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <!-- n-columns=3 n-rows=4 -->
+              <object class="GtkGrid" id="control_base_testing_card">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Control Base Testing Panel</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                    <property name="width">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="name">control_base_testing_card</property>
+                <property name="title" translatable="yes">control_base_testing_panel</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <style>

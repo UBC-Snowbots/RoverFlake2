@@ -183,11 +183,12 @@ class MainHMINode : public rclcpp::Node, public Gtk::Window
         system_overview, 
         full_control,
         arm_testing, //? Panel used for running the arm
+        control_base_testing_card, //? Panel used for testing control base buttons. Akin to like a keyboard macro tester
         //? add a new card here if needed
 
         num_cards //! Always keep at the end of this enumerator.
     };
-    const std::string available_cards[static_cast<int>(cards::num_cards)] = {"system_overview_card", "full_control_card", "arm_testing_card"}; //? Manually set, refer to glade/gtk widget ID
+    const std::string available_cards[static_cast<int>(cards::num_cards)] = {"system_overview_card", "full_control_card", "arm_testing_card", "control_base_testing_card"}; //? Manually set, refer to glade/gtk widget ID
     private:
     std::string main_css_file_path;
 
