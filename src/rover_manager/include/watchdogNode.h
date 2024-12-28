@@ -5,11 +5,20 @@ class WatchdogNode : public rclcpp::Node
 {
 public:
     WatchdogNode() : Node("Watchdog"){
-               // Create a timer that fires every 500 milliseconds
+
+    // rclcpp::Parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
+    this->declare_parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
+    // this->declare_parameter<std::vector<std::string>>("expected_nodes", {});
+
     healthCheckTimer = this->create_wall_timer(
         std::chrono::milliseconds(1000),  // Timer interval
         std::bind(&WatchdogNode::cycleNodeHealth, this) // Callback function
     );
+
+
+
+
+
     }
 
     ~WatchdogNode(){
@@ -19,7 +28,8 @@ public:
     void cycleNodeHealth();
 private:
 
-rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle
+    rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle
+
 
 
 };
