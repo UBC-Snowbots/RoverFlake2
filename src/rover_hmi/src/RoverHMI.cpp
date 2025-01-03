@@ -74,6 +74,11 @@ bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
     return true;
 }
 
+void MainHMINode::handleCmdVelButton(bool pressed, int button){
+    RCLCPP_INFO(this->get_logger(), "CMD VEL BUTTON pressed: %d button: %d", pressed, button);
+
+}
+
 void MainHMINode::handleHomeAllButtonClick(){
     rover_msgs::msg::ArmCommand home_msg;
     home_msg.cmd_type = 'h';
