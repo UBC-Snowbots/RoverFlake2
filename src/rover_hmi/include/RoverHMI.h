@@ -49,6 +49,9 @@ public:
 
     image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
         "/camera1/image_raw", 10, std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
+
+    cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>(
+        "/cmd_vel", qos);    
     cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
 
@@ -354,6 +357,7 @@ private:
 
   rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_pub;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
 
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_sub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_monitor_sub;

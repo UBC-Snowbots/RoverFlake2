@@ -78,6 +78,7 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
     RCLCPP_INFO(this->get_logger(), "CMD VEL BUTTON pressed: %d button: %d", pressed, button);
     float linear = 0;
     float angular = 0;
+    geometry_msgs::msg::Twist msg;
     // float linscale
     cmd_vel_buttons button_triggered = static_cast<cmd_vel_buttons>(button);
     switch(button_triggered){
@@ -122,8 +123,15 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
             linear = 0;
             break;
     }
+    if(!pressed){
+        linear = 0;
+        angular = 0;
+    }
     
     RCLCPP_INFO(this->get_logger(), "Linear: %f, Angular: %f", linear, angular);
+    msg.linear.x = linear;
+    msg.angular.z = angular;
+    cmd_vel_pub->publish(msg);
 
 }
 
