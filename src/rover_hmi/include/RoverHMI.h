@@ -154,6 +154,10 @@ public:
     right_reverse_button->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleCmdVelButton), false,
                                                          static_cast<int>(cmd_vel_buttons::right_reverse)));
 
+    //* Sliders for cmd vel tester
+    builder->get_widget("linear_magslider", linear_magslider);
+    builder->get_widget("angular_magslider", angular_magslider);
+
     builder->get_widget("inc_axis_1_button", inc_axis_button[0]);
     builder->get_widget("inc_axis_2_button", inc_axis_button[1]);
     builder->get_widget("inc_axis_3_button", inc_axis_button[2]);
@@ -283,6 +287,9 @@ private:
   Gtk::Button* left_forward_button;
   Gtk::Button* left_reverse_button;
   Gtk::Button* right_reverse_button;
+
+  Gtk::Scale* linear_magslider;
+  Gtk::Scale* angular_magslider;
 
   enum class cmd_vel_buttons
   {

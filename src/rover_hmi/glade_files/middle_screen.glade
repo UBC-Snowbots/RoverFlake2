@@ -1057,7 +1057,7 @@ sends $h(A)</property>
                     <property name="can-focus">False</property>
                     <property name="column-homogeneous">True</property>
                     <child>
-                      <object class="GtkScale" id="angular_vel">
+                      <object class="GtkScale" id="angular_magslider">
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="margin-top">1</property>
@@ -1075,7 +1075,7 @@ sends $h(A)</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkScale" id="linear_vel">
+                      <object class="GtkScale" id="linear_magslider">
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="margin-top">1</property>

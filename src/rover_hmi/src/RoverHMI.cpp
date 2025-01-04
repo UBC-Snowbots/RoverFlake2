@@ -76,6 +76,54 @@ bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
 
 void MainHMINode::handleCmdVelButton(bool pressed, int button){
     RCLCPP_INFO(this->get_logger(), "CMD VEL BUTTON pressed: %d button: %d", pressed, button);
+    float linear = 0;
+    float angular = 0;
+    // float linscale
+    cmd_vel_buttons button_triggered = static_cast<cmd_vel_buttons>(button);
+    switch(button_triggered){
+        case cmd_vel_buttons::forward: //* Full speed ahead!
+            RCLCPP_INFO(this->get_logger(), "forward");
+            linear = linear_magslider->get_value() * 1; 
+            angular = 0;
+            break;
+        case cmd_vel_buttons::reverse: //* Full speed backwards!
+            RCLCPP_INFO(this->get_logger(), "reverse");
+            linear = linear_magslider->get_value() * -1; 
+            angular = 0;
+            break;
+        case cmd_vel_buttons::right_forward: //* Full speed ahead! Half speed right!
+            RCLCPP_INFO(this->get_logger(), "right_forward");
+            linear = linear_magslider->get_value() * 1;
+            angular = angular_magslider->get_value() * 0.5;
+            break;
+        case cmd_vel_buttons::left_forward: //* ya get the point
+            RCLCPP_INFO(this->get_logger(), "left_forward");
+            linear = linear_magslider->get_value() * 1;
+            angular = angular_magslider->get_value() * -0.5;
+            break;
+        case cmd_vel_buttons::left_reverse:
+            RCLCPP_INFO(this->get_logger(), "left_reverse");
+            linear = linear_magslider->get_value() * -1;
+            angular = angular_magslider->get_value() * -0.5;
+            break;
+        case cmd_vel_buttons::right_reverse:
+            RCLCPP_INFO(this->get_logger(), "right_reverse");
+            linear = linear_magslider->get_value() *-1;
+            angular = angular_magslider->get_value() * 0.5;
+            break;
+        case cmd_vel_buttons::rotate_cw:
+            RCLCPP_INFO(this->get_logger(), "rotate_cw");
+            linear = 0;
+            angular = angular_magslider->get_value() * 1;
+            break;
+        case cmd_vel_buttons::rotate_ccw:
+            RCLCPP_INFO(this->get_logger(), "rotate_ccw");
+            angular = angular_magslider->get_value() * 1;
+            linear = 0;
+            break;
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "Linear: %f, Angular: %f", linear, angular);
 
 }
 
