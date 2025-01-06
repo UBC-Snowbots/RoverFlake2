@@ -119,7 +119,7 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
             break;
         case cmd_vel_buttons::rotate_ccw:
             RCLCPP_INFO(this->get_logger(), "rotate_ccw");
-            angular = angular_magslider->get_value() * 1;
+            angular = angular_magslider->get_value() * -1;
             linear = 0;
             break;
     }

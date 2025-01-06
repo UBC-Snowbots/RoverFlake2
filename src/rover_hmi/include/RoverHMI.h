@@ -175,6 +175,20 @@ public:
     builder->get_widget("dec_axis_5_button", dec_axis_button[4]);
     builder->get_widget("dec_axis_6_button", dec_axis_button[5]);
 
+    builder->get_widget("inc_linx_button", inc_ik_button[0]);
+    builder->get_widget("inc_liny_button", inc_ik_button[1]);
+    builder->get_widget("inc_linz_button", inc_ik_button[2]);
+    builder->get_widget("inc_angx_button", inc_ik_button[3]);
+    builder->get_widget("inc_angy_button", inc_ik_button[4]);
+    builder->get_widget("inc_angz_button", inc_ik_button[5]);
+
+    builder->get_widget("dec_linx_button", dec_ik_button[0]);
+    builder->get_widget("dec_liny_button", dec_ik_button[1]);
+    builder->get_widget("dec_linz_button", dec_ik_button[2]);
+    builder->get_widget("dec_angx_button", dec_ik_button[3]);
+    builder->get_widget("dec_angy_button", dec_ik_button[4]);
+    builder->get_widget("dec_angz_button", dec_ik_button[5]);
+
     for (int i = 0; i < 6; i++)
     {
       inc_axis_button[i]->signal_pressed().connect(
@@ -191,6 +205,13 @@ public:
     builder->get_widget("axis_4_speed_spinbutton", axis_speed_spinbutton[3]);
     builder->get_widget("axis_5_speed_spinbutton", axis_speed_spinbutton[4]);
     builder->get_widget("axis_6_speed_spinbutton", axis_speed_spinbutton[5]);
+
+    builder->get_widget("linx_speed_spinbutton", ik_speed_spinbutton[0]);
+    builder->get_widget("liny_speed_spinbutton", ik_speed_spinbutton[1]);
+    builder->get_widget("linz_speed_spinbutton", ik_speed_spinbutton[2]);
+    builder->get_widget("angx_speed_spinbutton", ik_speed_spinbutton[3]);
+    builder->get_widget("angy_speed_spinbutton", ik_speed_spinbutton[4]);
+    builder->get_widget("angz_speed_spinbutton", ik_speed_spinbutton[5]);
     for (int i = 0; i < 6; i++)
     {
       axis_speed_spinbutton[i]->set_range(0.0, MainHMINode::max_speeds[i]);
@@ -306,12 +327,18 @@ private:
     right_reverse
   };
 
+  //* Arm Control Panel
   Gtk::SpinButton* axis_speed_spinbutton[6];
+  Gtk::SpinButton* ik_speed_spinbutton[6];
 
   Gtk::Button* arm_abort_button;  //! Arm Abort Button
 
   Gtk::Button* dec_axis_button[6];
   Gtk::Button* inc_axis_button[6];
+
+  Gtk::Button* dec_ik_button[6];
+  Gtk::Button* inc_ik_button[6];
+
 
   float axis_hmi_speed[6] = { 5.0, 5.0, 5.0, 5.0, 5.0, 5.0 };
   float max_speeds[NUM_JOINTS] = { 90.0, 60.0, 90.0, 100.0, 100.0, 180.0 };
