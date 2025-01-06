@@ -405,7 +405,25 @@
     <child
       link="link_tt" />
   </joint>
-  <link
+  <joint
+    name="joint_ee"
+    type="fixed">
+    <!--   <origin
+      xyz="-0.073337 -0.033291 0.14226"
+      rpy="-3.1416 0 1.6469" /> -->
+    <origin
+      xyz="0.0 0.0145 0.078"
+      rpy="0 -1.5707963 0" /> 
+    <parent
+      link="link_6" />
+    <child
+      link="ee_base_link" />
+    <!--   <axis
+      xyz="0.55075 -0.063574 -0.83224" /> -->
+    <axis
+      xyz="0.55075 -0.063574 -0.83224" />
+  </joint>
+  <!-- <link
     name="link_ee">
     <inertial>
       <origin
@@ -444,18 +462,161 @@
           filename="package://dev_arm_description/meshes/link_ee.STL" />
       </geometry>
     </collision>
+  </link> -->
+   <link
+    name="ee_base_link">
+    <inertial>
+      <origin
+        xyz="0.0218566579379172 -0.0144999286498134 6.73971640718918E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.110400636457142" />
+      <inertia
+        ixx="4.63170859050809E-05"
+        ixy="3.78244243109775E-13"
+        ixz="4.33410365799028E-09"
+        iyy="3.92168360881483E-05"
+        iyz="-8.80592456266423E-07"
+        izz="5.02814560103691E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/ee_base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/ee_base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="finger_left">
+    <inertial>
+      <origin
+        xyz="0.507967720786327 -0.171735145200685 0.0217350506360809"
+        rpy="0 0 0" />
+      <mass
+        value="0.115999619262241" />
+      <inertia
+        ixx="5.74339449040048E-05"
+        ixy="-4.04738461398723E-06"
+        ixz="4.10672751622253E-06"
+        iyy="6.33820089311507E-05"
+        iyz="1.79921263203039E-06"
+        izz="4.26375910378819E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/finger_left.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/finger_left.STL" />
+      </geometry>
+    </collision>
   </link>
   <joint
-    name="joint_ee"
-    type="fixed">
+    name="finger_right_joint"
+    type="prismatic">
     <origin
-      xyz="-0.073337 -0.033291 0.14226"
-      rpy="-3.1416 0 1.6469" />
+      xyz="-0.25101 0.39517 0.094886"
+      rpy="-0.087358 0.36707 -0.54398" />
     <parent
-      link="link_6" />
+      link="ee_base_link" />
     <child
-      link="link_ee" />
+      link="finger_left" />
     <axis
-      xyz="0.55075 -0.063574 -0.83224" />
+      xyz="0.32112 0.14724 -0.93552" />
+    <limit
+      lower="-1"
+      upper="1"
+      effort="1"
+      velocity="1" />
+  </joint>
+  <link
+    name="finger_right">
+    <inertial>
+      <origin
+        xyz="-0.426815876709959 -0.20249467129371 -0.196202137940408"
+        rpy="0 0 0" />
+      <mass
+        value="0.115999628451242" />
+      <inertia
+        ixx="5.7509732907773E-05"
+        ixy="5.01508905302232E-06"
+        ixz="5.41680961368987E-06"
+        iyy="6.2169132361382E-05"
+        iyz="-2.15523236920139E-06"
+        izz="4.37747033193312E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/finger_right.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://dev_arm_description/meshes/finger_right.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_left_joint"
+    type="prismatic">
+    <origin
+      xyz="-0.23241 0.37651 0.0074738"
+      rpy="-3.0542 -0.36707 2.5976" />
+    <parent
+      link="ee_base_link" />
+    <child
+      link="finger_right" />
+    <axis
+      xyz="-0.32112 0.14724 0.93552" />
+    <limit
+      lower="-1"
+      upper="1"
+      effort="1"
+      velocity="1" />
   </joint>
 </robot>
