@@ -32,6 +32,7 @@ apt_packages_to_install=(
     "tmux"
     "libgtkmm-3.0-dev"
     "python3-rosdep"
+    "libsfml-dev"
 )
 
 

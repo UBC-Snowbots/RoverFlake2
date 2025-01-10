@@ -1,7 +1,7 @@
 //TODO: make a good comment
 #include "ArmSerialInterface.h"
 
-
+#define PI 3.14159
 
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? new arm offsets. To change, check arm_control/include/armControlParams.h Should be synced with moveit params
@@ -63,7 +63,6 @@ float ArmSerial::degToRad(float deg){
 float ArmSerial::firmToMoveitOffsetPos(float deg, int i){
 
 float rad = degToRad(deg);
-
 return ((rad*axes[i].dir) + (axes[i].zero_rad));
 
 }
@@ -106,8 +105,16 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
-          joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
+          // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
+          joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i); //TODO make based off of real velocity from firmware
+          // joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
+          // prev_joint_states.position[i] = joint_states_.position[i];
+          // joint_states_.position[i] -= axes[i].zero_rad;
          }
+             rclcpp::Time current_time(joint_states_.header.stamp);
+        rclcpp::Time prev_time(prev_joint_states.header.stamp);
+
+
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);
          joint_state_publisher_->publish(joint_states_);
@@ -133,7 +140,7 @@ void ArmSerial::sendMsg(std::string outMsg) {
   //  std::string str_outMsg(reinterpret_cast<const char*>(outMsg), TX_UART_BUFF);
     //std::to_string(str_outMsg);  // +1 to copy the null-terminator
     teensy.write(outMsg);
-   RCLCPP_ERROR(this->get_logger(), "Sent via serial: %s", outMsg.c_str());
+  //  RCLCPP_ERROR(this->get_logger(), "Sent via serial: %s", outMsg.c_str());
    teensy.flushOutput();
 }
 
@@ -206,27 +213,37 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
     }
     break;
     case ABS_VEL_CMD:
-      float target_velocities[NUM_JOINTS];
+      // double sim_target_velocities[NUM_JOINTS];
         for (int i = 0; i < NUM_JOINTS; i++){
       target_velocities[i] = msg->velocities[i];
-      current_velocity[i] = msg->velocities[i];
+        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
+
+      // current_velocity[i] = msg->velocities[i];
 
     }
      if(SIMULATE){
        sensor_msgs::msg::JointState joint_states_;
+      // auto curr_time = this->get_clock()->now();
+         joint_states_.header.stamp = rclcpp::Clock().now();
+
        joint_states_.velocity.resize(NUM_JOINTS);
+       joint_states_.position.resize(NUM_JOINTS);
        joint_states_.name.resize(NUM_JOINTS);
         for(int i = 0; i < NUM_JOINTS; i++){
         joint_states_.name[i] = joint_names[i];
         joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
-        
+        rclcpp::Time current_time(joint_states_.header.stamp);
+        rclcpp::Time prev_time(prev_joint_states.header.stamp);
+        joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
+        prev_joint_states.position[i] = joint_states_.position[i];
+        joint_states_.position[i] -= axes[i].zero_rad;
          }
-         joint_states_.header.stamp = rclcpp::Clock().now();
-
+          prev_joint_states.header.stamp = joint_states_.header.stamp;
          joint_state_publisher_->publish(joint_states_);
 
     }else{
-          send_velocity_command(target_velocities);
+   
+        send_velocity_command(target_velocities); //!
     }
     break;
   default:
@@ -235,13 +252,6 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
  }
 }
 
-// void ArmSerial::sendCommCmd() {
-//   //send home command
-//   std::string msg = "$h(A)\n";
-//   sendMsg(msg);
-
-// }
-// using ArmSerial();
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);

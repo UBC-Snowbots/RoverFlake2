@@ -28,13 +28,40 @@ int main(int argc, char* argv[]){
     //     }
     //     return true;
     // }, 2000);
-    node->current_middle_card = "full_control_card";
-    node->changeCard(node->current_middle_card);
+    // node->current_middle_card = "full_control_card";
+    // node->changeCard(node->available_cards[0]);
 
     node->app = app;
     node->run();
     return 0;
 }
+
+//* @brief Switches cards
+//* @param bool next, if true switches to next card, if false switches to previous card
+//* If at end of cards, rollback to first card
+void MainHMINode::handleCardButtonSwitch(bool next){
+    // cards target_card;
+    
+    RCLCPP_INFO(this->get_logger(), "Card Switch Detected");
+    if(next){
+        //? Switch to next card
+        current_card_i++;
+
+        if(current_card_i >= static_cast<int>(cards::num_cards)){ 
+        current_card_i = 0;
+        }
+    }else{
+        //? Switch to previous card
+        current_card_i--;
+    if(current_card_i < 0){
+        current_card_i = static_cast<int>(cards::num_cards) - 1;
+    }
+    
+    }
+    
+    changeCard(available_cards[current_card_i]); 
+}
+
 
 bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
 {
@@ -45,6 +72,67 @@ bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
         cr->paint();
     }
     return true;
+}
+
+void MainHMINode::handleCmdVelButton(bool pressed, int button){
+    RCLCPP_INFO(this->get_logger(), "CMD VEL BUTTON pressed: %d button: %d", pressed, button);
+    float linear = 0;
+    float angular = 0;
+    geometry_msgs::msg::Twist msg;
+    // float linscale
+    cmd_vel_buttons button_triggered = static_cast<cmd_vel_buttons>(button);
+    switch(button_triggered){
+        case cmd_vel_buttons::forward: //* Full speed ahead!
+            RCLCPP_INFO(this->get_logger(), "forward");
+            linear = linear_magslider->get_value() * 1; 
+            angular = 0;
+            break;
+        case cmd_vel_buttons::reverse: //* Full speed backwards!
+            RCLCPP_INFO(this->get_logger(), "reverse");
+            linear = linear_magslider->get_value() * -1; 
+            angular = 0;
+            break;
+        case cmd_vel_buttons::right_forward: //* Full speed ahead! Half speed right!
+            RCLCPP_INFO(this->get_logger(), "right_forward");
+            linear = linear_magslider->get_value() * 1;
+            angular = angular_magslider->get_value() * 0.5;
+            break;
+        case cmd_vel_buttons::left_forward: //* ya get the point
+            RCLCPP_INFO(this->get_logger(), "left_forward");
+            linear = linear_magslider->get_value() * 1;
+            angular = angular_magslider->get_value() * -0.5;
+            break;
+        case cmd_vel_buttons::left_reverse:
+            RCLCPP_INFO(this->get_logger(), "left_reverse");
+            linear = linear_magslider->get_value() * -1;
+            angular = angular_magslider->get_value() * -0.5;
+            break;
+        case cmd_vel_buttons::right_reverse:
+            RCLCPP_INFO(this->get_logger(), "right_reverse");
+            linear = linear_magslider->get_value() *-1;
+            angular = angular_magslider->get_value() * 0.5;
+            break;
+        case cmd_vel_buttons::rotate_cw:
+            RCLCPP_INFO(this->get_logger(), "rotate_cw");
+            linear = 0;
+            angular = angular_magslider->get_value() * 1;
+            break;
+        case cmd_vel_buttons::rotate_ccw:
+            RCLCPP_INFO(this->get_logger(), "rotate_ccw");
+            angular = angular_magslider->get_value() * -1;
+            linear = 0;
+            break;
+    }
+    if(!pressed){
+        linear = 0;
+        angular = 0;
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "Linear: %f, Angular: %f", linear, angular);
+    msg.linear.x = linear;
+    msg.angular.z = angular;
+    cmd_vel_pub->publish(msg);
+
 }
 
 void MainHMINode::handleHomeAllButtonClick(){
@@ -117,7 +205,7 @@ void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     vel_msg.cmd_type = 'V';
             vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
-            vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call
+            vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
     arm_cmd_pub->publish(vel_msg);
     RCLCPP_ERROR(this->get_logger(), "Arm Movements Abort Demanded.");
@@ -187,12 +275,12 @@ void MainHMINode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
     // RCLCPP_INFO(this->get_logger(), "meow cmdvel");
 }
 
+// void MainHMINode::changeCard(cards target_card){
+//     std::string target_card_name = available_cards[static_cast<int>(target_card)];
+//      middle_stack->set_visible_child(target_card_name.c_str());
+// }
 void MainHMINode::changeCard(std::string target_card){
      middle_stack->set_visible_child(target_card.c_str());
-                // m_stack.set_visible_child_name(page_name);
-            // rclcpp::delay(4);
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
-        // middle_stack->set_visible_child("full_control_card");
 }
 
 std::string MainHMINode::floatToStringTruncate(float value, int decimals) {

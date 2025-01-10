@@ -1,0 +1,8 @@
+/Watchdog:
+  ros_parameters:
+    expected_nodes:
+      - Watchdog
+      - main_hmi_node
+      - joy
+      - arm_serial_interface
+      

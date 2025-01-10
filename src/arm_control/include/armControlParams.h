@@ -1,3 +1,4 @@
+#pragma once //? Ensures file isn't included more than once, which would lead to redefinition compiler errors
 // Parameters for the arm. Specific to our hardware and firmware
 // May want to move to rover_utils for better standardization
 #include <string_view>
@@ -5,7 +6,7 @@
 
 #define PRINTOUT_AXIS_PARAMS
 #define SIM_STARTEND_MSGS
-
+// #define NUM
 
 #define VELOCITY_BASED 1
 #define POSITION_BASED 2

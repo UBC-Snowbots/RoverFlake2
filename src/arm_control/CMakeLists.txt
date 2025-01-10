@@ -71,7 +71,7 @@ include_directories(include)
 add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
 ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs moveit_servo  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h include/armControlParams.h)
-ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo trajectory_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(sim_helper src/sim_helper_node.cpp include/armControlParams.h)
 ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs rover_utils)
 
