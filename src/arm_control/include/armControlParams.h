@@ -23,7 +23,7 @@ struct ArmConstants{
                                                      1, 
                                                      1, 
                                                      1,
-                                                     -1,
+                                                     1,
                                                      1};
 
     // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
