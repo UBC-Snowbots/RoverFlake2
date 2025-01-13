@@ -3,7 +3,15 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
+
   name="dev_arm">
+  <mujoco>
+    <compiler 
+    meshdir="/root/RoverFlake2/src/dev_arm_description/meshes" 
+    balanceinertia="true" 
+    discardvisual="false" />
+</mujoco> 
+
   <link
     name="link_0">
     <!-- <inertial>
