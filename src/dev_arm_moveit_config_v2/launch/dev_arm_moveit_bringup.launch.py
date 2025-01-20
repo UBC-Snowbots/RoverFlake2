@@ -140,11 +140,11 @@ def generate_launch_description():
    #             name="controller_to_servo_node",
     #            parameters=[moveit_config.robot_description],
      #       ),
-            ComposableNode(
-                package="joy",
-                plugin="joy::Joy",
-                name="joy_node",
-            ),
+            # ComposableNode(
+            #     package="joy",
+            #     plugin="joy::Joy",
+            #     name="joy_node",
+            # ),
         ],
         output="screen",
     )
