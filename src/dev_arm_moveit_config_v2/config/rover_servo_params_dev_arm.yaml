@@ -38,7 +38,7 @@ smoothing_filter_plugin_name: "online_signal_smoothing::ButterworthFilterPlugin"
 is_primary_planning_scene_monitor: true
 
 ## MoveIt properties
-move_group_name:  dev_arm  # Often 'manipulator' or 'arm'
+move_group_name:  arm  # Often 'manipulator' or 'arm'
 planning_frame: link_0  # The MoveIt planning frame. Often 'base_link' or 'world'
 
 ## Other frames
@@ -62,7 +62,7 @@ cartesian_command_in_topic: ~/delta_twist_cmds  # Topic for incoming Cartesian t
 joint_command_in_topic: ~/delta_joint_cmds # Topic for incoming joint angle commands
 joint_topic: /joint_states
 status_topic: ~/status # Publish status to this topic
-command_out_topic: /dev_arm_controller/joint_trajectory # Publish outgoing commands here
+command_out_topic: /arm_controller/joint_trajectory # Publish outgoing commands here
 
 ## Collision checking for the entire robot body
 check_collisions: false # Check collisions?
