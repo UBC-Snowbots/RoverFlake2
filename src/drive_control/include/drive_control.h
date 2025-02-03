@@ -1,6 +1,7 @@
 #include <phidget22.h>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.h>
+#include <sensor_msgs/msg/joy.hpp>
 // #include <rover_utils/rover_utils.h>
 
 //* https://www.phidgets.com/?view=api
