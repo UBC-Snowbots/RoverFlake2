@@ -2,8 +2,8 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
-constexpr double MAX_LINEAR_SPEED = 10.0;  // Maximum linear speed (m/s)
-constexpr double MAX_ANGULAR_SPEED = 10.0; // Maximum angular speed (rad/s)
+// constexpr double MAX_LINEAR_SPEED = 10.0;  // Maximum linear speed (m/s)
+// constexpr double MAX_ANGULAR_SPEED = 10.0; // Maximum angular speed (rad/s)
 
 class DriveControlNode : public rclcpp::Node {
 public:
@@ -32,8 +32,18 @@ void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
     // Define the desired linear and angular velocities based on the joystick inputs
     geometry_msgs::msg::Twist twist_msg;
 
-    twist_msg.linear.x = msg->axes[1] * MAX_LINEAR_SPEED;
-    twist_msg.angular.z = msg->axes[3] * MAX_ANGULAR_SPEED;
+    // Get the scaling factor for the desired linear and angular
+    double scale = msg->axes[2]*50;
+
+    // Scale the joystick inputs to the desired linear and angular velocity
+    twist_msg.linear.x = msg->axes[1] * scale;
+    twist_msg.angular.z = msg->axes[0] * scale;
+
+    // Publish the desired velocities to /cmd_vel
+    cmd_vel_pub_->publish(twist_msg);
+
+    // twist_msg.linear.x = msg->axes[1] * MAX_LINEAR_SPEED;
+    // twist_msg.angular.z = msg->axes[3] * MAX_ANGULAR_SPEED;
 
     // Publish the desired velocities to /cmd_vel
     cmd_vel_pub_->publish(twist_msg);

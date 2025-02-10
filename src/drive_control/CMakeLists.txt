@@ -10,6 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED) # Ensure sensor_msgs is found
+find_package(launch REQUIRED)      # ✅ Add launch dependency
+find_package(launch_ros REQUIRED)  # ✅ Add launch_ros dependency
 
 include_directories(include)
 
@@ -39,6 +41,19 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+# ✅ Install the launch directory
+install(
+  DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+# ✅ Install specific launch files (Python-based launch scripts)
+install(
+  PROGRAMS
+    launch/drive_control_launch.py  # Ensure this file exists inside the launch folder
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
 # Install the executable
 install(TARGETS
   drive_node
@@ -46,3 +61,4 @@ install(TARGETS
 )
 
 ament_package()
+
