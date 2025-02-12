@@ -1,6 +1,10 @@
+// #pragma once
+#include "cbsDevice.h"
 #include "rclcpp/rclcpp.hpp"
+#include "serial/serial.h"
+#include "rover_utils/include/fancyOutput.h"
 
-
+// using ConsoleFormat;
 class CBSManagerNode : public rclcpp::Node
 {
 public:
@@ -14,10 +18,16 @@ public:
     //     std::chrono::milliseconds(1000),  // Timer interval
     //     std::bind(&WatchdogNode::cycleNodeHealth, this) // Callback function
     // );
-    attachPort();
+    // attachPort();
+
+    // one.cbs_id.clear();
+    // one.setID("one");
+    // one = CBSDevice("", 9600, "meow");
+    // devices.push_back(one);
+    // one.setLogger(&this->get_logger());
+    ArmPanel.initalize("/dev/USBtty0", 19200, "Arm Panel", this);
+    ArmPanel.testPort("/dev/USBtty0", 19200);
     
-
-
 
 
 
@@ -27,11 +37,13 @@ public:
         RCLCPP_WARN(this->get_logger(), "WARNING: CONTROL BASE MANAGER NODE OFFLINE!");
     }
 
-    void cycleNodeHealth();
 private:
 
     // rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle if we need it
-    bool attachPort(std::string port = "", int baudrate = 9600, int id = 0);
-
+    // bool attachPort(std::string port = "", int baudrate = 9600, int id = 0);
+    std::vector<CBSDevice> devices;
+  
+  CBSDevice ArmPanel;
+    // CBSDevice two;
 
 };
