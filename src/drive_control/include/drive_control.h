@@ -50,8 +50,8 @@ public:
 
         // }
         
-        PhidgetBLDCMotor_setTargetVelocity((PhidgetBLDCMotorHandle) motors[0], 0.5);
-        PhidgetBLDCMotor_enableFailsafe((PhidgetBLDCMotorHandle) motors[0], 612);
+        PhidgetBLDCMotor_setTargetVelocity((PhidgetBLDCMotorHandle) motors[0], 0.5); // The average velocity across your motor is 12V
+        PhidgetBLDCMotor_enableFailsafe((PhidgetBLDCMotorHandle) motors[0], 612); // Enable the failsafe feature for the channel, with the failsafe timer. Failsafe time is in milliseconds
         PhidgetBLDCMotor_getPosition(motors[0], &position);
         RCLCPP_INFO(this->get_logger(), "Position: %f", position);
         timer_ = this->create_wall_timer(
