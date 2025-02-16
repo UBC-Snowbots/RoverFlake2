@@ -1,5 +1,8 @@
 clear
-echo SCREEN 1 | figlet
-sleep 0.8
-echo online | toilet
-
+# sleep 5
+sleep 1
+echo LEFT SCREEN | figlet | lolcat
+sleep 1
+echo online | toilet | lolcat
+sleep 3
+sl

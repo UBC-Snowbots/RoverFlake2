@@ -1,5 +1,6 @@
 #include "cbsDevice.h"
 #include "cbsManagerNode.h"
+using namespace ConsoleFormat;
 bool CBSDevice::attachPort(std::string port, int baudrate, int id){
 if(port.size() == 0){
     RCLCPP_ERROR(manager->get_logger(), "%s Port Open Failure: %s No port name given. Aborting serial connection.", ConsoleFormat::red(), ConsoleFormat::reset());
@@ -37,7 +38,21 @@ int CBSDevice::testPort(std::string port_path, int baudrate){
                 }
 
             }
-            serial.readline();
+            std::string buff;
+            bool id_located = false;
+            while(!id_located){
+                serial.readline(buff);
+                size_t start = buff.find("$");
+                if(start != std::string::npos){ //If we actually found the position of "$"
+                    end_of_id = buff.find("(");                    
+                    std::string id;
+                    panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
+                    RCLCPP_INFO(manager->get_logger() "%s %s %s | String ID found at %i: %s'%s'%s", yellow(), this->cbs_id.c_str(), reset(), start.c_str(), green(), panel_id.c_str(), reset() );
+                }else{
+                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->cbs_id);
+                }
+                
+            }
 
 
         } catch(...){
