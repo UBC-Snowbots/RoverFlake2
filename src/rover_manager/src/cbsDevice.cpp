@@ -44,19 +44,21 @@ int CBSDevice::testPort(std::string port_path, int baudrate){
                 serial.readline(buff);
                 size_t start = buff.find("$");
                 if(start != std::string::npos){ //If we actually found the position of "$"
-                    end_of_id = buff.find("(");                    
+                    int end_of_id = buff.find("(");                    
                     std::string id;
-                    panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
-                    RCLCPP_INFO(manager->get_logger() "%s %s %s | String ID found at %i: %s'%s'%s", yellow(), this->cbs_id.c_str(), reset(), start.c_str(), green(), panel_id.c_str(), reset() );
+                    std::string panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
+                    RCLCPP_INFO(manager->get_logger(), "%s %s %s | String ID found at %li: %s'%s'%s", yellow(), this->cbs_id.c_str(), reset(), start, green(), panel_id.c_str(), reset() );
+                    id_located = true;
+                    // this->id = panel_id;
                 }else{
-                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->cbs_id);
+                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->cbs_id.c_str());
                 }
                 
             }
 
 
         } catch(...){
-    RCLCPP_INFO(manager->get_logger(), "..%s Port Open Failure: %s No port name given. Aborting serial connection.", ConsoleFormat::red(), ConsoleFormat::reset());
+    RCLCPP_INFO(manager->get_logger(), "..%s Port Open Failure: %s No port name given or something is wrong. Aborting serial connection.", ConsoleFormat::red(), ConsoleFormat::reset());
         return SERIAL_PORT_BUSY_OR_DNE;
             }
     }
@@ -75,5 +77,22 @@ void CBSDevice::initalize(std::string port_path, int baudrate, std::string id, C
     RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->cbs_id.c_str());
 
 }
+void CBSDevice::pollRX(){
+    if(this->serial.available() || true){
+    std::string new_buff = this->serial.readline();
+    this->parseBuff(new_buff);
 
+    }else{
+        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse? %s", this->cbs_id.c_str());
+    }
+};
+
+void CBSDevice::parseBuff(std::string buff){
+    //! need switch case to figure out msg type from id
+    rover_msgs::msg::ArmPanel arm_panel_msg;
+    if(sscanf(buff.c_str(), "$arm_joy(%hi,%hi,%hi,%i,%hi,%i,%i,%i)\n", &arm_panel_msg.left.y, &arm_panel_msg.left.meow, &arm_panel_msg.left.z, &arm_panel_msg.left.button, &arm_panel_msg.right.meow, &arm_panel_msg.right.y, &arm_panel_msg.right.z, &arm_panel_msg.right.button) == 8){
+        manager->arm_panel_publisher->publish(arm_panel_msg);
+        RCLCPP_INFO(manager->get_logger(), "Msg Published: %s", buff.c_str());
+    };
+}
 

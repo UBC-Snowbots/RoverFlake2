@@ -1,6 +1,8 @@
 #include <cbsManagerNode.h>
 
-
+void CBSManagerNode::armPanelPoll(){
+    ArmPanel.pollRX();
+}
 
 int main(int argc, char* argv[]){
     //Can use executors here to make more nodes, maybe a node for each serial port

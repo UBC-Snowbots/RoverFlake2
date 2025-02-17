@@ -20,10 +20,10 @@ find_package(serial REQUIRED)
 include_directories(include)
 
 add_executable(watchdog_node src/watchdogNode.cpp include/watchdogNode.h)
-ament_target_dependencies(watchdog_node rclcpp rover_utils)
+ament_target_dependencies(watchdog_node rclcpp rover_utils rover_msgs)
 
 add_executable(cbs_manager_node src/cbsManagerNode.cpp include/cbsManagerNode.h src/cbsDevice.cpp include/cbsDevice.h include/cbsDefinitions.h)
-ament_target_dependencies(cbs_manager_node rclcpp rover_utils serial)
+ament_target_dependencies(cbs_manager_node rclcpp rover_utils serial rover_msgs)
 
 install(TARGETS
   watchdog_node

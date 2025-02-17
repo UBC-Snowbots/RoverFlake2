@@ -5,4 +5,3 @@ echo LEFT SCREEN | figlet | lolcat
 sleep 1
 echo online | toilet | lolcat
 sleep 3
-sl
