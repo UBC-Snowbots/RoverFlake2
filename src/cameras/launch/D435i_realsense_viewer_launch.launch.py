@@ -29,13 +29,10 @@ def generate_launch_description():
             'enable_infra1': True,
             'enable_infra2': True,
             'unite_imu_method': 'linear_interpolation',
-            'infra_width': 848,
+            'infra_width': 640,
             'infra_height': 480,
             'infra_fps': 30,
-        }],
-        remappings=[
-            # Add additional remappings as needed
-        ]
+        }]
     )
 
     # Image viewer node using ExecuteProcess for rqt_image_view

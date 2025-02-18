@@ -24,7 +24,8 @@ setup(
     entry_points={
         'console_scripts': [
             'camera_publisher = cameras.camera_publisher:main',
-            'camera_publisher_full = cameras.camera_publisher_full:main'
+            'camera_publisher_full = cameras.camera_publisher_full:main',
+            'cameras_node = cameras.cameras_node:main'
         ],
     },
 )

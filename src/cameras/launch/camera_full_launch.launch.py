@@ -20,14 +20,23 @@ def list_topics():
 
     # Retrieve image topics
     topics = node.get_topic_names_and_types()
+    node.get_logger().info(f'Topics detected: {topics}')
+
     image_topic_types = [
         'sensor_msgs/msg/Image',
         'sensor_msgs/msg/CompressedImage',
         'sensor_msgs/msg/CameraInfo',
+        'camera/infra1/image_rect_raw',
+        'camera/infra2/image_rect_raw',
+        'camera/color/image_raw',
+        'camera/depth/image_rect_raw'
     ]
 
     # Retrieve any active image or camera feed
     topic_list = [topic for topic, types in topics if any(t in image_topic_types for t in types)]
+
+    if len(topic_list) == 0:
+        node.get_logger().info('No active camera topics found.')
 
     for topic in topic_list:
         node.get_logger().info(f'Active camera topics: {topic}')
