@@ -5,7 +5,7 @@ Created by: Cameron Basara
 Date: , 2024
 Purpose: Publish video feed from all camera topics for complete vision
 
-        run: 'ros2 run cameras camera_publisher_full' --ros-args -p device_path:=/dev/video#' 
+        run: 'ros2 run cameras camera_publisher_full'  
         along side display launch files: 'ros2 launch cameras camera_full_launch.launch.py' eg.
 """
 

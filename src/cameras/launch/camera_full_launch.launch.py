@@ -38,25 +38,24 @@ def list_topics():
     return topic_list
 
 def launch_setup(context, *args, **kwargs):
-    ld = LaunchDescription()
-
-    # Declare launch arguments for camera topics
+    # Get camera topics
     camera_topics = list_topics()
-
+    
     # Create an image_view node for each camera topic
+    launch_entities = []
     for i, topic in enumerate(camera_topics):
         image_view_node = LaunchNode(
             package='image_tools',
             executable='showimage',
             name=f'image_view_{i}',
             output='screen',
-            remappings=[ 
+            remappings=[
                 ('image', topic)  # Adjust the topic for each camera
             ],
         )
-        ld.add_action(image_view_node)
-
-    return ld
+        launch_entities.append(image_view_node)
+    
+    return launch_entities
 
 def generate_launch_description():
     return LaunchDescription([
