@@ -14,7 +14,8 @@
   <depend>cv_bridge</depend>
 
   <!-- Added ultralytics exec dependancy, need to pip install ultralytics on local -->
-  <exec_depend>python3-ultralytics</exec_depend> 
+  <!-- <exec_depend>python3-ultralytics</exec_depend> 
+  <exec_depend>python3-opencv</exec_depend>  -->
 
   <export>
     <build_type>ament_python</build_type>
