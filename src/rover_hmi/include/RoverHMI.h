@@ -4,6 +4,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>  //? Shouldn't be included here, but leave it for now. armControlParams is meant to be the common header for all arm parameters.
 #include <arm_control/include/armControlParams.h>
@@ -52,6 +53,8 @@ public:
 
     cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>(
         "/cmd_vel", qos);    
+        arm_ik_pub = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        "/arm_moveit_control/delta_twist_cmds", qos);  
     cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
 
@@ -197,6 +200,12 @@ public:
       dec_axis_button[i]->signal_pressed().connect(
           sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleDecAxisButtonClick), i));
       dec_axis_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+      inc_ik_button[i]->signal_pressed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIncIKButtonClick), i));
+      inc_ik_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleIKButtonRelease));
+      dec_ik_button[i]->signal_pressed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleDecIKButtonClick), i));
+      dec_ik_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleIKButtonRelease));
     }
 
     builder->get_widget("axis_1_speed_spinbutton", axis_speed_spinbutton[0]);
@@ -278,7 +287,13 @@ private:
   void handlePosFeedOffButtonClick();
   void handleIncAxisButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecAxisButtonClick(int index);
-  void handleAxisButtonRelease();
+   void handleAxisButtonRelease();
+   
+  void handleIncIKButtonClick(int index);  // RELATIVE VELOCITIERSs
+  void handleDecIKButtonClick(int index);
+  void handleIKButtonRelease();
+
+ 
   void handleArmAbortButtonClick();
   void handleTestLimitsButtonClick();
   void handleAxisSpeedUpdate(int i);
@@ -385,6 +400,7 @@ private:
   rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_pub;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
+  rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr arm_ik_pub;
 
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_sub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_monitor_sub;

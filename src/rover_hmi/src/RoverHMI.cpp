@@ -162,6 +162,8 @@ void MainHMINode::handleIncAxisButtonClick(int index){
     
 }
 
+
+
 void MainHMINode::handleAxisButtonRelease(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = ABS_VEL_CMD;
@@ -172,6 +174,92 @@ void MainHMINode::handleAxisButtonRelease(){
     arm_cmd_pub->publish(vel_msg);
 
 }
+
+void MainHMINode::handleIncIKButtonClick(int index){
+    geometry_msgs::msg::TwistStamped ik_msg;
+
+    ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
+    ik_msg.header.frame_id = "link_tt";
+    float value = 0.5; ///TODO get speed based on spinbuttons
+    switch (index)
+    {
+        case 0: // Linear X
+            ik_msg.twist.linear.x = value;
+            break;
+        case 1: // Linear Y
+            ik_msg.twist.linear.y = value;
+            break;
+        case 2: // Linear Z
+            ik_msg.twist.linear.z = value;
+            break;
+        case 3: // Angular X
+            ik_msg.twist.angular.x = value;
+            break;
+        case 4: // Angular Y
+            ik_msg.twist.angular.y = value;
+            break;
+        case 5: // Angular Z
+            ik_msg.twist.angular.z = value;
+            break;
+        default:
+            RCLCPP_WARN(this->get_logger(), "Invalid index: %d. Must be 0-5.", index);
+            return;
+    }
+    
+    arm_ik_pub->publish(ik_msg);
+    
+}
+void MainHMINode::handleDecIKButtonClick(int index){
+    geometry_msgs::msg::TwistStamped ik_msg;
+    ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
+    ik_msg.header.frame_id = "link_tt";
+    float value = -0.5; ///TODO get speed based on spinbuttons
+    switch (index)
+    {
+        case 0: // Linear X
+            ik_msg.twist.linear.x = value;
+            break;
+        case 1: // Linear Y
+            ik_msg.twist.linear.y = value;
+            break;
+        case 2: // Linear Z
+            ik_msg.twist.linear.z = value;
+            break;
+        case 3: // Angular X
+            ik_msg.twist.angular.x = value;
+            break;
+        case 4: // Angular Y
+            ik_msg.twist.angular.y = value;
+            break;
+        case 5: // Angular Z
+            ik_msg.twist.angular.z = value;
+            break;
+        default:
+            RCLCPP_WARN(this->get_logger(), "Invalid index: %d. Must be 0-5.", index);
+            return;
+    }
+    
+    arm_ik_pub->publish(ik_msg);
+    
+}
+
+
+
+void MainHMINode::handleIKButtonRelease(){
+    geometry_msgs::msg::TwistStamped ik_msg;
+    ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
+    ik_msg.header.frame_id = "link_tt";
+    ik_msg.twist.linear.x = 0;
+    ik_msg.twist.linear.y = 0;
+    ik_msg.twist.linear.z = 0;
+    ik_msg.twist.angular.x = 0;
+    ik_msg.twist.angular.y = 0;
+    ik_msg.twist.angular.z = 0;
+
+    
+    arm_ik_pub->publish(ik_msg);
+}
+
 
 
 
@@ -208,6 +296,8 @@ void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
             vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
     arm_cmd_pub->publish(vel_msg);
+    handleIKButtonRelease();
+
     RCLCPP_ERROR(this->get_logger(), "Arm Movements Abort Demanded.");
 }
 
