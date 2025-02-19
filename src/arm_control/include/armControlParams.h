@@ -29,6 +29,9 @@ struct ArmConstants{
 
     // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
     static constexpr char command_topic[] = "/arm/command";
+    static constexpr char sim_ee_topic[] = "/arm/ee_command/sim";
+
+
 
     static constexpr char sim_command_topic[] = "/arm/sim_command";
     static constexpr char joint_states_topic[] = "/joint_states";

@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp" // Include your custom message
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "armControlParams.h"
 #include "rover_utils/include/fancyOutput.h"
@@ -20,6 +21,7 @@ public:
         
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>(
             ArmConstants::joint_states_topic, 10);
+        arm_sim_ee_publisher = this->create_publisher<std_msgs::msg::Float64>(ArmConstants::sim_ee_topic, 10);
 
         #ifdef SIM_STARTEND_MSGS
             RCLCPP_INFO(this->get_logger(), "Arm sim helper node is now %s%sonline!", ConsoleFormat::bold(), ConsoleFormat::green());
@@ -46,7 +48,10 @@ private:
         {
             sim_command_msg.data[i] = msg->velocities[i];
         }
-
+        // auto sim_ee_msg = std_msgs::msg::Float64(); //* idk just don't like this form of initilazation.
+        std_msgs::msg::Float64 arm_sim_ee_msg;
+        arm_sim_ee_msg.data = msg->end_effector;
+        arm_sim_ee_publisher->publish(arm_sim_ee_msg);
         // Publish the message
         sim_command_publisher_->publish(sim_command_msg);
     }
@@ -57,6 +62,7 @@ private:
 
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_command_subscriber_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr sim_command_publisher_;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr arm_sim_ee_publisher;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 };
 
