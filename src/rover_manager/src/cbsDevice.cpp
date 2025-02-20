@@ -1,5 +1,5 @@
 #include "cbsDevice.h"
-#include "cbsManagerNode.h"
+#include "cbsHardwareManagerNode.h"
 using namespace ConsoleFormat;
 bool CBSDevice::attachPort(std::string port, int baudrate, int id){
 if(port.size() == 0){
@@ -71,7 +71,7 @@ void CBSDevice::setID(std::string id){
     // RCLCPP_INFO(manager->get_logger(), "Id set: %s", id.c_str());
 }
 
-void CBSDevice::initalize(std::string port_path, int baudrate, std::string id, CBSManagerNode* manager_){
+void CBSDevice::initalize(std::string port_path, int baudrate, std::string id, CBSHardwareManagerNode* manager_){
     manager = manager_;
     cbs_id = id;
     RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->cbs_id.c_str());

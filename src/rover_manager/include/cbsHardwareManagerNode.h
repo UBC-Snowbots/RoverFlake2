@@ -5,10 +5,10 @@
 #include "rover_utils/include/fancyOutput.h"
 
 using namespace ConsoleFormat;
-class CBSManagerNode : public rclcpp::Node
+class CBSHardwareManagerNode : public rclcpp::Node
 {
 public:
-    CBSManagerNode() : Node("CBSManagerNode"){
+    CBSHardwareManagerNode() : Node("CBSHardwareManagerNode"){
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
     arm_panel_publisher = this->create_publisher<rover_msgs::msg::ArmPanel>("/cbs/arm_panel", qos);
     // rclcpp::Parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
@@ -28,13 +28,13 @@ public:
     
    arm_panel_timer = this->create_wall_timer( //Timer setup if we need it
         std::chrono::milliseconds(10),  // Timer interval
-        std::bind(&CBSManagerNode::armPanelPoll, this) // Callback function
+        std::bind(&CBSHardwareManagerNode::armPanelPoll, this) // Callback function
     );
 
 
     }
 
-    ~CBSManagerNode(){
+    ~CBSHardwareManagerNode(){
         RCLCPP_WARN(this->get_logger(), "WARNING: CONTROL BASE MANAGER NODE OFFLINE!");
     }
     rclcpp::Publisher<rover_msgs::msg::ArmPanel>::SharedPtr arm_panel_publisher;

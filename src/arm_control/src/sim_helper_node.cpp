@@ -24,14 +24,14 @@ public:
         arm_sim_ee_publisher = this->create_publisher<std_msgs::msg::Float64>(ArmConstants::sim_ee_topic, 10);
 
         #ifdef SIM_STARTEND_MSGS
-            RCLCPP_INFO(this->get_logger(), "Arm sim helper node is now %s%sonline!", ConsoleFormat::bold(), ConsoleFormat::green());
+            RCLCPP_INFO(this->get_logger(), "Arm sim helper node is now %s%sonline!%s", ConsoleFormat::bold(), ConsoleFormat::green(), ConsoleFormat::reset());
         #endif
         
     }
 
     ~ArmCommandNode(){
         #ifdef SIM_STARTEND_MSGS
-            RCLCPP_INFO(this->get_logger(), "Arm sim helper node has gone %s%soffline", ConsoleFormat::bold(), ConsoleFormat::red());
+            RCLCPP_INFO(this->get_logger(), "Arm sim helper node has gone %s%soffline %s", ConsoleFormat::bold(), ConsoleFormat::red(), ConsoleFormat::reset());
 
         #endif
     }

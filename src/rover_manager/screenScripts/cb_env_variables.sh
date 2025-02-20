@@ -14,4 +14,5 @@ export cb_RIGHT_SCREEN_RES=1920x1080
 
 export cb_scripts_PATH="${HOME}/RoverFlake2/src/rover_manager/screenScripts/"
 
-alias cbs_init="sh ${cb_scripts_PATH}/xrandr_setup.sh"
+alias cbs_connect_screens="sh ${cb_scripts_PATH}/xrandr_setup.sh"
+alias cbs_startup="sh ${cb_scripts_PATH}/startup_system.sh"

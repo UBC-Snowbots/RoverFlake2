@@ -4,7 +4,7 @@
 #include "serial/serial.h"
 #include "cbsDefinitions.h"
 #include "rover_msgs/msg/arm_panel.hpp"
-class CBSManagerNode; //FORWARD DECLARRATIONS
+class CBSHardwareManagerNode; //FORWARD DECLARRATIONS
 
 class CBSDevice
 {
@@ -32,7 +32,7 @@ public:
     }
     
     // void setPortPath(std::string port_path);
-    void initalize(std::string port_path, int baudrate, std::string id, CBSManagerNode* manager_);
+    void initalize(std::string port_path, int baudrate, std::string id, CBSHardwareManagerNode* manager_);
     void setID(std::string id);
     // void setLogger(rclcpp::Logger* main_logger);
 
@@ -42,7 +42,7 @@ public:
 private:
     // rclcpp::Logger& logger_;
     // rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle if we need it
-    CBSManagerNode* manager;
+    CBSHardwareManagerNode* manager;
     bool attachPort(std::string port_path = "", int baudrate = 9600, int id = 0);
     void parseBuff(std::string buff);
     // bool openPort();
