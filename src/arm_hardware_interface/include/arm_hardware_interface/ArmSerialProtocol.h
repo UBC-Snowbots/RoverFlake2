@@ -10,6 +10,8 @@
 
 #define TEST_LIMITS_CMD 't'
 
+#define GRIPPER_CMD 'g'
+
 
 
 
