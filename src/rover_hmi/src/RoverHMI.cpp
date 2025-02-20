@@ -175,12 +175,13 @@ void MainHMINode::handleAxisButtonRelease(){
 
 }
 
-void MainHMINode::handleIncIKButtonClick(int index){
-    geometry_msgs::msg::TwistStamped ik_msg;
+void MainHMINode::ik_timer_callback(){
+     geometry_msgs::msg::TwistStamped ik_msg;
 
     ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
     ik_msg.header.frame_id = "link_tt";
-    float value = 0.5; ///TODO get speed based on spinbuttons
+    float value = current_ik_value; ///TODO get speed based on spinbuttons
+    int index = current_ik_index;
     switch (index)
     {
         case 0: // Linear X
@@ -207,45 +208,55 @@ void MainHMINode::handleIncIKButtonClick(int index){
     }
     
     arm_ik_pub->publish(ik_msg);
+}
+
+void MainHMINode::handleIncIKButtonClick(int index){
+    current_ik_index = index;
+    current_ik_value = abs(current_ik_value);
+    ik_timer->reset();
     
 }
 void MainHMINode::handleDecIKButtonClick(int index){
-    geometry_msgs::msg::TwistStamped ik_msg;
-    ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
-    ik_msg.header.frame_id = "link_tt";
-    float value = -0.5; ///TODO get speed based on spinbuttons
-    switch (index)
-    {
-        case 0: // Linear X
-            ik_msg.twist.linear.x = value;
-            break;
-        case 1: // Linear Y
-            ik_msg.twist.linear.y = value;
-            break;
-        case 2: // Linear Z
-            ik_msg.twist.linear.z = value;
-            break;
-        case 3: // Angular X
-            ik_msg.twist.angular.x = value;
-            break;
-        case 4: // Angular Y
-            ik_msg.twist.angular.y = value;
-            break;
-        case 5: // Angular Z
-            ik_msg.twist.angular.z = value;
-            break;
-        default:
-            RCLCPP_WARN(this->get_logger(), "Invalid index: %d. Must be 0-5.", index);
-            return;
-    }
+    current_ik_index = index;
+    current_ik_value = abs(current_ik_value)*-1;
+    ik_timer->reset();
+    // geometry_msgs::msg::TwistStamped ik_msg;
+    // ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
+    // ik_msg.header.frame_id = "link_tt";
+    // float value = -0.5; ///TODO get speed based on spinbuttons
+    // switch (index)
+    // {
+    //     case 0: // Linear X
+    //         ik_msg.twist.linear.x = value;
+    //         break;
+    //     case 1: // Linear Y
+    //         ik_msg.twist.linear.y = value;
+    //         break;
+    //     case 2: // Linear Z
+    //         ik_msg.twist.linear.z = value;
+    //         break;
+    //     case 3: // Angular X
+    //         ik_msg.twist.angular.x = value;
+    //         break;
+    //     case 4: // Angular Y
+    //         ik_msg.twist.angular.y = value;
+    //         break;
+    //     case 5: // Angular Z
+    //         ik_msg.twist.angular.z = value;
+    //         break;
+    //     default:
+    //         RCLCPP_WARN(this->get_logger(), "Invalid index: %d. Must be 0-5.", index);
+    //         return;
+    // }
     
-    arm_ik_pub->publish(ik_msg);
+    // arm_ik_pub->publish(ik_msg);
     
 }
 
 
 
 void MainHMINode::handleIKButtonRelease(){
+    ik_timer->cancel();
     geometry_msgs::msg::TwistStamped ik_msg;
     ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
     ik_msg.header.frame_id = "link_tt";

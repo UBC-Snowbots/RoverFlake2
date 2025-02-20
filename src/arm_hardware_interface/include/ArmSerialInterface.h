@@ -51,7 +51,7 @@ public:
     //     serialRxThread = std::thread(&ArmSerial::serial_rx(), this);
     // }
     // string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"}; //? old arm urdf
-    string joint_names[6] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"}; //? newest (Sep 2024) arm urdf
+    string joint_names[NUM_JOINTS + 2] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "finger_left_joint", "finger_right_joint"}; //? newest (Sep 2024) arm urdf
 
 
 private:

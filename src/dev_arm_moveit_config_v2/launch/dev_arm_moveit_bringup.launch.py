@@ -42,7 +42,7 @@ def generate_launch_description():
     moveit_config = (
         MoveItConfigsBuilder("dev_arm")
         .robot_description(file_path="config/dev_arm.urdf.xacro")
-        #.robot_description_semantics(file_path"config/arm1.srdf")
+        .robot_description_semantic(file_path="config/dev_arm.srdf")
         .robot_description_kinematics(file_path="config/kinematics.yaml")
         .to_moveit_configs()
     )
@@ -65,6 +65,7 @@ def generate_launch_description():
         parameters=[
             moveit_config.robot_description,
             moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
         ],
     )
 
@@ -77,7 +78,7 @@ def generate_launch_description():
     ros2_control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[moveit_config.robot_description, ros2_controllers_path],
+        parameters=[moveit_config.robot_description, moveit_config.robot_description_semantic, moveit_config.robot_description_kinematics, ros2_controllers_path],
         output="screen",
     )
 
@@ -100,6 +101,7 @@ def generate_launch_description():
     arm_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
+        parameters=[moveit_config.robot_description, moveit_config.robot_description_semantic, moveit_config.robot_description_kinematics, ros2_controllers_path],
         arguments=["arm_controller", "-c", "/controller_manager"],
     )
 
@@ -126,7 +128,8 @@ def generate_launch_description():
                 package="robot_state_publisher",
                 plugin="robot_state_publisher::RobotStatePublisher",
                 name="robot_state_publisher",
-                parameters=[moveit_config.robot_description],
+                parameters=[moveit_config.robot_description, moveit_config.robot_description_semantic, moveit_config.robot_description_kinematics, ros2_controllers_path],
+
             ),
             ComposableNode(
                 package="tf2_ros",

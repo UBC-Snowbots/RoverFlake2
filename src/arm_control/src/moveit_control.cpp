@@ -71,7 +71,7 @@ auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningS
 if (planning_scene_monitor->getPlanningScene())
 {
   planning_scene_monitor->startStateMonitor(ArmConstants::joint_states_topic); //!not sure why ArmConstants struct doesn't work here.
-  planning_scene_monitor->setPlanningScenePublishingFrequency(25);
+  planning_scene_monitor->setPlanningScenePublishingFrequency(50);
   planning_scene_monitor->startPublishingPlanningScene(planning_scene_monitor::PlanningSceneMonitor::UPDATE_SCENE,
                                                        "/servo_node/publish_planning_scene");
   planning_scene_monitor->startSceneMonitor();

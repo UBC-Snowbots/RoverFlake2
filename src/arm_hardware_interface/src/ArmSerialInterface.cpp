@@ -92,9 +92,9 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
  void ArmSerial::parseArmAngleUart(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
-       joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.velocity.resize(NUM_JOINTS);
-       joint_states_.name.resize(NUM_JOINTS);
+       joint_states_.position.resize(NUM_JOINTS + 2);
+       joint_states_.velocity.resize(NUM_JOINTS + 2);
+       joint_states_.name.resize(NUM_JOINTS + 2);
 
 
 	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos) == 6)
@@ -113,7 +113,12 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
          }
              rclcpp::Time current_time(joint_states_.header.stamp);
         rclcpp::Time prev_time(prev_joint_states.header.stamp);
-
+          joint_states_.name[6] = joint_names[6];
+          joint_states_.name[7] = joint_names[7];
+          joint_states_.position[6] = 0;
+          joint_states_.position[7] = 0;
+          joint_states_.velocity[6] = 0;
+          joint_states_.velocity[7] = 0;
 
          joint_states_.header.stamp = rclcpp::Clock().now();
          arm_position_publisher->publish(current_arm_status);

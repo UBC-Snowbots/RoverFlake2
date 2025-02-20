@@ -58,6 +58,16 @@ public:
     cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
 
+
+
+    //* Timers
+    ik_timer = this->create_wall_timer(
+         std::chrono::milliseconds(34),  // Timer interval
+                std::bind(&MainHMINode::ik_timer_callback, this) // Callback function
+                );
+
+    ik_timer->cancel(); //Stop the timer as it defaults to started
+
     //* css files
     main_css_file_path = this->package_share_dir + "/css_files/main_style.css";
     RCLCPP_INFO(this->get_logger(), main_css_file_path.c_str());
@@ -74,6 +84,8 @@ public:
     builder->get_widget("middle_window", middle_window);
     builder->get_widget("middle_stack", middle_stack);
     // RCLCPP_INFO(this->get_logger(), "Meowing builder");
+
+
 
     //*build the system overview card
     builder->get_widget("subsystem_status_grid", subsys_grid.grid);
@@ -274,6 +286,7 @@ public:
     "system_overview_card", "full_control_card", "arm_testing_card", "control_base_testing_card",
     "cmd_vel_testing_card"
   };  //? Manually set, refer to glade/gtk widget ID
+
 private:
   std::string main_css_file_path;
 
@@ -288,7 +301,7 @@ private:
   void handleIncAxisButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecAxisButtonClick(int index);
    void handleAxisButtonRelease();
-   
+
   void handleIncIKButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecIKButtonClick(int index);
   void handleIKButtonRelease();
@@ -409,6 +422,13 @@ private:
   cv::Mat image_;
   Glib::RefPtr<Gdk::Pixbuf> pixbuf_;
   std::mutex image_mutex_;
+
+  void ik_timer_callback();
+  //in private:
+  rclcpp::TimerBase::SharedPtr ik_timer; // Timer handle
+  int current_ik_index = -1;
+  float current_ik_value = 0.2;
+ 
 };
 
 /* Topics to sub to
