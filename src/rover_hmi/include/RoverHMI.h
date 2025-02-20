@@ -239,6 +239,10 @@ public:
       axis_speed_spinbutton[i]->set_value(5.0);
       axis_speed_spinbutton[i]->signal_value_changed().connect(
           sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleAxisSpeedUpdate), i));
+      ik_speed_spinbutton[i]->set_range(0.0, MainHMINode::max_ik_speed);
+      ik_speed_spinbutton[i]->set_value(ik_hmi_speed[i]);
+      ik_speed_spinbutton[i]->signal_value_changed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIKSpeedUpdate), i));
     }
 
     builder->get_widget("next_panel_button", next_panel_button);
@@ -310,6 +314,7 @@ private:
   void handleArmAbortButtonClick();
   void handleTestLimitsButtonClick();
   void handleAxisSpeedUpdate(int i);
+  void handleIKSpeedUpdate(int i);
   void handleCardButtonSwitch(bool next);
 
   void handleIKTestButtonClick();
@@ -369,7 +374,9 @@ private:
 
 
   float axis_hmi_speed[6] = { 5.0, 5.0, 5.0, 5.0, 5.0, 5.0 };
+  float ik_hmi_speed[6] = { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
   float max_speeds[NUM_JOINTS] = { 90.0, 60.0, 90.0, 100.0, 100.0, 180.0 };
+  float max_ik_speed = 1;
 
   //* System Overview
   struct SubsystemGrid

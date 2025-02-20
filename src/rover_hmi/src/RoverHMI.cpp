@@ -180,8 +180,8 @@ void MainHMINode::ik_timer_callback(){
 
     ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
     ik_msg.header.frame_id = "link_tt";
-    float value = current_ik_value; ///TODO get speed based on spinbuttons
     int index = current_ik_index;
+    float value = ik_hmi_speed[index]; ///TODO get speed based on spinbuttons
     switch (index)
     {
         case 0: // Linear X
@@ -212,13 +212,14 @@ void MainHMINode::ik_timer_callback(){
 
 void MainHMINode::handleIncIKButtonClick(int index){
     current_ik_index = index;
-    current_ik_value = abs(current_ik_value);
+    ik_hmi_speed[index] = abs(ik_hmi_speed[index]);
     ik_timer->reset();
     
 }
 void MainHMINode::handleDecIKButtonClick(int index){
     current_ik_index = index;
-    current_ik_value = abs(current_ik_value)*-1;
+    // current_ik_value = abs(current_ik_value)*-1;
+    ik_hmi_speed[index] = abs(ik_hmi_speed[index])*-1;
     ik_timer->reset();
     // geometry_msgs::msg::TwistStamped ik_msg;
     // ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
@@ -296,6 +297,14 @@ void MainHMINode::handleAxisSpeedUpdate(int i) {
         double new_value = axis_speed_spinbutton[i]->get_value();
         axis_hmi_speed[i] = new_value;
         RCLCPP_INFO(this->get_logger(), "Axis %i speed changed to %f", i, new_value);
+    
+}
+
+void MainHMINode::handleIKSpeedUpdate(int i) {
+  
+        double new_value = ik_speed_spinbutton[i]->get_value();
+        ik_hmi_speed[i] = new_value;
+        RCLCPP_INFO(this->get_logger(), "IK %i speed changed to %f", i, new_value);
     
 }
 
