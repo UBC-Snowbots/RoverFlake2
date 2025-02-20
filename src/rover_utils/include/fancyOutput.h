@@ -1,8 +1,7 @@
 #include <string>
 
-//Thanks GPT
-class ConsoleFormat {
-public:
+namespace ConsoleFormat {
+// public:
     // Text styles
     static constexpr const char* reset() { return "\033[0m"; }
     static constexpr const char* bold() { return "\033[1m"; }

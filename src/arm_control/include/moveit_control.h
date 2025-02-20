@@ -56,7 +56,7 @@ public:
          joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
           servo_output_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
-            "/dev_arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
+            "/arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
         
 	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>(ArmConstants::servo_fk_topic, 10);
 	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(ArmConstants::servo_ik_topic, 10);
@@ -144,6 +144,8 @@ private:
         }
 
         // arm_publisher->publish(target);
+      RCLCPP_INFO(this->get_logger(), "Not sure what this callback does");
+
         }else{
           RCLCPP_ERROR(this->get_logger(), "Joint Trajrectory Controller going wack. Output does not match size of joints. Ignoring this message.");
         }
@@ -170,7 +172,7 @@ private:
 
         }   
          arm_publisher->publish(target);
-          // RCLCPP_INFO(this->get_logger(), "Joint Trajrectory Controller good. Servo is commanding arm!");
+        RCLCPP_INFO(this->get_logger(), "Joint Trajrectory Controller good. Servo is commanding arm!");
 
     
         }else{

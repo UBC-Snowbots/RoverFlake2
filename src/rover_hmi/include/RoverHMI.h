@@ -4,6 +4,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>  //? Shouldn't be included here, but leave it for now. armControlParams is meant to be the common header for all arm parameters.
 #include <arm_control/include/armControlParams.h>
@@ -52,8 +53,20 @@ public:
 
     cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>(
         "/cmd_vel", qos);    
+        arm_ik_pub = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        "/arm_moveit_control/delta_twist_cmds", qos);  
     cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
+
+
+
+    //* Timers
+    ik_timer = this->create_wall_timer(
+         std::chrono::milliseconds(34),  // Timer interval
+                std::bind(&MainHMINode::ik_timer_callback, this) // Callback function
+                );
+
+    ik_timer->cancel(); //Stop the timer as it defaults to started
 
     //* css files
     main_css_file_path = this->package_share_dir + "/css_files/main_style.css";
@@ -71,6 +84,8 @@ public:
     builder->get_widget("middle_window", middle_window);
     builder->get_widget("middle_stack", middle_stack);
     // RCLCPP_INFO(this->get_logger(), "Meowing builder");
+
+
 
     //*build the system overview card
     builder->get_widget("subsystem_status_grid", subsys_grid.grid);
@@ -197,6 +212,12 @@ public:
       dec_axis_button[i]->signal_pressed().connect(
           sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleDecAxisButtonClick), i));
       dec_axis_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+      inc_ik_button[i]->signal_pressed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIncIKButtonClick), i));
+      inc_ik_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleIKButtonRelease));
+      dec_ik_button[i]->signal_pressed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleDecIKButtonClick), i));
+      dec_ik_button[i]->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleIKButtonRelease));
     }
 
     builder->get_widget("axis_1_speed_spinbutton", axis_speed_spinbutton[0]);
@@ -218,6 +239,10 @@ public:
       axis_speed_spinbutton[i]->set_value(5.0);
       axis_speed_spinbutton[i]->signal_value_changed().connect(
           sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleAxisSpeedUpdate), i));
+      ik_speed_spinbutton[i]->set_range(0.0, MainHMINode::max_ik_speed);
+      ik_speed_spinbutton[i]->set_value(ik_hmi_speed[i]);
+      ik_speed_spinbutton[i]->signal_value_changed().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIKSpeedUpdate), i));
     }
 
     builder->get_widget("next_panel_button", next_panel_button);
@@ -265,6 +290,7 @@ public:
     "system_overview_card", "full_control_card", "arm_testing_card", "control_base_testing_card",
     "cmd_vel_testing_card"
   };  //? Manually set, refer to glade/gtk widget ID
+
 private:
   std::string main_css_file_path;
 
@@ -278,10 +304,17 @@ private:
   void handlePosFeedOffButtonClick();
   void handleIncAxisButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecAxisButtonClick(int index);
-  void handleAxisButtonRelease();
+   void handleAxisButtonRelease();
+
+  void handleIncIKButtonClick(int index);  // RELATIVE VELOCITIERSs
+  void handleDecIKButtonClick(int index);
+  void handleIKButtonRelease();
+
+ 
   void handleArmAbortButtonClick();
   void handleTestLimitsButtonClick();
   void handleAxisSpeedUpdate(int i);
+  void handleIKSpeedUpdate(int i);
   void handleCardButtonSwitch(bool next);
 
   void handleIKTestButtonClick();
@@ -341,7 +374,9 @@ private:
 
 
   float axis_hmi_speed[6] = { 5.0, 5.0, 5.0, 5.0, 5.0, 5.0 };
+  float ik_hmi_speed[6] = { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
   float max_speeds[NUM_JOINTS] = { 90.0, 60.0, 90.0, 100.0, 100.0, 180.0 };
+  float max_ik_speed = 1;
 
   //* System Overview
   struct SubsystemGrid
@@ -385,6 +420,7 @@ private:
   rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_pub;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
+  rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr arm_ik_pub;
 
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_feed_sub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_monitor_sub;
@@ -393,6 +429,13 @@ private:
   cv::Mat image_;
   Glib::RefPtr<Gdk::Pixbuf> pixbuf_;
   std::mutex image_mutex_;
+
+  void ik_timer_callback();
+  //in private:
+  rclcpp::TimerBase::SharedPtr ik_timer; // Timer handle
+  int current_ik_index = -1;
+  float current_ik_value = 0.2;
+ 
 };
 
 /* Topics to sub to
