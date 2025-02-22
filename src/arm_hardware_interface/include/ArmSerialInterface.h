@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include "sensor_msgs/msg/joy.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "arm_control/include/armControlParams.h"
 
 #include "rover_msgs/msg/arm_command.hpp"
 #include <thread>
@@ -12,7 +13,7 @@
 #include <serial/serial.h>
 
 #define SIMULATE false
-
+#define PI 3.14159
 #define NUM_JOINTS 6
 
 #define TX_UART_BUFF 128
@@ -50,7 +51,7 @@ public:
     //     serialRxThread = std::thread(&ArmSerial::serial_rx(), this);
     // }
     // string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"}; //? old arm urdf
-    string joint_names[6] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"}; //? newest (Sep 2024) arm urdf
+    string joint_names[NUM_JOINTS + 2] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "finger_left_joint", "finger_right_joint"}; //? newest (Sep 2024) arm urdf
 
 
 private:
@@ -65,7 +66,8 @@ private:
 
     serial::Serial teensy;
     serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000); // E.g., 1000 ms or 1 second
-   
+    
+
     struct Axis{
       float curr_pos;
       float target_pos;
@@ -101,7 +103,7 @@ private:
         
         
         sendMsg(tx_msg);
-        RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
+        // RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
     }
     void send_test_limits_command(){
@@ -116,6 +118,7 @@ private:
       
     }
   float target_position[NUM_JOINTS];
+   float target_velocities[NUM_JOINTS];
 
     int homed = 0;
     bool homing = false;
@@ -127,7 +130,7 @@ private:
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 
-
+    sensor_msgs::msg::JointState prev_joint_states; //for sim
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
 
     rclcpp::TimerBase::SharedPtr timer_;

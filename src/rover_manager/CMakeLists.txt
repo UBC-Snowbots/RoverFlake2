@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 project(rover_manager)
 
 # This package 
@@ -12,20 +12,32 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rover_utils REQUIRED)
+find_package(serial REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+include_directories(include)
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
+add_executable(watchdog_node src/watchdogNode.cpp include/watchdogNode.h)
+ament_target_dependencies(watchdog_node rclcpp rover_utils rover_msgs)
+
+add_executable(cbs_hardware_manager_node src/cbsHardwareManagerNode.cpp include/cbsHardwareManagerNode.h src/cbsDevice.cpp include/cbsDevice.h include/cbsDefinitions.h)
+ament_target_dependencies(cbs_hardware_manager_node rclcpp rover_utils serial rover_msgs)
+
+add_executable(cbs_display_manager_node src/cbsDisplayManagerNode.cpp include/cbsDisplayManagerNode.h)
+ament_target_dependencies(cbs_display_manager_node rclcpp rover_utils rover_msgs)
+
+install(TARGETS
+  watchdog_node
+  cbs_hardware_manager_node
+  cbs_display_manager_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(DIRECTORY 
+launch
+DESTINATION
+share/${PROJECT_NAME}/launch/
+)
 
 ament_package()

@@ -23,4 +23,12 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+include_directories(include)
+
+install(DIRECTORY
+  include/
+  DESTINATION include/${PROJECT_NAME}/include/)
+
+  ament_export_include_directories(include) #needed to include .h files in other packages
+
 ament_package()

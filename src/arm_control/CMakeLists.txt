@@ -12,6 +12,7 @@ moveit_package()
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   control_msgs
   rover_msgs
+  rover_utils
   geometry_msgs
   moveit_core
   moveit_msgs
@@ -65,16 +66,22 @@ include_directories(include)
 # find_package(<dependency> REQUIRED
 #add_executable(old_arm_servo src/old_arm_servo.cpp)
 #ament_target_dependencies(old_arm_servo rclcpp std_msgs moveit_common moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+# For armControlParams, we add it as a regular .h file here because its in the same package. For any other package, we would just put arm_control in ament_target_dependencies
 add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
 ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs moveit_servo  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h include/armControlParams.h)
-ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo ${THIS_PACKAGE_INCLUDE_DEPENDS})
-add_executable(sim_helper src/sim_helper_node.cpp)
-ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs)
+ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo trajectory_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
+add_executable(sim_helper src/sim_helper_node.cpp include/armControlParams.h)
+ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs rover_utils)
+add_executable(cbs_arm_interface src/cbs_interface.cpp include/armControlParams.h include/cbs_interface.h)
+ament_target_dependencies(cbs_arm_interface rclcpp rover_msgs sensor_msgs std_msgs rover_utils)
+
 
 install(
   TARGETS
  #   old_arm_servo
+    cbs_arm_interface
     joy_arm_control
     moveit_control
     sim_helper
@@ -82,6 +89,11 @@ install(
   DESTINATION
     lib/${PROJECT_NAME}
 )
+install(
+  DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}/include
+)
 
 
+ament_export_include_directories(include)
 ament_package()

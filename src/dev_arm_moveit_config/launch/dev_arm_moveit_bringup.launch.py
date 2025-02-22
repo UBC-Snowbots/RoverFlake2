@@ -42,8 +42,9 @@ def generate_launch_description():
     moveit_config = (
         MoveItConfigsBuilder("dev_arm")
         .robot_description(file_path="config/dev_arm.urdf.xacro")
-        #.robot_description_semantics(file_path"config/arm1.srdf")
+        .robot_description_semantic(file_path="config/dev_arm.srdf")
         .robot_description_kinematics(file_path="config/kinematics.yaml")
+        .joint_limits(file_path="config/joint_limits.yaml")
         .to_moveit_configs()
     )
 
@@ -97,7 +98,7 @@ def generate_launch_description():
         # ]
     )
 
-    arm_controller_spawner = Node(
+    dev_arm_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["dev_arm_controller", "-c", "/controller_manager"],
@@ -140,11 +141,12 @@ def generate_launch_description():
    #             name="controller_to_servo_node",
     #            parameters=[moveit_config.robot_description],
      #       ),
-            ComposableNode(
-                package="joy",
-                plugin="joy::Joy",
-                name="joy_node",
-            ),
+            # ComposableNode(
+            #     package="joy_linux",
+            #     plugin="joy_linux::Joy",
+            #     name="joy_node",
+            #     parameters=[{"autorepeat_rate": 100.0, "coalesce_interval": 100}],
+            # ),
         ],
         output="screen",
     )
@@ -171,12 +173,30 @@ def generate_launch_description():
             moveit_config.robot_description_kinematics,
         ]
     )
+    joy_params = {
+        # 'dev': '/dev/input/js0',       # Joystick device file
+        'deadzone': 0.05,              # Deadzone for joystick axes
+        'autorepeat_rate': 100.0,       # Autorepeat rate in Hz
+        'coalesce_interval': 0.01,    # Interval to coalesce events
+    }
+    # joy_node = Node(
+    #     package='joy_linux',
+    #     executable='joy_linux_node',  # Replace with the correct executable name if different
+    #     name='joy_node',
+    #     output='screen',
+    #     parameters=[joy_params],
+    #     remappings=[
+    #         ('/joy', '/joy'),  # Remap topics if necessary
+    #     ],
+    # )
+
     return LaunchDescription(
         [
+            # joy_node,
             rviz_node,
             ros2_control_node,
             # joint_state_broadcaster_spawner,
-            arm_controller_spawner,
+            dev_arm_controller_spawner,
       #      servo_node,
             custom_servo_node,
             container,

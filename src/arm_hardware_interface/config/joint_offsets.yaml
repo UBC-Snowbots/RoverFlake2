@@ -1,3 +1,5 @@
+# don't think these are used. Decided to just use a .h file for ease of development. These params should not be changed often and thus are probably fine in a .h file
+# Actual, used params are in arm_control/include/armControlParams.h
 arm:
   joint_turntable: 
     zero_pos: 0.984 #1.103

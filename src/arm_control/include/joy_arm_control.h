@@ -8,7 +8,7 @@
 #define POSITION_CONTROL 1
 #define VELOCITY_CONTROL 2
 
-#define CONTROL_MODE 2
+#define CONTROL_MODE VELOCITY_CONTROL
 
 class ArmJoy : public rclcpp::Node {
 public:
