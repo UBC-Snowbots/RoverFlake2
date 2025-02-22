@@ -1,0 +1,17 @@
+2025-02-16T22:06:26.656  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-16T22:08:49.722  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-16T22:08:49.973  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:2 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-16T22:08:49.974  <Info> phidget22usb[PhidgetUSBUninit()] : Deinitializing libusb

@@ -9,28 +9,73 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED) # Ensure sensor_msgs is found
-#find_package(launch REQUIRED)     
-#find_package(launch_ros REQUIRED)  
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
+# Ensure Phidget22 SDK is located
+# set(CMAKE_PREFIX_PATH "/path/to/phidget22/sdk" ${CMAKE_PREFIX_PATH})
+
+# Include directories (header files)
 include_directories(include)
 
-# Define the executable
-add_executable(drive_node src/drive_control.cpp include/drive_control.h)
+# Define executables
+add_executable(drive_control_node src/drive_control.cpp)
+add_executable(motor_control_node src/motor_control.cpp)
+add_executable(wheel_speed_node src/wheel_speed.cpp)
 
-# Link dependencies
-ament_target_dependencies(drive_node
+# Link dependencies for drive_control_node
+ament_target_dependencies(drive_control_node
   rclcpp
   geometry_msgs
   sensor_msgs
 )
 
-target_link_libraries(drive_node phidget22)
+# Link dependencies for motor_control_node
+ament_target_dependencies(motor_control_node
+  rclcpp
+  geometry_msgs
+  sensor_msgs
+)
+
+# Link dependencies for wheel_speed_node
+ament_target_dependencies(wheel_speed_node
+  rclcpp
+  geometry_msgs
+  sensor_msgs
+  std_msgs  # Added std_msgs
+)
+
+# Ensure linking with Phidget22 (if not found automatically)
+target_link_libraries(motor_control_node phidget22)
 
 # Set include directories
-target_include_directories(drive_node PUBLIC
+target_include_directories(drive_control_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(motor_control_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(wheel_speed_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+# Install the launch directory
+install(
+  DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+# Install both executables
+install(TARGETS
+  drive_control_node
+  motor_control_node  
+  wheel_speed_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 # Enable testing
@@ -41,24 +86,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-# Install the launch directory
-install(
-  DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
- # Install specific launch files (Python-based launch scripts)
- install(
-  DIRECTORY
-    launch
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
-# Install the executable
-install(TARGETS
-  drive_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
+# Required for ROS 2 packages
 ament_package()
-
