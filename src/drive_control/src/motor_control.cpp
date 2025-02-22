@@ -39,10 +39,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {  // Construc
 
     // Create subscribers for left and right wheel velocity commands
     left_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64>(
-        "left_wheel_pub", 10, std::bind(&MotorControlNode::leftWheelCallback, this, std::placeholders::_1));
+        "left_wheel_speeds", 10, std::bind(&MotorControlNode::leftWheelCallback, this, std::placeholders::_1));
 
     right_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64>(
-        "right_wheel_pub", 10, std::bind(&MotorControlNode::rightWheelCallback, this, std::placeholders::_1));
+        "right_wheel_speeds", 10, std::bind(&MotorControlNode::rightWheelCallback, this, std::placeholders::_1));
 }
 
 /**
