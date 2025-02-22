@@ -2,6 +2,7 @@
 #include "cbs_interface.h"
 void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::SharedPtr msg){
     rover_msgs::msg::ArmCommand cmd_msg;
+    cmd_msg.cmd_type = 'V'; //!SHOULD BE FROM ArmSerialProtocol.h
     cmd_msg.velocities.resize(NUM_JOINTS);
     cmd_msg.velocities[0] = (static_cast<float>(msg->left.x) - 50)/100 * max_speed_deg[0]*2;
      cmd_msg.velocities[1] = (static_cast<float>(msg->left.y) - 50)/100 * max_speed_deg[1]*2 *-1;
