@@ -45,7 +45,7 @@ public:
     rclcpp::sleep_for(std::chrono::seconds(1));
     RCLCPP_INFO(this->get_logger(), "All ports found! Starting polling timers");
     ArmJoyPanel.setMinMsgSize(32);
-    LeftPanelA.setMinMsgSize(34);
+    LeftPanel_A.setMinMsgSize(34);
    arm_panel_timer = this->create_wall_timer( //Timer setup if we need it
         std::chrono::milliseconds(10),  // Timer interval
         std::bind(&CBSHardwareManagerNode::armPanelPoll, this) // Callback function
@@ -60,6 +60,8 @@ public:
 
     ~CBSHardwareManagerNode(){
         RCLCPP_WARN(this->get_logger(), "WARNING: CONTROL BASE MANAGER NODE OFFLINE!");
+        std::system("notify-send 'CBS hardware manager OFFLINE'");
+
     }
     rclcpp::Publisher<rover_msgs::msg::ArmPanel>::SharedPtr arm_panel_publisher;
     rclcpp::Publisher<rover_msgs::msg::GenericPanel>::SharedPtr left_panel_A_publisher;
