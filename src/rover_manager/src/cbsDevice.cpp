@@ -20,6 +20,82 @@ if(port.size() == 0){
 
 // void CBSDevice::initalize(rclcpp::Logger* )
 
+int CBSDevice::findMyPort(){
+    if(serial.isOpen()){
+        if(port_found){
+            return SERIAL_PORT_ALREADY_FOUND;
+        }else{
+            return SERIAL_PORT_BUSY_OR_DNE;
+        }
+    }else{
+        int current_port_index = 0;
+        serial.setBaudrate(baudrate);
+        while(!port_found){
+        serial.setPort(manager->possible_ports[current_port_index]);
+        try{serial.open();
+            
+            rclcpp::Clock clock(RCL_SYSTEM_TIME);
+            rclcpp::Time start_time = clock.now();
+            serial.flush();
+            while(serial.available() == 0){
+                //wait
+                if(clock.now().seconds() - start_time.seconds() > 3){
+                    // SERIAL_PORT_TIMEOUT;
+                    throw 1;
+                }
+
+            }
+            std::string buff;
+            bool id_located = false;
+            int garbage_lines = 0;
+            while(!id_located){
+                buff = "";
+                serial.readline(buff);
+                size_t start = buff.find("$") +1;
+                size_t end_of_id = buff.find("(");                    
+                if(start != std::string::npos && end_of_id != std::string::npos){ //If we actually found the position of "$"
+                    std::string found_panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
+                    RCLCPP_INFO(manager->get_logger(), "%s %s %s | String ID found at %li: %s'%s'%s", yellow(), this->id.c_str(), reset(), start, green(), found_panel_id.c_str(), reset() );
+                    if(found_panel_id.find(this->id) != std::string::npos){
+                        this->port_path = manager->possible_ports[current_port_index];
+                        RCLCPP_INFO(manager->get_logger(), "%s Thats my device! %s %s is Taking control of port: %s %s", bold(), green(), this->id.c_str(), this->port_path.c_str(), reset()); 
+                        id_located = true;
+                        ready_for_polling = true;
+                        manager->taken_ports.push_back(port_path);
+                        return PORT_FOUND_SUCCESS;
+                    }else{
+                        RCLCPP_INFO(manager->get_logger(), "%s Woops! This isn't my port. %s %s is disconnecting from port: %s. %s Gonna try a different one.", bold(), green(), this->id.c_str(), this->port_path.c_str(), reset()); 
+                        throw 1;
+                    }
+                    // this->id = panel_id;
+                }else{
+                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->id.c_str());
+                    garbage_lines++;
+                    if(garbage_lines > 5000){
+                        RCLCPP_INFO(manager->get_logger(), "Too much garbage. Trying a new port");
+                        throw 1;
+                    }
+                }
+                
+            }
+
+
+        } catch(...){
+    RCLCPP_INFO(manager->get_logger(), "..%s Port Open Failure : %s %s Aborting serial connection and trying new port.", ConsoleFormat::yellow(), manager->possible_ports[current_port_index].c_str(), ConsoleFormat::reset());
+        // return SERIAL_PORT_BUSY_OR_DNE;
+        serial.close();
+        current_port_index++;
+        if(current_port_index +1 > manager->possible_ports.size()){
+            return PORT_NOT_FOUND;
+        }
+            }
+
+
+        }
+    }
+}
+
+
 int CBSDevice::testPort(std::string port_path, int baudrate){
     
     if(serial.isOpen()){
@@ -46,12 +122,12 @@ int CBSDevice::testPort(std::string port_path, int baudrate){
                 if(start != std::string::npos){ //If we actually found the position of "$"
                     int end_of_id = buff.find("(");                    
                     std::string id;
-                    std::string panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
-                    RCLCPP_INFO(manager->get_logger(), "%s %s %s | String ID found at %li: %s'%s'%s", yellow(), this->cbs_id.c_str(), reset(), start, green(), panel_id.c_str(), reset() );
+                    std::string found_panel_id = buff.substr(start, end_of_id - start); // Parse id from start of string to end
+                    RCLCPP_INFO(manager->get_logger(), "%s %s %s | String ID found at %li: %s'%s'%s", yellow(), this->id.c_str(), reset(), start, green(), found_panel_id.c_str(), reset() );
                     id_located = true;
                     // this->id = panel_id;
                 }else{
-                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->cbs_id.c_str());
+                    RCLCPP_WARN(manager->get_logger(), "%s, Serial buff garbage line found", this->id.c_str());
                 }
                 
             }
@@ -66,15 +142,16 @@ int CBSDevice::testPort(std::string port_path, int baudrate){
     
 }
 
-void CBSDevice::setID(std::string id){
-    this->cbs_id = id;
-    // RCLCPP_INFO(manager->get_logger(), "Id set: %s", id.c_str());
-}
+// void CBSDevice::setID(std::string my_id){
+//     this->id = my_id;
+//     // RCLCPP_INFO(manager->get_logger(), "Id set: %s", id.c_str());
+// }
 
-void CBSDevice::initalize(std::string port_path, int baudrate, std::string id, CBSHardwareManagerNode* manager_){
-    manager = manager_;
-    cbs_id = id;
-    RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->cbs_id.c_str());
+void CBSDevice::init(int baudrate_, std::string new_id, CBSHardwareManagerNode* manager_){
+    this->manager = manager_;
+    this->id = new_id;
+    this->baudrate = baudrate_;
+    RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->id.c_str());
 
 }
 void CBSDevice::pollRX(){
@@ -83,7 +160,7 @@ void CBSDevice::pollRX(){
     this->parseBuff(new_buff);
     this->serial.flush();
     }else{
-        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse? %s", this->cbs_id.c_str());
+        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse? %s", this->id.c_str());
     }
 };
 
@@ -123,7 +200,7 @@ ss >> tag;  // Skip "$arm_joy"
 for (int i = 0; i < 8; i++) {
     if(!(ss >> values[i])){
    
-        RCLCPP_ERROR(manager->get_logger(), "Parse failure on %s", this->cbs_id.c_str());
+        RCLCPP_ERROR(manager->get_logger(), "Parse failure on %s", this->id.c_str());
         return;
     }
 }

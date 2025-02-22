@@ -4,6 +4,7 @@
 #include "serial/serial.h"
 #include "cbsDefinitions.h"
 #include "rover_msgs/msg/arm_panel.hpp"
+#include "rover_msgs/msg/generic_panel.hpp"
 class CBSHardwareManagerNode; //FORWARD DECLARRATIONS
 
 class CBSDevice
@@ -32,13 +33,19 @@ public:
     }
     
     // void setPortPath(std::string port_path);
-    void initalize(std::string port_path, int baudrate, std::string id, CBSHardwareManagerNode* manager_);
-    void setID(std::string id);
+    void init(int baudrate_, std::string new_id, CBSHardwareManagerNode* manager_);
+    // void setID(std::string my_id);
     // void setLogger(rclcpp::Logger* main_logger);
 
     serial::Serial serial;
     int testPort(std::string port_path, int baudrate);
+    int findMyPort();
     void pollRX();
+
+    bool AreYouSureImPluggedIn = true;
+    int failed_connection_attempts = 0;
+    std::string id = "";
+
 private:
     // rclcpp::Logger& logger_;
     // rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle if we need it
@@ -50,8 +57,9 @@ private:
 
     std::string port_path = "";
     int baudrate = 9600;
-    std::string cbs_id = "";
     int min_msg_size = 4;
+    bool port_found = 0;
+    bool ready_for_polling = 0;
     
     // int id;
     // struct potentiometer{
