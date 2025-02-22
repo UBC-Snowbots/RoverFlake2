@@ -33,25 +33,28 @@ public:
     }
     
     // void setPortPath(std::string port_path);
-    void init(int baudrate_, std::string new_id, CBSHardwareManagerNode* manager_);
+    void init(int baudrate_, std::string new_id, PARSE_SEQUENCE parse_seq_, CBSHardwareManagerNode* manager_);
     // void setID(std::string my_id);
     // void setLogger(rclcpp::Logger* main_logger);
 
-    serial::Serial serial;
     int testPort(std::string port_path, int baudrate);
     int findMyPort();
     void pollRX();
+    void setMinMsgSize(int new_size);
 
     bool AreYouSureImPluggedIn = true;
     int failed_connection_attempts = 0;
     std::string id = "";
-
+    PARSE_SEQUENCE parse_seq;
 private:
+    serial::Serial serial;
     // rclcpp::Logger& logger_;
     // rclcpp::TimerBase::SharedPtr healthCheckTimer; // Timer handle if we need it
     CBSHardwareManagerNode* manager;
     bool attachPort(std::string port_path = "", int baudrate = 9600, int id = 0);
-    void parseBuff(std::string buff);
+    void parseArmJoyPanelBuff(std::string buff);
+    void parseLeftPanelABuff(std::string buff);
+    void parseGenericBuff(std::string buff);
     // bool openPort();
 
 

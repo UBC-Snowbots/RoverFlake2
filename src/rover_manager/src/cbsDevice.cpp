@@ -1,16 +1,16 @@
 #include "cbsDevice.h"
 #include "cbsHardwareManagerNode.h"
 using namespace ConsoleFormat;
-bool CBSDevice::attachPort(std::string port, int baudrate, int id){
-if(port.size() == 0){
-    RCLCPP_ERROR(manager->get_logger(), "%s Port Open Failure: %s No port name given. Aborting serial connection.", ConsoleFormat::red(), ConsoleFormat::reset());
-    delete this; //? A terrible way to stop the program.
-    return 0;
-}else{
-    return 1;
-}
+// bool CBSDevice::attachPort(std::string port, int baudrate, int id){
+// if(port.size() == 0){
+//     RCLCPP_ERROR(manager->get_logger(), "%s Port Open Failure: %s No port name given. Aborting serial connection.", ConsoleFormat::red(), ConsoleFormat::reset());
+//     delete this; //? A terrible way to stop the program.
+//     return 0;
+// }else{
+//     return 1;
+// }
 
-}
+// }
 
 
 // void CBSDevice::setLogger(rclcpp::Logger* main_logger){
@@ -62,6 +62,9 @@ int CBSDevice::findMyPort(){
                         id_located = true;
                         ready_for_polling = true;
                         manager->taken_ports.push_back(port_path);
+                        // manager->possible_ports.erase(current_port_index);
+                        manager->possible_ports[current_port_index] = "";
+                        
                         return PORT_FOUND_SUCCESS;
                     }else{
                         RCLCPP_INFO(manager->get_logger(), "%s Woops! This isn't my port. %s %s is disconnecting from port: %s. %s Gonna try a different one.", bold(), green(), this->id.c_str(), this->port_path.c_str(), reset()); 
@@ -94,6 +97,140 @@ int CBSDevice::findMyPort(){
         }
     }
 }
+
+
+
+// void CBSDevice::setID(std::string my_id){
+//     this->id = my_id;
+//     // RCLCPP_INFO(manager->get_logger(), "Id set: %s", id.c_str());
+// }
+
+void CBSDevice::init(int baudrate_, std::string new_id, PARSE_SEQUENCE parse_seq_, CBSHardwareManagerNode* manager_){
+    this->manager = manager_;
+    this->id = new_id;
+    this->baudrate = baudrate_;
+    this->parse_seq = parse_seq_;
+    RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->id.c_str());
+
+}
+
+void CBSDevice::pollRX(){
+    if(this->serial.available() > this->min_msg_size){
+    // if(this->serial.read() == '$'){
+    std::string new_buff = this->serial.readline();
+    
+    new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\r'), new_buff.end());  // Remove '\r'
+    new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\n'), new_buff.end());  // Remove '\n'
+
+    RCLCPP_INFO(manager->get_logger(), "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
+    switch(this->parse_seq){
+        case PARSE_SEQUENCE::GENERIC:
+            // parseGenericBuff(new_buff);
+            break;
+        case PARSE_SEQUENCE::ARM_JOY_PANEL:
+            this->parseArmJoyPanelBuff(new_buff);
+            break;
+        case PARSE_SEQUENCE::LEFT_PANEL_A:
+            this->parseLeftPanelABuff(new_buff);
+            break;
+        default:
+            RCLCPP_INFO(manager->get_logger(), "Failure on parsing, no parse sequence defined??");
+            break;
+    }
+    // this->parseBuff(new_buff);
+    }else{
+        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
+    }
+    // }else{
+
+    // }
+};
+
+//$gen_left_A(0,0,0,0,0,0,0,0,0,0,0)
+void CBSDevice::parseLeftPanelABuff(const std::string buff){
+    RCLCPP_INFO(manager->get_logger(), "%s running left panel buff parse", this->id.c_str());
+    rover_msgs::msg::GenericPanel outmsg;
+    outmsg.num_buttons = 6;
+    outmsg.num_switches = 5;
+    outmsg.buttons.resize(outmsg.num_buttons);
+    outmsg.switches.resize(outmsg.num_switches);
+    if(sscanf(buff.c_str(), "$gen_left_A(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d)", &outmsg.switches[0], &outmsg.switches[1],&outmsg.switches[2],&outmsg.switches[3],&outmsg.switches[4],&outmsg.buttons[0],&outmsg.buttons[1],&outmsg.buttons[2],&outmsg.buttons[3],&outmsg.buttons[4],&outmsg.buttons[5]) == 11){
+        manager->left_panel_A_publisher->publish(outmsg);
+        // this->serial.flush();
+    }else{
+        RCLCPP_WARN(manager->get_logger(), "Parse Failure on %s, buffer: %s", this->id.c_str(), buff.c_str());
+    }
+
+}
+
+void CBSDevice::parseArmJoyPanelBuff(std::string buff){
+        RCLCPP_INFO(manager->get_logger(), "%s running arm panel buff parse", this->id.c_str());
+
+    //! need switch case to figure out msg type from id
+    rover_msgs::msg::ArmPanel arm_panel_msg;
+    buff.erase(std::remove(buff.begin(), buff.end(), '\r'), buff.end());  // Remove '\r'
+buff.erase(std::remove(buff.begin(), buff.end(), '\n'), buff.end());  // Remove '\n'
+
+    // if(sscanf(buff.c_str(), "$arm_joy( %d , %d , %d , %d , %d , %d , %d , %d )", &arm_panel_msg.left.x, &arm_panel_msg.left.y, &arm_panel_msg.left.z, &arm_panel_msg.left.button, &arm_panel_msg.right.x, &arm_panel_msg.right.y, &arm_panel_msg.right.z, &arm_panel_msg.right.button) == 8){
+    //     manager->arm_panel_publisher->publish(arm_panel_msg);
+    //     //  RCLCPP_INFO(manager->get_logger(), "Msg Published: %s", buff.c_str());
+    //     //RCLCPP_INFO(manager->get_logger(), "xLeft is %i", arm_panel_msg.left.x);
+    // RCLCPP_INFO(manager->get_logger(), "Raw buffer: [%s]", buff.c_str());
+    // } //! sscanf just won't read the x values. No idea why
+// // for (char c : buff) {
+// //     printf("Char: '%c' (ASCII: 0x%02X)\n", c, static_cast<unsigned char>(c));
+// // }
+//     }
+if(buff.find(")") != std::string::npos){
+
+
+    std::string data = buff;
+std::replace(data.begin(), data.end(), '(', ' ');  // Replace '(' with space
+std::replace(data.begin(), data.end(), ')', ' ');  // Replace ')' with space
+std::replace(data.begin(), data.end(), ',', ' ');  // Replace ',' with space
+    data.erase(0, data.find_first_not_of(" "));  // Trim left
+        data.erase(data.find_last_not_of(" ") + 1);  // Trim right
+
+
+
+std::stringstream ss(data);
+std::string tag;
+int values[8] = {-1};
+
+ss >> tag;  // Skip "$arm_joy"
+for (int i = 0; i < 8; i++) {
+    if(!(ss >> values[i])){
+   
+        // RCLCPP_ERROR(manager->get_logger(), "Parse failure on %s", this->id.c_str());
+        return;
+    }
+}
+
+arm_panel_msg.left.x = values[0];
+arm_panel_msg.left.y = values[1];
+arm_panel_msg.left.z = values[2];
+arm_panel_msg.left.button = values[3];
+arm_panel_msg.right.x = values[4];
+arm_panel_msg.right.y = values[5];
+arm_panel_msg.right.z = values[6];
+arm_panel_msg.right.button = values[7];
+        manager->arm_panel_publisher->publish(arm_panel_msg);
+
+// RCLCPP_INFO(manager->get_logger(), "Manually Parsed: xLeft=%d, xRight=%d", 
+            // arm_panel_msg.left.x, arm_panel_msg.right.x);
+}
+    this->serial.flush();
+
+}
+
+void CBSDevice::setMinMsgSize(int new_size){
+    this->min_msg_size = new_size;
+}
+
+
+
+// Graveyard
+/*
 
 
 int CBSDevice::testPort(std::string port_path, int baudrate){
@@ -142,81 +279,22 @@ int CBSDevice::testPort(std::string port_path, int baudrate){
     
 }
 
-// void CBSDevice::setID(std::string my_id){
-//     this->id = my_id;
-//     // RCLCPP_INFO(manager->get_logger(), "Id set: %s", id.c_str());
-// }
-
-void CBSDevice::init(int baudrate_, std::string new_id, CBSHardwareManagerNode* manager_){
-    this->manager = manager_;
-    this->id = new_id;
-    this->baudrate = baudrate_;
-    RCLCPP_INFO(manager->get_logger(), "Logger attached. Hello world! im %s", this->id.c_str());
-
-}
-void CBSDevice::pollRX(){
-    if(this->serial.available() > this->min_msg_size){
-    std::string new_buff = this->serial.readline();
-    this->parseBuff(new_buff);
-    this->serial.flush();
-    }else{
-        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse? %s", this->id.c_str());
-    }
-};
-
-void CBSDevice::parseBuff(std::string buff){
-    //! need switch case to figure out msg type from id
-    rover_msgs::msg::ArmPanel arm_panel_msg;
-    buff.erase(std::remove(buff.begin(), buff.end(), '\r'), buff.end());  // Remove '\r'
-buff.erase(std::remove(buff.begin(), buff.end(), '\n'), buff.end());  // Remove '\n'
-
-    // if(sscanf(buff.c_str(), "$arm_joy( %d , %d , %d , %d , %d , %d , %d , %d )", &arm_panel_msg.left.x, &arm_panel_msg.left.y, &arm_panel_msg.left.z, &arm_panel_msg.left.button, &arm_panel_msg.right.x, &arm_panel_msg.right.y, &arm_panel_msg.right.z, &arm_panel_msg.right.button) == 8){
-    //     manager->arm_panel_publisher->publish(arm_panel_msg);
-    //     //  RCLCPP_INFO(manager->get_logger(), "Msg Published: %s", buff.c_str());
-    //     //RCLCPP_INFO(manager->get_logger(), "xLeft is %i", arm_panel_msg.left.x);
-    // RCLCPP_INFO(manager->get_logger(), "Raw buffer: [%s]", buff.c_str());
-    // } //! sscanf just won't read the x values. No idea why
-// // for (char c : buff) {
-// //     printf("Char: '%c' (ASCII: 0x%02X)\n", c, static_cast<unsigned char>(c));
-// // }
-//     }
-if(buff.find(")") != std::string::npos){
-
-
-    std::string data = buff;
-std::replace(data.begin(), data.end(), '(', ' ');  // Replace '(' with space
-std::replace(data.begin(), data.end(), ')', ' ');  // Replace ')' with space
-std::replace(data.begin(), data.end(), ',', ' ');  // Replace ',' with space
-    data.erase(0, data.find_first_not_of(" "));  // Trim left
-        data.erase(data.find_last_not_of(" ") + 1);  // Trim right
 
 
 
-std::stringstream ss(data);
-std::string tag;
-int values[8] = {-1};
 
-ss >> tag;  // Skip "$arm_joy"
-for (int i = 0; i < 8; i++) {
-    if(!(ss >> values[i])){
-   
-        RCLCPP_ERROR(manager->get_logger(), "Parse failure on %s", this->id.c_str());
-        return;
-    }
-}
 
-arm_panel_msg.left.x = values[0];
-arm_panel_msg.left.y = values[1];
-arm_panel_msg.left.z = values[2];
-arm_panel_msg.left.button = values[3];
-arm_panel_msg.right.x = values[4];
-arm_panel_msg.right.y = values[5];
-arm_panel_msg.right.z = values[6];
-arm_panel_msg.right.button = values[7];
-        manager->arm_panel_publisher->publish(arm_panel_msg);
 
-RCLCPP_INFO(manager->get_logger(), "Manually Parsed: xLeft=%d, xRight=%d", 
-            arm_panel_msg.left.x, arm_panel_msg.right.x);
-}
-}
 
+
+
+
+
+
+
+
+
+
+
+
+*/

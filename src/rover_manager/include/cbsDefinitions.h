@@ -12,3 +12,9 @@
 #define ARM_PANEL_ID "arm_panel"
 
 #define FAILED_CONNECTION_ATTEMPTS_MAX 20 //amount of times the manager node will search ALL ports to find the panel
+
+enum class PARSE_SEQUENCE{
+    GENERIC = 0,
+    ARM_JOY_PANEL = 1,
+    LEFT_PANEL_A = 2,
+};

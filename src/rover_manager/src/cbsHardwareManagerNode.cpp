@@ -2,7 +2,10 @@
 
 void CBSHardwareManagerNode::armPanelPoll(){
     ArmJoyPanel.pollRX();
-    //useless function??
+}
+
+void CBSHardwareManagerNode::slowPollCycle(){
+    LeftPanel_A.pollRX();
 }
 
 int main(int argc, char* argv[]){
