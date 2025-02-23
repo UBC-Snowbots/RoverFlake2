@@ -167,7 +167,7 @@ class CameraPublisherFull(Node):
             ret, frame = cap.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                msg = self.bridge.cv2_to_imgmsg(frame, encoding="rb8")
+                msg = self.bridge.cv2_to_imgmsg(frame, encoding="rgb8")
                 self.std_publishers[i].publish(msg)
             else:
                 # self.get_logger().error(f'Error capturing frame from {dev_path}')
