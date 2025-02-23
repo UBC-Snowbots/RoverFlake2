@@ -23,7 +23,7 @@ public:
 private:
     void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);  // Callback function for joystick input
 
-    static constexpr double MAX_LINEAR_SPEED = 50.0;  // Maximum linear speed (m/s)
+    static constexpr double MAX_LINEAR_SPEED = 1.0;  // Maximum linear speed (m/s)
 
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input
