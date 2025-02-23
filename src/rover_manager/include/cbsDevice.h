@@ -46,6 +46,7 @@ public:
     int failed_connection_attempts = 0;
     std::string id = "";
     PARSE_SEQUENCE parse_seq;
+    bool is_connected = 0;
 private:
     serial::Serial serial;
     // rclcpp::Logger& logger_;
@@ -62,7 +63,6 @@ private:
     int baudrate = 9600;
     int min_msg_size = 4;
     bool port_found = 0;
-    bool ready_for_polling = 0;
     
     // int id;
     // struct potentiometer{

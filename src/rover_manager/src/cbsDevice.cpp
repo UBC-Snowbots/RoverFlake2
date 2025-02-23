@@ -60,7 +60,7 @@ int CBSDevice::findMyPort(){
                         this->port_path = manager->possible_ports[current_port_index];
                         RCLCPP_INFO(manager->get_logger(), "%s Thats my device! %s %s is Taking control of port: %s %s", bold(), green(), this->id.c_str(), this->port_path.c_str(), reset()); 
                         id_located = true;
-                        ready_for_polling = true;
+                        is_connected = true;
                         manager->taken_ports.push_back(port_path);
                         // manager->possible_ports.erase(current_port_index);
                         manager->possible_ports[current_port_index] = "";
