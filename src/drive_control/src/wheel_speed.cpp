@@ -5,8 +5,8 @@ WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the
     RCLCPP_INFO(this->get_logger(), "Initializing Motor Controller");  // Log that the motor controller is initializing
 
     // Create publishers to send left and right wheel speed messages on separate topics
-    left_wheel_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/left_wheel_speeds", 10);
-    right_wheel_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/right_wheel_speeds", 10);
+    left_wheel_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("left_wheel_speeds", 10);
+    right_wheel_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("right_wheel_speeds", 10);
     
     // Create a subscription to receive Twist messages (which contain velocity commands) from the "/cmd_vel" topic
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -19,8 +19,10 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     double linear = msg->linear.x;
     double angular = msg->angular.z;
     
-    // Calculate a factor to adjust wheel speed based on the wheel radius and angular velocities
-    double wheel_speed_factor = (360.0 / WHEEL_RADIUS_METERS) * (M_PI / 2.0) * 0.01;  // Placeholder for speed scaling
+    // // Calculate a factor to adjust wheel speed based on the wheel radius and angular velocities
+    // double wheel_speed_factor = (360.0 / WHEEL_RADIUS_METERS) * (M_PI / 2.0) * 0.0001;  // Placeholder for speed scaling
+
+    double wheel_speed_factor =  0.01;  // Placeholder for speed scaling
 
     // Apply the speed factor to both linear and angular velocities
     linear *= wheel_speed_factor;
@@ -28,15 +30,15 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
 
     // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
     std::vector<double> left_wheel_commands = {
-        linear + angular,   // Left Front Wheel
-        linear + angular,   // Left Mid Wheel
-        linear + angular    // Left Rear Wheel
+        -linear + angular,   // Left Front Wheel
+        -linear + angular,   // Left Mid Wheel
+        -linear + angular    // Left Rear Wheel
     };
     
     std::vector<double> right_wheel_commands = {
-        -linear + angular,  // Right Front Wheel
-        -linear + angular,  // Right Mid Wheel
-        -linear + angular   // Right Rear Wheel
+        linear + angular,  // Right Front Wheel
+        linear + angular,  // Right Mid Wheel
+        linear + angular   // Right Rear Wheel
     };
 
     // Publish the separate left and right wheel speed messages

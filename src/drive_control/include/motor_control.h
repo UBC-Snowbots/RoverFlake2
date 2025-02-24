@@ -2,8 +2,9 @@
 #define MOTOR_CONTROL_NODE_H
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float64.hpp"  // Include for Float64 message type
+#include "std_msgs/msg/float64_multi_array.hpp"  // Correct include for Float64MultiArray message type
 #include "phidget22.h"
+#include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
 #include <algorithm>  // For std::clamp
 
@@ -13,28 +14,36 @@ public:
     ~MotorControlNode(); // Destructor
 
 private:
-    // Add subscriber declarations for left and right wheel velocity
-    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr left_wheel_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr right_wheel_sub_;
+    // Subscriber declarations for left and right wheel velocities as Float64MultiArray
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_sub_;
 
-    // Private methods for handling motor control and Phidget errors
-    void handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int i);  // Handle Phidget errors
-    void run_motors(std::vector<int> selected_motors, float velocity);  // Run motors at a specified velocity
-    void check_motor_positions();  // Check and log motor positions periodically
+    // Phidget error handling function
+    void handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int motor_id);
+
+    // Method to run motors at a specified velocity
+    void runMotors(const std::vector<int>& selected_motors, float velocity);
+
+    // Periodic motor position check
+    void checkMotorPositions();
 
     // Callback functions for left and right wheel velocity subscriptions
-    void leftWheelCallback(const std_msgs::msg::Float64::SharedPtr msg);  // Callback for left wheel velocity
-    void rightWheelCallback(const std_msgs::msg::Float64::SharedPtr msg);  // Callback for right wheel velocity
+    void leftWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
+    void rightWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
-    // Motor-related variables
+    // Function to print the target velocity of each motor
+    void printTargetVelocity();  // New function declaration
+
+    // Constants and motor-related variables
     static const int NUM_MOTORS = 6;  // Number of motors
     PhidgetBLDCMotorHandle motors[NUM_MOTORS];  // Array of motors
     PhidgetReturnCode ret, errorCode;  // Return codes for Phidget functions
     const char* errorString;  // Error string for logging
     char errorDetail[100];  // Detailed error message
     size_t errorDetailLen = 100;  // Length of the error detail buffer
-    rclcpp::TimerBase::SharedPtr timer_;  // Timer to check motor positions periodically
+
+    // Timer to check motor positions periodically
+    rclcpp::TimerBase::SharedPtr timer_;
 };
 
 #endif // MOTOR_CONTROL_NODE_H
-

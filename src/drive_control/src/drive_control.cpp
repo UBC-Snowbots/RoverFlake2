@@ -19,11 +19,11 @@ void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
     geometry_msgs::msg::Twist twist_msg;
 
     // Get the scaling factor for the desired linear and angular
-    double scaled_speed = msg->axes[2]*MAX_LINEAR_SPEED;
+    //double scaled_speed = msg->axes[2]*MAX_LINEAR_SPEED;
 
     // Scale the joystick inputs to the desired linear and angular velocity
-    twist_msg.linear.x = msg->axes[1] * scaled_speed;
-    twist_msg.angular.z = msg->axes[0] * scaled_speed;
+    twist_msg.linear.x = msg->axes[1];
+    twist_msg.angular.z = msg->axes[0];
 
     // Publish the desired velocities to /cmd_vel
     cmd_vel_pub_->publish(twist_msg);

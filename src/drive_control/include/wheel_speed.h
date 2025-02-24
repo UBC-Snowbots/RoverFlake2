@@ -6,6 +6,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include <vector>
+#include "rclcpp/qos.hpp"  // Include QoS header
 
 class WheelSpeedNode : public rclcpp::Node {
 public:
