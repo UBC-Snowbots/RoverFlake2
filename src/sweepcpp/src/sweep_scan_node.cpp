@@ -20,7 +20,7 @@ public:
     // Declare parameters
     this->declare_parameter("topic", "laser");
     this->declare_parameter("serial_port", "/dev/ttyUSB0");
-    this->declare_parameter("rotation_speed", 1);
+    this->declare_parameter("rotation_speed", 5); // 1-10
     this->declare_parameter("sample_rate", 500);
     this->declare_parameter("frame_id", "laser_frame");
 
