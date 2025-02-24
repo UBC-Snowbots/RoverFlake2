@@ -1,134 +1,126 @@
 #include <chrono>
-#include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <string>
-#include <vector>
+#include <thread>
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-
-#include "sweep/sweep.hpp" 
+#include "sweep/sweep.hpp"
 
 using namespace std::chrono_literals;
 
-class SweepScanNode : public rclcpp::Node
+class SweepScannerNode : public rclcpp::Node
 {
 public:
-  SweepScanNode()
-  : Node("sweep_scan_node")
+  SweepScannerNode() try
+    : Node("sweep_scan_node"),
+      _scanner_thread_active{false}
   {
-    // Declare and get parameters
-    this->declare_parameter<std::string>("port", "/dev/ttyUSB0");
-    this->declare_parameter<std::string>("frame_id", "laser");
-    this->declare_parameter<int>("rotation_speed", 5);
-    this->declare_parameter<int>("sample_rate", 1000);
+    // Declare parameters
+    this->declare_parameter("topic", "laser");
+    this->declare_parameter("serial_port", "/dev/ttyUSB0");
+    this->declare_parameter("rotation_speed", 1);
+    this->declare_parameter("sample_rate", 500);
+    this->declare_parameter("frame_id", "laser_frame");
 
-    port_ = this->get_parameter("port").as_string();
-    frame_id_ = this->get_parameter("frame_id").as_string();
-    rotation_speed_ = this->get_parameter("rotation_speed").as_int();
-    sample_rate_ = this->get_parameter("sample_rate").as_int();
+    // Get parameters
+    const std::string topic       = this->get_parameter("topic").as_string();
+    const std::string serial_port = this->get_parameter("serial_port").as_string();
+    _frame_id       = this->get_parameter("frame_id").as_string();
+    _rotation_speed = this->get_parameter("rotation_speed").as_int();
+    _sample_rate    = this->get_parameter("sample_rate").as_int();
+
+    RCLCPP_INFO(get_logger(), 
+      "node config:\n  topic: %s\n  port: %s\n  speed: %d Hz\n  rate: %d Hz\n  frame: %s",
+      topic.c_str(), serial_port.c_str(), _rotation_speed, _sample_rate, _frame_id.c_str());
+
+    // Initialize Sweep device
+    _scanner = std::make_shared<sweep::sweep>(serial_port.c_str());
 
     // Create publisher
-    scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
+    _lidar_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(topic, 10);
 
-    try {
-      // Initialize Sweep device
-      sweep_context_ = std::make_shared<sweep::Sweep>(port_);
-      sweep_context_->set_motor_speed(rotation_speed_);
-      sweep_context_->set_sample_rate(sample_rate_);
-      RCLCPP_INFO(this->get_logger(), "Starting scan...");
-      sweep_context_->start_scanning();
-
-      // Create a timer to call publish_scan() at 1/rotation_speed seconds
-      auto period = std::chrono::duration<double>(1.0 / rotation_speed_);
-      timer_ = this->create_wall_timer(
-          std::chrono::duration_cast<std::chrono::milliseconds>(period),
-          std::bind(&SweepScanNode::publish_scan, this));
-
-      RCLCPP_INFO(this->get_logger(), "Sweep scan node initialized successfully");
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to initialize Sweep: %s", e.what());
-      if (sweep_context_) {
-        sweep_context_->stop_scanning();
-      }
-      std::exit(EXIT_FAILURE);
-    }
+    // Start scanner thread
+    _scanner_thread_active = true;
+    _scanner_thread = std::thread(&SweepScannerNode::scannerThreadFunc, this);
+  }
+  catch (sweep::device_error const & e)
+  {
+    RCLCPP_ERROR(get_logger(), "%s", e.what());
   }
 
-  ~SweepScanNode()
+  ~SweepScannerNode() override
   {
-    if (sweep_context_) {
-      try {
-        sweep_context_->stop_scanning();
-        RCLCPP_INFO(this->get_logger(), "Stopped scanning and closed Sweep device");
-      } catch (const std::exception & e) {
-        RCLCPP_ERROR(this->get_logger(), "Error closing Sweep device: %s", e.what());
-      }
-    }
+    _scanner_thread_active = false;
+    if (_scanner_thread.joinable())
+      _scanner_thread.join();
   }
 
 private:
-  void publish_scan()
+  void scannerThreadFunc() try
   {
-    // Get a scan (assumed to return a std::vector<Sample>)
-    std::vector<Sample> scan = sweep_context_->get_scan();
+    RCLCPP_INFO(get_logger(), "Configuring Sweep scanner.");
+    _scanner->set_motor_speed(_rotation_speed);
+    while (!_scanner->get_motor_ready())
+      std::this_thread::sleep_for(100ms);
 
-    if (scan.empty()) {
-      RCLCPP_WARN(this->get_logger(), "Received empty scan");
-      return;
-    }
+    _scanner->set_sample_rate(_sample_rate);
+    _scanner->start_scanning();
 
-    sensor_msgs::msg::LaserScan msg;
-    msg.header.stamp = this->now();
-    msg.header.frame_id = frame_id_;
-    msg.angle_min = 0.0;
-    msg.angle_max = 2.0 * M_PI;
+    RCLCPP_INFO(get_logger(), "Starting data acquisition.");
+    while (_scanner_thread_active)
+    {
+      // Obtain a full scan
+      sweep::scan scan = _scanner->get_scan();
 
-    size_t num_samples = scan.size();
-    msg.angle_increment = (msg.angle_max - msg.angle_min) / static_cast<double>(num_samples);
-    msg.scan_time = 1.0 / static_cast<double>(rotation_speed_);
-    msg.time_increment = msg.scan_time / static_cast<double>(num_samples);
-    msg.range_min = 0.1;   // in meters
-    msg.range_max = 40.0;  // in meters
+      sensor_msgs::msg::LaserScan laser_scan_msg;
+      laser_scan_msg.header.frame_id = _frame_id;
 
-    // Preallocate ranges and intensities
-    msg.ranges.resize(num_samples, std::numeric_limits<float>::infinity());
-    msg.intensities.resize(num_samples, 0.0);
+      // Calculate samples per rotation
+      float samples_per_rotation = static_cast<float>(_sample_rate) / static_cast<float>(_rotation_speed);
 
-    // Process each sample.
-    // (Assuming the scan is already ordered in angle)
-    for (size_t i = 0; i < num_samples; ++i) {
-      const Sample & sample = scan[i];
-      // Convert distance from centimeters to meters
-      float distance_m = static_cast<float>(sample.distance) / 100.0f;
-      if (distance_m >= msg.range_min && distance_m <= msg.range_max) {
-        msg.ranges[i] = distance_m;
-      } else {
-        msg.ranges[i] = std::numeric_limits<float>::infinity();
+      laser_scan_msg.angle_min       = 0.0;
+      laser_scan_msg.angle_max       = 2.0 * M_PI;
+      laser_scan_msg.angle_increment = laser_scan_msg.angle_max / samples_per_rotation;
+      laser_scan_msg.time_increment  = 1.0f / static_cast<float>(_sample_rate);
+      laser_scan_msg.range_min       = 0.0f;
+      laser_scan_msg.range_max       = 40.0f;
+
+      // Pre-fill ranges with infinity
+      laser_scan_msg.ranges.assign(scan.samples.size(), std::numeric_limits<float>::infinity());
+
+      size_t idx = 0;
+      for (auto [angle_milli_deg, distance_cm, signal_strength] : scan.samples)
+      {
+        laser_scan_msg.ranges[idx] = static_cast<float>(distance_cm) / 100.0f;
+        ++idx;
       }
-      msg.intensities[i] = static_cast<float>(sample.signal_strength);
-    }
 
-    scan_pub_->publish(msg);
+      _lidar_pub->publish(laser_scan_msg);
+    }
+    _scanner->stop_scanning();
+  }
+  catch (sweep::device_error const & e)
+  {
+    RCLCPP_ERROR(get_logger(), "%s", e.what());
+    _scanner->stop_scanning();
   }
 
   // Member variables
-  std::string port_;
-  std::string frame_id_;
-  int rotation_speed_;
-  int sample_rate_;
-
-  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::shared_ptr<sweep::Sweep> sweep_context_;  // Adjust namespace/type as per your Sweep library
+  std::string _frame_id;
+  int _rotation_speed;
+  int _sample_rate;
+  std::shared_ptr<sweep::sweep> _scanner;
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr _lidar_pub;
+  std::thread _scanner_thread;
+  bool _scanner_thread_active;
 };
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<SweepScanNode>();
+  auto node = std::make_shared<SweepScannerNode>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
