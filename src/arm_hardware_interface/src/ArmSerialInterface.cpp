@@ -13,9 +13,13 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       RCLCPP_INFO(this->get_logger(), "Axis %i /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", i+1, axes[i].dir, axes[i].zero_rad);
     #endif
   }
+  // axis_EE.zero_rad = ArmConstants::ee_zero_rads;
+  // axis_EE.dir = ArmConstants::ee_dir;
+      // RCLCPP_INFO(this->get_logger(), "Axis END_EFF /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", axis_EE.dir, axis_EE.zero_rad);
 
 
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(); //Very hack way of only using "live" messages - iffy, and may still operate off of one stale message. in the future we should use a time stamped message, and check the stamp time against current time to make sure msg is not stale.
+        // auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(); //Very hack way of only using "live" messages - iffy, and may still operate off of one stale message. in the future we should use a time stamped message, and check the stamp time against current time to make sure msg is not stale.
+       auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile(); //? AHHHH WHAT THE FUCK IS A QOS
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
@@ -92,16 +96,16 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
  void ArmSerial::parseArmAngleUart(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
-       joint_states_.position.resize(NUM_JOINTS + 2);
-       joint_states_.velocity.resize(NUM_JOINTS + 2);
-       joint_states_.name.resize(NUM_JOINTS + 2);
+       joint_states_.position.resize(NUM_JOINTS_NO_EE + 2);
+       joint_states_.velocity.resize(NUM_JOINTS_NO_EE + 2);
+       joint_states_.name.resize(NUM_JOINTS_NO_EE + 2);
 
 
-	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos) == 6)
+	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos, &axes[6].curr_pos) == NUM_JOINTS)
 	{
 		// All axes angles are in axes[i].des_angle_pos 
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
-         for(int i = 0; i < NUM_JOINTS; i++){
+         for(int i = 0; i < NUM_JOINTS_NO_EE; i++){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
@@ -115,8 +119,8 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
         rclcpp::Time prev_time(prev_joint_states.header.stamp);
           joint_states_.name[6] = joint_names[6];
           joint_states_.name[7] = joint_names[7];
-          joint_states_.position[6] = 0;
-          joint_states_.position[7] = 0;
+          joint_states_.position[6] = firmToMoveitOffsetPos(axes[EE_INDEX].curr_pos, EE_INDEX);
+          joint_states_.position[7] = firmToMoveitOffsetPos(axes[EE_INDEX].curr_pos * -1, EE_INDEX);
           joint_states_.velocity[6] = 0;
           joint_states_.velocity[7] = 0;
 
@@ -219,10 +223,10 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
     break;
     case ABS_VEL_CMD:
       // double sim_target_velocities[NUM_JOINTS];
-        for (int i = 0; i < NUM_JOINTS; i++){
+        for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
       target_velocities[i] = msg->velocities[i];
         RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
-
+      target_velocities[EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
       // current_velocity[i] = msg->velocities[i];
 
     }

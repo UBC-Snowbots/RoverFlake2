@@ -43,7 +43,8 @@ public:
     std::string glade_file_path = this->package_share_dir + "/glade_files/middle_screen.glade";
     RCLCPP_INFO(this->get_logger(), glade_file_path.c_str());
     auto builder = Gtk::Builder::create_from_file(glade_file_path.c_str());
-    auto qos = rclcpp::QoS(rclcpp::KeepLast(QUEUE_SIZE)).transient_local();
+    // auto qos = rclcpp::QoS(rclcpp::KeepLast(QUEUE_SIZE)).transient_local();
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
     arm_status_sub = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/feedback", qos, std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
     arm_cmd_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
@@ -204,6 +205,16 @@ public:
     builder->get_widget("dec_angy_button", dec_ik_button[4]);
     builder->get_widget("dec_angz_button", dec_ik_button[5]);
 
+    builder->get_widget("inc_ee_button", inc_ee_button);
+    builder->get_widget("dec_ee_button", dec_ee_button);
+    inc_ee_button->signal_pressed().connect(
+          sigc::mem_fun(*this, &MainHMINode::handleIncEEButtonClick));
+    inc_ee_button->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+    dec_ee_button->signal_pressed().connect(
+         sigc::mem_fun(*this, &MainHMINode::handleDecEEButtonClick));
+    dec_ee_button->signal_released().connect(sigc::mem_fun(*this, &MainHMINode::handleAxisButtonRelease));
+     
+
     for (int i = 0; i < 6; i++)
     {
       inc_axis_button[i]->signal_pressed().connect(
@@ -304,7 +315,10 @@ private:
   void handlePosFeedOffButtonClick();
   void handleIncAxisButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecAxisButtonClick(int index);
-   void handleAxisButtonRelease();
+  void handleAxisButtonRelease();
+
+  void handleDecEEButtonClick();
+  void handleIncEEButtonClick();
 
   void handleIncIKButtonClick(int index);  // RELATIVE VELOCITIERSs
   void handleDecIKButtonClick(int index);
@@ -372,6 +386,10 @@ private:
   Gtk::Button* dec_ik_button[6];
   Gtk::Button* inc_ik_button[6];
 
+  Gtk::Button* dec_ee_button;
+  Gtk::Button* inc_ee_button;
+
+  float ee_speed = 50.0;
 
   float axis_hmi_speed[6] = { 5.0, 5.0, 5.0, 5.0, 5.0, 5.0 };
   float ik_hmi_speed[6] = { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };

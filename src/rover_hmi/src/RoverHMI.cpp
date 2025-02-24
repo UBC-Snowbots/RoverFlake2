@@ -272,6 +272,26 @@ void MainHMINode::handleIKButtonRelease(){
     arm_ik_pub->publish(ik_msg);
 }
 
+void MainHMINode::handleDecEEButtonClick(){
+    rover_msgs::msg::ArmCommand vel_msg;
+    vel_msg.cmd_type = 'V';
+        vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
+            vel_msg.velocities[i] = 0;
+    }
+    vel_msg.end_effector = ee_speed * -1;
+    arm_cmd_pub->publish(vel_msg);
+}
+void MainHMINode::handleIncEEButtonClick(){
+    rover_msgs::msg::ArmCommand vel_msg;
+    vel_msg.cmd_type = 'V';
+        vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
+            vel_msg.velocities[i] = 0;
+    }
+    vel_msg.end_effector = ee_speed;
+    arm_cmd_pub->publish(vel_msg);
+}
 
 
 
@@ -315,6 +335,7 @@ void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
+    vel_msg.end_effector = 0;
     arm_cmd_pub->publish(vel_msg);
     handleIKButtonRelease();
 

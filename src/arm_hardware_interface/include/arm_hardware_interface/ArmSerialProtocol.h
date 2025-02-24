@@ -10,6 +10,7 @@
 
 #define TEST_LIMITS_CMD 't'
 
+#define EE_INDEX 6
 
 
 

@@ -5,7 +5,8 @@
 class cbsDisplayManagerNode : public rclcpp::Node {
 public:
     cbsDisplayManagerNode() : Node("cbsDisplayManagerNode") {
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+        // auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
         std::system("notify-send 'CBS ONLINE'");

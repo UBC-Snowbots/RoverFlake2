@@ -43,7 +43,8 @@ public:
   }
     
 
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+        // auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
         //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
         arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>(ArmConstants::command_topic, qos);
 
@@ -130,13 +131,13 @@ private:
         rover_msgs::msg::ArmCommand target;
         //TODO position or vel
         // target.positions.resize(NUM_JOINTS);
-        target.velocities.resize(NUM_JOINTS);
+        target.velocities.resize(NUM_JOINTS_NO_EE);
         target.cmd_type = 'V';
         // float target_positions[NUM_JOINTS];
         // float target_velocities[NUM_JOINTS];
-        float inputs[NUM_JOINTS];
-        if(msg->output.velocities.size() == NUM_JOINTS){
-     for (int i = 0; i < NUM_JOINTS; i++){
+        float inputs[NUM_JOINTS_NO_EE];
+        if(msg->output.velocities.size() == NUM_JOINTS_NO_EE){
+     for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
             // float temp_pos = msg->position[i];
             // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
             //target.velocities[i] = moveitVelocityToFirmwareOffset(msg->desired.velocities[i], i);
@@ -158,13 +159,13 @@ private:
               rover_msgs::msg::ArmCommand target;
         //TODO position or vel
         // target.positions.resize(NUM_JOINTS);
-        target.velocities.resize(NUM_JOINTS);
+        target.velocities.resize(NUM_JOINTS_NO_EE);
         target.cmd_type = 'V';
         // float target_positions[NUM_JOINTS];
         // float target_velocities[NUM_JOINTS];
-        float inputs[NUM_JOINTS];
-        if(msg->points[0].velocities.size() == NUM_JOINTS){
-     for (int i = 0; i < NUM_JOINTS; i++){
+        float inputs[NUM_JOINTS_NO_EE];
+        if(msg->points[0].velocities.size() == NUM_JOINTS_NO_EE){
+     for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
             // float temp_pos = msg->position[i];
             // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
             target.velocities[i] = moveitVelocityToFirmwareOffset(msg->points[0].velocities[i], i);
@@ -183,7 +184,7 @@ private:
 
     void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
 
-        for (int i = 0; i < NUM_JOINTS; i++){
+        for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
             // axes[i].position = msg->positions[i];
             // axes[i].position = msg->positions[i];
 

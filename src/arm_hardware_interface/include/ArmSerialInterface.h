@@ -14,7 +14,6 @@
 
 #define SIMULATE false
 #define PI 3.14159
-#define NUM_JOINTS 6
 
 #define TX_UART_BUFF 128
 #define RX_UART_BUFF 128
@@ -25,6 +24,7 @@
 #define AXIS_4_DIR 1 
 #define AXIS_5_DIR 1
 #define AXIS_6_DIR 1
+
 
 
 
@@ -61,7 +61,7 @@ private:
     float firmToMoveitOffsetVel(float deg, int axis);
 
 
-   unsigned long baud = 19200;
+   unsigned long baud = 115200;//19200;
     string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100C6224069D7-if00";
 
     serial::Serial teensy;
@@ -80,13 +80,14 @@ private:
     void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Axis axes[NUM_JOINTS];
+    // Axis axis_EE;
 
 
     void send_position_command(float pos[NUM_JOINTS]) {
 
         char tx_msg[TX_UART_BUFF];
      
-        sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]);
+        sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6]);
 
         sendMsg(tx_msg);
         RCLCPP_INFO(this->get_logger(), "Positions Sent %s", tx_msg);
@@ -96,7 +97,7 @@ private:
 
         char tx_msg[TX_UART_BUFF];
      
-        sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5]);
+        sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5], vel[6]);
         for(int i = 0; i < NUM_JOINTS; i++){
           current_velocity[i] = vel[i];
         }
@@ -123,9 +124,9 @@ private:
     int homed = 0;
     bool homing = false;
     float EE = 0;
-    volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-    volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-    volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1};
+    volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+    volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+    volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1, -1};
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;

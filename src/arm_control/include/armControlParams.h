@@ -10,7 +10,10 @@
 
 #define VELOCITY_BASED 1
 #define POSITION_BASED 2
-#define NUM_JOINTS 6
+#define NUM_JOINTS 7
+#define NUM_JOINTS_NO_EE 6
+#define EE_INDEX 6
+#define EE_SPEED_SCALE 1
 #define PI 3.14
 struct ArmConstants{
     static constexpr float axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
@@ -18,15 +21,18 @@ struct ArmConstants{
                                                     -1.3460,         //* Axis 3 Offset
                                                     -2.4108, //+PI      // Axis 4 Offset 
                                                      2.2060-PI/3,  //2.2060        //* Axis 5 Offset
-                                                    0};        //? Axis 6 Offset
+                                                    0,  //? Axis 6 Offset
+                                                    0};      //? EE axis offset  
     
     static constexpr int axis_dirs[NUM_JOINTS] =          {1,
                                                      1, 
                                                      1, 
                                                      1,
                                                      -1,
-                                                     -1};
-
+                                                     -1,
+                                                     1}; //? EE dir
+    // static constexpr int ee_dir = 1;
+    // static constexpr int ee_zero_rads = 0;
     // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
     static constexpr char command_topic[] = "/arm/command";
     static constexpr char sim_ee_topic[] = "/arm/ee_command/sim";
