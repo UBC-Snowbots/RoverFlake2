@@ -17,11 +17,11 @@ void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::Shared
     }else{
     if(msg->left.button){
 
-    cmd_msg.end_effector = -0.07;
+    cmd_msg.end_effector = -50;//-0.07;
     }
     if(msg->right.button){
 
-    cmd_msg.end_effector = 0.07;
+    cmd_msg.end_effector = 50;//0.07;
     }
     }
 
