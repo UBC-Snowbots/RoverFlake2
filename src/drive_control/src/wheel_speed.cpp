@@ -22,7 +22,7 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     // // Calculate a factor to adjust wheel speed based on the wheel radius and angular velocities
     // double wheel_speed_factor = (360.0 / WHEEL_RADIUS_METERS) * (M_PI / 2.0) * 0.0001;  // Placeholder for speed scaling
 
-    double wheel_speed_factor =  0.01;  // Placeholder for speed scaling
+    double wheel_speed_factor =  0.1;  // Placeholder for speed scaling
 
     // Apply the speed factor to both linear and angular velocities
     linear *= wheel_speed_factor;

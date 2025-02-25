@@ -36,10 +36,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     );
 
     // Enable failsafe for all motors
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 5000);
-        handlePhidgetError(ret, "enable failsafe", i);
-    }
+    // for (int i = 0; i < NUM_MOTORS; i++) {
+    //     PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 5000);
+    //     handlePhidgetError(ret, "enable failsafe", i);
+    // }
 
     // Create subscribers for left and right wheel velocity commands
     left_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
