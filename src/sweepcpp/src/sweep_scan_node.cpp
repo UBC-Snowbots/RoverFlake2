@@ -18,11 +18,11 @@ public:
       _scanner_thread_active{false}
   {
     // Declare parameters
-    this->declare_parameter("topic", "laser");
-    this->declare_parameter("serial_port", "/dev/ttyUSB0");
+    this->declare_parameter("topic", "scan");
+    this->declare_parameter("serial_port", "/dev/ttyUSB0"); // usbport
     this->declare_parameter("rotation_speed", 5); // 1-10
-    this->declare_parameter("sample_rate", 500);
-    this->declare_parameter("frame_id", "laser_frame");
+    this->declare_parameter("sample_rate", 500); //500-1750
+    this->declare_parameter("frame_id", "lidar");
 
     // Get parameters
     const std::string topic       = this->get_parameter("topic").as_string();
@@ -85,7 +85,7 @@ private:
       laser_scan_msg.angle_increment = laser_scan_msg.angle_max / samples_per_rotation;
       laser_scan_msg.time_increment  = 1.0f / static_cast<float>(_sample_rate);
       laser_scan_msg.range_min       = 0.0f;
-      laser_scan_msg.range_max       = 40.0f;
+      laser_scan_msg.range_max       = 25.0f;
 
       // Pre-fill ranges with infinity
       laser_scan_msg.ranges.assign(scan.samples.size(), std::numeric_limits<float>::infinity());
