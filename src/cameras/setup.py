@@ -25,7 +25,8 @@ setup(
         'console_scripts': [
             'camera_publisher = cameras.camera_publisher:main',
             'camera_publisher_full = cameras.camera_publisher_full:main',
-            'cameras_node = cameras.cameras_node:main'
+            'cameras_node = cameras.cameras_node:main',
+            'full_cameras_node = cameras.full_cameras_node:main'
         ],
     },
 )
