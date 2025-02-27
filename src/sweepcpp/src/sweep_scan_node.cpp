@@ -19,9 +19,15 @@ public:
   {
     // Declare parameters
     this->declare_parameter("topic", "scan");
+<<<<<<< HEAD
     this->declare_parameter("serial_port", "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DM00L4EB-if00-port0"); // usbport /dev/ttyUSB0 
     this->declare_parameter("rotation_speed", 10); // 1-10
     this->declare_parameter("sample_rate", 1000); //500-1750
+=======
+    this->declare_parameter("serial_port", "/dev/ttyUSB0"); // usbport
+    this->declare_parameter("rotation_speed", 5); // 1-10
+    this->declare_parameter("sample_rate", 500); //500-1750
+>>>>>>> a76b6b9 (merging cv stuff into main)
     this->declare_parameter("frame_id", "lidar");
 
     // Get parameters
@@ -76,7 +82,10 @@ private:
 
       sensor_msgs::msg::LaserScan laser_scan_msg;
       laser_scan_msg.header.frame_id = _frame_id;
+<<<<<<< HEAD
       laser_scan_msg.header.stamp = this->now();
+=======
+>>>>>>> a76b6b9 (merging cv stuff into main)
 
       // Calculate samples per rotation
       float samples_per_rotation = static_cast<float>(_sample_rate) / static_cast<float>(_rotation_speed);
