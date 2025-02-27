@@ -7,14 +7,15 @@
   <maintainer email="ubuntu@todo.todo">ubuntu</maintainer>
   <license>TODO: License declaration</license>
 
+  <!-- ros uses opencv on local so need to install it seperately to work
+       with cv bridge -->
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
 
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <!-- Added ultralytics exec dependancy, need to pip install ultralytics on local -->
+  <!-- <exec_depend>python3-ultralytics</exec_depend> 
+  <exec_depend>python3-opencv</exec_depend>  -->
 
   <export>
     <build_type>ament_python</build_type>
