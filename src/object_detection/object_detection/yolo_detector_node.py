@@ -38,7 +38,7 @@ class YOLODetectorNode(Node):
 
         # TODO Change this to whatever YOLO model we decide to use
         # For this I want to do some unit testing to use it for the KRIA on fpga, not sure if yolov8 will be able to be used for this
-        self.yolo = YOLO('yolov8n.pt') # right now this is fine 
+        self.yolo = YOLO('bestHammer.pt') # right now this is fine 
 
         ## We do this via ros since we have the topics we can use a subscriber for this
         # # TODO Not sure if this is the right camera for video capture for the rover
@@ -85,9 +85,11 @@ class YOLODetectorNode(Node):
                     cls = int(box.cls[0])
                     class_name = classes_names[cls]
                     colour = self.get_colours(cls)
-                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), colour, 2)
-                    cv2.putText(annotated_frame, f'{class_name} {box.conf[0]:.2f}',
-                                (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 2)
+
+                    if class_name == "hammer":
+                        cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), colour, 2)
+                        cv2.putText(annotated_frame, f'{class_name} {box.conf[0]:.2f}',
+                                    (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 2)
         
         # Convert frame to ROS2 Image message and publish
         detected_msg = self.bridge.cv2_to_imgmsg(annotated_frame, encoding='bgr8')
