@@ -58,6 +58,7 @@
       </geometry>
     </collision> -->
   </link>
+  <link name="lidar"></link>
   <link
     name="chassis_link">
     <inertial>
@@ -108,6 +109,19 @@
       link="base_link" />
     <child
       link="chassis_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <joint
+    name="lidar_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="lidar" />
     <axis
       xyz="0 0 0" />
   </joint>

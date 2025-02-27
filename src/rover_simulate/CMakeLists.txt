@@ -12,12 +12,15 @@ find_package(gazebo_ros REQUIRED)
 find_package(rover_urdf REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 add_executable(chassis_sim_demo src/chassis_sim_demo.cpp)
+add_executable(chassis_drive_off_cmd_vel src/chassis_drive_cmd_vel.cpp)
 ament_target_dependencies(chassis_sim_demo rclcpp trajectory_msgs)
+ament_target_dependencies(chassis_drive_off_cmd_vel rclcpp trajectory_msgs geometry_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,7 +35,9 @@ if(BUILD_TESTING)
 endif()
 
 install(
-  TARGETS chassis_sim_demo
+  TARGETS 
+  chassis_sim_demo
+  chassis_drive_off_cmd_vel
   DESTINATION lib/${PROJECT_NAME}
 )
 
