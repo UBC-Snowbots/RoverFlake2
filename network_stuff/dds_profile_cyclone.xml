@@ -7,7 +7,7 @@
     <General>
         <Interfaces>
                 <!-- <NetworkInterface address="10.147.20.8" priority="0" /> -->
-                <NetworkInterface address="172.30.0.22" priority="0" />
+                <NetworkInterface address="172.30.0.21" priority="0" />
         </Interfaces>
         <AllowMulticast>default</AllowMulticast>
       <!--<EnableMulticastLoopback>true</EnableMulticastLoopback>-->
