@@ -3,7 +3,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "serial/serial.h"
 #include "rover_utils/include/fancyOutput.h"
-
 using namespace ConsoleFormat;
 class CBSHardwareManagerNode : public rclcpp::Node
 {
