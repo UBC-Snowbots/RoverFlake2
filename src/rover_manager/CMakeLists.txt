@@ -14,6 +14,7 @@ find_package(rover_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rover_utils REQUIRED)
 find_package(serial REQUIRED)
+find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
