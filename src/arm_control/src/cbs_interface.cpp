@@ -6,14 +6,13 @@ void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::Shared
 
     ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
     ik_msg.header.frame_id = "link_tt";
-    ik_msg.twist.linear.x = staticmsg->
-    int index = current_ik_index;
+   //  ik_msg.twist.linear.x = static_cast<float>(msg->
     ik_msg.twist.linear.x = (static_cast<float>(msg->left.x) - 50)/100 * max_speed_deg[0]*2 / 180;
      ik_msg.twist.linear.y = (static_cast<float>(msg->left.y) - 50)/100 * max_speed_deg[1]*2 *-1 / 180;
-    ik_msg.twist.angular.y = (static_cast<float>(msg->right.y) - 50)/100 * max_speed_deg[2]*2*-1 / 180;
-     ik_msg.twist.angular.z = (static_cast<float>(msg->left.z) - 50)/100 * max_speed_deg[3]*2 / 180;
      ik_msg.twist.linear.z = (static_cast<float>(msg->right.x) - 50)/100 * max_speed_deg[4]*2 / 180;
      ik_msg.twist.angular.x = (static_cast<float>(msg->right.z) - 50)/100 * max_speed_deg[5]*2 / 180;
+    ik_msg.twist.angular.y = (static_cast<float>(msg->right.y) - 50)/100 * max_speed_deg[2]*2*-1 / 180;
+     ik_msg.twist.angular.z = (static_cast<float>(msg->left.z) - 50)/100 * max_speed_deg[3]*2 / 180;
     // float value = ik_hmi_speed[index]; ///TODO get speed based on spinbuttons
     // switch (index)
     // {
@@ -78,7 +77,7 @@ void CBSArmInterface::left_panel_callback(const rover_msgs::msg::GenericPanel::S
  if(msg->switches[0] == 0){
     ik = false;
  }else{
-    ik = true
+    ik = true;
  }
 }
 

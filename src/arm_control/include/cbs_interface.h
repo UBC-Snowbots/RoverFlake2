@@ -3,6 +3,7 @@
 #include "rover_msgs/msg/arm_command.hpp"
 #include "armControlParams.h"
 #include "rover_msgs/msg/generic_panel.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 
 
 
