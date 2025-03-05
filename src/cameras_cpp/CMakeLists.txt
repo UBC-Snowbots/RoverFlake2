@@ -7,9 +7,18 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rover_utils REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+include_directories(include/)
+
+add_executable(camera_pipeline_node src/cam_pipeline_node.cpp include/cam_pipeline_node.h)
+ament_target_dependencies(camera_pipeline_node rclcpp sensor_msgs)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -30,4 +39,11 @@ DESTINATION share/${PROJECT_NAME}/launch)
 INSTALL(DIRECTORY 
 config/
 DESTINATION share/${PROJECT_NAME}/config)
+
+install(
+  TARGETS 
+  camera_pipeline_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
