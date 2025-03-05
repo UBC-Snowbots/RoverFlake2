@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkAdjustment" id="adjustment1">
@@ -1879,8 +1879,8 @@ sends $h(A)</property>
                 </child>
                 <child>
                   <object class="GtkDrawingArea" id="image_draw_area">
-                    <property name="width-request">1000</property>
-                    <property name="height-request">800</property>
+                    <property name="width-request">1280</property>
+                    <property name="height-request">720</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>

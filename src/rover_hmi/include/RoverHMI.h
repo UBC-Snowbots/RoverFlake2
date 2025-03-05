@@ -50,7 +50,7 @@ public:
     arm_cmd_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
     image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        "/camera1/image_raw", 10, std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
+        "/cam_1/image_decoded", 10, std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
 
     cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>(
         "/cmd_vel", qos);    

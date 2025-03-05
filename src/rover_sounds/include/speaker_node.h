@@ -20,7 +20,8 @@ public:
                 aux_sub = this->create_subscription<std_msgs::msg::String>(
             "speaker/command", qos, std::bind(&SpeakerNode::commandCallback, this, std::placeholders::_1)); 
 
-    }
+                    playSound("bleep.wav");
+        }
 
     void playSound(const std::string& soundFileName) {
         sf::SoundBuffer buffer;

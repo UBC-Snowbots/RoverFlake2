@@ -1,0 +1,39 @@
+front_camera_node:
+  ros__parameters:
+    AeEnable: true
+    AnalogueGain: 1.0
+    Brightness: 0.0
+    Contrast: 1.0
+    # ExposureTime: 15700
+    Saturation: 1.0
+    # camera: \_SB_.PCI0.XHC_.RHUB.HS02-2:1.2-046d:082c
+    camera: \_SB_.PCI0.XHC_.RHUB.HS04-4:1.0-046d:0825
+    format: MJPEG
+    height: 720
+    qos_overrides./parameter_events.publisher.depth: 1000
+    qos_overrides./parameter_events.publisher.durability: volatile
+    qos_overrides./parameter_events.publisher.history: keep_last
+    qos_overrides./parameter_events.publisher.reliability: reliable
+    role: video
+    use_sim_time: false
+    width: 1280
+
+
+    #1.0-090c:337b new usb cams
+    #1.0-4c4a:4a55 old usb cams
+    #1.0-05a3:9230 rover cam
+    #1.2-046d:082c random rover cam
+
+#     [camera]: 
+# >> stream formats:
+#    - Pixelformat: MJPEG (320x240 - 1920x1080)
+#    - Pixelformat: YUYV (320x240 - 1920x1080)
+# [WARN] [1712536526.459334478] [camera]: no pixel format selected, using default: "MJPEG"
+# [INFO] [1712536526.459383907] [camera]: 
+# >> MJPEG format sizes:
+#    - 320x240
+#    - 352x288
+#    - 640x480
+#    - 800x600
+#    - 1280x720
+#    - 1920x1080

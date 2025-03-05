@@ -1,0 +1,63 @@
+rear_camera_node:
+  ros__parameters:
+    AeEnable: true
+    AnalogueGain: 1.0
+    Brightness: 0.0
+    Contrast: 1.0
+    # ExposureTime: 15700
+    Saturation: 1.0
+    # camera: \_SB_.PCI0.XHC_.RHUB.HS01-1:1.0-090c:337b
+    camera: \_SB_.PCI0.XHC_.RHUB.HS03-3:1.0-046d:0825
+    format: MJPEG
+    height: 720
+    qos_overrides./parameter_events.publisher.depth: 1000
+    qos_overrides./parameter_events.publisher.durability: volatile
+    qos_overrides./parameter_events.publisher.history: keep_last
+    qos_overrides./parameter_events.publisher.reliability: reliable
+    role: video
+    use_sim_time: false
+    width: 1280
+
+
+
+    # History
+
+    #     Keep last: only store up to N samples, configurable via the queue depth option.
+
+    #     Keep all: store all samples, subject to the configured resource limits of the underlying middleware.
+
+    # Depth
+
+    #     Queue size: only honored if the “history” policy was set to “keep last”.
+
+    # Reliability
+
+    #     Best effort: attempt to deliver samples, but may lose them if the network is not robust.
+
+    #     Reliable: guarantee that samples are delivered, may retry multiple times.
+
+    # Durability
+
+    #     Transient local: the publisher becomes responsible for persisting samples for “late-joining” subscriptions.
+
+    #     Volatile: no attempt is made to persist samples.
+
+    # Deadline
+
+    #     Duration: the expected maximum amount of time between subsequent messages being published to a topic
+
+    # Lifespan
+
+    #     Duration: the maximum amount of time between the publishing and the reception of a message without the message being considered stale or expired (expired messages are silently dropped and are effectively never received).
+
+    # Liveliness
+
+    #     Automatic: the system will consider all of the node’s publishers to be alive for another “lease duration” when any one of its publishers has published a message.
+
+    #     Manual by topic: the system will consider the publisher to be alive for another “lease duration” if it manually asserts that it is still alive (via a call to the publisher API).
+
+    # Lease Duration
+
+    #     Duration: the maximum period of time a publisher has to indicate that it is alive before the system considers it to have lost liveliness (losing liveliness could be an indication of a failure).
+
+
