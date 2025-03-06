@@ -9,8 +9,8 @@ class CBSHardwareManagerNode : public rclcpp::Node
 public:
     CBSHardwareManagerNode() : Node("CBSHardwareManagerNode"){
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-    arm_panel_publisher = this->create_publisher<rover_msgs::msg::ArmPanel>("/cbs/arm_panel", qos);
-    left_panel_A_publisher = this->create_publisher<rover_msgs::msg::GenericPanel>("/cbs/left_panel_a", qos);
+    arm_panel_publisher = this->create_publisher<rover_msgs::msg::ArmPanel>(TOPIC_ARM_PANEL, qos);
+    left_panel_A_publisher = this->create_publisher<rover_msgs::msg::GenericPanel>(TOPIC_LEFT_PANEL_A, qos);
     
     // rclcpp::Parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));

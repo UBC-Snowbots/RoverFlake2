@@ -28,6 +28,9 @@ ament_target_dependencies(cbs_hardware_manager_node rclcpp rover_utils serial ro
 add_executable(cbs_display_manager_node src/cbsDisplayManagerNode.cpp include/cbsDisplayManagerNode.h)
 ament_target_dependencies(cbs_display_manager_node rclcpp rover_utils rover_msgs)
 
+add_executable(router_a src/router_A.cpp)
+ament_target_dependencies(router_a rclcpp rover_utils rover_msgs)
+
 install(TARGETS
   watchdog_node
   cbs_hardware_manager_node

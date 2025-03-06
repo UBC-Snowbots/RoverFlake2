@@ -1,7 +1,8 @@
-
+// This is to be run ON BOARD the rover
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include "std_msgs/msg/int16.hpp"
 
 
 
@@ -24,13 +25,15 @@ public:
                     this->imageCallback(msg, 1);
                   }
                 );
+        selection_sub = this->create_subscription<std_msgs::msg::Int16>(
+            "/cam_pipe_1/chosen_feed", qos, std::bind(&CamPipe::selectIndexCallback, this, std::placeholders::_1));
             // std::system("notify-send 'CAMERA_PIPELINE is online'");
         // g29_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
         //     "/joy", 10, std::bind(&SampleNode::joy_callback, this, std::placeholders::_1, 0));
     }
 
         ~CamPipe(){
-            // std::system("notify-send 'CAMERA_PIPELINE is offline'");
+            // std::system("notify-send 'CAMERA_PIPELINE is offline'"); //? commenting this out as no point in sending a notification on board, aint no monitor on board the rover!
 
         }
 
@@ -42,8 +45,9 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_1;
 
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr output_pub;
+    rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr selection_sub;
     int selected_index = 0;
     rclcpp::TimerBase::SharedPtr timer_;
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg, int index);
-
+    void selectIndexCallback(const std_msgs::msg::Int16::SharedPtr msg);
 };
