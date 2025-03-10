@@ -11,6 +11,8 @@
 .monitored_node_name{
     background-color: whitesmoke;
     color: black;
+    padding: 8px;
+    
 }
 
 .dash_title{

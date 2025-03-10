@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 -->
+<!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkWindow" id="dash_window">
@@ -27,14 +27,14 @@
           </packing>
         </child>
         <child>
-          <!-- n-columns=2 n-rows=3 -->
-          <object class="GtkGrid" id="node_status_grid">
+          <!-- n-columns=2 n-rows=7 -->
+          <object class="GtkGrid" id="subsys_status_grid">
             <property name="width-request">100</property>
             <property name="height-request">80</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkLabel" id="node_0_status_label">
+              <object class="GtkLabel" id="subsys_0_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -50,12 +50,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="node_0_label">
+              <object class="GtkLabel" id="subsys_0_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">node 0</property>
+                <property name="label" translatable="yes">subsys 0</property>
                 <style>
                   <class name="monitored_node_name"/>
                 </style>
@@ -69,7 +69,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">running nodes</property>
+                <property name="label" translatable="yes">subsystem health</property>
                 <style>
                   <class name="monitored_node_name"/>
                 </style>
@@ -81,12 +81,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="node_1_label">
+              <object class="GtkLabel" id="subsys_1_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">node 1</property>
+                <property name="label" translatable="yes">subsys 1</property>
                 <style>
                   <class name="monitored_node_name"/>
                 </style>
@@ -97,7 +97,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="node_1_status_label">
+              <object class="GtkLabel" id="subsys_1_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -110,6 +110,134 @@
               <packing>
                 <property name="left-attach">1</property>
                 <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_2_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">subsys 2</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_3_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">subsys 3</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_4_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">subsys 4</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_2_status_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+                <style>
+                  <class name="dash_status_unknown"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_3_status_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+                <style>
+                  <class name="dash_status_unknown"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_4_status_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+                <style>
+                  <class name="dash_status_unknown"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_5_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">subsys 5</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="subsys_5_status_label">
+                <property name="width-request">100</property>
+                <property name="height-request">80</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+                <style>
+                  <class name="dash_status_unknown"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">6</property>
               </packing>
             </child>
           </object>
