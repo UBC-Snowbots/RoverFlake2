@@ -1,7 +1,5 @@
 #pragma once
-#include <gtkmm.h>
-#include <rclcpp/rclcpp.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -14,12 +12,6 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <cv_bridge/cv_bridge.h>
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>  // For std::setprecision
-
-// Global functions
-void load_css(const Glib::RefPtr<Gtk::CssProvider>& provider, std::string css_file_path);
 
 // standard c++ stuff, some may alreaddy be included in rclcpp
 #include <chrono>

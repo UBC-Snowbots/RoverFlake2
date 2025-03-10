@@ -4,7 +4,7 @@
 
 
 #include "rclcpp/rclcpp.hpp"
-#include "rover_msgs/msg/GenericPanel.msg"
+#include "rover_msgs/msg/generic_panel.hpp"
 
 
 class RouterA : public rclcpp::Node {
@@ -16,8 +16,8 @@ public:
 
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
-        g29_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&SampleNode::joy_callback, this, std::placeholders::_1));
+        left_panel_a_sub = this->create_subscription<rover_msgs::msg::GenericPanel>(
+            "/cbs/left_panel_a", 10, std::bind(&RouterA::leftPanelACallback, this, std::placeholders::_1));
     }
 
 
@@ -34,11 +34,19 @@ private:
  
     // rclcpp::Publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr command_publisher_;
    
+    void leftPanelACallback(const rover_msgs::msg::GenericPanel::SharedPtr msg);
+
     rclcpp::Subscription<rover_msgs::msg::GenericPanel>::SharedPtr left_panel_a_sub;
 
     rclcpp::TimerBase::SharedPtr timer_;
 
 };
+
+void RouterA::leftPanelACallback(const rover_msgs::msg::GenericPanel::SharedPtr msg){
+    //decode and do whatnot here. This is where we decide what the buttons do, for the most part.
+    //We can also just use callbacks within certain nodes
+}
+
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);

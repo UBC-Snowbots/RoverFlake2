@@ -33,7 +33,7 @@ link_directories(${GTKMM_LIBRARY_DIRS})
 # link_directories(${arm_hardware_interface_LIBRARY_DIRS})
 
 
-add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_functions.cpp src/system_overview_functions.cpp)
+add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_functions.cpp src/system_overview_functions.cpp include/HMICommon.h)
 # add_executable(middle_rover_viz_node src/RoverViz.cpp include/RoverViz.h)
 # add_executable(arm_hmi_node src/ArmTestingHMI.cpp include/RoverHMI.h include/ArmTestingHMI.h src/helper_functions.cpp src/system_overview_functions.cpp)
 # add_executable(right_screen src/right_screen.cpp)  # 1080p
@@ -44,6 +44,9 @@ ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_ms
 target_link_libraries(main_hmi_node ${GTKMM_LIBRARIES})
 # target_link_libraries(arm_hmi_node ${GTKMM_LIBRARIES})
 
+add_executable(dashboard_hmi_node src/dashboardHMI.cpp include/HMICommon.h include/dashboardHMI.h src/helper_functions.cpp)
+ament_target_dependencies(dashboard_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control)
+target_link_libraries(dashboard_hmi_node ${GTKMM_LIBRARIES})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -59,6 +62,7 @@ endif()
 
 install(TARGETS 
   main_hmi_node
+  dashboard_hmi_node
   #middle_rover_viz_node
   # arm_hmi_node
   DESTINATION lib/${PROJECT_NAME}/
