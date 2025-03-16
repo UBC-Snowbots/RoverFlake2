@@ -1,4 +1,5 @@
 #include <HMICommon.h>
+#include <rover_msgs/msg/sub_system_health.hpp>
 #define NUM_MONITORED_SYSTEMS 6
 // #include <helper_functions.h>
 
@@ -14,6 +15,11 @@ public:
     DashboardHMINode() : Node("dashboard_hmi_node")
     {
         set_title("Rover Dashboard"); //set the app/window title
+        //* Set up pubs n subs
+        heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
+          "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
+
+
         this->package_share_dir = ament_index_cpp::get_package_share_directory("rover_hmi");
         std::string glade_file_path = this->package_share_dir + "/glade_files/dashboard.glade";
         auto builder = Gtk::Builder::create_from_file(glade_file_path.c_str());
@@ -118,5 +124,7 @@ private:
 
 
   //? Ros2 stuffs
-//   rclcpp::Subscription heartbeat_monitor_sub;
+ rclcpp::Subscription<rover_msgs::msg::SubSystemHealth>::SharedPtr heartbeat_monitor_sub;
+  void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
+//  rclcpp::Publishe?
 };

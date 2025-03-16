@@ -1,5 +1,6 @@
 #include <dashboardHMI.h>
 
+#define DEBUG_MSGS
 
 int main(int argc, char* argv[]){
     //Gtk is a picky eater and crashes when you feed it ros args, which are automatically fed with launch file, and i think regular running.
@@ -22,4 +23,12 @@ int main(int argc, char* argv[]){
     return 0;
 
 
+}
+
+
+void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg){
+    //Watchdog / Heartbeat callback. See what systems are running
+    #ifdef DEBUG_MSGS
+        RCLCPP_INFO(this->get_logger(), "Heartbeat Detected: %s", msg->subsystem);
+    #endif
 }

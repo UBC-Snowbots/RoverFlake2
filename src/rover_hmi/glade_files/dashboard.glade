@@ -246,6 +246,46 @@
             <property name="y">173</property>
           </packing>
         </child>
+        <child>
+          <!-- n-columns=3 n-rows=2 -->
+          <object class="GtkGrid" id="event_sys_grid">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">SYSTEM MESSAGES</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="global_msg_box">
+                <property name="width-request">274</property>
+                <property name="height-request">0</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR_NO_MSG</property>
+                <style>
+                  <class name="global_msg_box"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="x">678</property>
+            <property name="y">125</property>
+          </packing>
+        </child>
         <style>
           <class name="base_window_dash"/>
         </style>
