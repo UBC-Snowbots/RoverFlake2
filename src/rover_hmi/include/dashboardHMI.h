@@ -57,9 +57,11 @@ public:
                     system_health.system[i].status->set_label("UNKNOWN");
                 }
         
-
+      builder->get_widget("global_msg_box", global_msg_label);
+                global_msg_label->set_label("DASHBOARD STARTING...");
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
+        global_msg_label->set_label("DASHBOARD STARTED");
 
         pid_t pid = fork();
         if (pid == 0) {
@@ -104,6 +106,9 @@ private:
     //? Gtk Stuffs
     Gtk::Window* dash_window;
     Gtk::Layout* dash_layout;
+
+      //* Global Messaging System
+      Gtk::Label* global_msg_label;
 
 
   struct SubSysStatusElement
