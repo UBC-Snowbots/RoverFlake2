@@ -11,51 +11,48 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
-include_directories(
-  include
-)
+# uncomment the following section in order to fill in further dependencies
+# manually. find_package(<dependency> REQUIRED)
+include_directories(include)
 
+include(FetchContent)
+FetchContent_Declare(
+  moteus
+  GIT_REPOSITORY https://github.com/mjbots/moteus.git
+  GIT_TAG aa96bf0ae847921a79d2d3d241d65505ee10e209)
 
-add_library(${PROJECT_NAME} src/armprotocol.cpp include/arm_hardware_interface/ArmSerialProtocol.h)
+FetchContent_MakeAvailable(moteus)
 
-add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
-ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial rover_msgs)
+add_executable(
+  arm_serial_driver src/MJ_Serial.cpp src/ArmSerialInterface.cpp
+                    include/ArmSerialInterface.h include/ArmSerialProtocol.h)
+
+ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial
+                          rover_msgs)
+target_link_libraries(arm_serial_driver moteus::cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
+  # the following line skips the linter which checks for copyrights comment the
+  # line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
+  # the following line skips cpplint (only works in a git repo) comment the line
+  # when this package is in a git repo and when a copyright and license is added
+  # to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/launch
-)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 
 # Install headers for other packages (for arm serial protocol)
-install(
-  DIRECTORY include/
-  DESTINATION include/
-)
+install(DIRECTORY include/ DESTINATION include/)
 
-install(TARGETS
-  arm_serial_driver
-  ${PROJECT_NAME}
+install(
+  TARGETS arm_serial_driver
   DESTINATION lib/${PROJECT_NAME}
   ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-)
+  LIBRARY DESTINATION lib)
 
 ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
-
 
 ament_package()
