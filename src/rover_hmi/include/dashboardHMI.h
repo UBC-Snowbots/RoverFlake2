@@ -63,28 +63,26 @@ public:
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
 
-        pid_t pid = fork();
-        if (pid == 0) {
-            // Child process: replace this process with "ros2 run my_package my_node"
-            execlp("ros2", "ros2", "run", "joy", "joy_node", (char *)NULL);
-    
-            // If execlp() returns, there was an error
-            perror("execlp failed");
-            exit(EXIT_FAILURE);
-    
-        } else if (pid < 0) {
-            // fork() error in parent
-            perror("fork failed");
-        } else {
-            // Parent process: fork succeeded
-            // 'pid' is the child's PID. We could store it if we want to terminate later.
-            printf("Launched process with PID: %d\n", pid);
-        }
     }
 
     ~DashboardHMINode(){
         std::system("notify-send DASHBOARD_OFFLINE going down with regular cleanup!");
-        rclcpp::shutdown();
+        //! need to add orphan cleanup here
+        for(const auto &pair : running_child_pids){
+          RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+          // killChildPID(pair.second);
+          kill(pair.second, SIGTERM); 
+        }
+        RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
+        sleep(5);
+        RCLCPP_INFO(this->get_logger(), "Times up, forcefully killing any slow orphans");
+        for(const auto &pair : running_child_pids){
+          RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+          // killChildPID(pair.second);
+          kill(pair.second, SIGKILL);
+        }
+
+
     }
     void run()
     {
@@ -99,9 +97,9 @@ private:
     std::string main_css_file_path;
     std::string package_share_dir;
     std::vector<std::string> monitored_systems = {"cbs_daemon", "drive_control", "arm_hardware", "arm_control", "science", "perceptions"};
+    // std::vector<std::string> running_childs;
     
-
-
+    // std::map
 
     //? Gtk Stuffs
     Gtk::Window* dash_window;
@@ -132,4 +130,12 @@ private:
  rclcpp::Subscription<rover_msgs::msg::SubSystemHealth>::SharedPtr heartbeat_monitor_sub;
   void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
 //  rclcpp::Publishe?
+
+
+
+  //? watchdog stuffs
+  std::unordered_map<std::string, pid_t> running_child_pids;
+    //* CHILD PROCESSES
+    void runChildNode(std::string pkg, std::string node_or_launch_file, bool launch, bool kill_orphan);
+    void killChildPID(pid_t target_pid);
 };
