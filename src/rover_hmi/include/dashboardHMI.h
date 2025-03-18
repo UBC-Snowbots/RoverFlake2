@@ -62,6 +62,9 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
+        // runChildNode("rviz2", "rviz2");
+        // runChildNode("joy", "joy_node");
+        runChildNode("rover_launchers", "ps4.launch.py", true);
 
     }
 
@@ -71,7 +74,10 @@ public:
         for(const auto &pair : running_child_pids){
           RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
           // killChildPID(pair.second);
-          kill(pair.second, SIGTERM); 
+          std::vector<pid_t> pids = getPidsByName(pair.first);
+          for(const pid_t pid : pids){
+            kill(pid, SIGTERM); 
+          }
         }
         RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
         sleep(5);
@@ -136,6 +142,8 @@ private:
   //? watchdog stuffs
   std::unordered_map<std::string, pid_t> running_child_pids;
     //* CHILD PROCESSES
-    void runChildNode(std::string pkg, std::string node_or_launch_file, bool launch, bool kill_orphan);
+    void runChildNode(std::string pkg, std::string node_or_launch_file, bool launch = false, bool kill_orphan = true);
     void killChildPID(pid_t target_pid);
+    std::vector<pid_t> getPidsByName(const std::string &processName);
+
 };

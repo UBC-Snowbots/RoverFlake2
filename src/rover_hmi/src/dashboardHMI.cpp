@@ -37,7 +37,7 @@ void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth:
 }
 
 
-void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_file, bool launch = false, bool kill_orphan = true){
+void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_file, bool launch, bool kill_orphan){
 //? This will run nodes in parallell threads and attach them as children to this process.
         //* Will run launch files if launch is true. When running a launch file:
             //* This node is the 'parent'
@@ -55,9 +55,9 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
             // Child process: replace this process with "ros2 run my_package my_node"
             if(launch){
 
-                execlp("ros2", "ros2", "launch", pkg, node_or_launch_file, (char *)NULL);
+                execlp("ros2", "ros2", "launch", pkg.c_str(), node_or_launch_file.c_str(), (char *)NULL);
             }else{
-                execlp("ros2", "ros2", "run", pkg, node_or_launch_file, (char *)NULL);
+                execlp("ros2", "ros2", "run", pkg.c_str(), node_or_launch_file.c_str(), (char *)NULL);
             }
     
             // If execlp() returns, there was an error
@@ -71,7 +71,7 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
             // Parent process: fork succeeded
             // 'pid' is the child's PID. We could store it if we want to terminate later.
             RCLCPP_INFO(this->get_logger(), "Launched process with PID: %d\n", pid);
-            running_child_pids[pkg+node_or_launch_file] = pid;
+            running_child_pids[node_or_launch_file] = pid;
         }
 
 
@@ -81,4 +81,31 @@ void DashboardHMINode::killChildPID(pid_t target_pid){
     RCLCPP_INFO(this->get_logger(), "Killing: %d", target_pid);
     kill(target_pid, SIGTERM); //* nicely ask
     // kill(pid, SIGKILL); //* demand death
+}
+
+std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processName)
+{
+    std::vector<pid_t> pids;
+
+    // Build our command string, e.g.: "pgrep my_node"
+    // -f matches against the entire command line, 
+    // so you might do: "pgrep -f " + processName, depending on your usage
+    const std::string cmd = "pgrep " + processName;
+
+    // Open a pipe to read the results of pgrep
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) {
+        std::perror("popen failed");
+        return pids;
+    }
+
+    char buffer[128];
+    while (fgets(buffer, sizeof(buffer), pipe)) {
+        // Each line should contain one PID
+        pid_t pid = static_cast<pid_t>(std::stoi(buffer));
+        pids.push_back(pid);
+    }
+
+    pclose(pipe);
+    return pids;
 }
