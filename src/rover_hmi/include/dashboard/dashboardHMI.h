@@ -23,9 +23,14 @@ public:
           //* Control Base SubSystem
             SubSystemProcess cbs_background;
             cbs_background.type = LAUNCHFILE;
-            cbs_background.pkg = "rover_manager";
-            cbs_background.exec = "cbs_system_bringup.launch.py";
-            monitored_systems["control_base"].process = cbs_background;
+            cbs_background.pkg = "rover_launchers";
+            cbs_background.exec = "cbs_bringup.launch.py";
+            monitored_systems[monitored_system_names[0]].process = cbs_background;
+            SubSystemProcess drive_control;
+            drive_control.type = LAUNCHFILE;
+            drive_control.pkg = "drive_control";
+            drive_control.exec = "cbs_system_bringup.launch.py";
+            monitored_systems[monitored_system_names[1]].process = drive_control;
             // monitored_systems["control_base"].processes.push_back(cbs_background); //! only one process..
           
 
@@ -97,25 +102,27 @@ public:
 private:
     std::string main_css_file_path;
     std::string package_share_dir;
-    std::vector<std::string> monitored_systems_names = {"control_base", "drive_control", "arm_hardware", "arm_control", "science", "perceptions"};
     
     struct SubSystemProcess{
       int type = LAUNCHFILE;
       std::string pkg;
       std::string exec;
     };
-
-
+    
+    
     struct MonitoredSystem{ //* might want to make a class in the future.. assuming it still works with the hash map
       std::string name;
       pid_t pid;
       pid_t gpid;
       pid_t sid;
       bool online = false;
+      Gtk::Label* status_label;
+      Gtk::Label* name_label;
       // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
       SubSystemProcess process;
     };
-
+    
+    std::vector<std::string> monitored_system_names = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
     // MonitoredSystem control_base_sys;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems;
  

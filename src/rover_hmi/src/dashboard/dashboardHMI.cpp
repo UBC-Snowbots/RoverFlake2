@@ -99,7 +99,11 @@ void DashboardHMINode::killSubSystem(std::string subsystem_name){
     if(monitored_systems[subsystem_name].online){
         killProcessGroup(monitored_systems[subsystem_name].gpid);
         monitored_systems[subsystem_name].online = false;
-        
+        Glib::RefPtr<Gtk::StyleContext> context = monitored_systems[subsystem_name].status_label->get_style_context();
+        context->remove_class("subsys_ONLINE");
+        context->add_class("subsys_OFFLINE");
+        monitored_systems[subsystem_name].status_label->set_label("OFFLINE");
+
     }else{
         RCLCPP_ERROR(this->get_logger(), "Subsystem %s is already offline", subsystem_name.c_str());
     }
@@ -107,8 +111,15 @@ void DashboardHMINode::killSubSystem(std::string subsystem_name){
 
 void DashboardHMINode::runSubSystem(std::string subsystem_name){
     // for(const auto &process : monitored_systems[subsystem_name].processes){
+        monitored_systems[subsystem_name].status_label->set_label("STARTING");
         const auto &process = monitored_systems[subsystem_name].process;
         runChildNode(process.pkg, process.exec, subsystem_name, process.type);
+        Glib::RefPtr<Gtk::StyleContext> context = monitored_systems[subsystem_name].status_label->get_style_context();
+        context->add_class("subsys_ONLINE");
+        context->remove_class("subsys_OFFLINE");
+        monitored_systems[subsystem_name].status_label->set_label("online");
+
+
     // }
 }
 

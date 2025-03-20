@@ -1,1 +1,51 @@
 /* Dashboard Css */
+
+.subsys_button{
+    border-radius: 0px;
+}
+
+.subsys_button:hover{
+    color: black;
+    border-radius: 15%;
+}
+
+
+.subsys_button_KILL_OFFLINE{
+    background-color: brown;
+    color: whitesmoke;
+}
+.subsys_button_KILL_ONLINE{
+    background-color: red;
+    color: whitesmoke;
+}
+
+.subsys_ONLINE{
+    background-color: rgb(61, 254, 61);
+    margin: 5px;
+    border-width: 5px;
+    border-color: rgb(42, 53, 179);
+    font-size: 20;
+    color: black;
+}
+.subsys_OFFLINE{
+    background-color: red;
+    font-size: 15;
+    color: whitesmoke;
+}
+
+.subsys_button_RUN_OFFLINE{
+    background-color: green;
+    color: whitesmoke;
+}
+
+.subsys_button_RUN_ONLINE{
+    background-color: greenyellow;
+    color: rgb(0, 0, 0);
+}
+
+
+
+.dash_status_unknown{
+    background-color: grey;
+    color: black;
+}
