@@ -1,4 +1,12 @@
 // #pragma once
+
+/*
+This node manages and interfaces with the hardware of the control base. 
+    It will open up TTY ports, and find witch device is witch based on just the output of the device.
+    With this, we can create multiple devices, with or without differing baudrates, and not worry about wich usb port they are plugged into.
+    Setting the serial ids would be way easier, but not all arduinos/MCUs have this function.
+    ! Currently, will not be able to open ACM ports, but that is an easy fix.
+*/
 #include "cbsDevice.h"
 #include "rclcpp/rclcpp.hpp"
 #include "serial/serial.h"
@@ -67,7 +75,7 @@ public:
 
     ~CBSHardwareManagerNode(){
         RCLCPP_WARN(this->get_logger(), "WARNING: CONTROL BASE MANAGER NODE OFFLINE!");
-        std::system("notify-send 'CBS hardware manager OFFLINE'");
+        std::system("notify-send 'CBS hardware manager OFFLINE'"); // sends a notification to the system. Helpful when we start it within a launch file and the terminal output is too crowded
 
     }
     rclcpp::Publisher<rover_msgs::msg::ArmPanel>::SharedPtr arm_panel_publisher;
@@ -77,7 +85,7 @@ public:
     void slowPollCycle();
     int connectDevice(CBSDevice& dev);
 
-    std::vector<std::string> possible_ports = {"test", "test2","/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3", "/dev/ttyUSB4", "/dev/ttyUSB5", "/dev/ttyUSB6", "/dev/ttyUSB7"};
+    std::vector<std::string> possible_ports = {"test", "test2","/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3", "/dev/ttyUSB4", "/dev/ttyUSB5", "/dev/ttyUSB6", "/dev/ttyUSB7"}; //TODO make this suck less
     std::vector<std::string> taken_ports;
 
 
