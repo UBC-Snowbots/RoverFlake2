@@ -8,7 +8,7 @@ int main(int argc, char* argv[]){
     int nullc = 0;
     char **nullv = nullptr;
 
-    auto app = Gtk::Application::create(nullc, nullv, "com.example.GtkApplication");
+    auto app = Gtk::Application::create(nullc, nullv, "dashboard_hmi");
     //CHAD ROS2 gets the real arguments from the terminal
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DashboardHMINode>();

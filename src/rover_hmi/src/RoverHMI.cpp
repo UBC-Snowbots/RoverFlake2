@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
 
     int nullc = 0;
     char **nullv = nullptr;
-    auto app = Gtk::Application::create(nullc, nullv, "com.example.GtkApplication"); //give GTK null args. ROS launch files add on --ros-args which messes up GTK. 
+    auto app = Gtk::Application::create(nullc, nullv, "debug_hmi"); //give GTK null args. ROS launch files add on --ros-args which messes up GTK. 
     rclcpp::init(argc, argv); 
     auto node = std::make_shared<MainHMINode>();
     
