@@ -25,6 +25,7 @@ find_package(arm_hardware_interface REQUIRED)
 find_package(arm_control REQUIRED)
 # find_package(rover_utils REQUIRED)
 include_directories(include)
+include_directories(include/dashboard)
 # Add the include directories
 include_directories(${GTKMM_INCLUDE_DIRS})
 # include_directories(${arm_hardware_interface_INCLUDE_DIRS})
@@ -44,7 +45,7 @@ ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_ms
 target_link_libraries(main_hmi_node ${GTKMM_LIBRARIES})
 # target_link_libraries(arm_hmi_node ${GTKMM_LIBRARIES})
 
-add_executable(dashboard_hmi_node src/dashboardHMI.cpp include/HMICommon.h include/dashboardHMI.h src/helper_functions.cpp)
+add_executable(dashboard_hmi_node src/dashboard/dashboardHMI.cpp include/HMICommon.h include/dashboard/dashboardHMI.h src/helper_functions.cpp)
 ament_target_dependencies(dashboard_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control)
 target_link_libraries(dashboard_hmi_node ${GTKMM_LIBRARIES})
 

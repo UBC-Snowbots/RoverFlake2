@@ -7,7 +7,7 @@
     background-color: grey;
     color: black;
 }
-
+@import url("dashboard_style.css");
 .monitored_node_name{
     background-color: whitesmoke;
     color: black;
