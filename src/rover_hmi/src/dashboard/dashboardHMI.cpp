@@ -8,7 +8,7 @@ int main(int argc, char* argv[]){
     int nullc = 0;
     char **nullv = nullptr;
 
-    auto app = Gtk::Application::create(nullc, nullv, "dashboard_hmi");
+    auto app = Gtk::Application::create(nullc, nullv, "dashboard_hmi"); //Make sure the 3rd arg here is unique. If 2 HMIs start with the same id one will die
     //CHAD ROS2 gets the real arguments from the terminal
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DashboardHMINode>();
@@ -37,7 +37,7 @@ void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth:
 }
 
 
-void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsystem_name, bool launch, bool kill_orphan){
+void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsystem_name, int type, bool kill_orphan){
 //? This will run nodes in parallell threads and attach them as children to this process.
         //* Will run launch files if launch is true. When running a launch file:
             //* This node is the 'parent'
@@ -49,7 +49,7 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
 //? if dashboard dies, will default to deystroy it's children, 
             //*  unless kill_orphan is set to false
         if(monitored_systems[subsystem_name].online == true){
-            RCLCPP_ERROR(this->get_logger(), "Subystem %s is already running. Will not respawn", subsystem_name.c_str());
+            RCLCPP_ERROR(this->get_logger(), "Subystem process %s is already running. Will not respawn", subsystem_name.c_str());
             return;
         }
 
@@ -64,14 +64,14 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
             pid_t child_gpid = getpgrp();
             RCLCPP_INFO(this->get_logger(), "Launched process with PID: %d, GPID: %d, SID: %d\n", pid, child_gpid, child_sid);
 
-            if(launch){
+            if(type == LAUNCHFILE){
 
                 execlp("ros2", "ros2", "launch", pkg.c_str(), node_or_launch_file.c_str(), (char *)NULL);
             }else{
                 execlp("ros2", "ros2", "run", pkg.c_str(), node_or_launch_file.c_str(), (char *)NULL);
             }
     
-            // If execlp() returns, there was an error
+            // If execlp() returns, there was an error. So this code should be blocked if all goes well.
             perror("execlp failed");
             exit(EXIT_FAILURE);
     
@@ -106,7 +106,10 @@ void DashboardHMINode::killSubSystem(std::string subsystem_name){
 }
 
 void DashboardHMINode::runSubSystem(std::string subsystem_name){
-    
+    // for(const auto &process : monitored_systems[subsystem_name].processes){
+        const auto &process = monitored_systems[subsystem_name].process;
+        runChildNode(process.pkg, process.exec, subsystem_name, process.type);
+    // }
 }
 
 void DashboardHMINode::killProcessGroup(pid_t pgid) {
@@ -119,14 +122,14 @@ void DashboardHMINode::killProcessGroup(pid_t pgid) {
     }
     
     // Send SIGTERM to the entire process group
-    if (killpg(pgid, SIGTERM) < 0) {
-        RCLCPP_ERROR(this->get_logger(), "Error sending SIGTERM to process group %d: %s", 
+    if (killpg(pgid, SIGINT) < 0) {
+        RCLCPP_ERROR(this->get_logger(), "Error sending SIGKILL to process group %d: %s", 
                     pgid, strerror(errno));
     }
 }
 void DashboardHMINode::killChildPID(pid_t target_pid){
     RCLCPP_INFO(this->get_logger(), "Killing: %d", target_pid);
-    kill(target_pid, SIGTERM); //* nicely ask
+    kill(target_pid, SIGINT); //* nicely ask
     // kill(pid, SIGKILL); //* demand death
 }
 
@@ -166,8 +169,8 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request)
         // runChildNode("rviz2", "rviz2");
         // runChildNode("joy", "joy_node");
         if(request == RUN){
-            // runSubSystem(subsystem_name);
-            runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
+            runSubSystem(subsystem_name);
+            // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
             return;
         }
         if(request == KILL){

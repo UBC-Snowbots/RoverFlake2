@@ -15,7 +15,7 @@ public:
     // rclcpp::Parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter<std::vector<std::string>>("expected_nodes", {});
-
+    std::system("notify-send 'CBS hardware manager STARTING UP'");
     
     // attachPort();
 
@@ -46,6 +46,8 @@ public:
     // }
     rclcpp::sleep_for(std::chrono::seconds(1));
     RCLCPP_INFO(this->get_logger(), "All ports found! Starting polling timers");
+    std::system("notify-send 'CBS hardware manager READY'");
+
     ArmJoyPanel.setMinMsgSize(32);
     LeftPanel_A.setMinMsgSize(34);
     if(ArmJoyPanel.is_connected){

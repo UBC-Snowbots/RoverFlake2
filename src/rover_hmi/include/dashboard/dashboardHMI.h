@@ -20,9 +20,14 @@ public:
         heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
           "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
         
-        monitored_systems["control_base"];
-            SubSystemProcess cbs_daemon;
-              cbs_daemon.type = LAUNCHFILE;
+          //* Control Base SubSystem
+            SubSystemProcess cbs_background;
+            cbs_background.type = LAUNCHFILE;
+            cbs_background.pkg = "rover_manager";
+            cbs_background.exec = "cbs_system_bringup.launch.py";
+            monitored_systems["control_base"].process = cbs_background;
+            // monitored_systems["control_base"].processes.push_back(cbs_background); //! only one process..
+          
 
 
 
@@ -107,7 +112,8 @@ private:
       pid_t gpid;
       pid_t sid;
       bool online = false;
-      std::vector<SubSystemProcess> processes;
+      // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
+      SubSystemProcess process;
     };
 
     // MonitoredSystem control_base_sys;
@@ -131,14 +137,13 @@ private:
 //  rclcpp::Publishe?
 
 
-
   //? watchdog stuffs
   std::unordered_map<std::string, pid_t> running_child_pids;
     //* CHILD PROCESSES
     void killSubSystem(std::string subsystem_name);
     void runSubSystem(std::string subsystem_name);
     void killProcessGroup(pid_t pgid);
-    void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, bool launch = false, bool kill_orphan = true);
+    void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, int type = NODE, bool kill_orphan = true);
     void killChildPID(pid_t target_pid);
     std::vector<pid_t> getPidsByName(const std::string &processName, bool verbose = false);
 
