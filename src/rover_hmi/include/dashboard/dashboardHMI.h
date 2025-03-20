@@ -1,6 +1,8 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/sub_system_health.hpp>
 #define NUM_MONITORED_SYSTEMS 6
+#define RUN 0xA
+#define KILL 0xB
 // #include <helper_functions.h>
 
 //? Watchdog stuffs..?
@@ -46,25 +48,28 @@ public:
     ~DashboardHMINode(){
         std::system("notify-send DASHBOARD_OFFLINE going down with regular cleanup!");
         //! need to add orphan cleanup here
-        for(const auto &pair : running_child_pids){
-          RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
-          // killChildPID(pair.second);
-          // std::vector<pid_t> pids = getPidsByName(pair.first);
-          // for(const pid_t pid : pids){
-            // kill(pid, SIGINT); 
-            killProcessGroup(pair.second);
-          // }
-        }
-        RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
-        sleep(5);
-        RCLCPP_INFO(this->get_logger(), "Times up, forcefully killing any slow orphans");
-        for(const auto &pair : running_child_pids){
-          RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
-          // killChildPID(pair.second);
-          // kill(pair.second, SIGKILL);
-          killProcessGroup(pair.second);
-        }
-
+        // for(const auto &pair : running_child_pids){
+        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+        //   // killChildPID(pair.second);
+        //   // std::vector<pid_t> pids = getPidsByName(pair.first);
+        //   // for(const pid_t pid : pids){
+        //     // kill(pid, SIGINT); 
+        //     killProcessGroup(pair.second);
+        //   // }
+        // }
+        // RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
+        // sleep(5);
+        // RCLCPP_INFO(this->get_logger(), "Times up, forcefully killing any slow orphans");
+        // for(const auto &pair : running_child_pids){
+        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+        //   // killChildPID(pair.second);
+        //   // kill(pair.second, SIGKILL);
+        //   killProcessGroup(pair.second);
+        // }
+      for(const auto &pair : monitored_systems){
+        RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with gpid %d", pair.first, pair.second.gpid);
+        killSubSystem(pair.first);
+      }
 
     }
     void run()
@@ -99,7 +104,7 @@ private:
 
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
-  void subsystemRequest(int system_index);
+  void subsystemRequest(int system_index, int request);
 
 
   //? Ros2 stuffs
@@ -112,6 +117,7 @@ private:
   //? watchdog stuffs
   std::unordered_map<std::string, pid_t> running_child_pids;
     //* CHILD PROCESSES
+    void killSubSystem(std::string subsystem_name);
     void killProcessGroup(pid_t pgid);
     void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, bool launch = false, bool kill_orphan = true);
     void killChildPID(pid_t target_pid);

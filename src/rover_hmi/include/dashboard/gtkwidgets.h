@@ -13,7 +13,7 @@ struct SubSysStatusElement
   Gtk::Label* name;
   Gtk::Label* status;
   Gtk::Button* kill_button;
-  Gtk::Button* spawn_button;
+  Gtk::Button* run_button;
 
 };
    //* System Overview

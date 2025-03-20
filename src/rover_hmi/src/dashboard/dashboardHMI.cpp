@@ -48,7 +48,10 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
 //? After running a new child node, its PID is saved in the hash map, and can be killed, or paused by this node
 //? if dashboard dies, will default to deystroy it's children, 
             //*  unless kill_orphan is set to false
-
+        if(monitored_systems[subsystem_name].online == true){
+            RCLCPP_ERROR(this->get_logger(), "Subystem %s is already running. Will not respawn", subsystem_name.c_str());
+            return;
+        }
 
         pid_t pid = fork();//* once this is called, both the child and parent run the code below, with different outcomes
         if (pid == 0) { //if fork was successful, and I'm the child
@@ -83,15 +86,30 @@ void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_
 
             RCLCPP_INFO(this->get_logger(), "Launched process with PID: %d, GPID: %d, SID: %d\n", pid, child_gpid, child_sid);
             running_child_pids[node_or_launch_file] = pid;
+            monitored_systems[subsystem_name].pid = pid;
+            monitored_systems[subsystem_name].sid = pid;
+            monitored_systems[subsystem_name].gpid = pid;
+            monitored_systems[subsystem_name].online = true;
         }
 
 
 }
+
+void DashboardHMINode::killSubSystem(std::string subsystem_name){
+    if(monitored_systems[subsystem_name].online){
+        killProcessGroup(monitored_systems[subsystem_name].gpid);
+        monitored_systems[subsystem_name].online = false;
+        
+    }else{
+        RCLCPP_ERROR(this->get_logger(), "Subsystem %s is already offline", subsystem_name.c_str());
+    }
+}
+
 void DashboardHMINode::killProcessGroup(pid_t pgid) {
     RCLCPP_INFO(this->get_logger(), "Killing process group: %d", pgid);
 
     pid_t my_pgid = getpgrp();
-    if(pgid == my_pgid){
+    if(pgid == my_pgid || pgid == 0){
         RCLCPP_ERROR(this->get_logger(), "Holdup, halted attempt to kill my own proccess group. %d",my_pgid);
         return;
     }
@@ -138,10 +156,16 @@ std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processNam
     return pids;
 }
 
-void DashboardHMINode::subsystemRequest(int system_index){
+void DashboardHMINode::subsystemRequest(int system_index, int request){
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
     //* Depending on the button clicked, run different child proccesses, or kill different child processes
         // runChildNode("rviz2", "rviz2");
         // runChildNode("joy", "joy_node");
-        // runChildNode("rover_launchers", "ps4.launch.py", true);
+        if(request == RUN){
+            runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
+            return;
+        }
+        if(request == KILL){
+            killSubSystem("control_base");
+        }
 }
