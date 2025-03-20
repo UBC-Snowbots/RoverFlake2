@@ -18,7 +18,7 @@ public:
         //* Set up pubs n subs
         heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
           "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
-
+        monitored_systems["control_base"];
 
         this->package_share_dir = ament_index_cpp::get_package_share_directory("rover_hmi");
         std::string glade_file_path = this->package_share_dir + "/glade_files/dashboard.glade";
@@ -32,39 +32,14 @@ public:
         auto style_context = get_style_context();
         style_context->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 
-        //* Glade builder setup
-        builder->get_widget("dash_window", dash_window);
-        builder->get_widget("dash_top_layout", dash_layout);
-            //* subsys Status Grid
-            builder->get_widget("subsys_status_grid", system_health.grid);
-                builder->get_widget("subsys_0_label", system_health.system[0].name);
-                builder->get_widget("subsys_1_label", system_health.system[1].name);
-                builder->get_widget("subsys_2_label", system_health.system[2].name);
-                builder->get_widget("subsys_3_label", system_health.system[3].name);
-                builder->get_widget("subsys_4_label", system_health.system[4].name);
-                builder->get_widget("subsys_5_label", system_health.system[5].name);
-                builder->get_widget("subsys_0_status_label", system_health.system[0].status);
-                builder->get_widget("subsys_1_status_label", system_health.system[1].status);
-                builder->get_widget("subsys_2_status_label", system_health.system[2].status);
-                builder->get_widget("subsys_3_status_label", system_health.system[3].status);
-                builder->get_widget("subsys_4_status_label", system_health.system[4].status);
-                builder->get_widget("subsys_5_status_label", system_health.system[5].status);
-
-            
-
-                for(int i = 0; i < NUM_MONITORED_SYSTEMS; i++){
-                    system_health.system[i].name->set_label(monitored_systems[i]);
-                    system_health.system[i].status->set_label("UNKNOWN");
-                }
+          #include "gtksetup.h"
         
       builder->get_widget("global_msg_box", global_msg_label);
                 global_msg_label->set_label("DASHBOARD STARTING...");
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
-        // runChildNode("rviz2", "rviz2");
-        // runChildNode("joy", "joy_node");
-        runChildNode("rover_launchers", "ps4.launch.py", true);
+
 
     }
 
@@ -74,10 +49,11 @@ public:
         for(const auto &pair : running_child_pids){
           RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
           // killChildPID(pair.second);
-          std::vector<pid_t> pids = getPidsByName(pair.first);
-          for(const pid_t pid : pids){
-            kill(pid, SIGTERM); 
-          }
+          // std::vector<pid_t> pids = getPidsByName(pair.first);
+          // for(const pid_t pid : pids){
+            // kill(pid, SIGINT); 
+            killProcessGroup(pair.second);
+          // }
         }
         RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
         sleep(5);
@@ -85,7 +61,8 @@ public:
         for(const auto &pair : running_child_pids){
           RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
           // killChildPID(pair.second);
-          kill(pair.second, SIGKILL);
+          // kill(pair.second, SIGKILL);
+          killProcessGroup(pair.second);
         }
 
 
@@ -102,34 +79,27 @@ public:
 private:
     std::string main_css_file_path;
     std::string package_share_dir;
-    std::vector<std::string> monitored_systems = {"cbs_daemon", "drive_control", "arm_hardware", "arm_control", "science", "perceptions"};
-    // std::vector<std::string> running_childs;
+    std::vector<std::string> monitored_systems_names = {"control_base", "drive_control", "arm_hardware", "arm_control", "science", "perceptions"};
+    struct MonitoredSystem{
+      std::string name;
+      pid_t pid;
+      pid_t gpid;
+      pid_t sid;
+      bool online = false;
+    };
+    // MonitoredSystem control_base_sys;
+    std::unordered_map<std::string, MonitoredSystem> monitored_systems;
+ 
     
     // std::map
 
     //? Gtk Stuffs
-    Gtk::Window* dash_window;
-    Gtk::Layout* dash_layout;
-
-      //* Global Messaging System
-      Gtk::Label* global_msg_label;
+    #include "gtkwidgets.h"
+      SubSysStatusGrid system_health;
 
 
-  struct SubSysStatusElement
-  {
-    Gtk::Label* name;
-    Gtk::Label* status;
-
-  };
-     //* System Overview
-  struct SubSysStatusGrid
-  {
-    Gtk::Grid* grid;
-    SubSysStatusElement system[NUM_MONITORED_SYSTEMS];
-  };
-
-
-  SubSysStatusGrid system_health;
+  //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
+  void subsystemRequest(int system_index);
 
 
   //? Ros2 stuffs
@@ -142,8 +112,9 @@ private:
   //? watchdog stuffs
   std::unordered_map<std::string, pid_t> running_child_pids;
     //* CHILD PROCESSES
-    void runChildNode(std::string pkg, std::string node_or_launch_file, bool launch = false, bool kill_orphan = true);
+    void killProcessGroup(pid_t pgid);
+    void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, bool launch = false, bool kill_orphan = true);
     void killChildPID(pid_t target_pid);
-    std::vector<pid_t> getPidsByName(const std::string &processName);
+    std::vector<pid_t> getPidsByName(const std::string &processName, bool verbose = false);
 
 };

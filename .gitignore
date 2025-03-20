@@ -59,5 +59,4 @@ log/
 **/.vscode/
 **/TODO.md
 
-**/.vscode/
-**/TODO.md
+.vscode/settings.json
