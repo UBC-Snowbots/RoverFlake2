@@ -1,8 +1,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/sub_system_health.hpp>
-#define NUM_MONITORED_SYSTEMS 6
-#define RUN 0xA
-#define KILL 0xB
+#include "dashboardDefinitions.h"
+
 // #include <helper_functions.h>
 
 //? Watchdog stuffs..?
@@ -20,7 +19,15 @@ public:
         //* Set up pubs n subs
         heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
           "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
+        
         monitored_systems["control_base"];
+            SubSystemProcess cbs_daemon;
+              cbs_daemon.type = LAUNCHFILE;
+
+
+
+
+
 
         this->package_share_dir = ament_index_cpp::get_package_share_directory("rover_hmi");
         std::string glade_file_path = this->package_share_dir + "/glade_files/dashboard.glade";
@@ -68,8 +75,9 @@ public:
         // }
       for(const auto &pair : monitored_systems){
         RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with gpid %d", pair.first, pair.second.gpid);
-        killSubSystem(pair.first);
+        killSubSystem(pair.first); //will send SIGTERM
       }
+      //! may need to add SIGKILL signal
 
     }
     void run()
@@ -85,13 +93,23 @@ private:
     std::string main_css_file_path;
     std::string package_share_dir;
     std::vector<std::string> monitored_systems_names = {"control_base", "drive_control", "arm_hardware", "arm_control", "science", "perceptions"};
-    struct MonitoredSystem{
+    
+    struct SubSystemProcess{
+      int type = LAUNCHFILE;
+      std::string pkg;
+      std::string exec;
+    };
+
+
+    struct MonitoredSystem{ //* might want to make a class in the future.. assuming it still works with the hash map
       std::string name;
       pid_t pid;
       pid_t gpid;
       pid_t sid;
       bool online = false;
+      std::vector<SubSystemProcess> processes;
     };
+
     // MonitoredSystem control_base_sys;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems;
  
@@ -104,7 +122,7 @@ private:
 
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
-  void subsystemRequest(int system_index, int request);
+  void subsystemRequest(std::string subsystem_name, int request);
 
 
   //? Ros2 stuffs
@@ -118,6 +136,7 @@ private:
   std::unordered_map<std::string, pid_t> running_child_pids;
     //* CHILD PROCESSES
     void killSubSystem(std::string subsystem_name);
+    void runSubSystem(std::string subsystem_name);
     void killProcessGroup(pid_t pgid);
     void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, bool launch = false, bool kill_orphan = true);
     void killChildPID(pid_t target_pid);

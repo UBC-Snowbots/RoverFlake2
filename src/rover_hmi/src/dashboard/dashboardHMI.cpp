@@ -105,6 +105,10 @@ void DashboardHMINode::killSubSystem(std::string subsystem_name){
     }
 }
 
+void DashboardHMINode::runSubSystem(std::string subsystem_name){
+    
+}
+
 void DashboardHMINode::killProcessGroup(pid_t pgid) {
     RCLCPP_INFO(this->get_logger(), "Killing process group: %d", pgid);
 
@@ -156,16 +160,17 @@ std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processNam
     return pids;
 }
 
-void DashboardHMINode::subsystemRequest(int system_index, int request){
+void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request){
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
     //* Depending on the button clicked, run different child proccesses, or kill different child processes
         // runChildNode("rviz2", "rviz2");
         // runChildNode("joy", "joy_node");
         if(request == RUN){
+            // runSubSystem(subsystem_name);
             runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
             return;
         }
         if(request == KILL){
-            killSubSystem("control_base");
+            killSubSystem(subsystem_name);
         }
 }

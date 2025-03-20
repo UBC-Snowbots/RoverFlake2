@@ -19,8 +19,8 @@
                 builder->get_widget("subsys_5_status_label", system_health.system[5].status);
 
             
-                  system_health.system[0].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), 0, KILL));
-                  system_health.system[0].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), 0, RUN));
+                  system_health.system[0].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), "control_base", KILL));
+                  system_health.system[0].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), "control_base", RUN));
                 for(int i = 0; i < NUM_MONITORED_SYSTEMS; i++){
                     system_health.system[i].name->set_label(monitored_systems_names[i]);
                     system_health.system[i].status->set_label("UNKNOWN");
