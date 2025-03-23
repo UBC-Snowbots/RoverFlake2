@@ -4,6 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"  // Correct include for Float64MultiArray message type
 #include "phidget22.h"
+#include "std_msgs/msg/bool.hpp"
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
 #include <algorithm>  // For std::clamp
@@ -17,6 +18,8 @@ private:
     // Subscriber declarations for left and right wheel velocities as Float64MultiArray
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_sub_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr button_state_pub_;
+    
 
     // Phidget error handling function
     void handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int motor_id);

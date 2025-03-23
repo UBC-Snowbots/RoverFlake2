@@ -16,6 +16,9 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
             continue;
         }
 
+        ret = PhidgetBLDCMotor_setBrakingEnabled(motor[i]), 0); 
+        handlePhidgetError(ret, "set braking enabled", i);
+
         ret = Phidget_setHubPort((PhidgetHandle)motors[i], i);
         handlePhidgetError(ret, "set hub port", i);
 
@@ -47,6 +50,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
     right_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
         "right_wheel_speeds", rclcpp::QoS(10), std::bind(&MotorControlNode::rightWheelCallback, this, std::placeholders::_1));
+
+    // Create a subscription for the brake button state
+    brake_button_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+        "button_state", rclcpp::QoS(10), std::bind(&MotorControlNode::brakeButtonCallback, this, std::placeholders::_1));
 }
 
 MotorControlNode::~MotorControlNode() {
@@ -68,6 +75,21 @@ void MotorControlNode::rightWheelCallback(const std::shared_ptr<std_msgs::msg::F
     runMotors({3, 4, 5}, right_velocity);  // Corrected function name
 }
 
+void MotorControlNode::brakingEnableFunction(bool brake_button_pressed) {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        PhidgetReturnCode ret;
+        if (brake_button_pressed) {
+            // Enable braking if the button is pressed
+            ret = PhidgetBLDCMotor_enableBraking(motors[i], 1);
+            handlePhidgetError(ret, "enable braking", i);
+        } else {
+            // Disable braking if the button is not pressed
+            ret = PhidgetBLDCMotor_enableBraking(motors[i], 0);
+            handlePhidgetError(ret, "disable braking", i);
+        }
+    }
+}
+
 void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int i) {
     if (ret != EPHIDGET_OK) {
         const char* errorString;
@@ -81,11 +103,11 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
     }
 }
 
-void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float velocity) {
+void MotorControlNode::runMotors(const std::vector<int>& selected_motor, float velocity) {
     PhidgetLog_enable(PHIDGET_LOG_INFO, "phidgetlog.log");
     velocity = std::clamp(velocity, -1.0f, 1.0f);
     
-    for (int motor_index : selected_motors) {
+    for (int motor_index : selected_motor) {
         PhidgetReturnCode ret = PhidgetBLDCMotor_setTargetVelocity(motors[motor_index], velocity);
         if (ret != EPHIDGET_OK) {
             handlePhidgetError(ret, "set target velocity", motor_index);
