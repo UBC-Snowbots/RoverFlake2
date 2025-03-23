@@ -22,15 +22,20 @@ public:
         
           //* Control Base SubSystem
             SubSystemProcess cbs_background;
-            cbs_background.type = LAUNCHFILE;
-            cbs_background.pkg = "rover_launchers";
-            cbs_background.exec = "cbs_bringup.launch.py";
-            monitored_systems[monitored_system_names[0]].process = cbs_background;
+              cbs_background.type = LAUNCHFILE;
+              cbs_background.pkg = "rover_launchers";
+              cbs_background.exec = "cbs_bringup.launch.py";
+              monitored_systems[monitored_system_names[0]].process = cbs_background;
             SubSystemProcess drive_control;
-            drive_control.type = LAUNCHFILE;
-            drive_control.pkg = "drive_control";
-            drive_control.exec = "cbs_system_bringup.launch.py";
-            monitored_systems[monitored_system_names[1]].process = drive_control;
+              drive_control.type = LAUNCHFILE;
+              drive_control.pkg = "drive_control";
+              drive_control.exec = "cbs_system_bringup.launch.py";
+              monitored_systems[monitored_system_names[1]].process = drive_control;
+            SubSystemProcess xx;
+              xx.type = LAUNCHFILE;
+              xx.pkg = "xx";
+              xx.exec = "xx";
+              monitored_systems[monitored_system_names[2]].process = xx;
             // monitored_systems["control_base"].processes.push_back(cbs_background); //! only one process..
           
 
