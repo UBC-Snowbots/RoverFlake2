@@ -1,0 +1,39 @@
+/* Default Button Styles */
+button {
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    margin: 5px;
+}
+
+/* Sequence Buttons (Only one can be active) */
+.sequence-button {
+    background-color: gray;
+    color: white;
+}
+
+.sequence-button.active {
+    background-color: green;
+}
+
+/* Valve Buttons (Multiple can be active) */
+.valve-button {
+    background-color: gray;
+    color: white;
+}
+
+.valve-button.active {
+    background-color: green;
+}
+
+.valve-button.neutral {
+    background-color: yellow;
+}
+
+/* Carousel Input */
+input[type="number"] {
+    width: 50px;
+    padding: 5px;
+    font-size: 16px;
+}

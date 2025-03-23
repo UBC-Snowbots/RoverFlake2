@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkWindow">
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkLayout">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkButton" id="rinsesequence_button">
+            <property name="label" translatable="yes">Rinse Sequence</property>
+            <property name="width-request">137</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="image-position">bottom</property>
+          </object>
+          <packing>
+            <property name="x">71</property>
+            <property name="y">23</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="sv1_button">
+            <property name="label" translatable="yes">SV1 (Agitator)</property>
+            <property name="width-request">80</property>
+            <property name="height-request">0</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="image-position">bottom</property>
+          </object>
+          <packing>
+            <property name="x">26</property>
+            <property name="y">90</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="prevIndex_button">
+            <property name="label" translatable="yes">Prev Index
+</property>
+            <property name="width-request">47</property>
+            <property name="height-request">20</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="image-position">bottom</property>
+          </object>
+          <packing>
+            <property name="x">23</property>
+            <property name="y">148</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="indexnum_textbox">
+            <property name="width-request">50</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="progress-pulse-step">1</property>
+          </object>
+          <packing>
+            <property name="x">40</property>
+            <property name="y">198</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
