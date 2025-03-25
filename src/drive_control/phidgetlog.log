@@ -1,0 +1,313 @@
+2025-02-28T16:02:46.968  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:03:11.867  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 0
+2025-02-28T16:03:11.868  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:03:11.869  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:11.869  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:03:11.869  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:12.164  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:12.164  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:12.164  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:12.164  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:12.868  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:13.165  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:13.165 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:13.166 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:13.166  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:13.166 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:13.166 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:13.171  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:14.166  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:14.167  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:14.171  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:14.172 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:14.172 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:15.168  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:15.168 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:15.168 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:15.173  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:15.173  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:15.183  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:16.174  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:16.174  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:16.174 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:16.174 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:16.185  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:16.185 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:16.185 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:16.191  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:16.191  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:17.176  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:17.192  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:17.192  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:17.192 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:17.192 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:17.192 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:17.192 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:17.197  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:18.194  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:18.194  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:18.199  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:18.199 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:18.199 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:19.195  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:19.196 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:19.196 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:19.200  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:19.201  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:19.210  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:20.202  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:20.202 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:20.202  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:20.202 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:20.211  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:20.211 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:20.211 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:20.216  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:20.216  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:21.203  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:21.218  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:21.218 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:21.218  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:21.218 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:21.218 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:21.218 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:21.222  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:22.219  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:22.219  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:22.224  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:22.224 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:22.224 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:23.221  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:23.221 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:23.221 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:23.225  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:23.225  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:23.236  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:24.226  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:24.226  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:24.227 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:24.227 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:24.237  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:24.237 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:24.237 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:24.242  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:24.242  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:25.228  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:25.244  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:25.244 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:25.244  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:25.244 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:25.244 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:25.244 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:25.250  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:26.245  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:26.245  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:26.251  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:26.251 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:26.251 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:27.246  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:27.246 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:27.246 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:27.252  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:27.252  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:27.264  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:28.253  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:28.253 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:28.253  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:28.254 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:28.265  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:28.265 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:28.265 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:28.269  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:28.270  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:29.255  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:29.270  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:29.271 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:29.271 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:29.271  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:29.271 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:29.271 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:29.275  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:30.272  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:30.272  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:30.276  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:30.276 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:30.276 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:31.274  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:31.274 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:31.274 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:31.277  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:31.277  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:31.290  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:32.279  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:32.279  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:32.280 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:32.280 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:32.291  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:32.291 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:32.291 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:32.298  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:32.298  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:33.282  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:33.299  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:33.299 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:33.299 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:33.300  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:33.300 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:33.300 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:33.304  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:34.300  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:34.301  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:34.305  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:34.306 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:34.306 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:35.302  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:35.302 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:35.302 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:35.307  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:35.307  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:35.317  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:36.308  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:36.308 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:36.308 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:36.308  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:36.318  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:36.318 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:36.318 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:36.322  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:36.322  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:37.310  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:37.323  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 2
+2025-02-28T16:03:37.323 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:37.323 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:37.323  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 4
+2025-02-28T16:03:37.323 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:37.323 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:37.329  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:39.323  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:39.329 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:39.329 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:41.324 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:41.324 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:41.330  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:41.356  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:42.331  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:43.331 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:43.331 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:43.333  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:43.356 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:43.356 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:43.368  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:45.357  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:45.369 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:45.369 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:47.357 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:47.358 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:47.369  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:47.395  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:48.370  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:49.370 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:49.370 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:49.372  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:03:49.396 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:49.396 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:49.405  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:51.396  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:51.406 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:51.406 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:53.397 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:53.397 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:53.407  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:53.429  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:53.624  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:03:53.624  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:03:53.624  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:03:53.624  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:03:53.626         last message repeated 3 more times
+2025-02-28T16:03:53.626  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:03:54.408  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:55.407 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:55.407 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:55.430 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-02-28T16:03:55.430 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x03 - Timed Out
+2025-02-28T16:03:55.430  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:55.431  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:55.625  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-02-28T16:03:55.632  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:03:55.884  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:03:55.884  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:03:55.884  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:55.885  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:03:55.885  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:55.885  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:03:55.885  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-02-28T16:03:55.887  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-02-28T16:03:55.887  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x06000640
+2025-02-28T16:03:55.890  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:55.890  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:55.890  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:55.891  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:55.891  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:55.908  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:58.459  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-02-28T16:03:58.461  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:03:58.461  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:58.461  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:03:58.461  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:58.755  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:58.755  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:58.755  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:58.756  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:03:59.460  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 5
+2025-02-28T16:03:59.737  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 2
+2025-02-28T16:03:59.737  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:03:59.737 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x34 - Device not Attached
+2025-02-28T16:03:59.737 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x34 - Device not Attached
+2025-02-28T16:03:59.737 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:2 S/N:561576: 0x34 - Device not Attached
+2025-02-28T16:03:59.737 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x34 - Device not Attached
+2025-02-28T16:03:59.737  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-02-28T16:03:59.737  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 5
+2025-02-28T16:03:59.738  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:03:59.739  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:59.739  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:59.740  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-02-28T16:03:59.743  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:03:59.995  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:03:59.995  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:03:59.995  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:03:59.995  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:03:59.996  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:03:59.996  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:03:59.996  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-02-28T16:03:59.997  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-02-28T16:03:59.997  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x06000640
+2025-02-28T16:04:00.000  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:04:00.001  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:04:00.002  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:04:00.002  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:04:00.002  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:04:00.002  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:07:47.797  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-02-28T16:07:54.849  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:07:55.101  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:07:55.101  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:03.816  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:08:04.067  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:08:04.068  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.552  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.562  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.578  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.594  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.604  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:49.817  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:08:50.104  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-02-28T16:08:50.114  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:08:50.114  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:08:50.114  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:08:50.115  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:08:50.118  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:08:50.119  <Info> phidget22usb[PhidgetUSBUninit()] : Deinitializing libusb
