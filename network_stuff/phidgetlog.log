@@ -1,0 +1,79 @@
+2025-02-28T16:48:40.692  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:48:41.696  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:48:42.699  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:48:43.702  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:48:44.705  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 1
+2025-02-28T16:48:49.757         last message repeated 5 more times
+2025-02-28T16:48:55.041         last message repeated 5 more times
+2025-02-28T16:49:00.323         last message repeated 1 more times
+2025-02-28T16:49:15.073  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:49:15.074  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:49:15.074  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:49:15.074  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 1
+2025-02-28T16:49:15.075         last message repeated 3 more times
+2025-02-28T16:49:15.075  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-02-28T16:49:15.078  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:49:15.079  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:49:15.079  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:49:15.330  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:49:15.330  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:49:15.331  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:49:15.331  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:49:15.331  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:49:15.331  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-02-28T16:49:15.332  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-02-28T16:49:15.333  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0xa3e00640
+2025-02-28T16:49:15.334  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:49:29.798  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:49:29.912  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:5 S/N:561576
+2025-02-28T16:49:29.912  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-02-28T16:49:29.912  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-02-28T16:49:30.298  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-02-28T16:49:30.310  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:1 S/N:561576
+2025-02-28T16:49:30.310  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:0 S/N:561576
+2025-02-28T16:49:30.313  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:49:30.315  <Info> phidget22usb[PhidgetUSBUninit()] : Deinitializing libusb
+2025-02-28T16:49:41.281  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:50:34.742  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:50:34.758  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:50:34.768  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:50:34.782  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:50:34.800  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:51:48.853  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:52:01.590  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:52:01.602  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:52:01.616  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:52:01.634  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:52:01.648  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:52:59.838  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:54:00.153  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:54:00.162  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:54:00.172  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:54:00.181  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:54:00.194  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:54:10.077  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
+	* Release 1.22 - Linux (64-bit)                                               *
+	*******************************************************************************
+2025-02-28T16:55:56.743  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:55:56.761  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:55:56.773  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:55:56.789  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-02-28T16:55:56.803  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
