@@ -22,7 +22,7 @@ public:
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         ps4_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&ArmJoy::joy_callback, this, std::placeholders::_1));
+            "/jorsnyuorasniertsnieirsnyuoy", 10, std::bind(&ArmJoy::joy_callback, this, std::placeholders::_1));
         arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
             "/arm/feedback", 10, std::bind(&ArmJoy::arm_callback, this, std::placeholders::_1));
     }

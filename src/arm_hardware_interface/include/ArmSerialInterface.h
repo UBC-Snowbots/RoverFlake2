@@ -13,8 +13,7 @@
 #include <serial/serial.h>
 
 #define SIMULATE false
-
-#define NUM_JOINTS 6
+#define PI 3.14159
 
 #define TX_UART_BUFF 128
 #define RX_UART_BUFF 128
@@ -25,6 +24,7 @@
 #define AXIS_4_DIR 1 
 #define AXIS_5_DIR 1
 #define AXIS_6_DIR 1
+
 
 
 
@@ -51,7 +51,7 @@ public:
     //     serialRxThread = std::thread(&ArmSerial::serial_rx(), this);
     // }
     // string joint_names[6] = {"joint_turntable", "joint_axis1", "joint_axis2", "joint_axis3", "joint_axis4", "joint_ender"}; //? old arm urdf
-    string joint_names[6] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"}; //? newest (Sep 2024) arm urdf
+    string joint_names[NUM_JOINTS + 2] = {"joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "finger_left_joint", "finger_right_joint"}; //? newest (Sep 2024) arm urdf
 
 
 private:
@@ -61,12 +61,13 @@ private:
     float firmToMoveitOffsetVel(float deg, int axis);
 
 
-   unsigned long baud = 19200;
+   unsigned long baud = 115200;//19200;
     string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100C6224069D7-if00";
 
     serial::Serial teensy;
     serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000); // E.g., 1000 ms or 1 second
-   
+    
+
     struct Axis{
       float curr_pos;
       float target_pos;
@@ -79,13 +80,14 @@ private:
     void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
     Axis axes[NUM_JOINTS];
+    // Axis axis_EE;
 
 
     void send_position_command(float pos[NUM_JOINTS]) {
 
         char tx_msg[TX_UART_BUFF];
      
-        sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]);
+        sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6]);
 
         sendMsg(tx_msg);
         RCLCPP_INFO(this->get_logger(), "Positions Sent %s", tx_msg);
@@ -95,14 +97,14 @@ private:
 
         char tx_msg[TX_UART_BUFF];
      
-        sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5]);
+        sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5], vel[6]);
         for(int i = 0; i < NUM_JOINTS; i++){
           current_velocity[i] = vel[i];
         }
         
         
         sendMsg(tx_msg);
-        RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
+        // RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
         
     }
     void send_test_limits_command(){
@@ -117,18 +119,19 @@ private:
       
     }
   float target_position[NUM_JOINTS];
+   float target_velocities[NUM_JOINTS];
 
     int homed = 0;
     bool homing = false;
     float EE = 0;
-    volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-    volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-    volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1};
+    volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+    volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+    volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1, -1};
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
 
-
+    sensor_msgs::msg::JointState prev_joint_states; //for sim
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
 
     rclcpp::TimerBase::SharedPtr timer_;

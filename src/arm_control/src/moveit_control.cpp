@@ -23,37 +23,29 @@ void ArmMoveitControl::publishCommands(){
 
 }
 void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg){
+  auto servo_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+  servo_msg->header.stamp = this->get_clock()->now();
+
   switch (joyControlMode)  {
     case CARTESIAN_BASE_FRAME:
     {
-      auto base_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
-      base_msg->header.stamp = this->get_clock()->now();
-      // base_msg->header.frame_id = "base_base_link";
-      base_msg->header.frame_id = "link_0";
-      base_msg->twist.linear.x = -joy_msg->axes[0];
-      base_msg->twist.linear.y = joy_msg->axes[1];
-      base_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
-      base_msg->twist.angular.x = joy_msg->axes[3];
-      base_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[4];
-      base_msg->twist.angular.z = joy_msg->axes[2];
-      twist_cmd_publisher->publish(std::move(base_msg));
+      servo_msg->header.frame_id = "link_0";
       break;
     }
     case CARTESIAN_EE_FRAME:
-        auto ee_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
-        ee_msg->header.stamp = this->get_clock()->now();
         // ee_msg->header.frame_id = "link_ender";
-        ee_msg->header.frame_id = "link_tt";
-        ee_msg->twist.linear.x = -joy_msg->axes[0];
-        ee_msg->twist.linear.y = joy_msg->axes[1];
-        ee_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[12] - joy_msg->buttons[11]);
-        ee_msg->twist.angular.x = joy_msg->axes[3];
-        ee_msg->twist.angular.y = -joy_msg->axes[5] + joy_msg->axes[4];
-        ee_msg->twist.angular.z = joy_msg->axes[2];
-        twist_cmd_publisher->publish(std::move(ee_msg));
+        servo_msg->header.frame_id = "link_tt";
+
       break;
 
   }
+      servo_msg->twist.linear.x = -joy_msg->axes[0];
+      servo_msg->twist.linear.y = joy_msg->axes[1];
+      servo_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[4] - joy_msg->buttons[5])/2;
+      servo_msg->twist.angular.x = joy_msg->axes[3];
+      servo_msg->twist.angular.y = (-joy_msg->axes[5] + joy_msg->axes[2])/2;
+      servo_msg->twist.angular.z = joy_msg->axes[4];
+      twist_cmd_publisher->publish(std::move(servo_msg));
 
 
 }
@@ -79,7 +71,7 @@ auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningS
 if (planning_scene_monitor->getPlanningScene())
 {
   planning_scene_monitor->startStateMonitor(ArmConstants::joint_states_topic); //!not sure why ArmConstants struct doesn't work here.
-  planning_scene_monitor->setPlanningScenePublishingFrequency(25);
+  planning_scene_monitor->setPlanningScenePublishingFrequency(50);
   planning_scene_monitor->startPublishingPlanningScene(planning_scene_monitor::PlanningSceneMonitor::UPDATE_SCENE,
                                                        "/servo_node/publish_planning_scene");
   planning_scene_monitor->startSceneMonitor();
@@ -111,7 +103,7 @@ float ArmMoveitControl::moveitToFirmwareOffset(float rad, int i){
 
 float deg;
 
-  deg = (rad - axes[i].zero_rad)*axes[i].dir;
+  deg = (rad - axes[i].zero_rad)*axes[i].dir; //neg feedback loop?
     
 deg = radToDeg(deg);
 

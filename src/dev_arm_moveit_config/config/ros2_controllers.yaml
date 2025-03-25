@@ -1,7 +1,7 @@
 # This config file is used by ros2_control
 joint_state_broadcaster:
   ros__parameters:
-    use_local_topics: true
+    use_local_topics: false
 
 controller_manager:
   ros__parameters:

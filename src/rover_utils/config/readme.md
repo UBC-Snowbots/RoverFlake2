@@ -1,0 +1,1 @@
+This is a config folder for any random configs we may need to include accross packages

@@ -1,0 +1,28 @@
+
+// #define SERIAL_PORT_OPEN_FAILURE 0xE01;
+#define SERIAL_PORT_BUSY_OR_DNE 0xE00
+#define SERIAL_PORT_TIMEOUT 0xE01
+#define SERIAL_PORT_ALREADY_FOUND 0xE02
+#define PORT_NOT_FOUND 0xE03
+
+
+#define TOO_MANY_FAILED_CONNECTION_ATTEMPTS 0xE04
+
+
+#define PORT_FOUND_SUCCESS 0xA00
+#define DEVICE_CONNECITON_SUCCESS 0xA01
+
+
+#define ARM_PANEL_ID "arm_panel"
+
+//? Topics
+#define TOPIC_ARM_PANEL "/cbs/arm_panel"
+#define TOPIC_LEFT_PANEL_A "/cbs/left_panel_a"
+
+#define FAILED_CONNECTION_ATTEMPTS_MAX 20 //amount of times the manager node will search ALL ports to find the panel
+
+enum class PARSE_SEQUENCE{
+    GENERIC = 0,
+    ARM_JOY_PANEL = 1,
+    LEFT_PANEL_A = 2,
+};
