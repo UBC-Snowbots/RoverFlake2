@@ -19,8 +19,9 @@ find_package(serial REQUIRED)
 # find_package(<dependency> REQUIRED)
 include_directories(include)
 
-add_executable(watchdog_node src/watchdogNode.cpp include/watchdogNode.h)
-ament_target_dependencies(watchdog_node rclcpp rover_utils rover_msgs)
+# add_executable(watchdog_node src/watchdogNode.cpp include/watchdogNode.h)
+# ament_target_dependencies(watchdog_node rclcpp rover_utils rover_msgs)
+# add_executable(process_maker src/)
 
 add_executable(cbs_hardware_manager_node src/cbsHardwareManagerNode.cpp include/cbsHardwareManagerNode.h src/cbsDevice.cpp include/cbsDevice.h include/cbsDefinitions.h)
 ament_target_dependencies(cbs_hardware_manager_node rclcpp rover_utils serial rover_msgs)
@@ -32,7 +33,8 @@ add_executable(router_a src/router_A.cpp)
 ament_target_dependencies(router_a rclcpp rover_utils rover_msgs)
 
 install(TARGETS
-  watchdog_node
+  # watchdog_node
+  # process_maker
   cbs_hardware_manager_node
   cbs_display_manager_node
   DESTINATION lib/${PROJECT_NAME}

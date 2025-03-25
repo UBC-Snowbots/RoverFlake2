@@ -29,7 +29,7 @@ public:
             SubSystemProcess drive_control;
               drive_control.type = LAUNCHFILE;
               drive_control.pkg = "drive_control";
-              drive_control.exec = "cbs_system_bringup.launch.py";
+              drive_control.exec = "drive_control_on_board.launch.py";
               monitored_systems[monitored_system_names[1]].process = drive_control;
             SubSystemProcess xx;
               xx.type = LAUNCHFILE;
