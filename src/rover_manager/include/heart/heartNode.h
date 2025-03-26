@@ -14,17 +14,39 @@ public:
     }
     RCLCPP_INFO(this->get_logger(), "I am %s", this->get_name());
 
-    this->get_parameters("subsystems", subsystems);
+    this->get_parameters("subsystems", params);
     // auto subsystems = this->get_node_parameters_interface()
     // ->get_parameters_by_prefix("subsystems");
-    for (const auto& [key, param] : subsystems) {
+    //* Construct Subsystems
+    for (const auto& [key, param] : params) {
         RCLCPP_INFO(this->get_logger(), "Got Subystem %s%s%s = %s%s%s", 
                     green(), key.c_str(), reset(), bright_blue(), param.value_to_string().c_str(), reset());
+            SubSystem new_subsys
+            subsystems.push_back()
     }
 
     }
 private: 
-std::map<std::string, rclcpp::Parameter> subsystems;
+std::map<std::string, rclcpp::Parameter> params;
+std::vector<SubSystem> subsystems;
+// std::unordered_map<std::string, std::SubSystem>;
+
+struct SubSystem{
+    std::string name;
+    std::string exec_command;
+    pid_t pid;
+    pid_t gpid;
+    pid_t sid;
+    bool online = false;
+};
+
+
+void runSubSystem(SubSystem& subsys);
 
     // rclcpp::Subscription
 };
+
+
+void HeartNode::runSubSystem(SubSystem& subsys){
+
+}
