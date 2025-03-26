@@ -23,6 +23,10 @@ include_directories(include)
 # ament_target_dependencies(watchdog_node rclcpp rover_utils rover_msgs)
 # add_executable(process_maker src/)
 
+add_executable(heart_node src/heart/heartNode.cpp include/heart/heartNode.h)
+ament_target_dependencies(heart_node rclcpp rover_utils rover_msgs)
+
+
 add_executable(cbs_hardware_manager_node src/cbsHardwareManagerNode.cpp include/cbsHardwareManagerNode.h src/cbsDevice.cpp include/cbsDevice.h include/cbsDefinitions.h)
 ament_target_dependencies(cbs_hardware_manager_node rclcpp rover_utils serial rover_msgs)
 
@@ -35,6 +39,7 @@ ament_target_dependencies(router_a rclcpp rover_utils rover_msgs)
 install(TARGETS
   # watchdog_node
   # process_maker
+  heart_node
   cbs_hardware_manager_node
   cbs_display_manager_node
   DESTINATION lib/${PROJECT_NAME}
