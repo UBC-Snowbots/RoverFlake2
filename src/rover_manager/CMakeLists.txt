@@ -44,10 +44,16 @@ install(TARGETS
   cbs_display_manager_node
   DESTINATION lib/${PROJECT_NAME}
 )
-install(DIRECTORY 
+install(DIRECTORY
 launch
 DESTINATION
 share/${PROJECT_NAME}/launch/
 )
+install(DIRECTORY
+config
+DESTINATION
+share/${PROJECT_NAME}/
+)
+
 
 ament_package()
