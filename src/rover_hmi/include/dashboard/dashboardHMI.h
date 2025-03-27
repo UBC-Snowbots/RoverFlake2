@@ -1,5 +1,6 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/sub_system_health.hpp>
+#include <rover_msgs/msg/heart_request.hpp>
 #include "dashboardDefinitions.h"
 
 // #include <helper_functions.h>
@@ -17,6 +18,10 @@ public:
     {
         set_title("Rover Dashboard"); //set the app/window title
         //* Set up pubs n subs
+        // onboard_heart_request_pub = this->create_publisher<
+        //TODO get params in from heart yamls, and ready the publishers on the right topics
+        //TODO then connect buttons to publish
+        //TODO then create a proper feedback using ros2 node or heartbeats?
         heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
           "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
         
@@ -145,6 +150,9 @@ private:
 
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::SubSystemHealth>::SharedPtr heartbeat_monitor_sub;
+ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_heart_request_pub;
+ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
+
   void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
 //  rclcpp::Publishe?
 

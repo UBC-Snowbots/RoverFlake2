@@ -127,3 +127,46 @@ void HeartNode::heartRequestCallback(const rover_msgs::msg::HeartRequest::Shared
         break;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processName, bool verbose)
+// {
+//     std::vector<pid_t> pids;
+
+//     // Build our command string, e.g.: "pgrep my_node"
+//     // -f matches against the entire command line, 
+//     // so you might do: "pgrep -f " + processName, depending on your usage
+//     const std::string cmd = "pgrep " + processName;
+
+//     // Open a pipe to read the results of pgrep
+//     FILE* pipe = popen(cmd.c_str(), "r");
+//     if (!pipe) {
+//         std::perror("popen failed");
+//         return pids;
+//     }
+
+//     char buffer[128];
+//     while (fgets(buffer, sizeof(buffer), pipe)) {
+//         // Each line should contain one PID
+//         pid_t pid = static_cast<pid_t>(std::stoi(buffer));
+//         pids.push_back(pid);
+//     }
+
+//     pclose(pipe);
+
+
+
+//     return pids;
+// }

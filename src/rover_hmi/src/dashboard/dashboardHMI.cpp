@@ -109,70 +109,70 @@ void DashboardHMINode::killSubSystem(std::string subsystem_name){
     }
 }
 
-void DashboardHMINode::runSubSystem(std::string subsystem_name){
-    // for(const auto &process : monitored_systems[subsystem_name].processes){
-        monitored_systems[subsystem_name].status_label->set_label("STARTING");
-        const auto &process = monitored_systems[subsystem_name].process;
-        runChildNode(process.pkg, process.exec, subsystem_name, process.type);
-        Glib::RefPtr<Gtk::StyleContext> context = monitored_systems[subsystem_name].status_label->get_style_context();
-        context->add_class("subsys_ONLINE");
-        context->remove_class("subsys_OFFLINE");
-        monitored_systems[subsystem_name].status_label->set_label("online");
+// void DashboardHMINode::runSubSystem(std::string subsystem_name){
+//     // for(const auto &process : monitored_systems[subsystem_name].processes){
+//         monitored_systems[subsystem_name].status_label->set_label("STARTING");
+//         const auto &process = monitored_systems[subsystem_name].process;
+//         runChildNode(process.pkg, process.exec, subsystem_name, process.type);
+//         Glib::RefPtr<Gtk::StyleContext> context = monitored_systems[subsystem_name].status_label->get_style_context();
+//         context->add_class("subsys_ONLINE");
+//         context->remove_class("subsys_OFFLINE");
+//         monitored_systems[subsystem_name].status_label->set_label("online");
 
 
-    // }
-}
+//     // }
+// }
 
-void DashboardHMINode::killProcessGroup(pid_t pgid) {
-    RCLCPP_INFO(this->get_logger(), "Killing process group: %d", pgid);
+// void DashboardHMINode::killProcessGroup(pid_t pgid) {
+//     RCLCPP_INFO(this->get_logger(), "Killing process group: %d", pgid);
 
-    pid_t my_pgid = getpgrp();
-    if(pgid == my_pgid || pgid == 0){
-        RCLCPP_ERROR(this->get_logger(), "Holdup, halted attempt to kill my own proccess group. %d",my_pgid);
-        return;
-    }
+//     pid_t my_pgid = getpgrp();
+//     if(pgid == my_pgid || pgid == 0){
+//         RCLCPP_ERROR(this->get_logger(), "Holdup, halted attempt to kill my own proccess group. %d",my_pgid);
+//         return;
+//     }
     
-    // Send SIGTERM to the entire process group
-    if (killpg(pgid, SIGINT) < 0) {
-        RCLCPP_ERROR(this->get_logger(), "Error sending SIGKILL to process group %d: %s", 
-                    pgid, strerror(errno));
-    }
-}
-void DashboardHMINode::killChildPID(pid_t target_pid){
-    RCLCPP_INFO(this->get_logger(), "Killing: %d", target_pid);
-    kill(target_pid, SIGINT); //* nicely ask
-    // kill(pid, SIGKILL); //* demand death
-}
+//     // Send SIGTERM to the entire process group
+//     if (killpg(pgid, SIGINT) < 0) {
+//         RCLCPP_ERROR(this->get_logger(), "Error sending SIGKILL to process group %d: %s", 
+//                     pgid, strerror(errno));
+//     }
+// }
+// void DashboardHMINode::killChildPID(pid_t target_pid){
+//     RCLCPP_INFO(this->get_logger(), "Killing: %d", target_pid);
+//     kill(target_pid, SIGINT); //* nicely ask
+//     // kill(pid, SIGKILL); //* demand death
+// }
 
-std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processName, bool verbose)
-{
-    std::vector<pid_t> pids;
+// std::vector<pid_t> DashboardHMINode::getPidsByName(const std::string &processName, bool verbose)
+// {
+//     std::vector<pid_t> pids;
 
-    // Build our command string, e.g.: "pgrep my_node"
-    // -f matches against the entire command line, 
-    // so you might do: "pgrep -f " + processName, depending on your usage
-    const std::string cmd = "pgrep " + processName;
+//     // Build our command string, e.g.: "pgrep my_node"
+//     // -f matches against the entire command line, 
+//     // so you might do: "pgrep -f " + processName, depending on your usage
+//     const std::string cmd = "pgrep " + processName;
 
-    // Open a pipe to read the results of pgrep
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) {
-        std::perror("popen failed");
-        return pids;
-    }
+//     // Open a pipe to read the results of pgrep
+//     FILE* pipe = popen(cmd.c_str(), "r");
+//     if (!pipe) {
+//         std::perror("popen failed");
+//         return pids;
+//     }
 
-    char buffer[128];
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        // Each line should contain one PID
-        pid_t pid = static_cast<pid_t>(std::stoi(buffer));
-        pids.push_back(pid);
-    }
+//     char buffer[128];
+//     while (fgets(buffer, sizeof(buffer), pipe)) {
+//         // Each line should contain one PID
+//         pid_t pid = static_cast<pid_t>(std::stoi(buffer));
+//         pids.push_back(pid);
+//     }
 
-    pclose(pipe);
+//     pclose(pipe);
 
 
 
-    return pids;
-}
+//     return pids;
+// }
 
 void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request){
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
@@ -180,11 +180,11 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request)
         // runChildNode("rviz2", "rviz2");
         // runChildNode("joy", "joy_node");
         if(request == RUN){
-            runSubSystem(subsystem_name);
+            // runSubSystem(subsystem_name);
             // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
             return;
         }
         if(request == KILL){
-            killSubSystem(subsystem_name);
+            // killSubSystem(subsystem_name);
         }
 }
