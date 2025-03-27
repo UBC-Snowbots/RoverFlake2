@@ -4,10 +4,11 @@
 # Subsystems are what the system refers to, and what will show up on the HMI
 # Subsystem commands are ros2 launch commands. Each subsytem needs a command/launch file.
 # Make sure subsystems and their commands are in respective order
-/heart_base:
+/heart_control_base:
   ros__parameters:
     subsystems:
-      drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
+      # drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
+      drive_control: "ros2 run joy joy_node"
       
     # subsystems:
     #   - drive_interface
