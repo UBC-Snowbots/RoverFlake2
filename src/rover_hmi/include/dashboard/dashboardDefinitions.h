@@ -8,3 +8,6 @@
 //* Process types
 #define LAUNCHFILE 0xA
 #define NODE 0xB
+
+#define COMPUTER_ONBOARD_NUC 0xA
+#define COMPUTER_CONTROL_BASE 0xB

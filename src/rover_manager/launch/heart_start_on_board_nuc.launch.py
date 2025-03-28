@@ -11,16 +11,16 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    heart_yaml_onboard = os.path.join(
+    heart_yaml = os.path.join(
         get_package_share_directory('rover_manager'),
         'config',
-        'heart_onboard.yaml'
+        'heart.yaml'
     )
     heart_node_onboard = Node(
         package='rover_manager',
         executable='heart_node',
         name='heart_onboard_nuc',
-        parameters=[heart_yaml_onboard]
+        parameters=[heart_yaml]
     )
 
 

@@ -31,8 +31,8 @@
 
                 for(int i = 0; i < NUM_MONITORED_SYSTEMS; i++){
                     system_health.system[i].name->set_label(monitored_system_names[i]);
-                    system_health.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], KILL));
-                    system_health.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], RUN));
+                    system_health.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], KILL, COMPUTER_CONTROL_BASE));
+                    system_health.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], RUN, COMPUTER_CONTROL_BASE));
                     system_health.system[i].status->set_label("UNKNOWN");
                     monitored_systems[monitored_system_names[i]].status_label = system_health.system[i].status;
                     monitored_systems[monitored_system_names[i]].name_label = system_health.system[i].name;

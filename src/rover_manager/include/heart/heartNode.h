@@ -16,11 +16,14 @@ public:
         RCLCPP_ERROR(this->get_logger(), "Sorry, you need to launch me with a different name (use a launch file with name= ). I'm going to get confused otherwise.");
             rclcpp::shutdown();
     }
-    std::string topic = my_name + "/request";
-    RCLCPP_INFO(this->get_logger(), "I am %s, on topic %s", this->get_name(), topic.c_str());
-
+    std::string request_topic = my_name + "/request";
+    // std::string request_topic = my_name;
+    
     this->get_parameters("subsystems", params);
-
+    // this->get_parameter("request_topic", request_topic);
+    
+    
+    RCLCPP_INFO(this->get_logger(), "I am %s, on topic %s", this->get_name(), request_topic.c_str());
 
     //* Construct Subsystems from Params
     { //just making a little scope for i, sure theres a better way
@@ -41,7 +44,7 @@ public:
     }
     }
     heart_request_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
-        topic, 10, std::bind(&HeartNode::heartRequestCallback, this, std::placeholders::_1));
+        request_topic, 10, std::bind(&HeartNode::heartRequestCallback, this, std::placeholders::_1));
 
     // runSubSystem(subsystems_vector[0]);
     }
