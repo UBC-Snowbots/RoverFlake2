@@ -117,13 +117,15 @@ void HeartNode::heartRequestCallback(const rover_msgs::msg::HeartRequest::Shared
         return;
     }
 
-    switch (request->start)
+    switch (request->running)
     {
     case true:
         runSubSystem(subsystems[request->subsystem_name]);
+        // RCLCPP_INFO(this->get_logger(), "Subsystem %s ENGAGED", request->subsystem_name.c_str());
         break;
     default:
         killSubSystem(subsystems[request->subsystem_name]);
+        // RCLCPP_INFO(this->get_logger(), "Subsystem %s KILLED", request->subsystem_name.c_str());
         break;
     }
 }

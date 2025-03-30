@@ -16,11 +16,15 @@ public:
         RCLCPP_ERROR(this->get_logger(), "Sorry, you need to launch me with a different name (use a launch file with name= ). I'm going to get confused otherwise.");
             rclcpp::shutdown();
     }
-    std::string request_topic = my_name + "/request";
-    // std::string request_topic = my_name;
+    rclcpp::Parameter topic_param;
+    this->get_parameter("request_topic", topic_param);
+
+
+
+    // std::string request_topic = my_name + "/request";
+    std::string request_topic = topic_param.value_to_string();
     
     this->get_parameters("subsystems", params);
-    // this->get_parameter("request_topic", request_topic);
     
     
     RCLCPP_INFO(this->get_logger(), "I am %s, on topic %s", this->get_name(), request_topic.c_str());
@@ -40,7 +44,8 @@ public:
             i++;
     }
     if(i == 0){
-        RCLCPP_WARN(this->get_logger(), "Warning, no subsystems defined. You sure you loaded parameters right?");
+        RCLCPP_WARN(this->get_logger(), "Warning, no subsystems defined. You sure you loaded parameters right? I'm useless without params, exiting.");
+        rclcpp::shutdown();
     }
     }
     heart_request_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(

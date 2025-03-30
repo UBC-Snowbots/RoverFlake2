@@ -11,19 +11,20 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    heart_yaml_base = os.path.join(
+    heart_yaml = os.path.join(
         get_package_share_directory('rover_manager'),
         'config',
-        'heart_base.yaml'
+        'heart.yaml'
     )
-
-    heart_node_base = Node(
+    heart_node_control_base = Node(
         package='rover_manager',
         executable='heart_node',
-        name='heart_control_base',
-        parameters=[heart_yaml_base]
+        name='heart_control_base', #! This is how you set what computer. Make sure it matches the heart.yaml file
+        parameters=[heart_yaml]
     )
 
+
     return LaunchDescription([
-        heart_node_base
+        heart_node_control_base
+  
     ])

@@ -28,21 +28,26 @@ public:
         std::string heart_control_base_topic = "/broken_heart2";
         // std::string computer_A;
         // std::string computer_B;
-        rclcpp::Parameter computer_A;
-        rclcpp::Parameter computer_B;
+        // rclcpp::Parameter computer_A;
+        // rclcpp::Parameter computer_B;
         
-        this->get_parameter("computer_a", computer_A);
-        this->get_parameter("computer_b", computer_B);
+        // this->get_parameter("computer_a", computer_A);
+        // this->get_parameter("computer_b", computer_B);
+        rclcpp::Parameter heart_request_topic;
+        rclcpp::Parameter heart_feedback_topic;
+        this->get_parameter("heart_request_topic", heart_request_topic);
+        std::string global_heart_topic = heart_request_topic.value_to_string();
+        std::string heart_feedback_topic = heart_request_topic.value_to_string();
+        // heart_onboard_nuc_topic = std::string("heart_" + computer_A.value_to_string()  + "/request");
+        // heart_control_base_topic = std::string("heart_" + computer_B.value_to_string()  + "/request");
+        // RCLCPP_WARN(this->get_logger(), "%s", computer_A.value_to_string().c_str());
 
-        heart_onboard_nuc_topic = std::string("heart_" + computer_A.value_to_string()  + "/request");
-        heart_control_base_topic = std::string("heart_" + computer_B.value_to_string()  + "/request");
-        RCLCPP_WARN(this->get_logger(), "%s", computer_A.value_to_string().c_str());
-
-      RCLCPP_WARN(this->get_logger(), "%s", heart_onboard_nuc_topic.c_str());
+        // RCLCPP_WARN(this->get_logger(), "%s", heart_onboard_nuc_topic.c_str());
         heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
           "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
-        onboard_nuc_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_onboard_nuc_topic, 10);
-        control_base_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_control_base_topic, 10);
+          global_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(global_heart_topic, 10);
+        // onboard_nuc_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_onboard_nuc_topic, 10);
+        // control_base_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_control_base_topic, 10);
           //* Control Base SubSystem
             // SubSystemProcess cbs_background;
             //   cbs_background.type = LAUNCHFILE;
@@ -162,13 +167,14 @@ private:
 
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
-  void subsystemRequest(std::string subsystem_name, int request, int computer);
+  void subsystemRequest(std::string subsystem_name, int request, int computer = COMPUTER_GLOBAL);
 
 
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::SubSystemHealth>::SharedPtr heartbeat_monitor_sub;
- rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
- rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
+//  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
+//  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
+rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
 
   void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
 //  rclcpp::Publishe?

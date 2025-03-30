@@ -37,6 +37,46 @@ void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth:
 }
 
 
+
+void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
+    RCLCPP_INFO(this->get_logger(), "Button Clicked");
+    //* Depending on the button clicked, run different child proccesses, or kill different child processes
+    // runChildNode("rviz2", "rviz2");
+    // runChildNode("joy", "joy_node");
+    rover_msgs::msg::HeartRequest msg;
+    msg.subsystem_name = subsystem_name;
+    if(request == RUN){
+        // runSubSystem(subsystem_name);
+        // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
+        msg.running = true;
+    }
+    if(request == KILL){
+        // killSubSystem(subsystem_name);
+        msg.running = false;
+    }
+    switch (computer)
+    {
+        case COMPUTER_CONTROL_BASE:
+        // control_base_heart_request_pub->publish(msg);
+        break;
+        case COMPUTER_ONBOARD_NUC:
+        // onboard_nuc_heart_request_pub->publish(msg);
+        break;
+        case COMPUTER_GLOBAL: //? one topic for all computers. Just rely on subsystem names to ensure what runs where. Each computer knows what subsystems it should run in the params.
+        global_heart_request_pub->publish(msg);
+        break;
+        default:
+        RCLCPP_ERROR(this->get_logger(), "Computer unkown. Subprocess start failure");
+        break;
+    }
+    
+    
+}
+
+
+//* Archive Code (graveyard)
+
+
 // void DashboardHMINode::runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsystem_name, int type, bool kill_orphan){
 // //? This will run nodes in parallell threads and attach them as children to this process.
 //         //* Will run launch files if launch is true. When running a launch file:
@@ -173,36 +213,3 @@ void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth:
 
 //     return pids;
 // }
-
-void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
-    RCLCPP_INFO(this->get_logger(), "Button Clicked");
-    //* Depending on the button clicked, run different child proccesses, or kill different child processes
-        // runChildNode("rviz2", "rviz2");
-        // runChildNode("joy", "joy_node");
-    rover_msgs::msg::HeartRequest msg;
-    msg.subsystem_name = subsystem_name;
-        if(request == RUN){
-            // runSubSystem(subsystem_name);
-            // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
-            msg.start = true;
-            return;
-        }
-        if(request == KILL){
-            // killSubSystem(subsystem_name);
-            msg.start = true;
-        }
-    switch (computer)
-    {
-    case COMPUTER_CONTROL_BASE:
-    control_base_heart_request_pub->publish(msg);
-    break;
-    case COMPUTER_ONBOARD_NUC:
-    onboard_nuc_heart_request_pub->publish(msg);
-        break;
-    default:
-        RCLCPP_ERROR(this->get_logger(), "Computer unkown. Subprocess start failure");
-        break;
-   }
-
-    
-}
