@@ -68,6 +68,7 @@ public:
     builder->get_widget("sv1button", sv1button);
     builder->get_widget("sv2button", sv2button);
     builder->get_widget("sv3button", sv3button);
+    builder->get_widget("sv4button", sv4button);
     builder->get_widget("svf1button", svf1button);
     builder->get_widget("svf2button", svf2button);
 
