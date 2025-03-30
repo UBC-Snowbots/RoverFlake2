@@ -53,6 +53,8 @@ public:
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
     //     "/science/feedback", qos, std::bind(&ScienceHMINode::valveFeedbackCallback, this, std::placeholders::_1));
 
+    //* Grab the window (so GTK knows what to show)
+    builder->get_widget("science_window", science_window);
     
     
     // **Text Input for Integer 0-15**
@@ -160,7 +162,7 @@ public:
   {
     RCLCPP_INFO(this->get_logger(), "Start");
 
-    app->run(*this);
+    app->run(*science_window);
     RCLCPP_INFO(this->get_logger(), "App Run Success");
   }
 
@@ -175,6 +177,7 @@ private:
 
   // Carousel index input (0-15)
   int carousel_index_;
+  Gtk::Window* science_window;
 
   Gtk::Button* sv1button;
   Gtk::Button* sv2button;
