@@ -39,18 +39,34 @@ int main(int argc, char* argv[]){
 
 
 // Set sequence (only one can be active)
-void ScienceHMI::setSequence(SequenceType sequence) {
-    rover_msgs::msg::ScienceHmi home_msg;
+void ScienceHMINode::setSequence(bool pressed, int button) {
+    rover_msgs::msg::ScienceModule home_msg;
 
     sequence_status button_triggered = static_cast<sequence_status>(button);
     switch(button_triggered){
-        case cmd_vel_buttons::rinse: 
+        case sequence_status::rinse: 
             RCLCPP_INFO(this->get_logger(), "rinse");
-            home_msg.sequence_status = 1; 
+            home_msg.sequenceselection = 1; 
+            rinsebutton->get_style_context()->add_class("active");
+            break;
+        case sequence_status::agitator: 
+            RCLCPP_INFO(this->get_logger(), "agitator");
+            home_msg.sequenceselection = 2; 
+            agitatorbutton->get_style_context()->add_class("active");
+            break;
+        case sequence_status::process: 
+            RCLCPP_INFO(this->get_logger(), "process");
+            home_msg.sequenceselection = 3; 
+            processbutton->get_style_context()->add_class("active");
+            break;
+        case sequence_status::purge: 
+            RCLCPP_INFO(this->get_logger(), "purge");
+            home_msg.sequenceselection = 4; 
+            purgebutton->get_style_context()->add_class("active");
             break;
     }
 
-        sequence_cmd_pub->publish(home_msg);
+        sequence_pub->publish(home_msg);
         //RCLCPP_INFO(this->get_logger(), "Active Sequence: %s", msg.data.c_str());
 
         // Reset all sequence buttons
@@ -59,34 +75,340 @@ void ScienceHMI::setSequence(SequenceType sequence) {
     }
 
     // Set the clicked button as active
-    rinsesequence_button->get_style_context()->add_class("active");
 }
 
 
-// Toggle valve states (Multiple can be active)
-void ScienceHMI::SV1clicked() {
-    rover_msgs::msg::ScienceHmi home_msg;
-    home_msg.sv1_status = 1;
-    //home_msg.cmd_value = HOME_ALL_ID;
-    valve_cmd_pub->publish(home_msg);
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SV1clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.sv1status = 1;
+    valve_pub->publish(home_msg);
 
     // Get the style context of the button
-    auto style_context = sv1_button->get_style_context();
+    auto style_context = sv1button->get_style_context();
 
-    // Toggle between "active" and "neutral" states
-    if (style_context->has_class("active")) {
-        style_context->remove_class("active");
-        style_context->add_class("neutral");  // Change to neutral (yellow)
-    } else if (style_context->has_class("neutral")) {
-        style_context->remove_class("neutral");
-        style_context->add_class("active");  // Change back to active (green)
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
     } else {
-        style_context->add_class("active");  // Default to active if neither is set
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
     }
 }
 
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SV2clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.sv2status = 1;
+    valve_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = sv2button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
+    }
+}
+
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SV3clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.sv3status = 1;
+    valve_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = sv3button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
+    }
+}
+
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SV4clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.sv4status = 1;
+    valve_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = sv4button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
+    }
+}
+
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SVF1clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.sv1status = 1;
+    valve_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = svf1button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
+    }
+}
+
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::SVF2clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.svf2status = 1;
+    valve_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = svf2button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("energized")) {
+        style_context->remove_class("energized");
+        style_context->add_class("not_energized");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("not_energized");
+        style_context->add_class("energized");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::P1clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.p1status = 1;
+    osf_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = osf1button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("forward")) {
+        style_context->remove_class("forward");
+        style_context->add_class("backward");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("backward");
+        style_context->add_class("forward");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::OSF1clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.osf1status = 1;
+    osf_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = osf2button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("unblocked")) {
+        style_context->remove_class("unblocked");
+        style_context->add_class("blocked");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("blocked");
+        style_context->add_class("unblocked");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::OSF2clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.osf2status = 1;
+    pump_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = p1button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+     if (style_context->has_class("unblocked")) {
+        style_context->remove_class("unblocked");
+        style_context->add_class("blocked");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("blocked");
+        style_context->add_class("unblocked");  // Change to energized (green)
+    }
+}
+
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::prevClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.prevstatus = 1;
+    carousel_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = prevIndexbutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+     if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::nextClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.nextstatus = 1;
+    carousel_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = nextidxbutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::largeClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.largestatus = 1;
+    carousel_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = largebutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::smallClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.smallstatus = 1;
+    carousel_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = smallbutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+void ScienceHMINode::spectroClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.spectrostatus = 1;
+    spectro_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = spectrobutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("analyzing")) {
+        style_context->remove_class("analyzing");
+        style_context->add_class("notanalyzing");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("notanalyzing");
+        style_context->add_class("analyzing");  // Change to energized (green)
+    }
+}
+
+void ScienceHMINode::agPowerClicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.agpowerstatus = 1;
+    agitator_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = agitatorpowerbutton->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+void ScienceHMINode::light1Clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.light1status = 1;
+    light_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = light1button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+void ScienceHMINode::ligth2Clicked() {
+    rover_msgs::msg::ScienceModule home_msg;
+    home_msg.light2status = 1;
+    light_pub->publish(home_msg);
+
+    // Get the style context of the button
+    auto style_context = light2button->get_style_context();
+
+    // Toggle between "energized" (green) and "not_energized" (red) states
+    if (style_context->has_class("on")) {
+        style_context->remove_class("on");
+        style_context->add_class("off");  // Change to not energized (red)
+    } else {
+        style_context->remove_class("off");
+        style_context->add_class("on");  // Change to energized (green)
+    }
+}
+
+
+
+
+
 void ScienceHMINode::handleTextboxInput() {
-    std::string input_text = valve_input_textbox->get_text();
+    std::string input_text = indexnumberentry->get_text();
     try {
         int index = std::stoi(input_text);
         setCarouselIndex(index);
@@ -98,12 +420,12 @@ void ScienceHMINode::handleTextboxInput() {
 
 
 // Set carousel index (0-15)
-void ScienceHMI::setCarouselIndex(int index) {
-    rover_msgs::msg::ScienceHmi home_msg;
+void ScienceHMINode::setCarouselIndex(int index) {
+    rover_msgs::msg::ScienceModule home_msg;
     
     if (index >= 0 && index <= 15) {
-        home_msg.carousel_index = index;
-        carousel_cmd_pub->publish(home_msg);
+        home_msg.carouselindex = index;
+        carousel_pub->publish(home_msg);
         RCLCPP_INFO(this->get_logger(), "Carousel Index Set: %d", index);
     } else {
         RCLCPP_WARN(this->get_logger(), "Invalid Carousel Index! Must be between 0-15.");

@@ -1,5 +1,5 @@
 /* Default Button Styles */
-button {
+.button {
     padding: 10px;
     font-size: 16px;
     border: none;
@@ -17,23 +17,246 @@ button {
     background-color: green;
 }
 
-/* Valve Buttons (Multiple can be active) */
-.valve-button {
+/* SV1 */
+.sv1button {
     background-color: gray;
     color: white;
 }
 
-.valve-button.active {
+.sv1button.energized {
     background-color: green;
 }
 
-.valve-button.neutral {
-    background-color: yellow;
+.sv1button.not_energized {
+    background-color: red;
 }
 
-/* Carousel Input */
-input[type="number"] {
-    width: 50px;
-    padding: 5px;
-    font-size: 16px;
+/* SV2*/
+.sv2button {
+    background-color: gray;
+    color: white;
 }
+
+.sv2button.energized {
+    background-color: green;
+}
+
+.sv2button.not_energized {
+    background-color: red;
+}
+
+/* SV3 */
+.sv3button {
+    background-color: gray;
+    color: white;
+}
+
+.sv3button.energized {
+    background-color: green;
+}
+
+.sv3button.not_energized {
+    background-color: red;
+}
+
+/* SV4 */
+.sv4button {
+    background-color: gray;
+    color: white;
+}
+
+.sv4button.energized {
+    background-color: green;
+}
+
+.sv4button.not_energized {
+    background-color: red;
+}
+
+/* SVF1 */
+.svf1button {
+    background-color: gray;
+    color: white;
+}
+
+.svf1button.energized {
+    background-color: green;
+}
+
+.svf1button.not_energized {
+    background-color: red;
+}
+
+/* SVF2 */
+.svf2button {
+    background-color: gray;
+    color: white;
+}
+
+.svf2button.energized {
+    background-color: green;
+}
+
+.svf2button.not_energized {
+    background-color: red;
+}
+
+/* Pump statuss */
+.p1button {
+    background-color: gray;
+    color: white;
+}
+
+.p1button.forward {
+    background-color: green;
+}
+
+.p1button.backward {
+    background-color: rgb(204, 227, 28);
+}
+
+
+/* osf1 statuss */
+.osf1button {
+    background-color: gray;
+    color: white;
+}
+
+.osf1button.unblocked {
+    background-color: green;
+}
+
+.osf1button.blocked {
+    background-color: red;
+}
+
+/* osf2 statuss */
+.osf2button {
+    background-color: gray;
+    color: white;
+}
+
+.osf2button.unblocked {
+    background-color: green;
+}
+
+.osf2button.blocked {
+    background-color: red;
+}
+
+/* pev statuss */
+.prevIndexbutton{
+    background-color: gray;
+    color: white;
+}
+
+.prevIndexbutton.on {
+    background-color: green;
+}
+
+.prevIndexbutton.off {
+    background-color: red;
+}
+
+/* next statuss */
+.nextidxbutton{
+    background-color: gray;
+    color: white;
+}
+
+.nextidxbutton.on {
+    background-color: green;
+}
+
+.nextidxbutton.off {
+    background-color: red;
+}
+
+/* large statuss */
+.largebutton{
+    background-color: gray;
+    color: white;
+}
+
+.largebutton.on {
+    background-color: green;
+}
+
+.largebutton.off {
+    background-color: red;
+}
+
+/* small statuss */
+.smallbutton{
+    background-color: gray;
+    color: white;
+}
+
+.smallbutton.on {
+    background-color: green;
+}
+
+.smallbutton.off {
+    background-color: red;
+}
+
+
+/* spectro statuss */
+.spectrobutton {
+    background-color: gray;
+    color: white;
+}
+
+.spectrobutton.analyzing {
+    background-color: green;
+}
+
+.spectrobutton.notanalyzing {
+    background-color: red;
+}
+
+/* ag statuss */
+.agitatorpowerbutton {
+    background-color: gray;
+    color: white;
+}
+
+.agitatorpowerbutton.on {
+    background-color: green;
+}
+
+.agitatorpowerbutton.off {
+    background-color: red;
+}
+
+/* light statuss */
+.light1button {
+    background-color: gray;
+    color: white;
+}
+
+.light1button.on {
+    background-color: green;
+}
+
+.light1button.off {
+    background-color: red;
+}
+
+/* light statuss */
+.light2button {
+    background-color: gray;
+    color: white;
+}
+
+.light2button.on {
+    background-color: green;
+}
+
+.light12utton.off {
+    background-color: red;
+}
+
+
+
+
