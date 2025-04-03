@@ -132,7 +132,16 @@ void HeartNode::heartRequestCallback(const rover_msgs::msg::HeartRequest::Shared
 
 
 
-
+void HeartNode::heartbeat(){
+    for(const auto &pair : subsystems){
+        rover_msgs::msg::HeartRequest msg;
+        msg.subsystem_host = my_host_id;
+        msg.subsystem_name = pair.first; //or pair.second.name
+        msg.index = pair.second.index;
+        msg.running = pair.second.online;
+        heart_feedback_pub->publish(msg);
+    }
+}
 
 
 

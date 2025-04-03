@@ -29,11 +29,21 @@ int main(int argc, char* argv[]){
 }
 
 
-void DashboardHMINode::heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg){
+void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg){
     //Watchdog / Heartbeat callback. See what systems are running
     #ifdef DEBUG_MSGS
-        RCLCPP_INFO(this->get_logger(), "Heartbeat Detected: %s", msg->subsystem);
+        RCLCPP_INFO(this->get_logger(), "Heartbeat Detected: %s, on host %s", msg->subsystem_name.c_str(), msg->subsystem_host.c_str());
     #endif
+    switch (msg->subsystem_host)
+    {
+    case COMPUTER_A:
+        /* code */
+        break;
+    
+    default:
+        break;
+    }
+
 }
 
 

@@ -37,14 +37,16 @@ public:
         rclcpp::Parameter heart_feedback_topic;
         this->get_parameter("heart_request_topic", heart_request_topic);
         std::string global_heart_topic = heart_request_topic.value_to_string();
-        std::string heart_feedback_topic = heart_request_topic.value_to_string();
+        std::string feedback_topic = heart_request_topic.value_to_string();
         // heart_onboard_nuc_topic = std::string("heart_" + computer_A.value_to_string()  + "/request");
         // heart_control_base_topic = std::string("heart_" + computer_B.value_to_string()  + "/request");
         // RCLCPP_WARN(this->get_logger(), "%s", computer_A.value_to_string().c_str());
 
         // RCLCPP_WARN(this->get_logger(), "%s", heart_onboard_nuc_topic.c_str());
-        heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
-          "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
+        // heartbeat_monitor_sub = this->create_subscription<rover_msgs::msg::SubSystemHealth>(
+        //   "/system/heartbeats", 10, std::bind(&DashboardHMINode::heartbeatCallback, this, std::placeholders::_1));
+          heart_monitor_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
+            feedback_topic, 10, std::bind(&DashboardHMINode::heartFeedbackCallback, this, std::placeholders::_1));
           global_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(global_heart_topic, 10);
         // onboard_nuc_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_onboard_nuc_topic, 10);
         // control_base_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_control_base_topic, 10);
@@ -171,12 +173,13 @@ private:
 
 
   //? Ros2 stuffs
- rclcpp::Subscription<rover_msgs::msg::SubSystemHealth>::SharedPtr heartbeat_monitor_sub;
+ rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
 rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
 
-  void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
+  // void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
+  void heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg);
 //  rclcpp::Publishe?
 
 

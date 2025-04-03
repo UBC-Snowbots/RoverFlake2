@@ -1,5 +1,4 @@
 
-# Version: 2
 # On board the rover config for what processes the heart should send blood to
 # (what processes the on board heart needs to startup and kill)
 
@@ -11,6 +10,8 @@
 
 #! CURRENTLY USING SAME TOPIC FOR ALL HEARTS
 #! DO NOT REUSE SUBSYSTEM NAMES UNLESS YOU NEED THE SAME SUBSYSTEM RUN ON MULTIPLE MACHINES
+
+#? You do not have to rebuild when making changes to this file - these params are checked when the nodes are launched. However if in doubt, clean and rebuild
 
 /dashboard_hmi_node:
   ros__parameters:
@@ -26,6 +27,7 @@
       drive_control: "ros2 run joy joy_node"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
 
     # request_topic: "/heart_control_base/request"
       
@@ -36,6 +38,7 @@
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
 
     # request_topic: "/heart_onboard_nuc/request"
     # subsystems:

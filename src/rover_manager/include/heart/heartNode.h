@@ -17,13 +17,17 @@ public:
             rclcpp::shutdown();
     }
     rclcpp::Parameter topic_param;
+    rclcpp::Parameter feedback_topic_param;
+    rclcpp::Parameter heartbeat_rate_param;
     this->get_parameter("request_topic", topic_param);
-
-
+    this->get_parameter("heart_feedback_topic", feedback_topic_param);
+    this->get_parameter("heartbeat_rate", heartbeat_rate_param);
 
     // std::string request_topic = my_name + "/request";
+    my_host_id = my_name;
+    my_host_id.erase(0, 6);
     std::string request_topic = topic_param.value_to_string();
-    
+    std::string feedback_topic = feedback_topic_param.value_to_string();
     this->get_parameters("subsystems", params);
     
     
@@ -50,6 +54,15 @@ public:
     }
     heart_request_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
         request_topic, 10, std::bind(&HeartNode::heartRequestCallback, this, std::placeholders::_1));
+    heart_feedback_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(
+        feedback_topic, 20);
+
+        double heartbeat_rate = heartbeat_rate_param.as_double();
+        double heartbeat_period = 1.0/heartbeat_rate;
+
+        heartbeat_timer = this->create_wall_timer(
+            std::chrono::duration<double>(heartbeat_period), std::bind(&HeartNode::heartbeat, this));
+
 
     // runSubSystem(subsystems_vector[0]);
     }
@@ -68,19 +81,23 @@ std::unordered_map<std::string, SubSystem> subsystems;
 
 // std::unordered_map<std::string, std::SubSystem>;
 
+std::string my_host_id;
 
 std::vector<SubSystem> subsystems_vector;
 
 void runSubSystem(SubSystem& subsys);
 void killSubSystem(SubSystem& subsys);
+void heartbeat();
 
 // void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, int type = NODE, bool kill_orphan = true);
 void killProcessGroup(pid_t pgid); //! Should prob have a error return
 
-
+    rclcpp::TimerBase::SharedPtr heartbeat_timer;
 
     rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_request_sub;
         void heartRequestCallback(const rover_msgs::msg::HeartRequest::SharedPtr request);
+    
+    rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr heart_feedback_pub;
 };
 
 
