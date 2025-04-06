@@ -28,20 +28,42 @@ int main(int argc, char* argv[]){
 
 }
 
-
+/**
+ * @brief callback for 'heartbeats' - Will update HMI based on what systems are running/offline
+ */
 void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg){
     //Watchdog / Heartbeat callback. See what systems are running
     #ifdef DEBUG_MSGS
         RCLCPP_INFO(this->get_logger(), "Heartbeat Detected: %s, on host %s", msg->subsystem_name.c_str(), msg->subsystem_host.c_str());
     #endif
-    switch (msg->subsystem_host)
-    {
-    case COMPUTER_A:
-        /* code */
-        break;
-    
-    default:
-        break;
+    // switch (msg->subsystem_host) //? not used to using strings, usually use an enumerator with switch case but switch no likey strings. No way we are going to static cast or do a weird workaround just to use switch case, we'll go with if statement instead
+    // {
+    // case "control_base":
+    //     /* code */
+    //     break;
+    // case "onboard_nuc":
+    //     /* code */
+    //     break;
+    // default:
+    //     break;
+    // }
+    const std::string host = msg->subsystem_host;
+    if(msg->subsystem_host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
+        if(msg->running){
+
+        }else{
+
+        }
+
+        return;
+    }
+    if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
+
+        return;
+    }
+    if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
+
+        return;
     }
 
 }

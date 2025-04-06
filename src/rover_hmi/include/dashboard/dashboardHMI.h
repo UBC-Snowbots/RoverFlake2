@@ -28,11 +28,16 @@ public:
         std::string heart_control_base_topic = "/broken_heart2";
         // std::string computer_A;
         // std::string computer_B;
-        // rclcpp::Parameter computer_A;
-        // rclcpp::Parameter computer_B;
+        rclcpp::Parameter computer_control_base;
+        rclcpp::Parameter computer_onboard_nuc;
+        rclcpp::Parameter computer_onboard_jetson;
         
-        // this->get_parameter("computer_a", computer_A);
-        // this->get_parameter("computer_b", computer_B);
+        this->get_parameter("computer_control_base", computer_control_base);
+        this->get_parameter("computer_onboard_nuc", computer_onboard_nuc);
+        this->get_parameter("computer_onboard_jetson", computer_onboard_jetson);
+        MONITORED_COMPUTER_CONTROL_BASE_STRING = computer_control_base.value_to_string();
+        MONITORED_COMPUTER_ONBOARD_NUC_STRING = computer_onboard_nuc.value_to_string();
+        MONITORED_COMPUTER_ONBOARD_JETSON_STRING = computer_onboard_jetson.value_to_string();
         rclcpp::Parameter heart_request_topic;
         rclcpp::Parameter heart_feedback_topic;
         this->get_parameter("heart_request_topic", heart_request_topic);
@@ -48,26 +53,6 @@ public:
           heart_monitor_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
             feedback_topic, 10, std::bind(&DashboardHMINode::heartFeedbackCallback, this, std::placeholders::_1));
           global_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(global_heart_topic, 10);
-        // onboard_nuc_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_onboard_nuc_topic, 10);
-        // control_base_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_control_base_topic, 10);
-          //* Control Base SubSystem
-            // SubSystemProcess cbs_background;
-            //   cbs_background.type = LAUNCHFILE;
-            //   cbs_background.pkg = "rover_launchers";
-            //   cbs_background.exec = "cbs_bringup.launch.py";
-            //   monitored_systems[monitored_system_names[0]].process = cbs_background;
-            // SubSystemProcess drive_control;
-            //   drive_control.type = LAUNCHFILE;
-            //   drive_control.pkg = "drive_control";
-            //   drive_control.exec = "drive_control_on_board.launch.py";
-            //   monitored_systems[monitored_system_names[1]].process = drive_control;
-            // SubSystemProcess xx;
-            //   xx.type = LAUNCHFILE;
-            //   xx.pkg = "xx";
-            //   xx.exec = "xx";
-            //   monitored_systems[monitored_system_names[2]].process = xx;
-            // monitored_systems["control_base"].processes.push_back(cbs_background); //! only one process..
-          
 
 
 
@@ -98,30 +83,7 @@ public:
 
     ~DashboardHMINode(){
         std::system("notify-send DASHBOARD_OFFLINE going down with regular cleanup!");
-        //! need to add orphan cleanup here
-        // for(const auto &pair : running_child_pids){
-        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
-        //   // killChildPID(pair.second);
-        //   // std::vector<pid_t> pids = getPidsByName(pair.first);
-        //   // for(const pid_t pid : pids){
-        //     // kill(pid, SIGINT); 
-        //     killProcessGroup(pair.second);
-        //   // }
-        // }
-        // RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
-        // sleep(5);
-        // RCLCPP_INFO(this->get_logger(), "Times up, forcefully killing any slow orphans");
-        // for(const auto &pair : running_child_pids){
-        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
-        //   // killChildPID(pair.second);
-        //   // kill(pair.second, SIGKILL);
-        //   killProcessGroup(pair.second);
-        // }
-      // for(const auto &pair : monitored_systems){
-      //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with gpid %d", pair.first, pair.second.gpid);
-      //   killSubSystem(pair.first); //will send SIGTERM
-      // }
-      //! may need to add SIGKILL signal
+ 
 
     }
     void run()
@@ -156,16 +118,21 @@ private:
       SubSystemProcess process;
     };
     
+    //! Should be cleaned up. Like too many custom structs to do this setup
     std::vector<std::string> monitored_system_names = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
     // MonitoredSystem control_base_sys;
-    std::unordered_map<std::string, MonitoredSystem> monitored_systems;
+    std::unordered_map<std::string, MonitoredSystem> monitored_systems_control_base;
+    std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_nuc;
+    std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_jetson;
  
     
     // std::map
 
     //? Gtk Stuffs
     #include "gtkwidgets.h"
-      SubSysStatusGrid system_health;
+      SubSysStatusGrid system_health_control_base;
+      SubSysStatusGrid system_health_onboard_nuc;
+      SubSysStatusGrid system_health_onboard_jetson;
 
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
@@ -182,7 +149,18 @@ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request
   void heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg);
 //  rclcpp::Publishe?
 
+std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
+std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
+std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
+
+};
+
+
+
+
+/*
+Graveyard / Archive
   //? watchdog stuffs
   // std::unordered_map<std::string, pid_t> running_child_pids;
   //   //* CHILD PROCESSES
@@ -193,4 +171,48 @@ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request
   //   void killChildPID(pid_t target_pid);
   //   std::vector<pid_t> getPidsByName(const std::string &processName, bool verbose = false);
 
-};
+        // onboard_nuc_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_onboard_nuc_topic, 10);
+        // control_base_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_control_base_topic, 10);
+          //* Control Base SubSystem
+            // SubSystemProcess cbs_background;
+            //   cbs_background.type = LAUNCHFILE;
+            //   cbs_background.pkg = "rover_launchers";
+            //   cbs_background.exec = "cbs_bringup.launch.py";
+            //   monitored_systems[monitored_system_names[0]].process = cbs_background;
+            // SubSystemProcess drive_control;
+            //   drive_control.type = LAUNCHFILE;
+            //   drive_control.pkg = "drive_control";
+            //   drive_control.exec = "drive_control_on_board.launch.py";
+            //   monitored_systems[monitored_system_names[1]].process = drive_control;
+            // SubSystemProcess xx;
+            //   xx.type = LAUNCHFILE;
+            //   xx.pkg = "xx";
+            //   xx.exec = "xx";
+            //   monitored_systems[monitored_system_names[2]].process = xx;
+            // monitored_systems["control_base"].processes.push_back(cbs_background); //! only one process..
+          
+        // for(const auto &pair : running_child_pids){
+        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+        //   // killChildPID(pair.second);
+        //   // std::vector<pid_t> pids = getPidsByName(pair.first);
+        //   // for(const pid_t pid : pids){
+        //     // kill(pid, SIGINT); 
+        //     killProcessGroup(pair.second);
+        //   // }
+        // }
+        // RCLCPP_INFO(this->get_logger(), "Waiting for children to say their last words...");
+        // sleep(5);
+        // RCLCPP_INFO(this->get_logger(), "Times up, forcefully killing any slow orphans");
+        // for(const auto &pair : running_child_pids){
+        //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with pid %d", pair.first, pair.second);
+        //   // killChildPID(pair.second);
+        //   // kill(pair.second, SIGKILL);
+        //   killProcessGroup(pair.second);
+        // }
+      // for(const auto &pair : monitored_systems){
+      //   RCLCPP_INFO(this->get_logger(), "Performing standard execution of child: %s, with gpid %d", pair.first, pair.second.gpid);
+      //   killSubSystem(pair.first); //will send SIGTERM
+      // }
+
+
+*/
