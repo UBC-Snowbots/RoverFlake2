@@ -41,8 +41,10 @@ public:
         rclcpp::Parameter heart_request_topic;
         rclcpp::Parameter heart_feedback_topic;
         this->get_parameter("heart_request_topic", heart_request_topic);
+        this->get_parameter("heart_feedback_topic", heart_feedback_topic);
         std::string global_heart_topic = heart_request_topic.value_to_string();
-        std::string feedback_topic = heart_request_topic.value_to_string();
+        std::string feedback_topic = heart_feedback_topic.value_to_string();
+
         // heart_onboard_nuc_topic = std::string("heart_" + computer_A.value_to_string()  + "/request");
         // heart_control_base_topic = std::string("heart_" + computer_B.value_to_string()  + "/request");
         // RCLCPP_WARN(this->get_logger(), "%s", computer_A.value_to_string().c_str());
@@ -54,6 +56,10 @@ public:
             feedback_topic, 10, std::bind(&DashboardHMINode::heartFeedbackCallback, this, std::placeholders::_1));
           global_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(global_heart_topic, 10);
 
+
+          rclcpp::Parameter control_base_subsystems_param;
+            this->get_parameter("subsystems_control_base", control_base_subsystems_param);
+          rclcpp::Parameter onboard_nuc_subsystems_param;
 
 
 
@@ -119,7 +125,9 @@ private:
     };
     
     //! Should be cleaned up. Like too many custom structs to do this setup
-    std::vector<std::string> monitored_system_names = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
+    std::vector<std::string> monitored_system_names_control_base; // = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
+    std::vector<std::string> monitored_system_names_onboard_nuc;
+    std::vector<std::string> monitored_system_names_onboard_jetson;
     // MonitoredSystem control_base_sys;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_control_base;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_nuc;
@@ -152,7 +160,6 @@ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request
 std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
-
 
 };
 

@@ -4,6 +4,8 @@
             //* subsys Status Grid
             builder->get_widget("subsys_status_grid", system_health_control_base.grid);
             system_health_control_base.system.resize(NUM_MONITORED_SYSTEMS_CONTROL_BASE);
+            monitored_system_names_control_base.resize(NUM_MONITORED_SYSTEMS_CONTROL_BASE);
+ 
             for (int i = 0; i < NUM_MONITORED_SYSTEMS_CONTROL_BASE; i++) {
               std::string index = std::to_string(i);
               builder->get_widget("subsys_" + index + "_label", system_health_control_base.system[i].name);
@@ -30,14 +32,14 @@
 
             
                 for(int i = 0; i < NUM_MONITORED_SYSTEMS_CONTROL_BASE; i++){
-                    system_health_control_base.system[i].name->set_label(monitored_system_names[i]);
-                    system_health_control_base.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], KILL, COMPUTER_GLOBAL));
-                    system_health_control_base.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], RUN, COMPUTER_GLOBAL));
+                    system_health_control_base.system[i].name->set_label(monitored_system_names_control_base[i]);
+                    system_health_control_base.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names_control_base[i], KILL, COMPUTER_GLOBAL));
+                    system_health_control_base.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names_control_base[i], RUN, COMPUTER_GLOBAL));
                     system_health_control_base.system[i].status->set_label("UNKNOWN");
-                    monitored_systems_control_base[monitored_system_names[i]].status_label = system_health_control_base.system[i].status;
-                    monitored_systems_control_base[monitored_system_names[i]].name_label = system_health_control_base.system[i].name;
-                    monitored_systems_control_base[monitored_system_names[i]].status_label->set_label("OFFLINE");
-                    Glib::RefPtr<Gtk::StyleContext> context = monitored_systems_control_base[monitored_system_names[i]].status_label->get_style_context();
+                    monitored_systems_control_base[monitored_system_names_control_base[i]].status_label = system_health_control_base.system[i].status;
+                    monitored_systems_control_base[monitored_system_names_control_base[i]].name_label = system_health_control_base.system[i].name;
+                    monitored_systems_control_base[monitored_system_names_control_base[i]].status_label->set_label("OFFLINE");
+                    Glib::RefPtr<Gtk::StyleContext> context = monitored_systems_control_base[monitored_system_names_control_base[i]].status_label->get_style_context();
                     context->remove_class("dash_status_unknown");
                     context->add_class("subsys_OFFLINE");
 
@@ -46,6 +48,9 @@
 
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
+                monitored_system_names_onboard_nuc.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
+
+
                 for (int i = 0; i < NUM_MONITORED_SYSTEMS_ONBOARD_NUC; i++) {
                   std::string index = std::to_string(i);
                   builder->get_widget("subsys_" + index + "_label_onboard_nuc", system_health_onboard_nuc.system[i].name);
@@ -57,14 +62,14 @@
     
                 
                     for(int i = 0; i < NUM_MONITORED_SYSTEMS_ONBOARD_NUC; i++){
-                        system_health_onboard_nuc.system[i].name->set_label(monitored_system_names[i]);
-                        system_health_onboard_nuc.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], KILL, COMPUTER_GLOBAL));
-                        system_health_onboard_nuc.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names[i], RUN, COMPUTER_GLOBAL));
+                        system_health_onboard_nuc.system[i].name->set_label(monitored_system_names_onboard_nuc[i]);
+                        system_health_onboard_nuc.system[i].kill_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names_onboard_nuc[i], KILL, COMPUTER_GLOBAL));
+                        system_health_onboard_nuc.system[i].run_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::subsystemRequest), monitored_system_names_onboard_nuc[i], RUN, COMPUTER_GLOBAL));
                         system_health_onboard_nuc.system[i].status->set_label("UNKNOWN");
-                        monitored_systems_onboard_nuc[monitored_system_names[i]].status_label = system_health_onboard_nuc.system[i].status;
-                        monitored_systems_onboard_nuc[monitored_system_names[i]].name_label = system_health_onboard_nuc.system[i].name;
-                        monitored_systems_onboard_nuc[monitored_system_names[i]].status_label->set_label("OFFLINE");
-                        Glib::RefPtr<Gtk::StyleContext> context = monitored_systems_onboard_nuc[monitored_system_names[i]].status_label->get_style_context();
+                        monitored_systems_onboard_nuc[monitored_system_names_onboard_nuc[i]].status_label = system_health_onboard_nuc.system[i].status;
+                        monitored_systems_onboard_nuc[monitored_system_names_onboard_nuc[i]].name_label = system_health_onboard_nuc.system[i].name;
+                        monitored_systems_onboard_nuc[monitored_system_names_onboard_nuc[i]].status_label->set_label("OFFLINE");
+                        Glib::RefPtr<Gtk::StyleContext> context = monitored_systems_onboard_nuc[monitored_system_names_onboard_nuc[i]].status_label->get_style_context();
                         context->remove_class("dash_status_unknown");
                         context->add_class("subsys_OFFLINE");
     

@@ -21,13 +21,13 @@
     heart_request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     subsystems_control_base:
-      0: "drive_control"
+      - "drive_control"
     subsystems_onboard_nuc:
-      0: "drive_interface"
-      1: "arm_interface"
+      - "drive_interface"
+      - "arm_interface"
     subsystems_onboard_jetson:
-      0: "yolo_detection"
-      1: "aruco_detection"
+      - "yolo_detection"
+      - "aruco_detection"
 
 /heart_control_base: # (/heart_control_base <- control_base)
   ros__parameters:

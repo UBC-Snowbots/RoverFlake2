@@ -46,24 +46,41 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
     //     break;
     // default:
     //     break;
-    // }
+    // // }
     const std::string host = msg->subsystem_host;
+    const std::string subsys_name = msg->subsystem_name;
+    Glib::RefPtr<Gtk::StyleContext> context;
+    Gtk::Label* status_label;
     if(msg->subsystem_host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
-        if(msg->running){
-
-        }else{
-
-        }
-
-        return;
+        context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
+        status_label = monitored_systems_control_base[subsys_name].status_label;
     }
     if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
+        context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();\
+        status_label = monitored_systems_onboard_jetson[subsys_name].status_label;
 
-        return;
+
+      
     }
     if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
+        context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
+        status_label = monitored_systems_onboard_nuc[subsys_name].status_label;
 
-        return;
+
+     
+    }
+    context->remove_class("subsys_OFFLINE");
+    context->remove_class("subsys_ONLINE");
+    
+    if(msg->running){
+        context->add_class("subsys_ONLINE");
+        status_label->set_label("ONLINE");
+
+    }else{
+        
+        context->add_class("subsys_OFFLINE");
+        status_label->set_label("OFFLINE");
+
     }
 
 }
