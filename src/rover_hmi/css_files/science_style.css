@@ -1,13 +1,129 @@
-/* Default Button Styles */
+/*Default Button Styles*/
 .button {
-    padding: 10px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-    margin: 5px;
+    background-color: #a0a0a0;
+    color: white;
 }
 
+/* GENERAL BUTTON STATES */
+button.energized {
+    background-image: none;
+    background-color: green;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.not_energized {
+    background-image: none;
+    background-color: red;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+
+button.active {
+    background-image: none;
+    background-color: green;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.not_active{
+    background-image: none;
+    background-color: rgb(80, 83, 115);
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.on {
+    background-image: none;
+    background-color: green;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.off {
+    background-image: none;
+    background-color: red;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.unblocked {
+    background-image: none;
+    background-color: green;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.blocked {
+    background-image: none;
+    background-color: red;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.forward {
+    background-image: none;
+    background-color: green;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.reverse {
+    background-image: none;
+    background-color: rgb(232, 174, 59);
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.analyzing {
+    background-image: none;
+    background-color: cyan;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+button.notanalyzing {
+    background-image: none;
+    background-color: gray;
+    color: white;
+    box-shadow: none;
+    border: none;
+}
+
+
+.label-blocked {
+    background-color: #c62828;  /* Red */
+    color: white;
+    padding: 4px 10px;
+    border-radius: 5px;
+}
+
+.label-unblocked {
+    background-color: #2e7d32;  /* Green */
+    color: white;
+    padding: 4px 10px;
+    border-radius: 5px;
+}
+
+
+
+
+
+
 /* Sequence Buttons (Only one can be active) */
+/*
 .sequence-button {
     background-color: gray;
     color: white;
@@ -17,7 +133,7 @@
     background-color: green;
 }
 
-/* SV1 */
+
 .sv1button {
     background-color: gray;
     color: white;
@@ -31,7 +147,6 @@
     background-color: red;
 }
 
-/* SV2*/
 .sv2button {
     background-color: gray;
     color: white;
@@ -45,7 +160,7 @@
     background-color: red;
 }
 
-/* SV3 */
+
 .sv3button {
     background-color: gray;
     color: white;
@@ -59,7 +174,7 @@
     background-color: red;
 }
 
-/* SV4 */
+
 .sv4button {
     background-color: gray;
     color: white;
@@ -73,7 +188,7 @@
     background-color: red;
 }
 
-/* SVF1 */
+
 .svf1button {
     background-color: gray;
     color: white;
@@ -87,7 +202,7 @@
     background-color: red;
 }
 
-/* SVF2 */
+
 .svf2button {
     background-color: gray;
     color: white;
@@ -101,7 +216,7 @@
     background-color: red;
 }
 
-/* Pump statuss */
+
 .p1button {
     background-color: gray;
     color: white;
@@ -116,7 +231,7 @@
 }
 
 
-/* osf1 statuss */
+
 .osf1button {
     background-color: gray;
     color: white;
@@ -130,7 +245,7 @@
     background-color: red;
 }
 
-/* osf2 statuss */
+
 .osf2button {
     background-color: gray;
     color: white;
@@ -144,7 +259,7 @@
     background-color: red;
 }
 
-/* pev statuss */
+
 .prevIndexbutton{
     background-color: gray;
     color: white;
@@ -158,7 +273,7 @@
     background-color: red;
 }
 
-/* next statuss */
+
 .nextidxbutton{
     background-color: gray;
     color: white;
@@ -172,7 +287,7 @@
     background-color: red;
 }
 
-/* large statuss */
+
 .largebutton{
     background-color: gray;
     color: white;
@@ -186,7 +301,7 @@
     background-color: red;
 }
 
-/* small statuss */
+
 .smallbutton{
     background-color: gray;
     color: white;
@@ -201,7 +316,7 @@
 }
 
 
-/* spectro statuss */
+
 .spectrobutton {
     background-color: gray;
     color: white;
@@ -215,7 +330,7 @@
     background-color: red;
 }
 
-/* ag statuss */
+
 .agitatorpowerbutton {
     background-color: gray;
     color: white;
@@ -229,7 +344,7 @@
     background-color: red;
 }
 
-/* light statuss */
+
 .light1button {
     background-color: gray;
     color: white;
@@ -243,7 +358,7 @@
     background-color: red;
 }
 
-/* light statuss */
+
 .light2button {
     background-color: gray;
     color: white;
@@ -257,6 +372,8 @@
     background-color: red;
 }
 
+
+*/
 
 
 

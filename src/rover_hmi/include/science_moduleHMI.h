@@ -2,6 +2,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <rover_msgs/msg/science_module.hpp>
+#include <rover_msgs/msg/camera_command.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -50,6 +51,10 @@ public:
     spectro_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     light_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
 
+
+    camera_pub = this->create_publisher<rover_msgs::msg::CameraCommand>("/science/camera_command", qos);
+
+
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
     //     "/science/feedback", qos, std::bind(&ScienceHMINode::valveFeedbackCallback, this, std::placeholders::_1));
 
@@ -59,7 +64,7 @@ public:
     
     // **Text Input for Integer 0-15**
     builder->get_widget("indexnumberentry", indexnumberentry);
-    indexnumberentry->signal_changed().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
+    indexnumberentry->signal_activate().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
 
     // **Button Handling**
     builder->get_widget("rinsebutton", rinsebutton);
@@ -92,6 +97,7 @@ public:
     builder->get_widget("p1button", p1button);
     builder->get_widget("osf1button", osf1button);
     builder->get_widget("osf2button", osf2button);
+    builder->get_widget("statuslabel", statuslabel);
 
     builder->get_widget("prevIndexbutton", prevIndexbutton);
     builder->get_widget("nextidxbutton", nextidxbutton);
@@ -104,8 +110,13 @@ public:
     builder->get_widget("agitatorpowerbutton", agitatorpowerbutton);
 
 
+    builder->get_widget("camera1button", camera1button);
+
+    builder->get_widget("camera2button", camera2button);
+
+
     //Constructor for sequence_buttons
-    sequence_buttons = { rinsebutton };
+    sequence_buttons = { rinsebutton, agitatorbutton, processbutton, purgebutton };
 
     rinsebutton->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setSequence), 
                                                         true, static_cast<int>(sequence_status::rinse)));
@@ -138,17 +149,32 @@ public:
     light1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::light1Clicked));
     light2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::ligth2Clicked));
 
+    camerabuttons = {camera1button, camera2button};
+
+    camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), 
+                                                        true, static_cast<int>(sequence_status::camera1)));
+    camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), 
+                                                        true, static_cast<int>(sequence_status::camera2)));
+    
+
+    // camera1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera1clicked));
+    // camera2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera2clicked));
+
+
+
+
 
     //* css files
-    main_css_file_path = this->package_share_dir + "/css_files/science_style.css";
-    RCLCPP_INFO(this->get_logger(), main_css_file_path.c_str());
-    auto css_provider = Gtk::CssProvider::create();
-    load_css(css_provider, main_css_file_path);
+    // main_css_file_path = this->package_share_dir + "/css_files/science_style.css";
+    // RCLCPP_INFO(this->get_logger(), main_css_file_path.c_str());
+    // auto css_provider = Gtk::CssProvider::create();
+    // load_css(css_provider, main_css_file_path);
     RCLCPP_INFO(this->get_logger(), "Meowing css");
 
     auto screen = Gdk::Screen::get_default();
-    auto style_context = get_style_context();
-    style_context->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    //auto style_context = get_style_context();
+    //style_context->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
     RCLCPP_INFO(this->get_logger(), "Meowing builder");
 
     // //* Setup GTK widgets
@@ -159,18 +185,40 @@ public:
   }
 
   void run()
-  {
+{
     RCLCPP_INFO(this->get_logger(), "Start");
 
+    // Load and apply CSS before the UI starts
+    auto cssProvider = Gtk::CssProvider::create();
+
+    try {
+        cssProvider->load_from_path("/home/ubcrover/RoverFlake2/src/rover_hmi/css_files/science_style.css");  // Make sure this path is correct
+    } catch (const Glib::Error& ex) {
+        std::cerr << "Failed to load CSS: " << ex.what() << std::endl;
+    }
+
+    auto screen = Gdk::Screen::get_default();
+    Gtk::StyleContext::add_provider_for_screen(
+      Gdk::Screen::get_default(),
+      cssProvider,
+      GTK_STYLE_PROVIDER_PRIORITY_APPLICATION  // 🔥 max override
+  );
+  
+    // Now launch the GTK application
     app->run(*science_window);
+
     RCLCPP_INFO(this->get_logger(), "App Run Success");
-  }
+}
+
 
   Glib::RefPtr<Gtk::Application> app;
 
 private:
   std::string main_css_file_path;
 
+
+  // in ScienceHMINode.h
+  rover_msgs::msg::ScienceModule home_msg;
 
   std::string package_share_dir;
 
@@ -189,6 +237,8 @@ private:
   Gtk::Button* p1button;
   Gtk::Button* osf1button;
   Gtk::Button* osf2button;
+  Gtk::Label* statuslabel;
+
 
 
   Gtk::Button* rinsebutton;
@@ -208,6 +258,11 @@ private:
   Gtk::Button* light1button;
   Gtk::Button* light2button;
 
+  Gtk::Button* camera1button;
+
+  Gtk::Button* camera2button;
+
+
 
 
     // // Store all valve buttons in a vector
@@ -223,6 +278,10 @@ private:
   void SVF1clicked();
   void SVF2clicked();
 
+
+  int toggleButtonStyle(Gtk::Button* btn, const std::string& active_class, const std::string& inactive_class);
+
+
   void setSequence(bool pressed, int button); //RECHECK
   void handleTextboxInput();
 
@@ -231,6 +290,7 @@ private:
   void P1clicked();
   void OSF1clicked();
   void OSF2clicked();
+  void updateStatusLabel();
 
   void prevClicked();
   void nextClicked();
@@ -241,6 +301,9 @@ private:
   void agPowerClicked();
   void light1Clicked();
   void ligth2Clicked();
+
+
+  void cameraFeedChosen(bool pressed, int button);
 
 
 
@@ -266,8 +329,8 @@ private:
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr spectro_pub;
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr light_pub;
 
-
-
+  //rclcpp::Publisher<rover_msgs::msg::CameraCommand>::SharedPtr camera_pub;
+ // rclcpp::Publisher<std_msgs::msg::int16>::SharedPtr camera_fd;
 
 
  
