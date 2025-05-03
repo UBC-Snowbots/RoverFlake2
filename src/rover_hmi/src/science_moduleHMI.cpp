@@ -372,53 +372,30 @@ void ScienceHMINode::setCarouselIndex(int index) {
 
 
 
-void ScienceHMINode::setSequence(bool pressed, int button) {
-    //rover_msgs::msg::ScienceModule home_msg;
-    camera_status button_triggered = static_cast<camera_status>(button);
 
-    // Reset all buttons first
-    for (auto b : camerabuttons) {
-        b->get_style_context()->remove_class("active");
-        b->get_style_context()->remove_class("not_active");
-        b->get_style_context()->add_class("not_active");
+void ScienceHMINode::cameraFeedChosen(bool clicked, int id)
+{
+    rover_msgs::msg::CameraVideo msg;
+    msg.camera_id = id;  // e.g. 1 for camera1button, 2 for camera2button
+    camera_video_pub->publish(msg);
+
+    if(id == 1){
+        camera1button->get_style_context()->remove_class("not_active");
+        camera1button->get_style_context()->add_class("active");
+        camera2button->get_style_context()->remove_class("active");
+        camera2button->get_style_context()->add_class("not_active");
     }
 
-    // Then activate the clicked one
-    switch(button_triggered){
-        case camera_status::camera1: 
-            RCLCPP_INFO(this->get_logger(), "camera1");
-            home_msg.camerafeed = 0; 
-            camera1button->get_style_context()->remove_class("not_active");
-            camera1button->get_style_context()->add_class("active");
-            break;
-        case camera_status::camera2: 
-            RCLCPP_INFO(this->get_logger(), "camera2");
-            home_msg.camerafeed = 1; 
-            camera1button->get_style_context()->remove_class("not_active");
-            camera1button->get_style_context()->add_class("active");
-            break;
+    else if(id ==2){
+        camera2button->get_style_context()->remove_class("not_active");
+        camera2button->get_style_context()->add_class("active");
+        camera1button->get_style_context()->remove_class("active");
+        camera1button->get_style_context()->add_class("not_active");
     }
 
-    camera_pub->publish(home_msg);
+    RCLCPP_INFO(this->get_logger(), "Camera feed %d chosen", id);
 }
 
-
-
-// void ScienceHMINode::camera1clicked()
-// {
-//     rover_msgs::msg::CameraCommand msg;
-//     msg.camerafeed = 0;
-//    // msg.action = "capture";  // or whatever action you want
-//     camera_pub->publish(msg);
-// }
-
-// void ScienceHMINode::camera2clicked()
-// {
-//     rover_msgs::msg::CameraCommand msg;
-//     msg.camerafeed = 1;
-//    // msg.action = "capture";  // or whatever action you want
-//     camera_pub->publish(msg);
-// }
 
 
 

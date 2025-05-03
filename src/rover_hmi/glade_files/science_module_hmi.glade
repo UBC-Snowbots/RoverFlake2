@@ -456,27 +456,27 @@
             <property name="label" translatable="yes">Camera Feedback</property>
           </object>
           <packing>
-            <property name="x">434</property>
-            <property name="y">388</property>
+            <property name="x">527</property>
+            <property name="y">386</property>
           </packing>
         </child>
         <child>
           <object class="GtkButton" id="camera1button">
-            <property name="label" translatable="yes">button</property>
-            <property name="width-request">68</property>
-            <property name="height-request">42</property>
+            <property name="label" translatable="yes">camera1</property>
+            <property name="width-request">92</property>
+            <property name="height-request">24</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
           </object>
           <packing>
             <property name="x">385</property>
-            <property name="y">446</property>
+            <property name="y">464</property>
           </packing>
         </child>
         <child>
           <object class="GtkButton" id="camera2button">
-            <property name="label" translatable="yes">button</property>
+            <property name="label" translatable="yes">camera2</property>
             <property name="width-request">80</property>
             <property name="height-request">29</property>
             <property name="visible">True</property>
@@ -486,6 +486,18 @@
           <packing>
             <property name="x">384</property>
             <property name="y">501</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkDrawingArea" id="cameraimage">
+            <property name="width-request">206</property>
+            <property name="height-request">145</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="x">510</property>
+            <property name="y">452</property>
           </packing>
         </child>
       </object>

@@ -35,6 +35,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SubSystemHealth.msg"
   "msg/HeartRequest.msg"
   "msg/ScienceModule.msg"
+  "msg/CameraVideo.msg"
+
   
   DEPENDENCIES std_msgs
  )

@@ -2,7 +2,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <rover_msgs/msg/science_module.hpp>
-#include <rover_msgs/msg/camera_command.hpp>
+#include <rover_msgs/msg/camera_video.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -50,9 +50,7 @@ public:
     agitator_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     spectro_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     light_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
-
-
-    camera_pub = this->create_publisher<rover_msgs::msg::CameraCommand>("/science/camera_command", qos);
+    camera_video_pub = this->create_publisher<rover_msgs::msg::CameraVideo>("/science/camera_video", qos);
 
 
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
@@ -149,13 +147,9 @@ public:
     light1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::light1Clicked));
     light2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::ligth2Clicked));
 
-    camerabuttons = {camera1button, camera2button};
+    camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
+    camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
 
-    camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), 
-                                                        true, static_cast<int>(sequence_status::camera1)));
-    camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), 
-                                                        true, static_cast<int>(sequence_status::camera2)));
-    
 
     // camera1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera1clicked));
     // camera2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera2clicked));
@@ -303,7 +297,7 @@ private:
   void ligth2Clicked();
 
 
-  void cameraFeedChosen(bool pressed, int button);
+  void cameraFeedChosen(bool clicked, int id);
 
 
 
@@ -328,6 +322,9 @@ private:
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr agitator_pub;
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr spectro_pub;
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr light_pub;
+
+  rclcpp::Publisher<rover_msgs::msg::CameraVideo>::SharedPtr camera_video_pub;
+
 
   //rclcpp::Publisher<rover_msgs::msg::CameraCommand>::SharedPtr camera_pub;
  // rclcpp::Publisher<std_msgs::msg::int16>::SharedPtr camera_fd;
