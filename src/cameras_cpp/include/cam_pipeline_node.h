@@ -16,13 +16,13 @@ public:
         // timer_ = this->create_wall_timer(
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         image_sub_0 = this->create_subscription<sensor_msgs::msg::Image>(
-            "/cam0/raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
-                this->imageCallback(msg, 0);
+            "/vehicle_1/main_feed/image_raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
+                this->imageCallback(msg, 1);
               }
             );
-            image_sub_0 = this->create_subscription<sensor_msgs::msg::Image>(
-                "/cam1/raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
-                    this->imageCallback(msg, 1);
+            image_sub_1 = this->create_subscription<sensor_msgs::msg::Image>(
+                "/vehicle_1/rear_feed/image_raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
+                    this->imageCallback(msg, 2);
                   }
                 );
         selection_sub = this->create_subscription<std_msgs::msg::Int16>(
