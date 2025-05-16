@@ -31,14 +31,14 @@ class YOLODetectorNode(Node):
         self.publisher_ = self.create_publisher(Image, 'camera/yolo/object_detection', 30) # Changed the topic name for some more clarity
         self.subscription = self.create_subscription(
             Image,
-            '/camera/color/image_raw',  # This can be changed to any camera topic we want to use (realsense raw rn), for comp this will be the ptz topic
+            '/vehicle_1/main_feed/image_decoded',  # This can be changed to any camera topic we want to use (realsense raw rn), for comp this will be the ptz topic
             self.image_callback,
             10)
         self.bridge = CvBridge()
 
         # TODO Change this to whatever YOLO model we decide to use
         # For this I want to do some unit testing to use it for the KRIA on fpga, not sure if yolov8 will be able to be used for this
-        self.yolo = YOLO('bestHammer.pt') # right now this is fine 
+        self.yolo = YOLO('/home/kingcammy/RoverFlake2/bestHammer.pt') # right now this is fine 
 
         ## We do this via ros since we have the topics we can use a subscriber for this
         # # TODO Not sure if this is the right camera for video capture for the rover

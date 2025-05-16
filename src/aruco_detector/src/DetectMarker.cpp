@@ -12,7 +12,7 @@ DetectMarker::DetectMarker(const rclcpp::NodeOptions& options)
     this->declare_parameter("camera", 1);
     draw_markers = this->get_parameter("draw_markers").as_bool();
     camera = this->get_parameter("camera").as_int();
-    topic_to_subscribe_to = "camera/color/image_raw";
+    topic_to_subscribe_to = "vehicle_1/main_feed/image_decoded";
 
     // Setup Publisher
     my_publisher = this->create_publisher<std_msgs::msg::String>("identified", 10);
@@ -66,7 +66,7 @@ std::vector<int> DetectMarker::fetchMarkerIds(const cv::Mat& image) {
         cv::Mat outputImage;
         image.copyTo(outputImage);
         cv::aruco::drawDetectedMarkers(outputImage, markerCorners, markerIds);
-        bounder.publish(cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", outputImage).toImageMsg());
+        bounder.publish(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", outputImage).toImageMsg());
         RCLCPP_INFO(this->get_logger(), "Attempted to draw markers.");
     }
     
