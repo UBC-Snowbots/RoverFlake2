@@ -117,6 +117,22 @@ button.notanalyzing {
     border-radius: 5px;
 }
 
+.label-reverse {
+    color: yellow;
+    font-weight: bold;
+}
+
+.label-stop {
+    color: gray;
+    font-style: italic;
+}
+
+.label-forward {
+    color: green;
+    font-weight: bold;
+}
+
+
 
 
 

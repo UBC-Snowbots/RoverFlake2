@@ -74,8 +74,6 @@ public:
     builder->get_widget("sv2button", sv2button);
     builder->get_widget("sv3button", sv3button);
     builder->get_widget("sv4button", sv4button);
-    builder->get_widget("svf1button", svf1button);
-    builder->get_widget("svf2button", svf2button);
 
 
     // std::vector<std::string> valve_ids = {
@@ -92,7 +90,13 @@ public:
     // }
     
 
-    builder->get_widget("p1button", p1button);
+    //builder->get_widget("p1button", p1button);
+    builder->get_widget("p1reverse", p1reverse);
+    builder->get_widget("p1stop", p1stop);
+    builder->get_widget("p1forward", p1forward);
+    builder->get_widget("pumpstatuslabel", pumpstatuslabel);
+
+
     builder->get_widget("osf1button", osf1button);
     builder->get_widget("osf2button", osf2button);
     builder->get_widget("statuslabel", statuslabel);
@@ -111,6 +115,8 @@ public:
     builder->get_widget("camera1button", camera1button);
 
     builder->get_widget("camera2button", camera2button);
+    builder->get_widget("estopbutton", estopbutton);
+
 
 
     //Constructor for sequence_buttons
@@ -125,15 +131,22 @@ public:
     purgebutton->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setSequence), 
                                                         true, static_cast<int>(sequence_status::purge)));
     
+
+                                                        
     sv1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV1clicked));
     sv2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV2clicked));
     sv3button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV3clicked));
     sv4button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV4clicked));
-    svf1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SVF1clicked));
-    svf2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SVF2clicked));
+    
+    pump_buttons = {p1reverse, p1stop, p1forward};
 
 
-    p1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::P1clicked));
+    p1reverse->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Reverse)));
+    p1stop->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Stop)));
+    p1forward->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Forward)));
+
+
+    //p1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::P1clicked));
     osf1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::OSF1clicked));
     osf2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::OSF2clicked));
 
@@ -149,6 +162,10 @@ public:
 
     camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
     camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
+
+
+    estopbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::stopClicked));
+
 
 
     // camera1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera1clicked));
@@ -214,6 +231,18 @@ private:
   // in ScienceHMINode.h
   rover_msgs::msg::ScienceModule home_msg;
 
+  int rinse_step;
+  sigc::connection rinse_timer;
+
+  int ag_step;
+  sigc::connection ag_timer;
+
+
+  int process_step;
+  sigc::connection process_timer;
+
+
+
   std::string package_share_dir;
 
 
@@ -225,10 +254,12 @@ private:
   Gtk::Button* sv2button;
   Gtk::Button* sv3button;
   Gtk::Button* sv4button;
-  Gtk::Button* svf1button;
-  Gtk::Button* svf2button;
 
-  Gtk::Button* p1button;
+  Gtk::Button* p1reverse;
+  Gtk::Button* p1forward;
+  Gtk::Button* p1stop;
+  Gtk::Label* pumpstatuslabel;
+ 
   Gtk::Button* osf1button;
   Gtk::Button* osf2button;
   Gtk::Label* statuslabel;
@@ -256,6 +287,9 @@ private:
 
   Gtk::Button* camera2button;
 
+  Gtk::Button* estopbutton;
+
+
 
 
 
@@ -269,8 +303,6 @@ private:
   void SV2clicked();
   void SV3clicked();
   void SV4clicked();
-  void SVF1clicked();
-  void SVF2clicked();
 
 
   int toggleButtonStyle(Gtk::Button* btn, const std::string& active_class, const std::string& inactive_class);
@@ -281,7 +313,9 @@ private:
 
   void setCarouselIndex(int index);
 
-  void P1clicked();
+  void setPump(bool pressed, int button);
+  
+  //void P1clicked();
   void OSF1clicked();
   void OSF2clicked();
   void updateStatusLabel();
@@ -299,6 +333,19 @@ private:
 
   void cameraFeedChosen(bool clicked, int id);
 
+  void stopClicked();
+
+
+  void resetSystem();
+  void rinseSequence();
+  void agitatorSequence();
+  void processSequence();
+  void updateValveButton(Gtk::Button* button, bool energized);
+   void updateAGButton(Gtk::Button* button, bool energized);
+
+  void updatePumpUI(Gtk::Label* label, Gtk::Button* forwardButton, int pumpStatus);
+
+
 
 
   // Store sequence buttons for resetting styles
@@ -311,6 +358,16 @@ private:
     process,
     purge
   };
+
+  // Store sequence buttons for resetting styles
+  std::vector<Gtk::Button*> pump_buttons;
+
+  enum class PumpStatus {
+    Reverse,
+    Stop, 
+    Forward
+};
+
 
 
   // Publishers **NEED HELP HERE

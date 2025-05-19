@@ -20,6 +20,4 @@ int16 spectrostatus
 int16 light1status
 int16 light2status
 
-
-
 int16 carouselindex
