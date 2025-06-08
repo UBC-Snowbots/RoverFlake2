@@ -1,3 +1,4 @@
+network_stuff/dds_profile_cyclone.xml
 devel/
 logs/
 build/
@@ -61,5 +62,4 @@ log/
 **/.vscode/
 **/TODO.md
 
-**/.vscode/
-**/TODO.md
+.vscode/settings.json

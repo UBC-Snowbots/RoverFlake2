@@ -1,0 +1,59 @@
+
+# On board the rover config for what processes the heart should send blood to
+# (what processes the on board heart needs to startup and kill)
+
+# Subsystems are what the system refers to, and what will show up on the HMI
+# Subsystem commands are ros2 launch commands. Each subsytem needs a command/launch file.
+# Make sure subsystems and their commands are in respective order
+ 
+# heart_topic: &heart_topic /heart #! Anchors don't seem to work in off-the-shelf ros2
+
+#! CURRENTLY USING SAME TOPIC FOR ALL HEARTS
+#! DO NOT REUSE SUBSYSTEM NAMES UNLESS YOU NEED THE SAME SUBSYSTEM RUN ON MULTIPLE MACHINES
+
+#? You do not have to rebuild when making changes to this file - these params are checked when the nodes are launched. However if in doubt, clean and rebuild
+
+/dashboard_hmi_node:
+  ros__parameters:
+    computer_control_base: "control_base" # must match with node name /heart_xxxx_xxxx (control_base -> /heart_control_base)
+    computer_onboard_nuc: "onboard_nuc"
+    computer_onboard_jetson: "onboard_jetson"
+    heart_request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    subsystems_control_base:
+      - "drive_control"
+    subsystems_onboard_nuc:
+      - "drive_interface"
+      - "arm_interface"
+    subsystems_onboard_jetson:
+      - "yolo_detection"
+      - "aruco_detection"
+
+/heart_control_base: # (/heart_control_base <- control_base)
+  ros__parameters:
+    subsystems:
+      # drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
+      drive_control: "ros2 run joy joy_node"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
+
+    # request_topic: "/heart_control_base/request"
+      
+/heart_onboard_nuc:
+  ros__parameters:
+    subsystems:
+      drive_interface: "ros2 launch drive_control drive_control_onboard_bringup.launch.py"
+      arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
+
+    # request_topic: "/heart_onboard_nuc/request"
+    # subsystems:
+    #   - drive_interface
+    #   - arm_interface
+    # subsystem_commands: 
+    #   - "ros2 launch drive_control drive_control_onboard_bringup"
+    #   - "ros2 launch arm_hardware_interface "
+

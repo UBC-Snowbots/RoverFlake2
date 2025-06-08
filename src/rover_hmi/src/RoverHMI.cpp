@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
 
     int nullc = 0;
     char **nullv = nullptr;
-    auto app = Gtk::Application::create(nullc, nullv, "com.example.GtkApplication"); //give GTK null args. ROS launch files add on --ros-args which messes up GTK. 
+    auto app = Gtk::Application::create(nullc, nullv, "debug_hmi"); //give GTK null args. ROS launch files add on --ros-args which messes up GTK. 
     rclcpp::init(argc, argv); 
     auto node = std::make_shared<MainHMINode>();
     
@@ -68,6 +68,10 @@ bool MainHMINode::handleVideoFrameDraw(const Cairo::RefPtr<Cairo::Context>& cr)
     std::lock_guard<std::mutex> lock(image_mutex_);
     if (pixbuf_)
     {
+        // Gtk::Allocation allocation = image_draw_area->get_allocation();
+        // int widget_width = allocation.get_width();
+        // int widget_height = allocation.get_height();
+        // auto scaled_pixbuf = pixbuf_->scale_simple(widget_width, widget_height, Gdk::INTERP_BILINEAR);
         Gdk::Cairo::set_source_pixbuf(cr, pixbuf_, 0, 0);
         cr->paint();
     }
@@ -374,7 +378,7 @@ void MainHMINode::image_feed_callback(const sensor_msgs::msg::Image::SharedPtr m
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
         image_ = cv_ptr->image;
 
         // Convert OpenCV image to Gdk::Pixbuf

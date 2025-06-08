@@ -1,7 +1,5 @@
 #pragma once
-#include <gtkmm.h>
-#include <rclcpp/rclcpp.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -14,12 +12,6 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <cv_bridge/cv_bridge.h>
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>  // For std::setprecision
-
-// Global functions
-void load_css(const Glib::RefPtr<Gtk::CssProvider>& provider, std::string css_file_path);
 
 // standard c++ stuff, some may alreaddy be included in rclcpp
 #include <chrono>
@@ -50,7 +42,7 @@ public:
     arm_cmd_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
     image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        "/camera1/image_raw", 10, std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
+        "/cam_1/image_decoded", 10, std::bind(&MainHMINode::image_feed_callback, this, std::placeholders::_1));
 
     cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>(
         "/cmd_vel", qos);    

@@ -60,12 +60,12 @@ MotorControlNode::~MotorControlNode() {
 
 void MotorControlNode::leftWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float left_velocity = msg->data.empty() ? 0.0f : msg->data[0];  // Extract velocity safely
-    runMotors({0, 1, 2}, left_velocity);  // Corrected function name
+    runMotors({3, 4, 5}, left_velocity);  // Corrected function name
 }
 
 void MotorControlNode::rightWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float right_velocity = msg->data.empty() ? 0.0f : msg->data[0];
-    runMotors({3, 4, 5}, right_velocity);  // Corrected function name
+    runMotors({0, 1, 2}, right_velocity);  // Corrected function name
 }
 
 void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int i) {

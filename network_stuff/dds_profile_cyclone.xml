@@ -6,13 +6,14 @@
   <Domain Id="101">
     <General>
 	    <Interfaces>
-        	<!-- <NetworkInterface address="10.147.20.8" priority="0" /> -->
-        	<!-- <NetworkInterface address="172.30.0.22" priority="0" /> -->
+       		<!-- <NetworkInterface address="10.147.20.8" priority="0" /> -->
+        	 <NetworkInterface address="172.30.0.20" priority="0" /> 
         	<!--<NetworkInterface address="192.168.1.17" priority="1" />-->
-		    <NetworkInterface address="192.168.1.104" priority="0"/>
-      </Interfaces>
-	    <AllowMulticast>default</AllowMulticast>
-      <!-- <EnableMulticastLoopback>true</EnableMulticastLoopback> -->
+	        <!-- NetworkInterface name="wlx00c0ca9926da" address="192.168.1.4" priority="0"/ -->
+	    	<!-- <NetworkInterface autodetermine="true" priority="0" multicast="default" /> -->
+	    </Interfaces>
+	    <AllowMulticast>true</AllowMulticast>
+            <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Internal>
@@ -25,12 +26,13 @@
       <ParticipantIndex>auto </ParticipantIndex>
         <MaxAutoParticipantIndex>1000</MaxAutoParticipantIndex>
 	<Peers> 
-		<!-- <Peer Address="172.30.0.22"/> -->
-        <!-- <Peer Address="172.30.0.20"/> -->
-		<Peer Address="192.168.1.91"/>
+		 <Peer Address="172.30.0.22"/>
+     <Peer Address="172.30.0.21"/> 
+         <Peer Address="172.30.0.20"/> 
+		<!--Peer Address="192.168.1.91"/-->
 		<Peer Address="192.168.1.4"/>
-		<Peer Address="192.168.1.17"/>
-    <Peer Address="192.168.1.104"/>
+		<!--Peer Address="192.168.1.17"/-->
+    		<Peer Address="192.168.1.104"/>
 		<!-- <Peer Address="10.147.20.20"/> -->
       </Peers>
     </Discovery>

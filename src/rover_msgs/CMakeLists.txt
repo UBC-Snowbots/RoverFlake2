@@ -31,6 +31,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ArmSingleJoy.msg"
   "msg/ArmPanel.msg"
   "msg/GenericPanel.msg"
+  "msg/NodeHealth.msg"
+  "msg/SubSystemHealth.msg"
+  "msg/HeartRequest.msg"
+  "msg/ScienceModule.msg"
+  
   DEPENDENCIES std_msgs
  )
 

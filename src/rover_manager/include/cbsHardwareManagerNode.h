@@ -1,22 +1,29 @@
 // #pragma once
+
+/*
+This node manages and interfaces with the hardware of the control base. 
+    It will open up TTY ports, and find witch device is witch based on just the output of the device.
+    With this, we can create multiple devices, with or without differing baudrates, and not worry about wich usb port they are plugged into.
+    Setting the serial ids would be way easier, but not all arduinos/MCUs have this function.
+    ! Currently, will not be able to open ACM ports, but that is an easy fix.
+*/
 #include "cbsDevice.h"
 #include "rclcpp/rclcpp.hpp"
 #include "serial/serial.h"
 #include "rover_utils/include/fancyOutput.h"
-
 using namespace ConsoleFormat;
 class CBSHardwareManagerNode : public rclcpp::Node
 {
 public:
     CBSHardwareManagerNode() : Node("CBSHardwareManagerNode"){
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-    arm_panel_publisher = this->create_publisher<rover_msgs::msg::ArmPanel>("/cbs/arm_panel", qos);
-    left_panel_A_publisher = this->create_publisher<rover_msgs::msg::GenericPanel>("/cbs/left_panel_a", qos);
+    arm_panel_publisher = this->create_publisher<rover_msgs::msg::ArmPanel>(TOPIC_ARM_PANEL, qos);
+    left_panel_A_publisher = this->create_publisher<rover_msgs::msg::GenericPanel>(TOPIC_LEFT_PANEL_A, qos);
     
     // rclcpp::Parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter<std::vector<std::string>>("expected_nodes", {});
-
+    std::system("notify-send 'CBS hardware manager STARTING UP'");
     
     // attachPort();
 
@@ -47,6 +54,8 @@ public:
     // }
     rclcpp::sleep_for(std::chrono::seconds(1));
     RCLCPP_INFO(this->get_logger(), "All ports found! Starting polling timers");
+    std::system("notify-send 'CBS hardware manager READY'");
+
     ArmJoyPanel.setMinMsgSize(32);
     LeftPanel_A.setMinMsgSize(34);
     if(ArmJoyPanel.is_connected){
@@ -66,7 +75,7 @@ public:
 
     ~CBSHardwareManagerNode(){
         RCLCPP_WARN(this->get_logger(), "WARNING: CONTROL BASE MANAGER NODE OFFLINE!");
-        std::system("notify-send 'CBS hardware manager OFFLINE'");
+        std::system("notify-send 'CBS hardware manager OFFLINE'"); // sends a notification to the system. Helpful when we start it within a launch file and the terminal output is too crowded
 
     }
     rclcpp::Publisher<rover_msgs::msg::ArmPanel>::SharedPtr arm_panel_publisher;
@@ -76,7 +85,7 @@ public:
     void slowPollCycle();
     int connectDevice(CBSDevice& dev);
 
-    std::vector<std::string> possible_ports = {"test", "test2","/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3", "/dev/ttyUSB4", "/dev/ttyUSB5", "/dev/ttyUSB6", "/dev/ttyUSB7"};
+    std::vector<std::string> possible_ports = {"test", "test2","/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3", "/dev/ttyUSB4", "/dev/ttyUSB5", "/dev/ttyUSB6", "/dev/ttyUSB7"}; //TODO make this suck less
     std::vector<std::string> taken_ports;
 
 

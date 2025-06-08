@@ -15,6 +15,10 @@
 
 #define ARM_PANEL_ID "arm_panel"
 
+//? Topics
+#define TOPIC_ARM_PANEL "/cbs/arm_panel"
+#define TOPIC_LEFT_PANEL_A "/cbs/left_panel_a"
+
 #define FAILED_CONNECTION_ATTEMPTS_MAX 20 //amount of times the manager node will search ALL ports to find the panel
 
 enum class PARSE_SEQUENCE{
