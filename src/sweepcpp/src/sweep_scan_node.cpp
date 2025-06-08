@@ -20,7 +20,7 @@ public:
     // Declare parameters
     this->declare_parameter("topic", "scan");
     this->declare_parameter("serial_port", "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DM00L4EB-if00-port0"); // usbport /dev/ttyUSB0 
-    this->declare_parameter("rotation_speed", 5); // 1-10
+    this->declare_parameter("rotation_speed", 10); // 1-10
     this->declare_parameter("sample_rate", 1000); //500-1750
     this->declare_parameter("frame_id", "lidar");
 
