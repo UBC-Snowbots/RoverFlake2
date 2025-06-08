@@ -20,6 +20,6 @@ struct SubSysStatusElement
 struct SubSysStatusGrid
 {
   Gtk::Grid* grid;
-  SubSysStatusElement system[NUM_MONITORED_SYSTEMS];
+  std::vector<SubSysStatusElement> system;
 };
 

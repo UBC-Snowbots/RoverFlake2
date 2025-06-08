@@ -1,5 +1,8 @@
 #enviroment variables for control base
 
+#using 59.94 instead of 60 hoping for better reliability
+export cb_REFRESH_RATE=59.94
+
 # For usb c nuc "sucs"
 #middle screen
 export cb_MIDDLE_SCREEN_ID=DP-1

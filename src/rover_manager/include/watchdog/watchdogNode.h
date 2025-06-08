@@ -10,10 +10,10 @@ public:
     this->declare_parameter("expected_nodes", std::vector<std::string>({"Watchdog"}));
     // this->declare_parameter<std::vector<std::string>>("expected_nodes", {});
 
-    healthCheckTimer = this->create_wall_timer(
-        std::chrono::milliseconds(1000),  // Timer interval
-        std::bind(&WatchdogNode::cycleNodeHealth, this) // Callback function
-    );
+    // healthCheckTimer = this->create_wall_timer(
+    //     std::chrono::milliseconds(1000),  // Timer interval
+    //     std::bind(&WatchdogNode::cycleNodeHealth, this) // Callback function
+    // );
 
 
 

@@ -19,10 +19,17 @@ public:
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
         g29_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&SampleNode::joy_callback, this, std::placeholders::_1));
+
+
+        // parameters:
+        this->declare_parameter("param_name", std::vector<std::string>({"Watchdog"}));
+
     }
 
     void send_command(float steering_angle, float speed, float acceleration, float jerk) {
-   
+        //params can be refreshed at runtime
+        std::vector<std::string> expected_nodes = this->get_parameter("expected_nodes").as_string_array();
+
     }
 
     void send_gear_command(int gear){

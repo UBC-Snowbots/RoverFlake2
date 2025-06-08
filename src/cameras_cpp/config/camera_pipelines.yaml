@@ -1,0 +1,8 @@
+science_cam_pipeline_node:
+  ros__parameters:
+    # num_cameras: 2
+    cam_input_topics:
+      - "/science/cam0/compressed"
+      - "/science/cam1/compressed"
+    cam_output_topic: "/science/active_feed"
+    cam_selection_topic: "/science/selected_cam"
