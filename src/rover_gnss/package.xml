@@ -7,6 +7,10 @@
   <maintainer email="deadfloppy@protonmail.com">ubuntu</maintainer>
   <license>TODO: License declaration</license>
 
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>pyserial</exec_depend>
+  <exec_depend>pynmea2</exec_depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
