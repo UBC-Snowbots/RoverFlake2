@@ -1,15 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rover_gnss</name>
+  <name>pose</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="deadfloppy@protonmail.com">ubuntu</maintainer>
-  <license>TODO: License declaration</license>
-
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>pyserial</exec_depend>
-  <exec_depend>pynmea2</exec_depend>
+  <maintainer email="bobmasibo@gmail.com">parallels</maintainer>
+  <license>Apache-2.0</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

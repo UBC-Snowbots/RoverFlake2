@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'rover_gnss'
+package_name = 'pose'
 
 setup(
     name=package_name,
@@ -11,19 +11,18 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=[
-        'setuptools',
-        'pyserial',
-        'pynmea2'],
+    install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='ubuntu',
-    maintainer_email='deadfloppy@protonmail.com',
+    maintainer='parallels',
+    maintainer_email='bobmasibo@gmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'nmea_reader = rover_gnss.nmea_reader:main'
+            'pose_publisher = pose.pose_publisher:main',
+            'imu_gps_fuse = pose.imu_gps_fuse:main',
+            'fusion = pose.fusion:main',
         ],
     },
 )

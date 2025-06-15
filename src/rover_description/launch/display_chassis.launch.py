@@ -52,11 +52,11 @@ def generate_launch_description():
 
     # RViz
     rviz_config_file = (
-        get_package_share_directory("rover_urdf") + "/config/full_urdf_display.rviz"
+        get_package_share_directory("rover_description") + "/config/full_urdf_display.rviz"
     )
 
     urdf_file_path = (
-        get_package_share_directory("rover_urdf") + "/urdf/chassis_urdf_24_rviz.urdf"
+        get_package_share_directory("rover_description") + "/urdf/chassis_urdf_24_rviz.urdf"
     )
 
     rviz_node = Node(
@@ -102,7 +102,7 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             output='screen',
-            parameters=[{'robot_description': xacro_to_urdf("rover_urdf", urdf_file_path) }]
+            parameters=[{'robot_description': xacro_to_urdf("rover_description", urdf_file_path) }]
         )
 
 
