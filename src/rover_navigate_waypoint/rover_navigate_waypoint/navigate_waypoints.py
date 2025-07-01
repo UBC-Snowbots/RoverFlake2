@@ -13,8 +13,10 @@ import time
 
 class WaypointNav(Node):
     def __init__(self):
+        # Instantiates parent ROS node
         super().__init__('waypoint_nav')
-        self.navigator = BasicNavigator()
+        # Instantiates the navigation client to interact with nav2
+        self.navigator = BasicNavigator() 
         self.get_logger().info("Waiting for Nav2...")
         self.navigator.waitUntilNav2Active()
         self.get_logger().info("Nav2 is active!")
@@ -26,6 +28,7 @@ class WaypointNav(Node):
 
     def setup_waypoints(self):
         # Add your waypoint poses here (in map frame)
+        # TODO This is hard coded. change to work with topic/service receiving. 
         pose1 = PoseStamped()
         pose1.header.frame_id = 'map'
         pose1.header.stamp = self.get_clock().now().to_msg()
@@ -47,6 +50,7 @@ class WaypointNav(Node):
         self.get_logger().info("Navigating through waypoints...")
         self.navigator.followWaypoints(self.waypoints)
 
+        # Sends all waypoints in a batch to Nav2 
         while not self.navigator.isTaskComplete():
             feedback = self.navigator.getFeedback()
             if feedback:
