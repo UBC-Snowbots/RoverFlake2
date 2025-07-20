@@ -1,4 +1,8 @@
+
+/* include base css */
+/* @import url("main_style.css"); */
 /* Dashboard Css */
+
 
 .subsys_button{
     border-radius: 0px;
@@ -48,4 +52,9 @@
 .dash_status_unknown{
     background-color: grey;
     color: black;
+}
+.base_window_dash{
+    background: black;
+    background-color: black;
+    color:rgb(255, 236, 236)
 }

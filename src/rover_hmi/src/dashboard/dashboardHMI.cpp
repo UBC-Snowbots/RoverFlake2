@@ -56,7 +56,7 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
         status_label = monitored_systems_control_base[subsys_name].status_label;
     }
     if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
-        context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();\
+        context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_jetson[subsys_name].status_label;
 
 
@@ -84,8 +84,6 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
     }
 
 }
-
-
 
 void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
     RCLCPP_INFO(this->get_logger(), "Button Clicked");

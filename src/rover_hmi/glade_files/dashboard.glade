@@ -564,7 +564,7 @@
         </child>
         <child>
           <!-- n-columns=3 n-rows=7 -->
-          <object class="GtkGrid">
+          <object class="GtkGrid" id="on_board_grid">
             <property name="width-request">100</property>
             <property name="height-request">80</property>
             <property name="visible">True</property>
@@ -574,6 +574,9 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">ON BOARD NUC</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
               </object>
               <packing>
                 <property name="left-attach">0</property>
@@ -1051,8 +1054,8 @@
             </child>
           </object>
           <packing>
-            <property name="x">655</property>
-            <property name="y">221</property>
+            <property name="x">635</property>
+            <property name="y">173</property>
           </packing>
         </child>
         <style>

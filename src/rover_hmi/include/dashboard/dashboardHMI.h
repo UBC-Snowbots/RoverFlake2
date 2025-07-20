@@ -21,8 +21,6 @@ public:
 
         // Set up pubs n subs
         // onboard_heart_request_pub = this->create_publisher<
-        //TODO get params in from heart yamls, and ready the publishers on the right topics
-        //TODO then connect buttons to publish
         //TODO then create a proper feedback using ros2 node or heartbeats?
         std::string heart_onboard_nuc_topic = "/broken_heart1";
         std::string heart_control_base_topic = "/broken_heart2";
