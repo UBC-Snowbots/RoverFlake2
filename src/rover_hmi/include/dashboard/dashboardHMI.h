@@ -22,17 +22,18 @@ public:
         // Set up pubs n subs
         // onboard_heart_request_pub = this->create_publisher<
         //TODO then create a proper feedback using ros2 node or heartbeats?
-        std::string heart_onboard_nuc_topic = "/broken_heart1";
+        std::string heart_onboard_nuc_topic = "/broken_heart1"; 
         std::string heart_control_base_topic = "/broken_heart2";
-        // std::string computer_A;
-        // std::string computer_B;
         rclcpp::Parameter computer_control_base;
         rclcpp::Parameter computer_onboard_nuc;
         rclcpp::Parameter computer_onboard_jetson;
-        
+        rclcpp::Parameter watchdog_timeout_ms_param;
+
+        this->get_parameter("watchdog_timeout_ms", watchdog_timeout_ms_param);
         this->get_parameter("computer_control_base", computer_control_base);
         this->get_parameter("computer_onboard_nuc", computer_onboard_nuc);
         this->get_parameter("computer_onboard_jetson", computer_onboard_jetson);
+        watchdog_timeout_ms = watchdog_timeout_ms_param.as_int();
         MONITORED_COMPUTER_CONTROL_BASE_STRING = computer_control_base.value_to_string();
         MONITORED_COMPUTER_ONBOARD_NUC_STRING = computer_onboard_nuc.value_to_string();
         MONITORED_COMPUTER_ONBOARD_JETSON_STRING = computer_onboard_jetson.value_to_string();
@@ -102,17 +103,18 @@ public:
     Glib::RefPtr<Gtk::Application> app;
 
 private:
+    int watchdog_timeout_ms = 0;
     std::string main_css_file_path;
     std::string package_share_dir;
     
-    struct SubSystemProcess{
+    struct SystemProcess{
       int type = LAUNCHFILE;
       std::string pkg;
       std::string exec;
     };
     
     
-    struct MonitoredSystem{ //* might want to make a class in the future.. assuming it still works with the hash map
+    struct MonitoredSystem{ 
       std::string name;
       pid_t pid;
       pid_t gpid;
@@ -121,9 +123,16 @@ private:
       Gtk::Label* status_label;
       Gtk::Label* name_label;
       // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
-      SubSystemProcess process;
+      SystemProcess process;
     };
     
+    // This is to monitor the hearts, so one monitor for each device/computer
+    struct heart_monitor {
+      std::string host_device_name;
+      uint32_t last_timestamp = NULL;
+      std::vector<MonitoredSystem> systems;
+    };
+
     //! Should be cleaned up. Like too many custom structs to do this setup
     std::vector<std::string> monitored_system_names_control_base; // = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
     std::vector<std::string> monitored_system_names_onboard_nuc;
@@ -154,14 +163,21 @@ private:
 rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
 
   // void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
+  // Update hmi when it detects a heartbeat
   void heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg);
-//  rclcpp::Publishe?
-
 std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
 };
+
+
+
+
+
+
+
+
 
 
 

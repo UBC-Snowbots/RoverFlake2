@@ -29,59 +29,50 @@ int main(int argc, char* argv[]){
 }
 
 /**
- * @brief callback for 'heartbeats' - Will update HMI based on what systems are running/offline
+ * @brief callback for 'heartbeats' - Will update HMI based on what hosts and systems are running/offline
  */
 void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg){
     //Watchdog / Heartbeat callback. See what systems are running
     #ifdef DEBUG_MSGS
         RCLCPP_INFO(this->get_logger(), "Heartbeat Detected: %s, on host %s", msg->subsystem_name.c_str(), msg->subsystem_host.c_str());
     #endif
-    // switch (msg->subsystem_host) //? not used to using strings, usually use an enumerator with switch case but switch no likey strings. No way we are going to static cast or do a weird workaround just to use switch case, we'll go with if statement instead
-    // {
-    // case "control_base":
-    //     /* code */
-    //     break;
-    // case "onboard_nuc":
-    //     /* code */
-    //     break;
-    // default:
-    //     break;
-    // // }
-    const std::string host = msg->subsystem_host;
+
+    const std::string host = msg->subsystem_host; // Computer running a heart
     const std::string subsys_name = msg->subsystem_name;
-    Glib::RefPtr<Gtk::StyleContext> context;
+    auto now = this->get_clock()->now();
+    auto time_since_last_heartbeat = now - msg->header.stamp;
+    
+    Glib::RefPtr<Gtk::StyleContext> subsys_context;
     Gtk::Label* status_label;
-    if(msg->subsystem_host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
-        context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
+    if(host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
+        subsys_context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_control_base[subsys_name].status_label;
     }
-    if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
-        context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();
+    if(host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
+        subsys_context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_jetson[subsys_name].status_label;
-
-
       
     }
-    if(msg->subsystem_host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
-        context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
+    if(host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
+        subsys_context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_nuc[subsys_name].status_label;
 
-
-     
     }
-    context->remove_class("subsys_OFFLINE");
-    context->remove_class("subsys_ONLINE");
+    subsys_context->remove_class("subsys_OFFLINE");
+    subsys_context->remove_class("subsys_ONLINE");
     
     if(msg->running){
-        context->add_class("subsys_ONLINE");
+        subsys_context->add_class("subsys_ONLINE");
         status_label->set_label("ONLINE");
 
     }else{
         
-        context->add_class("subsys_OFFLINE");
+        subsys_context->add_class("subsys_OFFLINE");
         status_label->set_label("OFFLINE");
 
     }
+
+
 
 }
 

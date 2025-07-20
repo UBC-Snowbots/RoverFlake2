@@ -15,6 +15,7 @@
 
 /dashboard_hmi_node:
   ros__parameters:
+    watchdog_timeout_ms: 2000 
     computer_control_base: "control_base" # must match with node name /heart_xxxx_xxxx (control_base -> /heart_control_base)
     computer_onboard_nuc: "onboard_nuc"
     computer_onboard_jetson: "onboard_jetson"
@@ -28,6 +29,7 @@
     subsystems_onboard_jetson:
       - "yolo_detection"
       - "aruco_detection"
+
 
 /heart_control_base: # (/heart_control_base <- control_base)
   ros__parameters:

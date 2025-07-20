@@ -1,7 +1,3 @@
-.base_window_dash{
-    background-color: black;
-    color:rgb(255, 236, 236)
-}
 
 @import url("dashboard_style.css");
 .monitored_node_name{
