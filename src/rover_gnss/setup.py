@@ -11,10 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=[
-        'setuptools',
-        'pyserial',
-        'pynmea2'],
+    install_requires=['setuptools'],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='deadfloppy@protonmail.com',
@@ -23,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'nmea_reader = rover_gnss.nmea_reader:main'
+            'nmea_reader = rover_gnss.nmea_reader:main',
+	        'nmea_reader_new = rover_gnss.nmea_reader_updated:main',
+            'nmea_reader_new_new = rover_gnss.nmea_reader_new_updated:main'
         ],
     },
 )

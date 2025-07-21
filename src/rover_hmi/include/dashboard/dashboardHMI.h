@@ -19,7 +19,7 @@ public:
         set_title("Rover Dashboard"); //set the app/window title
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
 
-        //* Set up pubs n subs
+        // Set up pubs n subs
         // onboard_heart_request_pub = this->create_publisher<
         //TODO get params in from heart yamls, and ready the publishers on the right topics
         //TODO then connect buttons to publish
