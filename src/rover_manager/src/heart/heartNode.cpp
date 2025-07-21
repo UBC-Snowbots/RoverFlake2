@@ -1,4 +1,6 @@
 #include "heart/heartNode.h"
+#include "rover_utils/include/time_utils.h"
+#include <std_msgs/msg/detail/header__struct.hpp>
 
 
 int main(int argc, char *argv[]){
@@ -133,8 +135,9 @@ void HeartNode::heartRequestCallback(const rover_msgs::msg::HeartRequest::Shared
 
 
 void HeartNode::heartbeat(){
+    rover_msgs::msg::HeartRequest msg;
+    msg.header = rover_utils::createHeader(); 
     for(const auto &pair : subsystems){
-        rover_msgs::msg::HeartRequest msg;
         msg.subsystem_host = my_host_id;
         msg.subsystem_name = pair.first; //or pair.second.name
         msg.index = pair.second.index;
