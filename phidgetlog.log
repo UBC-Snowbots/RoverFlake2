@@ -1257,3 +1257,444 @@
 	* Phidget22 - Version 1.22 - Built Jan  6 2025 22:10:36                       *
 	* Release 1.22 - Linux (64-bit)                                               *
 	*******************************************************************************
+2025-07-13T16:17:20.707  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.19 - Built Nov 25 2024 23:42:24                       *
+	* Release 1.19.20240304 - Linux (64-bit)                                      *
+	*******************************************************************************
+2025-07-13T16:17:24.324  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 3
+2025-07-13T16:17:25.023  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 3
+2025-07-13T16:17:25.023  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 3
+2025-07-13T16:17:25.024  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:26.282  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:26.282  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 3 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:27.956  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 3
+2025-07-13T16:17:28.001  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:28.019  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:28.035  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:29.036  <Warn> phidget22[waitForPendingPacket()] : Packet tracker waitForPendingPacket timeout (1000ms), Port 3
+2025-07-13T16:17:29.036 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x03 - Timed Out
+2025-07-13T16:17:29.036 <ERROR> phidget22[Phidget_close()] : Failed to send BP_CLOSERESET to device: 0x03 - Timed Out
+2025-07-13T16:17:29.051  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:29.065  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:29.298  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:29.565  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (signaled by Phidget_close)
+2025-07-13T16:17:29.576  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:17:29.576  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:17:29.576  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:17:29.576  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:17:29.576  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:17:29.577  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:29.577  <Info> phidget22[deviceDetach()] : (Detach) 1044 (PhidgetSpatial Precision 3/3/3 High Resolution) v401 S/N:415576
+2025-07-13T16:17:29.577  <Info> phidget22usb[PhidgetUSBUninit()] : Deinitializing libusb
+2025-07-13T16:17:45.090  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.19 - Built Nov 25 2024 23:42:24                       *
+	* Release 1.19.20240304 - Linux (64-bit)                                      *
+	*******************************************************************************
+2025-07-13T16:17:45.291  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 3
+2025-07-13T16:17:45.292  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:45.543  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:52.348  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:52.599  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:17:55.719  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:55.729  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:55.743  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:55.759  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:17:55.785  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:20:47.755  <Info> phidget22 : 
+	******************************  Logging Enabled  ******************************
+	* Phidget22 - Version 1.19 - Built Nov 25 2024 23:42:24                       *
+	* Release 1.19.20240304 - Linux (64-bit)                                      *
+	*******************************************************************************
+2025-07-13T16:22:30.283  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 3
+2025-07-13T16:22:30.283  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:30.534  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:39.026  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:39.685  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:42.724  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:42.975  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:44.528  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:44.779  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:45.926  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:47.183  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:50.566  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:52.323  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:22:55.252  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:03.037  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:08.669  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:08.921  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:13.290  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:13.544  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:13.618  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:13.869  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:15.662  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:15.914  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:16.091  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:16.343  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:16.872  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:17.123  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:18.245  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:18.782  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:24.498  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:23:31.283  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:08.852  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:09.103  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:09.810  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:10.061  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:10.090  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:20.273  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-07-13T16:24:20.274  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:24:21.278  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:21.298  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:21.549  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:22.972  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:24.732  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:25.272  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:27.031  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:31.564  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:39.099  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:24:39.100  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:24:39.682  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:24:41.438  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:24:41.438  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:24:50.652  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:24:52.158  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:54.242  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:54.493  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:54.552  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:55.054  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:55.650  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:55.901  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:56.269  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:56.641  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:57.144  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:57.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:57.464  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:57.717  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:57.968  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:58.988  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:24:59.536  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:00.119  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:00.126  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:00.500  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:00.779  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:02.285  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:02.285  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:25:02.297  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-07-13T16:25:02.297 <ERROR> phidget22vint[PhidgetVINTDevice_bridgeInput()] : Failed to send VINT_PACKET_TYPE_PHIDGET_RESET message: 0x34 - Device not Attached
+2025-07-13T16:25:02.297 <ERROR> phidget22[dispatchEntry()] : Failed to send BP_OPENRESET to device for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x34 - Device not Attached
+2025-07-13T16:25:02.297  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:02.549  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:02.549  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:25:02.937  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:04.444  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:04.445  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:25:09.072  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:10.833  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:27.313  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:29.069  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:29.087  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:30.344  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:30.590  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:31.011  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:31.074  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:31.577  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:32.004  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:33.765  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:33.805  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:34.058  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:34.415  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:35.264  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:35.618  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:36.048  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:40.393  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:25:40.393  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:25:42.920  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:44.245  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:45.231  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:45.693  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:51.526  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:52.382  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:53.117  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:54.781  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:58.816  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:25:59.533  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:00.916  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:01.167  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:01.918  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:02.169  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:02.500  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:02.751  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:02.820  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:03.071  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:04.233  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:04.484  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:05.009  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:05.260  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:06.674  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:09.634  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:10.214  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:10.465  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:17.590  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:17.842  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:17.866  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:18.117  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:18.130  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:29.169  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:30.734  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:31.236  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:26:36.740  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:23.733  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:28.367  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:28.619  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:29.097  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:44.088  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:27:45.092  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:51.894  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:27:53.400  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:27:53.400  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:28:03.659  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.700  <Info> phidget22usb[PhidgetUSBGetString()] : libusb_get_string_descriptor_ascii() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.701  <Warn> phidget22vint[scanVintDevices()] : Couldn't get VINT string from a Hub - maybe detaching.
+2025-07-13T16:28:03.709  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.759  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.812  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.862  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:28:03.951         last message repeated 1 more times
+2025-07-13T16:28:03.951  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:28:03.951  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:28:03.951  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:28:03.951  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:28:03.951  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:28:03.954  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:28:03.966  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally
+2025-07-13T16:29:13.016  <Info> phidget22usb[PhidgetUSBScanDevices()] : New Phidget found in PhidgetUSBBuildList: 1/13
+2025-07-13T16:29:13.017  <Info> phidget22[deviceAttach()] : (Attach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:13.019  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:29:13.019  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:29:13.019  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:29:13.020  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:29:13.020  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:29:13.021  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:29:13.037  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-07-13T16:29:13.038  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-07-13T16:29:13.038  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x9848f640
+2025-07-13T16:29:13.042  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:13.044  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:13.044  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:13.044  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:13.066  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:20.359  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:29:20.612  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:29:21.965  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:29:22.015  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:29:22.065  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:29:22.115  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:29:22.118  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:29:22.119  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:29:22.166  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally
+2025-07-13T16:30:45.449  <Info> phidget22usb[PhidgetUSBScanDevices()] : New Phidget found in PhidgetUSBBuildList: 1/14
+2025-07-13T16:30:45.450  <Info> phidget22[deviceAttach()] : (Attach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:30:45.450  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:30:45.450  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:30:45.450  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:30:45.451  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:30:45.451  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:30:45.451  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:30:45.465  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-07-13T16:30:45.465  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-07-13T16:30:45.465  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x937fe640
+2025-07-13T16:30:45.469  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:30:45.470  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:30:45.470  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:30:45.471  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:30:45.471  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:32:34.976  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:32:35.981  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:32:37.014  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:32:40.771  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:32:40.796  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:32:41.047  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:33:06.226  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:33:18.889  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:33:18.939  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:33:18.989  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:33:19.035  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:33:19.036  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:33:19.036  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:33:19.036  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:33:19.039  <Info> phidget22usb[PhidgetUSBReadPacket()] : libusb_interrupt_transfer() failed: LIBUSB_ERROR_IO - Input/Output Error. Maybe detaching?
+2025-07-13T16:33:19.046  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:33:19.047  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:33:19.090  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally
+2025-07-13T16:34:51.393  <Info> phidget22usb[PhidgetUSBScanDevices()] : New Phidget found in PhidgetUSBBuildList: 1/15
+2025-07-13T16:34:51.394  <Info> phidget22[deviceAttach()] : (Attach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:34:51.395  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T16:34:51.417  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-07-13T16:34:51.420  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-07-13T16:34:51.420  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x9848f640
+2025-07-13T16:34:51.423  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:34:51.423  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:34:51.423  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:34:51.424  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:34:51.424  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:35:12.871  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:13.373  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:13.423  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:13.674  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:21.604  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:25.463  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:26.326  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:26.829  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:39.289  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:39.540  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:39.540  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:35:39.663  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-07-13T16:35:39.664 <ERROR> phidget22[dispatchEntry()] : failed to set defaults for Brushless DC Motor Controller Ch:0 -> DCC1100 -> HUB0000 Port:4 S/N:561576: 0x34 - Device not Attached
+2025-07-13T16:35:39.665  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:39.667  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-07-13T16:35:40.672  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:40.673  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:35:42.330  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:42.581  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:43.772  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:44.661  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T16:35:44.662  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T16:35:46.130  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:46.381  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:48.264  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:48.515  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:52.754  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:53.005  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:53.009  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:54.028  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:54.832  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:55.125  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:56.133  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T16:35:58.143  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:03:09.498  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:03:10.954  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:03:13.541  <Info> phidget22usb[PhidgetUSBReadPacket()] : Device was unplugged - detach.
+2025-07-13T17:03:13.541  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: ReadThread exiting normally (Phidget detach detected in PhidgetDevice_read)
+2025-07-13T17:03:13.543  <Info> phidget22usb[PhidgetUSBGetString()] : Device was unplugged - detach.
+2025-07-13T17:03:13.543  <Warn> phidget22vint[scanVintDevices()] : Couldn't get VINT string from a Hub - maybe detaching.
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T17:03:13.543  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T17:03:13.544  <Info> phidget22[deviceDetach()] : (Detach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.604  <Info> phidget22usb[PhidgetUSBScanDevices()] : New Phidget found in PhidgetUSBBuildList: 1/16
+2025-07-13T17:04:12.605  <Info> phidget22[deviceAttach()] : (Attach) HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.606  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:0 S/N:561576
+2025-07-13T17:04:12.606  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:1 S/N:561576
+2025-07-13T17:04:12.606  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:2 S/N:561576
+2025-07-13T17:04:12.606  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:04:12.607  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T17:04:12.607  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:5 S/N:561576
+2025-07-13T17:04:12.622  <Info> phidget22usb[getReportLengths()] : Using Control Endpoint for Host->Device communication.
+2025-07-13T17:04:12.623  <Info> phidget22[HandleEventsThreadFunction()] : Failed to increase priority of USB Handle Events thread: 0x01 - Operation not permitted
+2025-07-13T17:04:12.623  <Info> phidget22[PhidgetUSBReadThreadFunction()] : HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576: USB read thread started: 0x9848f640
+2025-07-13T17:04:12.625  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 5 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.627  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.627  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 1 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.627  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 0 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:04:12.627  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 2 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T17:41:19.351  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:20.213  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:20.672  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:22.673  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:22.690  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:23.192  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:23.336  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T17:41:24.227  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:54.239  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:54.490  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:54.792  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:55.043  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:55.906  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:56.044  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:13:56.295  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:13:57.482  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:14:02.760  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:14:02.760  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T18:14:08.541  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:14:09.642  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:14:09.893  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:14:10.294  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:37:53.509  <Info> phidget22vint[processPacketReturnCodes()] : Got a NOTATTACHED response from a VINT device, Port 4
+2025-07-13T18:37:53.510  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:37:54.514  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:37:54.768  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:37:55.211  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:37:59.230  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:37:59.230  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T18:37:59.805  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:38:02.821  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v120 -> HUB0000 Port:4 S/N:561576
+2025-07-13T18:38:02.821  <Info> phidget22vint[PhidgetHubDevice_setPortMode()] : Setting Port: 4 mode to VINT on HUB0000 (6-Port USB VINT Hub Phidget) v127 S/N:561576
+2025-07-13T18:39:11.787  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:12.039  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:18.190  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:19.169  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:19.584  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:21.900  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:21.911  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:27.259  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:27.332  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:27.790  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:27.832  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:28.083  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:28.245  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:28.757  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:28.845  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:29.294  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:29.352  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:29.625  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:29.782  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:30.107  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:30.332  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:31.456  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:31.525  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:31.776  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:31.899  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:32.504  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:32.652  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:34.181  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:34.199  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:38.472  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:38.531  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:39.105  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:39.638  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:40.541  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:40.630  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:41.165  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:41.248  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:41.607  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:41.664  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:42.279  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:46.906  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:47.158  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:52.142  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:52.394  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:53.025  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:39:53.688  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:15.436  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:15.687  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:20.335  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:20.587  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:20.938  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:21.189  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:27.035  <Info> phidget22[deviceDetach()] : (Detach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
+2025-07-13T18:40:27.329  <Info> phidget22[deviceAttach()] : (Attach) DCC1100 (Brushless DC Motor Phidget) v130 -> HUB0000 Port:3 S/N:561576
