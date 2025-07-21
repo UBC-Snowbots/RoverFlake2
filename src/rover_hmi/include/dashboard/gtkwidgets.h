@@ -4,6 +4,14 @@
       //* Global Messaging System
       Gtk::Label* global_msg_label;
 
+struct ComputerWatchGrid 
+{
+  Gtk::Widget* line_draw_area;
+  Gtk::Label* status_label;
+};
+ComputerWatchGrid control_base_watch_grid;
+ComputerWatchGrid on_board_nuc_watch_grid;
+// ComputerWatchGrid* computer_watch_grids; //TODO change into array or smt
 
 
 //* Subsystem Status Grid
