@@ -6,10 +6,12 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
-import math
+from os.path import expanduser
+
 
 DEVICE = '/dev/ttyACM0'
 BAUD_RATE = 38400
+REACH_LOG = f"{expanduser('~')}/reach_log.txt"
 
 # Serial device
 class SerialDevice:
@@ -20,21 +22,60 @@ class SerialDevice:
 
 # Class to read NMEA data   
 class NMEAReader(Node):
-    def __init__(self):
+    def __init__(self, debug=False, altitude=False):
+
+        # control flags
+        self.debug = debug
+        self.altitude = altitude
+
+        # print flag status
+        print("\033[33m", f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}", "\033[0m") if self.debug else print("\033[31m", "[WARN] Debug is disabled", "\033[0m")
+        print("\033[32m", "[WARN] Altitude publishing is enabled", "\033[0m") if self.altitude else print("\033[31m", "[WARN] Altitude publishing is disabled", "\033[0m")
+
         # ROS2 part
         super().__init__('nmea_reader')
-        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)
-        self.angle_publisher = self.create_publisher(String, 'antenna_angle', 10)
-
-        # Dummy CS coordinates (comms station)
-        self.cs_lat = 43.6532
-        self.cs_lon = -79.3832
+        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)        
 
         # Serial part
         serialdevice = SerialDevice(DEVICE, BAUD_RATE)
-        self.openSerial(serialdevice)        
-        self.timer = self.create_timer(0.5, self.readSerial)
+        try:
+            self.openSerial(serialdevice)        
+            self.timer = self.create_timer(0.5, self.readSerial)
+        except serial.SerialException as e:
+            self.log('e', f"[NMEA/Serial] Couldn't open serial: {e}")
+            exit(1)
 
+        # logging Reach output for debugging
+        if self.debug:
+            self.f = open(REACH_LOG, 'a+')
+            self.f.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
+
+    # Timer callback for ROS2
+    def timer_callback(self):
+        msg = NavSatFix()
+        msg.latitude = 0
+
+    # log function to combine log and print into one cuz clean code
+    # types:
+    #   e - error
+    #   i - info
+    #   w - warn
+    #   d - debug
+    def log(self, type, msg):
+        if type == 'e':
+            print("\033[31m", self.get_logger().error(msg), "\033[0m") # make it scary red wooooooo
+        elif type == 'i':
+            self.get_logger().info(msg)
+        elif type == 'w':
+            print("\033[35m", self.get_logger().warn(msg), "\033[0m") # make it concerning purple
+        elif type == 'd':
+            print("\033[36m", f"[DEBUG] {repr(msg)}", "\033[0m") # make "Debug Cyan"^(tm)
+        else:
+            print("[NMEA/Logger]: Unknown msg type, printing as warn")
+            print("\033[35m", self.get_logger().warn(msg), "\033[0m") # make it concerning purple
+            
+
+    # Take the serial device and try to open the port, kill self otherwise 
     def openSerial(self, SerialDevice):
         try:
             self.ser = serial.Serial(SerialDevice.device, SerialDevice.baud_rate, timeout=SerialDevice.timeout)
@@ -42,103 +83,98 @@ class NMEAReader(Node):
             self.ser.flushOutput()
             self.ser.reset_input_buffer()
             self.ser.reset_output_buffer()
+            return None
         except FileNotFoundError:
-            print(f"[NMEA/Serial] !!! Serial port not found: {DEVICE}\nTerminating...")
+            self.log('e', f"[NMEA/Serial] Serial port not found: {DEVICE}, terminating...")
             sys.exit(1)
-
+    
+    # Continuously read the serial port and parse NMEA data
     def readSerial(self):
-        scanning = True
-        while scanning and rclpy.ok():
-            try:
-                if self.ser.isOpen():
-                    line = self.ser.readline().decode('ascii', errors='replace')                
-                    if line.startswith('$GP'):
-                        print(line)
-                        if line.startswith('$GNEBP'):
-                            break
+        scanning = True # jsut here in case we decide to code like humans and not monkeys
+        if self.ser.isOpen():
+            self.log('i', "[NMEA/Serial] Serial open, trying read")
+            while scanning and rclpy.ok():
+                try:
+                    line = self.ser.readline().decode('ascii', errors='replace')
+                    
+                    # write Reach output to log for debugging
+                    self.f.write(line) if self.debug else ''
+
+                    # read the first 6 characters to determine the type of NMEA message
+                    if line[3:6] == 'GGA':
+                        self.log('d', line)
                         try:
                             natsavfix = self.parseNMEA(line)
-                            if isinstance(natsavfix, NavSatFix):
-                                self.publishPosition(natsavfix)
-
-                                # Compute bearing angle
-                                rover_lat = natsavfix.latitude
-                                rover_lon = natsavfix.longitude
-                                bearing = self.compute_bearing(self.cs_lat, self.cs_lon, rover_lat, rover_lon)
-
-                                print(f"[ANTENNA] Rotate antenna to {bearing:.2f}°")
-
-                                # Publish bearing angle
-                                angle_msg = String()
-                                angle_msg.data = f"{bearing:.2f}"
-                                self.angle_publisher.publish(angle_msg)
+                            if type(natsavfix) is not NavSatFix:
+                                self.log('w', "[NMEA/Reader] Couldn't parse message!")
                             else:
-                                print("[NMEA/Reader] Non-NSF message, skipping...")
-                        except pynmea2.ParseError:
-                            pass
-                else:
-                    print(time.strftime("[NMEA/DEBUG] (%H:%M:%S) ", time.localtime()) + "CLOSED")
-            except KeyboardInterrupt:
-                break
-
+                                self.publishPosition(natsavfix)
+                        except pynmea2.ParseError as e:
+                            self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")
+                    
+                except KeyboardInterrupt:
+                    self.log('i', "[NMEA/Reader] KeyboardInterrupt received, killing myself")
+                    exit(0)
+        else:
+            self.log('e', "[NMEA/Reader] Serial port is closed, cannot read data")
+    
+    # Parse NMEA data
     def parseNMEA(self, line):
         msg = pynmea2.parse(line)
-        if isinstance(msg, pynmea2.types.talker.GGA):
-            print(f"Lat {msg.latitude}; Lon {msg.longitude}; Alt {msg.altitude}")
+        if not isinstance(msg, pynmea2.types.talker.GGA):
+            self.log('e', "[NMEA/Parser] ERROR: Received a non-GGA message, this shouldn't happen")
+            return None
+        else:
             navsat_fix = NavSatFix()
             navsat_fix.latitude = msg.latitude
             navsat_fix.longitude = msg.longitude
-            navsat_fix.altitude = msg.altitude
+
+            # workaround for when there's no fix and sensors_msgs doesn't get altitude and eats shit
+            if type(msg.altitude) == float:
+                navsat_fix.altitude = msg.altitude
+            else:
+                navsat_fix.altitude = 0.0
+            
             return navsat_fix
-        else:
-            print(f"[NMEA/Parser] !!! Non-GGA message: {msg}")
-            return None
 
+
+    # Publish NMEA data
     def publishPosition(self, navfixobj):
-        if not isinstance(navfixobj, NavSatFix):
-            print("[NMEA/Publisher] !!! Received a non-NavSatFix message")
-            return
-        self.get_logger().info('Publishing NMEA data...')
-        print(time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + 
-              f"Lat: {navfixobj.latitude}, Lon: {navfixobj.longitude}, Alt: {navfixobj.altitude}")
-        self.publisher.publish(navfixobj)
-
-    def compute_bearing(self, lat1, lon1, lat2, lon2):
-        """
-        Compute initial bearing from (lat1, lon1) to (lat2, lon2)
-        Returns bearing in degrees from North.
-        """
-        phi1 = math.radians(lat1)
-        phi2 = math.radians(lat2)
-        delta_lambda = math.radians(lon2 - lon1)
-
-        x = math.sin(delta_lambda) * math.cos(phi2)
-        y = math.cos(phi1) * math.sin(phi2) - \
-            math.sin(phi1) * math.cos(phi2) * math.cos(delta_lambda)
-
-        bearing = math.atan2(x, y)
-        bearing = math.degrees(bearing)
-        return (bearing + 360) % 360  # Normalize
+        if type(navfixobj) is not NavSatFix:
+            self.log('w', "[NMEA/Publisher] WARN: Received a non-NavSatFix message, this shouldn't happen")
+        else:
+            # i am honestly and truly not sorry for this long ass line, fuck you
+            print(time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()), f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}", f" Alt: {navfixobj.altitude}" if self.altitude else '')
+            self.publisher.publish(navfixobj)
+        return None
 
     def closeSerial(self, ser=None):
         if ser is None:
             ser = self.ser
-        if ser.isOpen():
+        if not ser.isOpen():
+            self.log('w', "[NMEA/Serial] Serial port is already closed")
+        else:
             ser.flushInput()
             ser.flushOutput()
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             ser.close()
-            if not ser.isOpen():
-                print("[NMEA] Serial port closed successfully")
-        else:
-            print("[M+] !! Serial port is already closed")
-        sys.exit(0)
+            if ser.isOpen():
+                self.log('w', "[NMEA] Serial port is still open for some reason")
+            else:
+                self.log('i', "[NMEA] Serial port closed successfully")
+            del ser        
+        sys.exit(0) 
 
 def main():
+    print("oh shit we're going??")
     rclpy.init()
-    reader = NMEAReader()
+    reader = NMEAReader(debug=True, altitude=True)
     rclpy.spin(reader)
     reader.closeSerial()
     rclpy.shutdown()
     sys.exit(0)
+
+if __name__ == "__main__":
+    print("NMEA Reader was not started as a ROS node, aborting...")
+    sys.exit(1)
