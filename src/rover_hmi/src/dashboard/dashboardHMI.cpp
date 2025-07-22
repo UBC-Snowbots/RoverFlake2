@@ -111,6 +111,19 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
     
 }
 
+    
+bool DashboardHMINode::handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer){
+    switch(computer){
+        case computer::control_base:
+            
+            break;
+        case computer::onboard_nuc:
+            break;
+        default:
+            break;
+    }
+}
+
 
 //* Archive Code (graveyard)
 

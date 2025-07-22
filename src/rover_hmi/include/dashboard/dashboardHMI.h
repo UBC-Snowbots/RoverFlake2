@@ -155,7 +155,8 @@ private:
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
   void subsystemRequest(std::string subsystem_name, int request, int computer = COMPUTER_GLOBAL);
 
-
+  //* Draw Callbacks - renders cairo stuff
+  bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
@@ -169,6 +170,13 @@ std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
+namespace computer{
+enum computers{
+  control_base,
+  onboard_nuc,
+  onboard_jetson,
+};
+}
 };
 
 

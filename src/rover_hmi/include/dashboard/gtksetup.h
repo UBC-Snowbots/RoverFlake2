@@ -47,10 +47,11 @@
 
                 builder->get_widget("control_base_heart_monitor", control_base_watch_grid.line_draw_area);
                 builder->get_widget("control_base_status_label", control_base_watch_grid.status_label);
+                    control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::control_base));
 
                 builder->get_widget("on_board_nuc_heart_monitor", on_board_nuc_watch_grid.line_draw_area);
                 builder->get_widget("on_board_nuc_status_label", on_board_nuc_watch_grid.status_label);
-
+                    on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::onboard_nuc));
 
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
