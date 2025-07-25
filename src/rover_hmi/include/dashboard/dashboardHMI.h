@@ -141,7 +141,8 @@ private:
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_control_base;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_nuc;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_jetson;
- 
+    bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
+
     
     // std::map
 
@@ -170,6 +171,15 @@ std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
+
+};
+
+
+
+
+
+
+
 namespace computer{
 enum computers{
   control_base,
@@ -177,16 +187,6 @@ enum computers{
   onboard_jetson,
 };
 }
-};
-
-
-
-
-
-
-
-
-
 
 
 

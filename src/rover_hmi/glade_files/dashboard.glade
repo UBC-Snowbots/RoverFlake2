@@ -28,13 +28,13 @@
         </child>
         <child>
           <!-- n-columns=3 n-rows=8 -->
-          <object class="GtkGrid" id="subsys_status_grid">
+          <object class="GtkGrid" id="control_base_subsys_status_grid">
             <property name="width-request">100</property>
             <property name="height-request">80</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkLabel" id="subsys_0_status_label">
+              <object class="GtkLabel" id="control_base_subsys_0_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -97,7 +97,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_1_status_label">
+              <object class="GtkLabel" id="control_base_subsys_1_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -161,7 +161,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_2_status_label">
+              <object class="GtkLabel" id="control_base_subsys_2_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -177,7 +177,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_3_status_label">
+              <object class="GtkLabel" id="control_base_subsys_3_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -193,7 +193,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_4_status_label">
+              <object class="GtkLabel" id="control_base_subsys_4_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -225,7 +225,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_5_status_label">
+              <object class="GtkLabel" id="control_base_subsys_5_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -247,7 +247,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_0_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_0_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -264,7 +264,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_0_run_button">
+                  <object class="GtkButton" id="control_base_subsys_0_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -293,7 +293,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_1_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_1_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -310,7 +310,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_1_run_button">
+                  <object class="GtkButton" id="control_base_subsys_1_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -339,7 +339,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_2_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_2_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -356,7 +356,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_2_run_button">
+                  <object class="GtkButton" id="control_base_subsys_2_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -385,7 +385,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_3_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_3_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -402,7 +402,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_3_run_button">
+                  <object class="GtkButton" id="control_base_subsys_3_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -431,7 +431,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_4_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_4_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -448,7 +448,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_4_run_button">
+                  <object class="GtkButton" id="control_base_subsys_4_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -477,7 +477,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_5_kill_button">
+                  <object class="GtkButton" id="control_base_subsys_5_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -494,7 +494,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_5_run_button">
+                  <object class="GtkButton" id="control_base_subsys_5_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -622,7 +622,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_0_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_0_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -638,7 +638,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_1_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_1_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -654,7 +654,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_2_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_2_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -670,7 +670,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_3_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_3_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -686,7 +686,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_4_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_4_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -702,7 +702,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_5_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_5_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -718,7 +718,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_0_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_0_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -734,7 +734,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_1_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_1_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -750,7 +750,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_2_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_2_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -766,7 +766,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_3_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_3_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -782,7 +782,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_4_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_4_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -798,7 +798,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="subsys_5_status_label_onboard_nuc">
+              <object class="GtkLabel" id="onboard_nuc_subsys_5_status_label">
                 <property name="width-request">100</property>
                 <property name="height-request">80</property>
                 <property name="visible">True</property>
@@ -820,7 +820,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_0_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_0_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -837,7 +837,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_0_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_0_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -866,7 +866,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_1_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_1_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -883,7 +883,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_1_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_1_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -912,7 +912,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_2_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_2_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -929,7 +929,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_2_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_2_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -958,7 +958,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_3_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_3_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -975,7 +975,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_3_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_3_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -1004,7 +1004,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_4_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_4_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -1021,7 +1021,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_4_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_4_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -1050,7 +1050,7 @@
                 <property name="can-focus">False</property>
                 <property name="row-homogeneous">True</property>
                 <child>
-                  <object class="GtkButton" id="subsys_5_kill_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_5_kill_button">
                     <property name="label" translatable="yes">KILL</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -1067,7 +1067,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="subsys_5_run_button_onboard_nuc">
+                  <object class="GtkButton" id="onboard_nuc_subsys_5_run_button">
                     <property name="label" translatable="yes">RUN</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>

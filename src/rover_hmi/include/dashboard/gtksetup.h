@@ -2,16 +2,16 @@
         builder->get_widget("dash_window", dash_window);
         builder->get_widget("dash_top_layout", dash_layout);
             //* subsys Status Grid
-            builder->get_widget("subsys_status_grid", system_health_control_base.grid);
+            builder->get_widget("control_base_subsys_status_grid", system_health_control_base.grid);
             system_health_control_base.system.resize(NUM_MONITORED_SYSTEMS_CONTROL_BASE);
             monitored_system_names_control_base.resize(NUM_MONITORED_SYSTEMS_CONTROL_BASE);
  
             for (int i = 0; i < NUM_MONITORED_SYSTEMS_CONTROL_BASE; i++) {
               std::string index = std::to_string(i);
-              builder->get_widget("subsys_" + index + "_label", system_health_control_base.system[i].name);
-              builder->get_widget("subsys_" + index + "_status_label", system_health_control_base.system[i].status);
-              builder->get_widget("subsys_" + index + "_kill_button", system_health_control_base.system[i].kill_button);
-              builder->get_widget("subsys_" + index + "_run_button", system_health_control_base.system[i].run_button);
+              builder->get_widget("control_base_subsys_" + index + "_label", system_health_control_base.system[i].name);
+              builder->get_widget("control_base_subsys_" + index + "_status_label", system_health_control_base.system[i].status);
+              builder->get_widget("control_base_subsys_" + index + "_run_button", system_health_control_base.system[i].run_button);
+              builder->get_widget("control_base_subsys_" + index + "_kill_button", system_health_control_base.system[i].kill_button);
           }
 
 
@@ -47,11 +47,11 @@
 
                 builder->get_widget("control_base_heart_monitor", control_base_watch_grid.line_draw_area);
                 builder->get_widget("control_base_status_label", control_base_watch_grid.status_label);
-                    control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::control_base));
+                    // control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::control_base));
 
                 builder->get_widget("on_board_nuc_heart_monitor", on_board_nuc_watch_grid.line_draw_area);
                 builder->get_widget("on_board_nuc_status_label", on_board_nuc_watch_grid.status_label);
-                    on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::onboard_nuc));
+                    // on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::onboard_nuc));
 
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
@@ -60,10 +60,10 @@
 
                 for (int i = 0; i < NUM_MONITORED_SYSTEMS_ONBOARD_NUC; i++) {
                   std::string index = std::to_string(i);
-                  builder->get_widget("subsys_" + index + "_label_onboard_nuc", system_health_onboard_nuc.system[i].name);
-                  builder->get_widget("subsys_" + index + "_status_label_onboard_nuc", system_health_onboard_nuc.system[i].status);
-                  builder->get_widget("subsys_" + index + "_kill_button_onboard_nuc", system_health_onboard_nuc.system[i].kill_button);
-                  builder->get_widget("subsys_" + index + "_run_button_onboard_nuc", system_health_onboard_nuc.system[i].run_button);
+                  builder->get_widget("onboard_nuc_subsys_" + index + "_label", system_health_onboard_nuc.system[i].name);
+                  builder->get_widget("onboard_nuc_subsys_" + index + "_status_label", system_health_onboard_nuc.system[i].status);
+                  builder->get_widget("onboard_nuc_subsys_" + index + "_kill_button", system_health_onboard_nuc.system[i].kill_button);
+                  builder->get_widget("onboard_nuc_subsys_" + index + "_run_button", system_health_onboard_nuc.system[i].run_button);
               }
     
     
