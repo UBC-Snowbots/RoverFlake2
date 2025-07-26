@@ -10,6 +10,7 @@ from os.path import expanduser
 
 
 DEVICE = '/dev/ttyACM0'
+#DEVICE = '/dev/pts/3'
 BAUD_RATE = 38400
 REACH_LOG = f"{expanduser('~')}/reach_log.txt"
 
@@ -33,8 +34,11 @@ class NMEAReader(Node):
         print("\033[32m", "[WARN] Altitude publishing is enabled", "\033[0m") if self.altitude else print("\033[31m", "[WARN] Altitude publishing is disabled", "\033[0m")
 
         # ROS2 part
+        # Publisher for GNSS data
         super().__init__('nmea_reader')
-        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)        
+        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)
+        # Publisher for system status
+        # self.status_publisher = self.create_publisher(String, 'gnss_status', 10)        
 
         # Serial part
         serialdevice = SerialDevice(DEVICE, BAUD_RATE)
@@ -49,6 +53,11 @@ class NMEAReader(Node):
         if self.debug:
             self.f = open(REACH_LOG, 'a+')
             self.f.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
+
+        # last known gnss fix
+        # will be relayed in case fix is lost
+        self.last_known_fix = NavSatFix()
+        
 
     # Timer callback for ROS2
     def timer_callback(self):
@@ -69,9 +78,10 @@ class NMEAReader(Node):
         elif type == 'w':
             print("\033[35m", self.get_logger().warn(msg), "\033[0m") # make it concerning purple
         elif type == 'd':
-            print("\033[36m", f"[DEBUG] {repr(msg)}", "\033[0m") # make "Debug Cyan"^(tm)
+            if self.debug:
+                print("\033[36m", f"[DEBUG] {repr(msg)}", "\033[0m") # make "Debug Cyan"^(tm)
         else:
-            print("[NMEA/Logger]: Unknown msg type, printing as warn")
+            print("[NMEA/Logger]: Unknown msg type, logging as warn")
             print("\033[35m", self.get_logger().warn(msg), "\033[0m") # make it concerning purple
             
 
@@ -109,8 +119,11 @@ class NMEAReader(Node):
                                 self.log('w', "[NMEA/Reader] Couldn't parse message!")
                             else:
                                 self.publishPosition(natsavfix)
+
                         except pynmea2.ParseError as e:
                             self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")
+                            self.log('i', "[NMEA/Reader] Publishing last known fix")
+                            self.publishPosition(self.last_known_fix)
                     
                 except KeyboardInterrupt:
                     self.log('i', "[NMEA/Reader] KeyboardInterrupt received, killing myself")
@@ -123,17 +136,22 @@ class NMEAReader(Node):
         msg = pynmea2.parse(line)
         if not isinstance(msg, pynmea2.types.talker.GGA):
             self.log('e', "[NMEA/Parser] ERROR: Received a non-GGA message, this shouldn't happen")
-            return None
+            self.log('w', "[NMEA/Parser] Injecting last known fix")
+            return self.last_known_fix
         else:
             navsat_fix = NavSatFix()
             navsat_fix.latitude = msg.latitude
             navsat_fix.longitude = msg.longitude
 
-            # workaround for when there's no fix and sensors_msgs doesn't get altitude and eats shit
+            # if there's no altitude, that means we have no fix
+            # if there is, then update last fix
             if type(msg.altitude) == float:
                 navsat_fix.altitude = msg.altitude
+                self.last_known_fix = navsat_fix
+                self.log('i', "[NMEA/Parser] Last fix updated")
             else:
-                navsat_fix.altitude = 0.0
+                self.log('w', "[NMEA/Parser] No fix, injecting last fix")
+                return self.last_known_fix
             
             return navsat_fix
 
@@ -169,7 +187,7 @@ class NMEAReader(Node):
 def main():
     print("oh shit we're going??")
     rclpy.init()
-    reader = NMEAReader(debug=True, altitude=True)
+    reader = NMEAReader(debug=False, altitude=False)
     rclpy.spin(reader)
     reader.closeSerial()
     rclpy.shutdown()
@@ -177,4 +195,4 @@ def main():
 
 if __name__ == "__main__":
     print("NMEA Reader was not started as a ROS node, aborting...")
-    sys.exit(1)
+    sys.exit(1) 
