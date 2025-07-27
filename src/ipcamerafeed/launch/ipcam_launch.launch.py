@@ -17,7 +17,7 @@ def generate_launch_description():
             package='ipcamerafeed',
             executable='pitch_tilt_node',
             name='pitch_tilt'
-        )
+        ),
         Node(
             package='image_publisher',
             executable='image_publisher_node',  

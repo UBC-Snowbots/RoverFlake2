@@ -1,14 +1,16 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
-from ipcamerafeed.srv import SetFloat64
+from ipcamerafeed.srv import SetMovement
 import serial
 
 class PTZPitchTiltNode(Node):
     """
     To pitch (DATA IN DEGREES):
-        ros2 service call /pitch example_interfaces/srv/SetFloat64 "{data: 30.0}"
+        ros2 service call /pitch ipcamerafeed/srv/SetFloat64 "{data: 30.0}"
     To tilt (DATA IN DEGREES):
-        ros2 service call /tilt example_interfaces/srv/SetFloat64 "{data: 30.0}"
+        ros2 service call /tilt ipcamerafeed/srv/SetFloat64 "{data: 30.0}"
     """
     def __init__(self):
         super().__init__('pitch_tilt_node')    
@@ -30,25 +32,31 @@ class PTZPitchTiltNode(Node):
             self.ser = None
 
         # Assign service for tilting and zoom
-        self.pitch_srvs = self.create_service(SetFloat64, 'pitch', self.pitch) 
-        self.tilt_srvs = self.create_service(SetFloat64 , 'tilt', self.tilt)
+        self.pitch_srvs = self.create_service(SetMovement, 'pitch', self.pitch) 
+        self.tilt_srvs = self.create_service(SetMovement , 'tilt', self.tilt)
 
     def pitch(self, request, response):
         if self.ser is not None:
             cmd = f'C {request.data}\r\n'
             self.ser.write(cmd.encode())
+            resp = self.ser.read_until(b'\n').decode('utf-8') # retrive positional msg
             response.data = request.data
+            response.msg = resp
         else:
             response.data = -1.0
+            response.msg = 'Null'
         return response
     
     def tilt(self, request, response):
         if self.ser is not None:
             cmd = f'P {request.data}\r\n'
             self.ser.write(cmd.encode())
+            resp = self.ser.read_until(b'\n').decode('utf-8') # retrive positional msg
             response.data = request.data
+            response.msg = resp
         else:
             response.data = -1.0
+            response.msg = 'Null'    
         return response
 
 def main(args=None):

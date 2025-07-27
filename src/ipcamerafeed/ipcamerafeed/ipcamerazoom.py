@@ -54,8 +54,7 @@ class PTZZoomNode(Node):
     To stop (to be honest I dont even know if this works lol ^ those work tho):
         ros2 service call /stop_zoom std_srvs/srv/Trigger "{}" 
     To change zoom duration:
-        ros2 service call /zoom_duration example_interfaces/srv/SetFloat64 "{data: 6.9}"
-
+        ros2 service call /zoom_duration ipcamerafeed/srv/SetFloat64 "{data: 6.9}"
     """
     def __init__(self):
         super().__init__('ptz_zoom_node')
