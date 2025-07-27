@@ -1,39 +1,31 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd"
-           schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
- <name>ipcamerafeed</name>
- <version>0.0.0</version>
- <description>
-   ROS 2 package for streaming an RTSP IP camera and offering ONVIF PTZ control via services.
- </description>
- <maintainer email="cameronbasara@gmail.com">kingcammy</maintainer>
- <license>Apache-2.0</license>
+  <name>ipcamerafeed</name>
+  <version>0.0.1</version>
+  <description>ROS 2 package for IP camera RTSP streaming and PTZ control via ONVIF and Serial.</description>
 
+  <maintainer email="cameronbasara@gmail.com">kingcammy</maintainer>
+  <license>Apache-2.0</license>
 
-<!-- Build tool -->
- <buildtool_depend>ament_python</buildtool_depend>
+  <!-- Build tools -->
+  <buildtool_depend>ament_python</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
 
+  <!-- Runtime and build dependencies -->
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>pyserial</exec_depend>
+  <exec_depend>onvif-zeep</exec_depend>
+  <exec_depend>opencv-python</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
 
- <!-- Core ROS 2 Python -->
- <exec_depend>rclpy</exec_depend>
+  <!-- For interface generation -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
-
- <!-- Messages & bridge for images -->
- <exec_depend>sensor_msgs</exec_depend>
- <exec_depend>cv_bridge</exec_depend>
-
-
- <!-- Services (if you expose any) -->
- <exec_depend>std_srvs</exec_depend>
-
-
- <!-- External Python libraries -->
- <exec_depend>onvif-zeep</exec_depend>
- <exec_depend>keyboard</exec_depend>
-
-
- <export>
-   <build_type>ament_python</build_type>
- </export>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
 </package>

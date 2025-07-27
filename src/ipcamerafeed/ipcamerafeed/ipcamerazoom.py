@@ -3,6 +3,7 @@
 from onvif import ONVIFCamera
 import time
 from std_srvs.srv import SetBool, Trigger
+from ipcamerafeed.srv import SetFloat64
 import rclpy
 from rclpy.node import Node
 
@@ -53,7 +54,7 @@ class PTZZoomNode(Node):
     To stop (to be honest I dont even know if this works lol ^ those work tho):
         ros2 service call /stop_zoom std_srvs/srv/Trigger "{}" 
     To change zoom duration:
-        ros2 service call /zoom_duration std_srvs/srv/SetFloat64 "{data: 6.9}"
+        ros2 service call /zoom_duration example_interfaces/srv/SetFloat64 "{data: 6.9}"
 
     """
     def __init__(self):
