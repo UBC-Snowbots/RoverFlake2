@@ -7,7 +7,7 @@ find_package(rosidl_default_generators REQUIRED)
 # Generate service interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetFloat64.srv"
-  "srv/SetMovement"
+  "srv/SetMovement.srv"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

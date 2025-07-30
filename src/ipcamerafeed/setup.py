@@ -15,6 +15,10 @@ setup(
         (os.path.join('share', package_name), glob('srv/*.srv')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
+    include_package_data=True,
+    package_data={
+        '': ['srv/*.srv'],
+    },
    install_requires=[
        'setuptools',
        'opencv-python',
