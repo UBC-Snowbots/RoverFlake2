@@ -8,15 +8,22 @@ int main(int argc, char* argv[]){
     int nullc = 0;
     char **nullv = nullptr;
 
-    auto app = Gtk::Application::create(nullc, nullv, "dashboard_hmi"); //Make sure the 3rd arg here is unique. If 2 HMIs start with the same id one will die
+    auto app = Gtk::Application::create(nullc, nullv, "com.dashboard.hmi"); //Make sure the 3rd arg here is unique. If 2 HMIs start with the same id one will die
     //CHAD ROS2 gets the real arguments from the terminal
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DashboardHMINode>();
-
-    sigc::connection spin_connection = Glib::signal_timeout().connect([&node]() -> bool {
+//ros2 spin timer
+sigc::connection spin_connection = Glib::signal_timeout().connect([&node]() -> bool {
         rclcpp::spin_some(node);
         return true;
     }, 20); //MILlISECINDS
+
+    // draw timer
+sigc::connection fps_connection = Glib::signal_timeout().connect([&node]() -> bool {
+    node->handle_fps_draw();
+    return true;
+}, 1000/node->fps); //MILlISECINDS
+    
 
     node->app = app;
     node->run();
@@ -39,12 +46,16 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
 
     const std::string host = msg->subsystem_host; // Computer running a heart
     const std::string subsys_name = msg->subsystem_name;
-    auto now = this->get_clock()->now();
-    auto time_since_last_heartbeat = now - msg->header.stamp;
+    auto time_since_last_heartbeat = msg->header.stamp;
+    uint32_t time_of_heartbeat_ns = static_cast<uint32_t>(time_since_last_heartbeat.nanosec); // truncate
+    uint32_t time_of_heartbeat_s = static_cast<uint32_t>(time_since_last_heartbeat.sec); // truncate
     
     Glib::RefPtr<Gtk::StyleContext> subsys_context;
     Gtk::Label* status_label;
     if(host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
+        control_base_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
+        control_base_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+
         subsys_context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_control_base[subsys_name].status_label;
     }
@@ -54,6 +65,9 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
       
     }
     if(host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
+        onboard_nuc_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
+        onboard_nuc_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+
         subsys_context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_nuc[subsys_name].status_label;
 
@@ -76,6 +90,37 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
 
 }
 
+void DashboardHMINode::ptzButtonCallback(int ptz_button, bool pressed){
+        geometry_msgs::msg::Vector3 msg;
+        if (pressed) {
+            switch (ptz_button) {
+                case PAN_INC:
+                    msg.x = pan_tilt_zoom_speed;
+                    break;
+                case PAN_DEC:
+                    msg.x = -pan_tilt_zoom_speed;
+                    break;
+                case TILT_INC:
+                    msg.y = pan_tilt_zoom_speed;
+                    break;
+                case TILT_DEC:
+                    msg.y = -pan_tilt_zoom_speed;
+                    break;
+                case ZOOM_INC:
+                    msg.z = pan_tilt_zoom_speed;
+                    break;
+                case ZOOM_DEC:
+                    msg.z = -pan_tilt_zoom_speed;
+                    break;
+                default:
+                    // Panic! 
+                    break;
+            }
+        } // if not pressed then we got a release signal. pub a zero msg.
+
+        ptz_pub->publish(msg);
+}
+
 void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
     //* Depending on the button clicked, run different child proccesses, or kill different child processes
@@ -84,12 +129,9 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
     rover_msgs::msg::HeartRequest msg;
     msg.subsystem_name = subsystem_name;
     if(request == RUN){
-        // runSubSystem(subsystem_name);
-        // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
         msg.running = true;
     }
     if(request == KILL){
-        // killSubSystem(subsystem_name);
         msg.running = false;
     }
     switch (computer)
@@ -112,17 +154,70 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
 }
 
     
-bool DashboardHMINode::handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer){
-    switch(computer){
-        case computer::control_base:
-            
-            break;
-        case computer::onboard_nuc:
-            break;
-        default:
-            break;
+bool DashboardHMINode::handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer){
+    // const auto alloc = canvas_->get_allocation();
+// int W = alloc.get_width(), H = alloc.get_height();
+    auto now = this->get_clock()->now();
+    uint32_t now_ns = static_cast<uint32_t>(now.nanoseconds()); // truncate
+    int num_computers = 2;
+    uint32_t thresh = 30*num_computers;
+    static uint32_t flag = 0;
+    context->set_source_rgb(0.15, 0.12, 0.12);
+    if(flag > thresh){
+        context->set_source_rgb(0.2,1,0.2);
+        if(flag > thresh*2){
+            flag = 0;
+        }
     }
+    flag++;
+    Glib::RefPtr<Gtk::StyleContext> css;
+    
+    
+    switch(computer){
+        case computers::control_base:
+        css = control_base_watch_grid.status_label->get_style_context();
+        if(control_base_heart_monitor.time_of_last_heartbeat_s != NULL){
+            
+            control_base_watch_grid.status_label->set_label(HEALTHY_IDLE + std::to_string(now_ns - control_base_heart_monitor.time_of_last_heartbeat_ns)); 
+
+        }else{
+            control_base_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
+
+        }
+        break;    
+        case computers::onboard_nuc:
+        css = control_base_watch_grid.status_label->get_style_context();
+        on_board_nuc_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
+        break;
+        default:
+        break;
+    }
+
+
+    context->paint();  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //* Archive Code (graveyard)

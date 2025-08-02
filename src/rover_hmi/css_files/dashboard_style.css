@@ -58,3 +58,9 @@
     background-color: black;
     color:rgb(255, 236, 236)
 }
+
+.computer_status_label{
+    background: black;
+    color: yellow;
+    font-size: 18px;
+}

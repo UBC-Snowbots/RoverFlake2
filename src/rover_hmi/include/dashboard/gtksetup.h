@@ -14,21 +14,29 @@
               builder->get_widget("control_base_subsys_" + index + "_kill_button", system_health_control_base.system[i].kill_button);
           }
 
+                builder->get_widget("ptz_tilt_increase", ptz_buttons.tilt.inc);
+                    ptz_buttons.tilt.inc->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), TILT_INC, true));
+                    ptz_buttons.tilt.inc->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), TILT_INC, false));
 
-                // builder->get_widget("subsys_0_label", system_health.system[0].name);
-                //   builder->get_widget("subsys_0_kill_button", system_health.system[0].kill_button);
-                //   builder->get_widget("subsys_0_run_button", system_health.system[0].run_button);
-                // builder->get_widget("subsys_1_label", system_health.system[1].name);
-                // builder->get_widget("subsys_2_label", system_health.system[2].name);
-                // builder->get_widget("subsys_3_label", system_health.system[3].name);
-                // builder->get_widget("subsys_4_label", system_health.system[4].name);
-                // builder->get_widget("subsys_5_la bel", system_health.system[5].name);
-                // builder->get_widget("subsys_0_status_label", system_health.system[0].status);
-                // builder->get_widget("subsys_1_status_label", system_health.system[1].status);
-                // builder->get_widget("subsys_2_status_label", system_health.system[2].status);
-                // builder->get_widget("subsys_3_status_label", system_health.system[3].status);
-                // builder->get_widget("subsys_4_status_label", system_health.system[4].status);
-                // builder->get_widget("subsys_5_status_label", system_health.system[5].status);
+                builder->get_widget("ptz_tilt_decrease", ptz_buttons.tilt.dec);
+                    ptz_buttons.tilt.dec->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), TILT_DEC, true));
+                    ptz_buttons.tilt.dec->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), TILT_DEC, false));
+                builder->get_widget("ptz_pan_increase", ptz_buttons.pan.inc);      
+                    ptz_buttons.pan.inc->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), PAN_INC, true));
+                    ptz_buttons.pan.inc->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), PAN_INC, false));
+
+                builder->get_widget("ptz_pan_decrease", ptz_buttons.pan.dec);
+                    ptz_buttons.pan.dec->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), PAN_DEC, true));
+                    ptz_buttons.pan.dec->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), PAN_DEC, false));
+
+                builder->get_widget("ptz_zoom_increase", ptz_buttons.zoom.inc);
+                    ptz_buttons.zoom.inc->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), ZOOM_INC, true));
+                    ptz_buttons.zoom.inc->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), ZOOM_INC, false));
+
+                builder->get_widget("ptz_zoom_decrease", ptz_buttons.zoom.dec);
+                    ptz_buttons.zoom.dec->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), ZOOM_DEC, true));
+                    ptz_buttons.zoom.dec->signal_released().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::ptzButtonCallback), ZOOM_DEC, false));
+
 
             
                 for(int i = 0; i < NUM_MONITORED_SYSTEMS_CONTROL_BASE; i++){
@@ -47,11 +55,11 @@
 
                 builder->get_widget("control_base_heart_monitor", control_base_watch_grid.line_draw_area);
                 builder->get_widget("control_base_status_label", control_base_watch_grid.status_label);
-                    // control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::control_base));
+                    control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computers::control_base));
 
                 builder->get_widget("on_board_nuc_heart_monitor", on_board_nuc_watch_grid.line_draw_area);
                 builder->get_widget("on_board_nuc_status_label", on_board_nuc_watch_grid.status_label);
-                    // on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computer::onboard_nuc));
+                    on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computers::onboard_nuc));
 
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);

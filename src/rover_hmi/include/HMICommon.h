@@ -11,3 +11,13 @@
 
 // Global functions
 void load_css(const Glib::RefPtr<Gtk::CssProvider>& provider, std::string css_file_path);
+
+namespace RoverHmiCommon {
+
+struct button_pair_increase_decrease_t
+{
+  Gtk::Button* inc;
+  Gtk::Button* dec;
+};
+
+}

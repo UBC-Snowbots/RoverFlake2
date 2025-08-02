@@ -19,3 +19,15 @@
 // #define COMPUTER_ONBOARD_NUC_STRING "onboard_nuc"
 // #define COMPUTER_CONTROL_BASE_STRING "control_base"
 // #define COMPUTER_GLOBAL_STRING 0x0
+
+// Enums
+
+enum PTZ_BUTTONS {
+    TILT_INC,
+    TILT_DEC,
+    PAN_INC,
+    PAN_DEC,
+    ZOOM_INC,
+    ZOOM_DEC,
+    NUM_PTZ_BUTTONS
+};
