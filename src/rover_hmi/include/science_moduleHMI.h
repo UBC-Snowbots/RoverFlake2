@@ -51,7 +51,7 @@ public:
     spectro_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     light_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     camera_video_pub = this->create_publisher<rover_msgs::msg::CameraVideo>("/science/camera_video", qos);
-
+    
 
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
     //     "/science/feedback", qos, std::bind(&ScienceHMINode::valveFeedbackCallback, this, std::placeholders::_1));
@@ -61,8 +61,8 @@ public:
     
     
     // **Text Input for Integer 0-15**
-    builder->get_widget("indexnumberentry", indexnumberentry);
-    indexnumberentry->signal_activate().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
+    // builder->get_widget("indexnumberentry", indexnumberentry);
+    // indexnumberentry->signal_activate().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
 
     // **Button Handling**
     builder->get_widget("rinsebutton", rinsebutton);
@@ -100,9 +100,12 @@ public:
     builder->get_widget("osf1button", osf1button);
     builder->get_widget("osf2button", osf2button);
     builder->get_widget("statuslabel", statuslabel);
+    builder->get_widget("ofsblockedlabel", ofsblockedlabel);
 
     builder->get_widget("prevIndexbutton", prevIndexbutton);
     builder->get_widget("nextidxbutton", nextidxbutton);
+    builder->get_widget("resetbutton", resetbutton);
+    builder->get_widget("label_carousel", label_carousel);
     builder->get_widget("smallbutton", smallbutton);
     builder->get_widget("largebutton", largebutton);
 
@@ -113,8 +116,8 @@ public:
 
 
     builder->get_widget("camera1button", camera1button);
+    builder->get_widget("cameraInput", cameraInput);
 
-    builder->get_widget("camera2button", camera2button);
     builder->get_widget("estopbutton", estopbutton);
 
 
@@ -152,6 +155,8 @@ public:
 
     prevIndexbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::prevClicked));
     nextidxbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::nextClicked));
+    resetbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::resetClicked));
+
     smallbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::smallClicked));
     largebutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::largeClicked));
 
@@ -161,7 +166,7 @@ public:
     light2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::ligth2Clicked));
 
     camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
-    camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
+    //camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
 
 
     estopbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::stopClicked));
@@ -247,7 +252,7 @@ private:
 
 
   // Carousel index input (0-15)
-  int carousel_index_;
+  int carousel_index_ = 0;
   Gtk::Window* science_window;
 
   Gtk::Button* sv1button;
@@ -263,6 +268,7 @@ private:
   Gtk::Button* osf1button;
   Gtk::Button* osf2button;
   Gtk::Label* statuslabel;
+  Gtk::Label* ofsblockedlabel;
 
 
 
@@ -271,10 +277,10 @@ private:
   Gtk::Button* processbutton;
   Gtk::Button* purgebutton;
 
-
-  Gtk::Entry* indexnumberentry;
+  Gtk::Label* label_carousel;
   Gtk::Button* prevIndexbutton;
   Gtk::Button* nextidxbutton;
+  Gtk::Button* resetbutton;
   Gtk::Button* smallbutton;
   Gtk::Button* largebutton;
 
@@ -285,7 +291,7 @@ private:
 
   Gtk::Button* camera1button;
 
-  Gtk::Button* camera2button;
+  Gtk::Label* cameraInput;
 
   Gtk::Button* estopbutton;
 
@@ -311,7 +317,7 @@ private:
   void setSequence(bool pressed, int button); //RECHECK
   void handleTextboxInput();
 
-  void setCarouselIndex(int index);
+  //void setCarouselIndex(int index);
 
   void setPump(bool pressed, int button);
   
@@ -319,9 +325,12 @@ private:
   void OSF1clicked();
   void OSF2clicked();
   void updateStatusLabel();
+  void updateOFSBlockedLable();
 
   void prevClicked();
   void nextClicked();
+  void updateCarouselIndexLabel();
+  void resetClicked();
   void smallClicked();
   void largeClicked();
 
@@ -332,6 +341,7 @@ private:
 
 
   void cameraFeedChosen(bool clicked, int id);
+  //void cameraInputLabel();
 
   void stopClicked();
 
@@ -340,6 +350,7 @@ private:
   void rinseSequence();
   void agitatorSequence();
   void processSequence();
+  void purgeSequence();
   void updateValveButton(Gtk::Button* button, bool energized);
    void updateAGButton(Gtk::Button* button, bool energized);
 

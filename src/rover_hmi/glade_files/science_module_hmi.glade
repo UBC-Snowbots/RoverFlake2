@@ -34,8 +34,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">368</property>
-            <property name="y">60</property>
+            <property name="x">377</property>
+            <property name="y">59</property>
           </packing>
         </child>
         <child>
@@ -83,7 +83,7 @@
         <child>
           <object class="GtkButton" id="sv2button">
             <property name="label" translatable="yes">SV2 (rinse)</property>
-            <property name="width-request">128</property>
+            <property name="width-request">129</property>
             <property name="height-request">34</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
@@ -104,8 +104,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">117</property>
-            <property name="y">238</property>
+            <property name="x">121</property>
+            <property name="y">234</property>
           </packing>
         </child>
         <child>
@@ -118,7 +118,7 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">270</property>
+            <property name="x">274</property>
             <property name="y">235</property>
           </packing>
         </child>
@@ -126,19 +126,19 @@
           <object class="GtkButton" id="p1stop">
             <property name="label" translatable="yes">◻️</property>
             <property name="width-request">52</property>
-            <property name="height-request">34</property>
+            <property name="height-request">38</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">580</property>
-            <property name="y">249</property>
+            <property name="x">572</property>
+            <property name="y">232</property>
           </packing>
         </child>
         <child>
           <object class="GtkButton" id="osf1button">
-            <property name="label" translatable="yes">OSF1</property>
+            <property name="label" translatable="yes">OFS1</property>
             <property name="width-request">100</property>
             <property name="height-request">34</property>
             <property name="visible">True</property>
@@ -147,12 +147,12 @@
           </object>
           <packing>
             <property name="x">816</property>
-            <property name="y">200</property>
+            <property name="y">190</property>
           </packing>
         </child>
         <child>
           <object class="GtkButton" id="osf2button">
-            <property name="label" translatable="yes">OSF 2</property>
+            <property name="label" translatable="yes">OFS 2</property>
             <property name="width-request">100</property>
             <property name="height-request">34</property>
             <property name="visible">True</property>
@@ -160,8 +160,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">925</property>
-            <property name="y">199</property>
+            <property name="x">932</property>
+            <property name="y">190</property>
           </packing>
         </child>
         <child>
@@ -174,8 +174,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">44</property>
-            <property name="y">342</property>
+            <property name="x">63</property>
+            <property name="y">344</property>
           </packing>
         </child>
         <child>
@@ -188,21 +188,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">191</property>
-            <property name="y">345</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkEntry" id="indexnumberentry">
-            <property name="width-request">168</property>
-            <property name="height-request">34</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="input-purpose">number</property>
-          </object>
-          <packing>
-            <property name="x">147</property>
-            <property name="y">418</property>
+            <property name="x">186</property>
+            <property name="y">344</property>
           </packing>
         </child>
         <child>
@@ -256,8 +243,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">652</property>
-            <property name="y">338</property>
+            <property name="x">655</property>
+            <property name="y">344</property>
           </packing>
         </child>
         <child>
@@ -270,27 +257,13 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">430</property>
-            <property name="y">335</property>
+            <property name="x">434</property>
+            <property name="y">343</property>
           </packing>
         </child>
         <child>
           <object class="GtkButton" id="light1button">
             <property name="label" translatable="yes">Light 1 (spectro)</property>
-            <property name="width-request">143</property>
-            <property name="height-request">34</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-          </object>
-          <packing>
-            <property name="x">852</property>
-            <property name="y">337</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="light2button">
-            <property name="label" translatable="yes">Light 2 (carousel)</property>
             <property name="width-request">149</property>
             <property name="height-request">34</property>
             <property name="visible">True</property>
@@ -298,8 +271,22 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">853</property>
-            <property name="y">396</property>
+            <property name="x">855</property>
+            <property name="y">344</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="light2button">
+            <property name="label" translatable="yes">Light 2 (carousel)</property>
+            <property name="width-request">139</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">854</property>
+            <property name="y">389</property>
           </packing>
         </child>
         <child>
@@ -311,8 +298,8 @@
             <property name="label" translatable="yes">SEQUENCE</property>
           </object>
           <packing>
-            <property name="x">40</property>
-            <property name="y">20</property>
+            <property name="x">107</property>
+            <property name="y">16</property>
           </packing>
         </child>
         <child>
@@ -324,8 +311,8 @@
             <property name="label" translatable="yes">VALVE STATUS</property>
           </object>
           <packing>
-            <property name="x">45</property>
-            <property name="y">147</property>
+            <property name="x">69</property>
+            <property name="y">149</property>
           </packing>
         </child>
         <child>
@@ -363,8 +350,8 @@
             <property name="label" translatable="yes">CAROUSEL CONTROL</property>
           </object>
           <packing>
-            <property name="x">45</property>
-            <property name="y">310</property>
+            <property name="x">2</property>
+            <property name="y">309</property>
           </packing>
         </child>
         <child>
@@ -415,8 +402,8 @@
             <property name="label" translatable="yes">UNBLOCKED</property>
           </object>
           <packing>
-            <property name="x">868</property>
-            <property name="y">244</property>
+            <property name="x">878</property>
+            <property name="y">231</property>
           </packing>
         </child>
         <child>
@@ -428,7 +415,7 @@
             <property name="label" translatable="yes">Camera Feedback</property>
           </object>
           <packing>
-            <property name="x">527</property>
+            <property name="x">529</property>
             <property name="y">386</property>
           </packing>
         </child>
@@ -444,20 +431,6 @@
           <packing>
             <property name="x">385</property>
             <property name="y">464</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="camera2button">
-            <property name="label" translatable="yes">camera2</property>
-            <property name="width-request">80</property>
-            <property name="height-request">29</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-          </object>
-          <packing>
-            <property name="x">384</property>
-            <property name="y">501</property>
           </packing>
         </child>
         <child>
@@ -482,8 +455,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">651</property>
-            <property name="y">250</property>
+            <property name="x">640</property>
+            <property name="y">234</property>
           </packing>
         </child>
         <child>
@@ -496,8 +469,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">499</property>
-            <property name="y">250</property>
+            <property name="x">498</property>
+            <property name="y">234</property>
           </packing>
         </child>
         <child>
@@ -509,8 +482,8 @@
             <property name="label" translatable="yes">P1</property>
           </object>
           <packing>
-            <property name="x">541</property>
-            <property name="y">171</property>
+            <property name="x">546</property>
+            <property name="y">154</property>
           </packing>
         </child>
         <child>
@@ -525,6 +498,59 @@
           <packing>
             <property name="x">1015</property>
             <property name="y">13</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_carousel">
+            <property name="width-request">100</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">0</property>
+          </object>
+          <packing>
+            <property name="x">175</property>
+            <property name="y">395</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="resetbutton">
+            <property name="label" translatable="yes">RESET</property>
+            <property name="width-request">80</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">268</property>
+            <property name="y">415</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="cameraInput">
+            <property name="width-request">190</property>
+            <property name="height-request">139</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">no input</property>
+          </object>
+          <packing>
+            <property name="x">494</property>
+            <property name="y">444</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ofsblockedlabel">
+            <property name="width-request">567</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">OFS Status</property>
+          </object>
+          <packing>
+            <property name="x">314</property>
+            <property name="y">563</property>
           </packing>
         </child>
       </object>

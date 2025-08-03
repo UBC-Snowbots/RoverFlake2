@@ -132,7 +132,25 @@ button.notanalyzing {
     font-weight: bold;
 }
 
+.on {
+    background-color: green;
+    color: white;
+}
 
+.off {
+    background-color: red;
+    color: white;
+}
+
+.error {
+    font-style: italic;
+    color: red;
+
+}
+
+.norm {
+    color: grey;
+}
 
 
 

@@ -1,12 +1,4 @@
 #include <science_moduleHMI.h>
-//for osf1, osf2 need to get data from after as well (NOT BUTTONS BUT SENSORS)
-//if fluctuates, its not flowing, steady its flowing
-//just want raw number --> and like display to user, for OSF1 and OSF2
-//user will judge if its like flucatuing or not
-//have a like a clear/cancel button to stop everything
-//note to think about: if OSF1/OSF2 blocked we need to purge, so should we stop button, and then like stop everything
-
-
 
 //for Rinse for example
 //i want to do SV2 then wait like 15 seconds then close and then do 5 sec wait then do SV1, and the buttons should appear and the message should appear after that wait period
@@ -62,6 +54,7 @@ int ScienceHMINode::toggleButtonStyle(Gtk::Button* btn, const std::string& activ
     }
 }
 
+
 void ScienceHMINode::updateValveButton(Gtk::Button* button, bool energized) {
     if (energized) {
         button->get_style_context()->remove_class("not_energized");
@@ -84,13 +77,33 @@ void ScienceHMINode::updateAGButton(Gtk::Button* button, bool energized) {
 
 void ScienceHMINode::updatePumpUI(Gtk::Label* label, Gtk::Button* forwardButton, int pumpStatus) {
     if (pumpStatus == 2) {  // forward
-        p1forward->get_style_context()->remove_class("not_active");
+            p1forward->get_style_context()->remove_class("not_active");
             p1forward->get_style_context()->add_class("active");
+
+            p1reverse->get_style_context()->remove_class("not_active");
+            p1reverse->get_style_context()->remove_class("active");
+
             pumpstatuslabel->set_text("Forward");
             pumpstatuslabel->get_style_context()->remove_class("label-reverse");
             pumpstatuslabel->get_style_context()->remove_class("label-stop");
             pumpstatuslabel->get_style_context()->add_class("label-forward");
-    } else {
+    } else if(pumpStatus == 1){
+        p1forward->get_style_context()->remove_class("active");
+        p1forward->get_style_context()->remove_class("not_active");
+        p1forward->get_style_context()->add_class("not_active");
+
+        p1reverse->get_style_context()->remove_class("not_active");
+        p1reverse->get_style_context()->add_class("active");
+
+        pumpstatuslabel->set_text("Reverse");
+        pumpstatuslabel->get_style_context()->remove_class("label-stop");
+        pumpstatuslabel->get_style_context()->remove_class("label-forward");
+        pumpstatuslabel->get_style_context()->add_class("label-reverse");
+    }
+    else{
+        p1reverse->get_style_context()->remove_class("not_active");
+        p1reverse->get_style_context()->remove_class("active");
+
         p1forward->get_style_context()->remove_class("active");
             p1forward->get_style_context()->remove_class("not_active");
             p1forward->get_style_context()->add_class("not_active");
@@ -101,27 +114,30 @@ void ScienceHMINode::updatePumpUI(Gtk::Label* label, Gtk::Button* forwardButton,
             pumpstatuslabel->get_style_context()->remove_class("label-reverse");
             pumpstatuslabel->get_style_context()->remove_class("label-forward");
             pumpstatuslabel->get_style_context()->add_class("label-stop");
+
     }
 }
 
 void ScienceHMINode::rinseSequence() {
-    // Initialize the rinse sequence state
     rinse_step = 0;
 
+    // Customize delay between each step in milliseconds
+    std::vector<int> delays_ms = {2000, 1000, 4000, 2000};
 
-    rinse_timer = Glib::signal_timeout().connect_seconds([this]() mutable -> bool {
-        // Check if the rinse sequence is still active
+    // Use shared_ptr to safely allow recursive lambda
+    auto advance_step = std::make_shared<std::function<void()>>();
+    
+    *advance_step = [this, advance_step, delays_ms]() mutable {
         if (home_msg.sequenceselection != 1) {
             RCLCPP_WARN(this->get_logger(), "Rinse sequence aborted due to sequence change.");
-            return false;
+            return;
         }
 
-        // Handle rinse steps
         switch (rinse_step) {
             case 0:
                 home_msg.sv2status = 1;
                 valve_pub->publish(home_msg);
-                updateValveButton(sv2button, true);  // update UI based on the sequence
+                updateValveButton(sv2button, true);
                 break;
 
             case 1:
@@ -131,7 +147,6 @@ void ScienceHMINode::rinseSequence() {
                 home_msg.p1status = 2;
                 valve_pub->publish(home_msg);
                 pump_pub->publish(home_msg);
-
                 updateValveButton(sv2button, false);
                 updateValveButton(sv1button, true);
                 updateValveButton(sv4button, true);
@@ -144,138 +159,216 @@ void ScienceHMINode::rinseSequence() {
                 home_msg.p1status = 0;
                 valve_pub->publish(home_msg);
                 pump_pub->publish(home_msg);
-
                 updateValveButton(sv1button, false);
                 updateValveButton(sv4button, false);
                 updatePumpUI(pumpstatuslabel, p1forward, 0);
 
-                // Reset rinse button state if still active
                 if (home_msg.sequenceselection == 1) {
                     rinsebutton->get_style_context()->remove_class("active");
                     rinsebutton->get_style_context()->add_class("not_active");
                 }
 
                 resetSystem();
-
-                return false; // Stop the timer
+                return;
         }
 
-        rinse_step++; // Move to the next step
-        return true;   // Continue the timer
-    }, 5);  // Update every 5 seconds
+        int current_delay = (rinse_step < delays_ms.size()) ? delays_ms[rinse_step] : 3000;
+        rinse_step++;
 
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
 
+    // Call the first step
+    //Delay the start explicitly
+    int initial_delay = delays_ms[0];
+    Glib::signal_timeout().connect_once(*advance_step, initial_delay);
+    //(*advance_step)();
 }
 
 
-
-
 void ScienceHMINode::agitatorSequence() {
-    // Initialize the rinse sequence state
     ag_step = 0;
 
-    ag_timer = Glib::signal_timeout().connect_seconds([this]() mutable -> bool {
-        // Check if the rinse sequence is still active
+    std::vector<int> delays_ms = {2000, 1000, 5000, 2000};  // Customize delays here
+
+    auto advance_step = std::make_shared<std::function<void()>>();
+
+    *advance_step = [this, advance_step, delays_ms]() mutable {
         if (home_msg.sequenceselection != 2) {
-            RCLCPP_WARN(this->get_logger(), "Rinse sequence aborted due to sequence change.");
-            return false;
+            RCLCPP_WARN(this->get_logger(), "Agitator sequence aborted due to sequence change.");
+            return;
         }
 
-        // Handle rinse steps
         switch (ag_step) {
             case 0:
                 home_msg.sv2status = 1;
                 valve_pub->publish(home_msg);
-                updateValveButton(sv2button, true);  // update UI based on the sequence
+                updateValveButton(sv2button, true);
                 break;
 
             case 1:
-                home_msg.sv2status = 0;               
-                home_msg.agpowerstatus = 1;                
+                home_msg.sv2status = 0;
+                home_msg.agpowerstatus = 1;
                 valve_pub->publish(home_msg);
                 agitator_pub->publish(home_msg);
-
-                updateValveButton(sv2button, false);                
+                updateValveButton(sv2button, false);
                 updateAGButton(agitatorpowerbutton, true);
-                //updatePumpUI(pumpstatuslabel, p1forward, 2);
                 break;
 
             case 2:
                 home_msg.agpowerstatus = 0;
                 agitator_pub->publish(home_msg);
-
                 updateAGButton(agitatorpowerbutton, false);
 
-                // Reset rinse button state if still active
-                if (home_msg.sequenceselection == 1) {
-                    rinsebutton->get_style_context()->remove_class("active");
-                    rinsebutton->get_style_context()->add_class("not_active");
+                if (home_msg.sequenceselection == 2) {
+                    agitatorbutton->get_style_context()->remove_class("active");
+                    agitatorbutton->get_style_context()->add_class("not_active");
                 }
 
                 resetSystem();
-
-                return false; // Stop the timer
+                return;
         }
 
-        ag_step++; // Move to the next step
-        return true;   // Continue the timer
-    }, 5);  // Update every 5 seconds
+        int current_delay = (ag_step < delays_ms.size()) ? delays_ms[ag_step] : 3000;
+        ag_step++;
 
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
 
+    //Delay the start explicitly
+    int initial_delay = delays_ms[0];
+    Glib::signal_timeout().connect_once(*advance_step, initial_delay);
+
+    // Call first step
+    //(*advance_step)();
 }
 
-
-
-
 void ScienceHMINode::processSequence() {
-    // Initialize the rinse sequence state
+
+    carousel_index_ = 0;
+    home_msg.carouselindex = 0;
+    label_carousel->set_text(std::to_string(carousel_index_));
+    carousel_pub->publish(home_msg);
+    
+
     process_step = 0;
 
-    process_timer = Glib::signal_timeout().connect_seconds([this]() mutable -> bool {
-        // Check if the rinse sequence is still active
+    std::vector<int> delays_ms = {2000, 4000, 3000};  // Customize delays per step
+
+    auto advance_step = std::make_shared<std::function<void()>>();
+
+    *advance_step = [this, advance_step, delays_ms]() mutable {
         if (home_msg.sequenceselection != 3) {
-            RCLCPP_WARN(this->get_logger(), "Rinse sequence aborted due to sequence change.");
-            return false;
+            RCLCPP_WARN(this->get_logger(), "Process sequence aborted due to sequence change.");
+            return;
         }
 
-        // Handle rinse steps
         switch (process_step) {
             case 0:
                 home_msg.sv1status = 1;
                 home_msg.p1status = 2;
-                pump_pub->publish(home_msg);
                 valve_pub->publish(home_msg);
-
-                updateValveButton(sv1button, true);  // update UI based on the sequence
+                pump_pub->publish(home_msg);
+                updateValveButton(sv1button, true);
                 updatePumpUI(pumpstatuslabel, p1forward, 2);
                 break;
 
             case 1:
-
                 home_msg.sv1status = 0;
                 home_msg.p1status = 0;
-                pump_pub->publish(home_msg);
                 valve_pub->publish(home_msg);
-
-                updateValveButton(sv1button, true);  // update UI based on the sequence
+                pump_pub->publish(home_msg);
+                updateValveButton(sv1button, false);
                 updatePumpUI(pumpstatuslabel, p1forward, 0);
 
-                resetSystem();
+                if (home_msg.sequenceselection == 3) {
+                    processbutton->get_style_context()->remove_class("active");
+                    processbutton->get_style_context()->add_class("not_active");
+                }
 
-                return false; // Stop the timer
+                resetSystem();
+                return;
         }
 
-        process_step++; // Move to the next step
-        return true;   // Continue the timer
-    }, 5);  // Update every 5 seconds
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        process_step++;
 
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
 
+    // Delay the start explicitly
+    int initial_delay = delays_ms[0];
+    Glib::signal_timeout().connect_once(*advance_step, initial_delay);
+
+    //(*advance_step)();  // Start the first step
 }
 
+bool is_purging;
 
+void ScienceHMINode::purgeSequence() {
+    is_purging = true;
+    process_step = 0;
 
+    std::vector<int> delays_ms = {2000, 3000, 6000, 3000};  // Customize delays per step
 
+    auto advance_step = std::make_shared<std::function<void()>>();
 
+    *advance_step = [this, advance_step, delays_ms]() mutable {
+        if (home_msg.sequenceselection != 4) {
+            RCLCPP_WARN(this->get_logger(), "Purge sequence aborted due to sequence change.");
+            return;
+        }
+
+        switch (process_step) {
+
+            case 0:
+                home_msg.sv3status = 1;
+                home_msg.p1status = 1;
+                valve_pub->publish(home_msg);
+                pump_pub->publish(home_msg);
+                updateValveButton(sv3button, true);
+                updatePumpUI(pumpstatuslabel, p1reverse, 1);
+
+                break;
+            
+            case 1:
+                home_msg.sv3status = 1;
+                home_msg.p1status = 2;
+                valve_pub->publish(home_msg);
+                pump_pub->publish(home_msg);
+                updateValveButton(sv3button, true);
+                updatePumpUI(pumpstatuslabel, p1forward, 2);
+
+                break;
+                
+
+            case 2:
+                home_msg.p1status = 0;
+                pump_pub->publish(home_msg);
+                updatePumpUI(pumpstatuslabel, p1forward, 0);
+
+                if (home_msg.sequenceselection == 4) {
+                    processbutton->get_style_context()->remove_class("active");
+                    processbutton->get_style_context()->add_class("not_active");
+                }
+
+                resetSystem();
+                is_purging = false;
+                return;
+        }
+
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        process_step++;
+
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
+
+    //Delay the start explicitly
+    int initial_delay = delays_ms[0];
+    Glib::signal_timeout().connect_once(*advance_step, initial_delay);
+
+    //(*advance_step)();  // Start the first step
+}
 
 
 void ScienceHMINode::setSequence(bool pressed, int button) {
@@ -328,10 +421,15 @@ void ScienceHMINode::setSequence(bool pressed, int button) {
             processSequence();
             break;
         case sequence_status::purge: 
-            RCLCPP_INFO(this->get_logger(), "purge");
+            resetSystem();
+
+            RCLCPP_INFO(this->get_logger(), "process");
+            estopbutton->get_style_context()->remove_class("not_energized");
+            estopbutton->get_style_context()->add_class("not_active");
             home_msg.sequenceselection = 4; 
             purgebutton->get_style_context()->remove_class("not_active");
             purgebutton->get_style_context()->add_class("active");
+            purgeSequence();
             break;
     }
 
@@ -343,38 +441,10 @@ void ScienceHMINode::setSequence(bool pressed, int button) {
 
 // Toggle valve states (Only two states: Energized (green) and Not Energized (red))
 void ScienceHMINode::SV1clicked() {
-    //rover_msgs::msg::ScienceModule home_msg;
-    // home_msg.sv1status = 1;
-   
-
-    // // Get the style context of the button
-    // auto style_context = sv1button->get_style_context();
-
 
     home_msg.sv1status = toggleButtonStyle(sv1button, "energized", "not_energized");
     valve_pub->publish(home_msg);
 
-
-    //style_context->add_class("energized");
-
-    // Toggle between "energized" (green) and "not_energized" (red) states
-    // if (style_context->has_class("energized")) {
-    //     style_context->remove_class("energized");
-    //     style_context->add_class("not_energized");  // Change to not energized (red)
-    // } else {
-    //     style_context->remove_class("not_energized");
-    //     style_context->add_class("energized");  // Change to energized (green)
-    // }
-
-    // valve_pub->publish(home_msg);
-
-//     auto ctx = sv1button->get_style_context();
-// auto classes = ctx->list_classes();
-
-// std::cout << "🔍 SV1 styles: ";
-// for (const auto& cls : classes)
-//     std::cout << cls << " ";
-// std::cout << std::endl;
 
 }
 
@@ -464,32 +534,6 @@ void ScienceHMINode::setPump(bool pressed, int button) {
 }
 
 
-
-// // Toggle valve states (Only two states: Energized (green) and Not Energized (red))
-// void ScienceHMINode::P1clicked() {
-//     //rover_msgs::msg::ScienceModule home_msg;
-    
-
-//     auto style_context = p1button->get_style_context();
-    
-
-//     if (style_context->has_class("forward")) {
-//         style_context->remove_class("forward");
-//         style_context->add_class("reverse");
-//         p1button->set_label("P1 (Reverse)");  // Change label to show it's in backward state
-//         home_msg.p1status = 0;
-//     } else {
-//         style_context->remove_class("reverse");
-//         style_context->add_class("forward");
-//         p1button->set_label("P1 (Forward)");  // Or just "P1" or any label for forward state
-//         home_msg.p1status = 1;
-    
-//     }
-
-//     osf_pub->publish(home_msg);
-
-// }
-
 bool osf1_unblocked = false;
 bool osf2_unblocked = false;
 
@@ -546,8 +590,6 @@ void ScienceHMINode::OSF2clicked() {
 
 
     pump_pub->publish(home_msg);
-
-
     updateStatusLabel();
 }
 
@@ -563,42 +605,222 @@ void ScienceHMINode::updateStatusLabel() {
         statuslabel->set_text("BLOCKED");
         style_context->add_class("label-blocked");
     }
+
+    updateOFSBlockedLable();
+}
+
+bool is_estopped;
+void ScienceHMINode::updateOFSBlockedLable(){
+
+    if (is_purging) return;
+
+    if (!osf1_unblocked || !osf2_unblocked) {
+        RCLCPP_ERROR(this->get_logger(), "OSF1 or OSF2 is blocked. Triggering emergency stop.");
+
+        ofsblockedlabel->set_text("ERROR: OSF BLOCKED");
+        ofsblockedlabel->get_style_context()->remove_class("norm");
+        ofsblockedlabel->get_style_context()->add_class("error");
+
+        is_estopped = true;
+        resetSystem();
+    }
+
+    else{
+        ofsblockedlabel->set_text("OFS status");
+        ofsblockedlabel->get_style_context()->remove_class("error");
+        ofsblockedlabel->get_style_context()->add_class("norm");
+    }
+
 }
 
 
 // Toggle valve states (Only two states: Energized (green) and Not Energized (red))
 void ScienceHMINode::prevClicked() {
-    //rover_msgs::msg::ScienceModule home_msg;
+    // Wrap from 0 → 15
+    carousel_index_ = (carousel_index_ == 0) ? 15 : carousel_index_ - 1;
 
+    estopbutton->get_style_context()->add_class("not_active");
+   
 
-    home_msg.prevstatus = toggleButtonStyle(prevIndexbutton, "on", "off");
+    updateCarouselIndexLabel();
+
+    home_msg.carouseldir = -1;
+    carousel_pub->publish(home_msg);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    
+
+    home_msg.carouseldir= 0;
     carousel_pub->publish(home_msg);
 }
 
-// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+
 void ScienceHMINode::nextClicked() {
-    //rover_msgs::msg::ScienceModule home_msg;
+    // Wrap from 15 → 0
+    carousel_index_ = (carousel_index_ + 1) % 16;
 
-    home_msg.nextstatus = toggleButtonStyle(nextidxbutton, "on", "off");
+    //update button:
+    estopbutton->get_style_context()->add_class("not_active");
+    
+
+    // Update the label
+    updateCarouselIndexLabel();
+
+    // Set motor direction forward
+    home_msg.carouseldir= 1;
+    carousel_pub->publish(home_msg);
+
+
+    // After short delay, stop motor
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // Disable buttons here
+
+
+    home_msg.carouseldir = 0;
     carousel_pub->publish(home_msg);
 }
 
-// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+void ScienceHMINode::updateCarouselIndexLabel() {
+    home_msg.carouselindex = carousel_index_;
+    label_carousel->set_text(std::to_string(carousel_index_));
+    carousel_pub->publish(home_msg);
+}
+
+void ScienceHMINode::resetClicked(){
+    carousel_index_ = 0;
+    home_msg.carouselindex = 0;
+    label_carousel->set_text(std::to_string(carousel_index_));
+    carousel_pub->publish(home_msg);
+}
+
+
+
 void ScienceHMINode::largeClicked() {
-    //rover_msgs::msg::ScienceModule home_msg;
 
-    home_msg.largestatus = toggleButtonStyle(largebutton, "on", "off");
-    carousel_pub->publish(home_msg);
+    estopbutton->get_style_context()->add_class("not_active");
+    is_estopped = false;
+    process_step = 0;
 
+    std::vector<int> delays_ms = {2000, 1500, 2000};  // Customize delays per step
+
+    auto advance_step = std::make_shared<std::function<void()>>();
+
+    *advance_step = [this, advance_step, delays_ms]() mutable {
+        if (is_estopped) {
+            RCLCPP_WARN(this->get_logger(), "Advance step aborted due to E-Stop");
+            return;
+        }
+
+        switch (process_step) {
+
+            case 0:
+            estopbutton->get_style_context()->remove_class("not_energized");
+            estopbutton->get_style_context()->add_class("not_active");
+                largebutton->get_style_context()->remove_class("not_energized");
+                largebutton->get_style_context()->add_class("energized");
+                home_msg.sv4status = 0;
+                home_msg.largestatus = 1;
+                break;
+
+            case 1:
+                home_msg.sv4status = 1;
+                valve_pub->publish(home_msg);
+                
+                updateValveButton(sv4button, true);
+                break;
+        
+
+            case 2:
+                home_msg.sv4status = 0;
+                home_msg.largestatus = 0;
+                valve_pub->publish(home_msg);
+                updateValveButton(sv4button, false);
+                largebutton->get_style_context()->remove_class("energized");
+                largebutton->get_style_context()->add_class("not_energized");
+
+                // if (home_msg.sequenceselection == 4) {
+                //     processbutton->get_style_context()->remove_class("active");
+                //     processbutton->get_style_context()->add_class("not_active");
+                // }
+
+                resetSystem();
+                return;
+        }
+
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        process_step++;
+
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
+
+    (*advance_step)();  // Start the first step
 }
 
-// Toggle valve states (Only two states: Energized (green) and Not Energized (red))
+
 void ScienceHMINode::smallClicked() {
-    //rover_msgs::msg::ScienceModule home_msg;
 
-    home_msg.smallstatus = toggleButtonStyle(smallbutton, "on", "off");
-    carousel_pub->publish(home_msg);
+    estopbutton->get_style_context()->add_class("not_active");
+    is_estopped = false;
+    process_step = 0;
+
+    std::vector<int> delays_ms = {2000, 500, 2000};  // Customize delays per step
+
+    auto advance_step = std::make_shared<std::function<void()>>();
+
+    *advance_step = [this, advance_step, delays_ms]() mutable {
+        if (is_estopped) {
+            RCLCPP_WARN(this->get_logger(), "Advance step aborted due to E-Stop");
+            return;
+        }
+
+        switch (process_step) {
+            case 0:
+                estopbutton->get_style_context()->remove_class("not_energized");
+                estopbutton->get_style_context()->add_class("not_active");
+                smallbutton->get_style_context()->remove_class("not_energized");
+                smallbutton->get_style_context()->add_class("energized");
+                updateValveButton(sv4button, false);
+
+                home_msg.sv4status = 0;
+                home_msg.smallstatus = 1;
+                break;
+
+            case 1:
+                home_msg.sv4status = 1;
+                valve_pub->publish(home_msg);
+                
+                updateValveButton(sv4button, true);
+                break;
+        
+
+            case 2:
+                home_msg.sv4status = 0;
+                home_msg.smallstatus = 0;
+                valve_pub->publish(home_msg);
+                updateValveButton(sv4button, false);
+                smallbutton->get_style_context()->remove_class("energized");
+                smallbutton->get_style_context()->add_class("not_energized");
+
+                // if (home_msg.sequenceselection == 4) {
+                //     processbutton->get_style_context()->remove_class("active");
+                //     processbutton->get_style_context()->add_class("not_active");
+                // }
+
+                resetSystem();
+                return;
+        }
+
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        process_step++;
+
+        Glib::signal_timeout().connect_once(*advance_step, current_delay);
+    };
+
+    (*advance_step)();  // Start the first step
 }
+
+
 
 void ScienceHMINode::spectroClicked() {
     //rover_msgs::msg::ScienceModule home_msg;
@@ -629,35 +851,6 @@ void ScienceHMINode::ligth2Clicked() {
 
     home_msg.light2status = toggleButtonStyle(light2button, "on", "off");
     light_pub->publish(home_msg);
-}
-
-
-
-
-
-void ScienceHMINode::handleTextboxInput() {
-    std::string input_text = indexnumberentry->get_text();
-    try {
-        int index = std::stoi(input_text);
-        setCarouselIndex(index);
-    } catch (const std::exception& e) {
-        RCLCPP_WARN(this->get_logger(), "Invalid input for carousel index.");
-    }
-}
-
-
-
-// Set carousel index (0-15)
-void ScienceHMINode::setCarouselIndex(int index) {
-    //rover_msgs::msg::ScienceModule home_msg;
-    
-    if (index >= 0 && index <= 15) {
-        home_msg.carouselindex = index;
-        carousel_pub->publish(home_msg);
-        RCLCPP_INFO(this->get_logger(), "Carousel Index Set: %d", index);
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Invalid Carousel Index! Must be between 0-15.");
-    }
 }
 
 
@@ -720,6 +913,15 @@ void ScienceHMINode::resetSystem() {
     // home_msg.osf1status = 0;
     // home_msg.osf2status = 0;
 
+    smallbutton->get_style_context()->remove_class("energized");
+    largebutton->get_style_context()->remove_class("energized");
+    largebutton->get_style_context()->add_class("not_energized");
+    smallbutton->get_style_context()->add_class("not_energized");
+
+    home_msg.smallstatus = 0;
+    home_msg.largestatus = 0;
+
+
     estopbutton->get_style_context()->remove_class("not_active");
     estopbutton->get_style_context()->add_class("not_energized");
 
@@ -728,47 +930,37 @@ void ScienceHMINode::resetSystem() {
     sequence_pub->publish(home_msg);
     valve_pub->publish(home_msg);
     pump_pub->publish(home_msg);
+
     //osf_pub->publish(home_msg);
 }
 
 void ScienceHMINode::stopClicked() {
     RCLCPP_INFO(this->get_logger(), "STOP clicked");
+    is_estopped = true;
     resetSystem();
-
-
 }
 
 
+bool camera1_on = false;
 
 
 void ScienceHMINode::cameraFeedChosen(bool clicked, int id)
 {
     rover_msgs::msg::CameraVideo msg;
-    msg.camera_id = id;  // e.g. 1 for camera1button, 2 for camera2button
-    camera_video_pub->publish(msg);
+    msg.camera_id = id;
 
-    if(id == 1){
-        camera1button->get_style_context()->remove_class("not_active");
-        camera1button->get_style_context()->add_class("active");
-        camera2button->get_style_context()->remove_class("active");
-        camera2button->get_style_context()->add_class("not_active");
+    if (id == 1 && camera1button) {
+        camera1_on = !camera1_on;  // toggle the state
+
+        if (camera1_on) {
+            camera1button->get_style_context()->remove_class("off");
+            camera1button->get_style_context()->add_class("on");
+        } else {
+            camera1button->get_style_context()->remove_class("on");
+            camera1button->get_style_context()->add_class("off");
+        }
+
+        camera_video_pub->publish(msg);
+        RCLCPP_INFO(this->get_logger(), "Camera 1 toggled %s", camera1_on ? "ON" : "OFF");
     }
-
-    else if(id ==2){
-        camera2button->get_style_context()->remove_class("not_active");
-        camera2button->get_style_context()->add_class("active");
-        camera1button->get_style_context()->remove_class("active");
-        camera1button->get_style_context()->add_class("not_active");
-    }
-
-    RCLCPP_INFO(this->get_logger(), "Camera feed %d chosen", id);
 }
-
-
-
-
-
-//home_msg.data = ....
-//do 1, 2
-
-//
