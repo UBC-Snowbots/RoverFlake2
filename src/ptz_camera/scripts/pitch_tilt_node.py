@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from ptz_camera.srv import SetMovement
+import serial
+
+class PTZPitchTiltNode(Node):
+    """
+    To pitch (DATA IN DEGREES):
+        ros2 service call /pitch ptz_camera/srv/SetFloat64 "{data: 30.0}"
+    To tilt (DATA IN DEGREES):
+        ros2 service call /tilt ptz_camera/srv/SetFloat64 "{data: 30.0}"
+    """
+    def __init__(self):
+        super().__init__('pitch_tilt_node')    
+
+        # Serial port stuff
+        self.declare_parameter('serial_port', '/dev/ttyUSB0')
+        self.declare_parameter('baud_rate', 115200) 
+
+        # Get parameter values
+        port = self.get_parameter('serial_port').get_parameter_value().string_value
+        baud = self.get_parameter('baud_rate').get_parameter_value().integer_value
+
+        # Serial connection
+        try:
+            self.ser = serial.Serial(port, baudrate=baud, timeout=1)
+            self.get_logger().info('Serial conn for PT')
+        except serial.SerialException as e:
+            self.get_logger().error(f'Failed to open serial port: {e}')
+            self.ser = None
+
+        # Assign service for tilting and zoom
+        self.pitch_srvs = self.create_service(SetMovement, 'pitch', self.pitch) 
+        self.tilt_srvs = self.create_service(SetMovement , 'tilt', self.tilt)
+
+    def pitch(self, request, response):
+        if self.ser is not None:
+            cmd = f'C {request.data}\r\n'
+            self.ser.write(cmd.encode())
+            resp = self.ser.read_until(b'\n').decode('utf-8') # retrive positional msg
+            response.data = request.data
+            response.msg = resp
+        else:
+            response.data = -1.0
+            response.msg = 'Null'
+        return response
+    
+    def tilt(self, request, response):
+        if self.ser is not None:
+            cmd = f'P {request.data}\r\n'
+            self.ser.write(cmd.encode())
+            resp = self.ser.read_until(b'\n').decode('utf-8') # retrive positional msg
+            response.data = request.data
+            response.msg = resp
+        else:
+            response.data = -1.0
+            response.msg = 'Null'    
+        return response
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = PTZPitchTiltNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info('Keyboard interrupt received, shutting down.')
+    finally:
+        if node.ser and node.ser.is_open:
+            node.ser.close()
+            node.get_logger().info("Serial connection closed.")
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
