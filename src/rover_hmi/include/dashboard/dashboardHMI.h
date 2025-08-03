@@ -1,6 +1,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/sub_system_health.hpp>
 #include <rover_msgs/msg/heart_request.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include "dashboardDefinitions.h"
 
 // #include <helper_functions.h>
@@ -9,7 +10,13 @@
 #include <unistd.h>     // For fork, execlp
 #include <sys/types.h>  // For pid_t
 #include <stdlib.h>     // For exit
-
+// Enums
+enum computers{
+  control_base,
+  onboard_nuc,
+  onboard_jetson,
+};
+using namespace RoverHmiCommon;
 
 class DashboardHMINode : public rclcpp::Node, public Gtk::Window
 {
@@ -22,6 +29,10 @@ public:
         // Set up pubs n subs
         // onboard_heart_request_pub = this->create_publisher<
         //TODO then create a proper feedback using ros2 node or heartbeats?
+        
+
+        ptz_pub = this->create_publisher<geometry_msgs::msg::Vector3>(
+            "/ptz/control", rclcpp::QoS(10));
         std::string heart_onboard_nuc_topic = "/broken_heart1"; 
         std::string heart_control_base_topic = "/broken_heart2";
         rclcpp::Parameter computer_control_base;
@@ -100,9 +111,21 @@ public:
       app->run(*dash_window);
       RCLCPP_INFO(this->get_logger(), "App Run Success");
     }
+
+    // Redraws widgets based on framerate
+    double fps = 30.0;
+    void handle_fps_draw(){
+      control_base_watch_grid.line_draw_area->queue_draw();
+      on_board_nuc_watch_grid.line_draw_area->queue_draw();
+    }
+
     Glib::RefPtr<Gtk::Application> app;
 
 private:
+
+    float pan_tilt_zoom_speed = 1.0;
+
+
     int watchdog_timeout_ms = 0;
     std::string main_css_file_path;
     std::string package_share_dir;
@@ -129,9 +152,13 @@ private:
     // This is to monitor the hearts, so one monitor for each device/computer
     struct heart_monitor {
       std::string host_device_name;
-      uint32_t last_timestamp = NULL;
+      uint32_t time_of_last_heartbeat_ns = NULL;
+      uint32_t time_of_last_heartbeat_s = NULL;
       std::vector<MonitoredSystem> systems;
     };
+
+    heart_monitor control_base_heart_monitor;
+    heart_monitor onboard_nuc_heart_monitor;
 
     //! Should be cleaned up. Like too many custom structs to do this setup
     std::vector<std::string> monitored_system_names_control_base; // = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
@@ -143,7 +170,8 @@ private:
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_jetson;
     bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
 
-    
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr ptz_pub;
+
     // std::map
 
     //? Gtk Stuffs
@@ -155,9 +183,12 @@ private:
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
   void subsystemRequest(std::string subsystem_name, int request, int computer = COMPUTER_GLOBAL);
+  void ptzButtonCallback(int ptz_button, bool pressed);
+
+
 
   //* Draw Callbacks - renders cairo stuff
-  bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
+  bool handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
@@ -171,6 +202,8 @@ std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
+static constexpr char MSG_NO_HEARTBEAT_DETECTED[] = "NO HEARTBEAT DETECTED ON HOST";
+static constexpr char HEALTHY_IDLE[] = "HEALTHY! ";
 
 };
 
@@ -179,14 +212,6 @@ std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
 
 
-
-namespace computer{
-enum computers{
-  control_base,
-  onboard_nuc,
-  onboard_jetson,
-};
-}
 
 
 
