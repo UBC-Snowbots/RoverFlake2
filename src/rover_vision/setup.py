@@ -19,6 +19,7 @@ setup(
         'numpy',
         'opencv-python',
         'pyrealsense2',
+        'geopy'
     ],
     zip_safe=True,
     maintainer='kingcammy',
@@ -30,6 +31,7 @@ setup(
         'console_scripts': [
             'camera_pub_node = rover_vision.camera_pub_node:main',
             'colour_detection_node = rover_vision.colour_detection_node:main',
+            'waypoint_node = rover_vision.waypoint_node:main',
         ],
     },
 )

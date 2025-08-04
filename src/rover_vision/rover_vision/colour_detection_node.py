@@ -191,7 +191,7 @@ class ColourDetectionNode(Node):
         """Publish visualization marker"""
         marker = Marker()
         marker.header = point_stamped.header
-        marker.ns = "color_detection"
+        marker.ns = "color_detectiaon"
         marker.id = 0
         marker.type = Marker.SPHERE
         marker.action = Marker.ADD
@@ -264,7 +264,7 @@ class ColourDetectionNode(Node):
                 for detection in detections:
                     if detection['color'] == self.locked_color:
                         self.publish_detection(detection, hsv_image.shape)
-                        status_msg = f"Tracking {self.locked_color} at bearing {np.degrees(detection['bearing']):.1f}°"
+                        status_msg = f"Tracking {self.locked_color} at bearing: {np.degrees(detection['bearing']):.1f}°"
                         self.status_pub.publish(String(data=status_msg))
                         break
             
