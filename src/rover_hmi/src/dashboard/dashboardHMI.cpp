@@ -170,78 +170,6 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
     
 }
 
-
-// bool DashboardHMINode::handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, DashboardHMINode::ComputerWatchGrid& computer, heart_monitor& monitor){
-//     // const auto alloc = canvas_->get_allocation();
-// // int W = alloc.get_width(), H = alloc.get_height();
-//     auto now = this->get_clock()->now();
-//     uint64_t now_ns = (now.nanoseconds()); // truncate
-//     // uint32_t now_s = static_cast<uint32_t>(now.seconds());
-//     int num_computers = 2;
-//     uint32_t thresh = 30*num_computers;
-//     static uint32_t flag = 0;
-//     context->set_source_rgb(0.15, 0.12, 0.12);
-
-//     uint64_t ms_since_last_beat = (now_ns - (monitor.time_of_last_heartbeat_ns)) /1'000'000;
-//     ms_since_last_beat -= (monitor.time_of_last_heartbeat_s * 1000);
-//     bool computer_heart_online = is_heartbeat_alive(monitor.time_of_heartbeat);
- 
-//     if(flag > thresh && computer_heart_online){
-//         context->set_source_rgb(0.2,1,0.2);
-//         if(flag > thresh*2){
-//             flag = 0;
-//         }
-//     }
-//     RCLCPP_INFO(this->get_logger(), "last_beat_time_ms %u", monitor.time_of_last_heartbeat_s);
-//     // RCLCPP_INFO(this->get_logger(), "now: %u", now_s );
-//     // RCLCPP_INFO(this->get_logger(), "now_ns: %u", now_ns );
-
-
-//     RCLCPP_INFO(this->get_logger(), "ms_since_last_beat: %u", ms_since_last_beat );
-//     flag++;
-//     Glib::RefPtr<Gtk::StyleContext> css;
-    
-//     css = computer.status_label->get_style_context();
-//     if(monitor.time_of_last_heartbeat_s != NULL){
-            
-//         computer.status_label->set_label(HEALTHY_IDLE + std::to_string(now_ns - monitor.time_of_last_heartbeat_ns)); 
-
-//     }else{
-//         computer.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
-
-//     }
-
-//     // switch(computer){
-//     //     case computers::control_base:
-//     //     css = control_base_watch_grid.status_label->get_style_context();
-//     //     if(control_base_heart_monitor.time_of_last_heartbeat_s != NULL){
-            
-//     //         control_base_watch_grid.status_label->set_label(HEALTHY_IDLE + std::to_string(now_ns - control_base_heart_monitor.time_of_last_heartbeat_ns)); 
-
-//     //     }else{
-//     //         control_base_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
-
-//     //     }
-//     //     break;    
-//     //     case computers::onboard_nuc:
-//     //     css = control_base_watch_grid.status_label->get_style_context();
-//     //     if(control_base_heart_monitor.time_of_last_heartbeat_s != NULL){
-            
-//     //         on_board_nuc_watch_grid.status_label->set_label(HEALTHY_IDLE + std::to_string(now_ns - control_base_heart_monitor.time_of_last_heartbeat_ns)); 
-
-//     //     }else{
-//     //         on_board_nuc_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
-
-//     //     }
-//     //     break;
-//     //     default:
-//     //     break;
-//     // }
-
-
-//     context->paint();  
-// }
-
 heart_monitor& DashboardHMINode::monitorLookUp(int computer){
     switch(computer){
         case control_base:
@@ -292,8 +220,13 @@ if (ms_since_last_beat >= 0) {
 
 // Update status label
 Glib::RefPtr<Gtk::StyleContext> css = computer.status_label->get_style_context();
-if (ms_since_last_beat >= 0) {
+if (ms_since_last_beat >= 0 && ms_since_last_beat <= watchdog_timeout_ms) {
     computer.status_label->set_label(HEALTHY_IDLE + std::to_string(ms_since_last_beat) + "ms"); 
+}else if(ms_since_last_beat > watchdog_timeout_ms){
+    computer.status_label->set_label(MSG_WATCHDOG_EXCEEDED);
+    if(ms_since_last_beat > watchdog_timeout_ms * 10){
+        monitor.time_of_heartbeat = rclcpp::Time();
+    }
 } else {
     computer.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED);
 }

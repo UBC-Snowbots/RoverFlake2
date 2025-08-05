@@ -186,6 +186,7 @@ std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
 static constexpr char MSG_NO_HEARTBEAT_DETECTED[] = "NO HEARTBEAT DETECTED ON HOST";
 static constexpr char HEALTHY_IDLE[] = "HEALTHY! ";
+static constexpr char MSG_WATCHDOG_EXCEEDED[] = "ERROR: WATCHDOG EXCEEDED!";
 
 };
 
