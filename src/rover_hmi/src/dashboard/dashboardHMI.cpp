@@ -34,6 +34,16 @@ sigc::connection fps_connection = Glib::signal_timeout().connect([&node]() -> bo
     return 0;
 
 }
+// Returns true if last heartbeat is within watchdog_time_ms (milliseconds).
+bool DashboardHMINode::is_heartbeat_alive(const rclcpp::Time &last_heartbeat) {
+    if (last_heartbeat.nanoseconds() == 0) {
+        // never seen one
+        return false;
+    }
+    rclcpp::Time now = this->get_clock()->now();
+    rclcpp::Duration delta = now - last_heartbeat; // safe 64-bit duration
+    return delta.nanoseconds() <= static_cast<int64_t>(2000) * 1'000'000LL;
+}
 
 /**
  * @brief callback for 'heartbeats' - Will update HMI based on what hosts and systems are running/offline
@@ -49,12 +59,18 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
     auto time_since_last_heartbeat = msg->header.stamp;
     uint32_t time_of_heartbeat_ns = static_cast<uint32_t>(time_since_last_heartbeat.nanosec); // truncate
     uint32_t time_of_heartbeat_s = static_cast<uint32_t>(time_since_last_heartbeat.sec); // truncate
-    
+        rclcpp::Time heartbeat_time(msg->header.stamp); // combines sec + nanosec safely
+            int64_t full_ns = heartbeat_time.nanoseconds();
+    RCLCPP_INFO(this->get_logger(), "header.stamp: sec=%d nanosec=%u -> full ns=%lld",
+                msg->header.stamp.sec,
+                msg->header.stamp.nanosec,
+                (long long)full_ns);
     Glib::RefPtr<Gtk::StyleContext> subsys_context;
     Gtk::Label* status_label;
     if(host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
         control_base_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
         control_base_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+        control_base_heart_monitor.time_of_heartbeat = heartbeat_time;
 
         subsys_context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_control_base[subsys_name].status_label;
@@ -67,6 +83,8 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
     if(host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
         onboard_nuc_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
         onboard_nuc_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+        onboard_nuc_heart_monitor.time_of_heartbeat = heartbeat_time;
+
 
         subsys_context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_nuc[subsys_name].status_label;
@@ -122,10 +140,9 @@ void DashboardHMINode::ptzButtonCallback(int ptz_button, bool pressed){
 }
 
 void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
+    #ifdef DEBUG_MSGS
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
-    //* Depending on the button clicked, run different child proccesses, or kill different child processes
-    // runChildNode("rviz2", "rviz2");
-    // runChildNode("joy", "joy_node");
+    #endif 
     rover_msgs::msg::HeartRequest msg;
     msg.subsystem_name = subsystem_name;
     if(request == RUN){
@@ -153,53 +170,70 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
     
 }
 
-    
-bool DashboardHMINode::handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer){
-    // const auto alloc = canvas_->get_allocation();
-// int W = alloc.get_width(), H = alloc.get_height();
-    auto now = this->get_clock()->now();
-    uint32_t now_ns = static_cast<uint32_t>(now.nanoseconds()); // truncate
-    int num_computers = 2;
-    uint32_t thresh = 30*num_computers;
-    static uint32_t flag = 0;
-    context->set_source_rgb(0.15, 0.12, 0.12);
-    if(flag > thresh){
-        context->set_source_rgb(0.2,1,0.2);
-        if(flag > thresh*2){
-            flag = 0;
-        }
-    }
-    flag++;
-    Glib::RefPtr<Gtk::StyleContext> css;
-    
-    
+heart_monitor& DashboardHMINode::monitorLookUp(int computer){
     switch(computer){
-        case computers::control_base:
-        css = control_base_watch_grid.status_label->get_style_context();
-        if(control_base_heart_monitor.time_of_last_heartbeat_s != NULL){
-            
-            control_base_watch_grid.status_label->set_label(HEALTHY_IDLE + std::to_string(now_ns - control_base_heart_monitor.time_of_last_heartbeat_ns)); 
-
-        }else{
-            control_base_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
-
-        }
-        break;    
-        case computers::onboard_nuc:
-        css = control_base_watch_grid.status_label->get_style_context();
-        on_board_nuc_watch_grid.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED); 
-        break;
+        case control_base:
+            return control_base_heart_monitor;
+            break; // break not needed
+        case onboard_nuc:
+            return onboard_nuc_heart_monitor;
+            break;
         default:
-        break;
+            //no jetson
+            break;
     }
-
-
-    context->paint();  
+    return null_heart_monitor;
 }
 
+//TODO really interesting bug with passing address at begining -> what made address not static??? 
+bool DashboardHMINode::handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, DashboardHMINode::ComputerWatchGrid& computer, int computer_i){
+
+    heart_monitor& monitor = monitorLookUp(computer_i);
+
+auto now = this->get_clock()->now();
+int64_t ms_since_last_beat = -1;
+if (monitor.time_of_heartbeat.nanoseconds() != 0) {
+    ms_since_last_beat = (now - monitor.time_of_heartbeat).nanoseconds() / 1'000'000; // safe 64-bit math
+}
+
+bool computer_heart_online = (ms_since_last_beat >= 0 && ms_since_last_beat <= static_cast<int64_t>(watchdog_timeout_ms));
+
+// blinking logic: blink every (watchdog_timeout_ms / 4) ticks of flag as an example
+static uint32_t flag = 0;
+const uint32_t blink_period = 30; // you can tune this for speed of blink
+if (computer_heart_online) {
+    if (((flag / blink_period) % 2) == 0) {
+        context->set_source_rgb(0.2, 1, 0.2); // green phase
+    } else {
+        context->set_source_rgb(0.1, 0.5, 0.1); // dimmer green
+    }
+} else {
+    context->set_source_rgb(0.6, 0.1, 0.1); // offline / bad
+}
+flag++;
+
+if (ms_since_last_beat >= 0) {
+    RCLCPP_INFO(this->get_logger(), "ms_since_last_beat: %lld", (long long)ms_since_last_beat);
+} else {
+    RCLCPP_INFO(this->get_logger(), "No heartbeat seen yet");
+}
+
+// Update status label
+Glib::RefPtr<Gtk::StyleContext> css = computer.status_label->get_style_context();
+if (ms_since_last_beat >= 0 && ms_since_last_beat <= watchdog_timeout_ms) {
+    computer.status_label->set_label(HEALTHY_IDLE + std::to_string(ms_since_last_beat) + "ms"); 
+}else if(ms_since_last_beat > watchdog_timeout_ms){
+    computer.status_label->set_label(MSG_WATCHDOG_EXCEEDED);
+    if(ms_since_last_beat > watchdog_timeout_ms * 10){
+        monitor.time_of_heartbeat = rclcpp::Time();
+    }
+} else {
+    computer.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED);
+}
+    context->paint();  
 
 
-
+}
 
 
 

@@ -10,12 +10,7 @@
 #include <unistd.h>     // For fork, execlp
 #include <sys/types.h>  // For pid_t
 #include <stdlib.h>     // For exit
-// Enums
-enum computers{
-  control_base,
-  onboard_nuc,
-  onboard_jetson,
-};
+
 using namespace RoverHmiCommon;
 
 class DashboardHMINode : public rclcpp::Node, public Gtk::Window
@@ -98,6 +93,8 @@ public:
 
 
     }
+    #include "gtkwidgets.h"
+
 
     ~DashboardHMINode(){
         std::system("notify-send DASHBOARD_OFFLINE going down with regular cleanup!");
@@ -115,13 +112,20 @@ public:
     // Redraws widgets based on framerate
     double fps = 30.0;
     void handle_fps_draw(){
-      control_base_watch_grid.line_draw_area->queue_draw();
-      on_board_nuc_watch_grid.line_draw_area->queue_draw();
+      static bool halfer;
+      if(halfer){
+        control_base_watch_grid.line_draw_area->queue_draw();
+        on_board_nuc_watch_grid.line_draw_area->queue_draw();
+      }
+      halfer = !halfer;
     }
 
     Glib::RefPtr<Gtk::Application> app;
 
 private:
+
+bool is_heartbeat_alive(const rclcpp::Time &last_heartbeat);
+heart_monitor& monitorLookUp(int computer);
 
     float pan_tilt_zoom_speed = 1.0;
 
@@ -130,35 +134,15 @@ private:
     std::string main_css_file_path;
     std::string package_share_dir;
     
-    struct SystemProcess{
-      int type = LAUNCHFILE;
-      std::string pkg;
-      std::string exec;
-    };
+
     
+  
     
-    struct MonitoredSystem{ 
-      std::string name;
-      pid_t pid;
-      pid_t gpid;
-      pid_t sid;
-      bool online = false;
-      Gtk::Label* status_label;
-      Gtk::Label* name_label;
-      // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
-      SystemProcess process;
-    };
-    
-    // This is to monitor the hearts, so one monitor for each device/computer
-    struct heart_monitor {
-      std::string host_device_name;
-      uint32_t time_of_last_heartbeat_ns = NULL;
-      uint32_t time_of_last_heartbeat_s = NULL;
-      std::vector<MonitoredSystem> systems;
-    };
+
 
     heart_monitor control_base_heart_monitor;
     heart_monitor onboard_nuc_heart_monitor;
+    heart_monitor null_heart_monitor;
 
     //! Should be cleaned up. Like too many custom structs to do this setup
     std::vector<std::string> monitored_system_names_control_base; // = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
@@ -168,14 +152,12 @@ private:
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_control_base;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_nuc;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_jetson;
-    bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
 
         rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr ptz_pub;
 
     // std::map
 
     //? Gtk Stuffs
-    #include "gtkwidgets.h"
       SubSysStatusGrid system_health_control_base;
       SubSysStatusGrid system_health_onboard_nuc;
       SubSysStatusGrid system_health_onboard_jetson;
@@ -188,7 +170,7 @@ private:
 
 
   //* Draw Callbacks - renders cairo stuff
-  bool handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
+  bool handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, ComputerWatchGrid& computer, int computer_i);
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
@@ -204,6 +186,7 @@ std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
 static constexpr char MSG_NO_HEARTBEAT_DETECTED[] = "NO HEARTBEAT DETECTED ON HOST";
 static constexpr char HEALTHY_IDLE[] = "HEALTHY! ";
+static constexpr char MSG_WATCHDOG_EXCEEDED[] = "ERROR: WATCHDOG EXCEEDED!";
 
 };
 

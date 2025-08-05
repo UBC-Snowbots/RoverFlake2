@@ -7,6 +7,7 @@
 #define RUN 0xA
 #define KILL 0xB
 
+// Watchdog timeout is a ros parameter
 
 //* Process types
 #define LAUNCHFILE 0xA
@@ -22,6 +23,12 @@
 
 // Enums
 
+enum computers{
+  control_base,
+  onboard_nuc,
+  onboard_jetson,
+};
+
 enum PTZ_BUTTONS {
     TILT_INC,
     TILT_DEC,
@@ -31,3 +38,29 @@ enum PTZ_BUTTONS {
     ZOOM_DEC,
     NUM_PTZ_BUTTONS
 };
+
+struct SystemProcess{
+  int type = LAUNCHFILE;
+  std::string pkg;
+  std::string exec;
+};
+struct MonitoredSystem{ 
+  std::string name;
+  pid_t pid;
+  pid_t gpid;
+  pid_t sid;
+  bool online = false;
+  Gtk::Label* status_label;
+  Gtk::Label* name_label;
+  // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
+  SystemProcess process;
+};
+    // This is to monitor the hearts, so one monitor for each device/computer
+    struct heart_monitor {
+      std::string host_device_name;
+      uint32_t time_of_last_heartbeat_ns = NULL;
+      uint32_t time_of_last_heartbeat_s = NULL;
+      rclcpp::Time time_of_heartbeat;
+      std::vector<MonitoredSystem> systems;
+    };
+      
