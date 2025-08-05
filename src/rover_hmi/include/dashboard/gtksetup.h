@@ -55,11 +55,11 @@
 
                 builder->get_widget("control_base_heart_monitor", control_base_watch_grid.line_draw_area);
                 builder->get_widget("control_base_status_label", control_base_watch_grid.status_label);
-                    control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computers::control_base));
+                    control_base_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), control_base_watch_grid, control_base));
 
                 builder->get_widget("on_board_nuc_heart_monitor", on_board_nuc_watch_grid.line_draw_area);
                 builder->get_widget("on_board_nuc_status_label", on_board_nuc_watch_grid.status_label);
-                    on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), computers::onboard_nuc));
+                    on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), on_board_nuc_watch_grid, onboard_nuc)); // TODO AHHH ON_BOARD NOT ONBOARD OR MAYBE ONBOARD MEOW
 
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
