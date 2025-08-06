@@ -89,3 +89,18 @@
                         context->add_class("subsys_OFFLINE");
     
                     }
+
+
+
+
+
+    // GNSS
+        builder->get_widget("gnss_save_button", gnss_save_button);
+    builder->get_widget("gnss_point_name_entry",  gnss_point_name_entry);
+
+    // connect their signals to your methods
+        gnss_save_button->signal_clicked()
+                .connect(sigc::mem_fun(*this, &DashboardHMINode::on_gnss_save_button_clicked));
+
+        gnss_point_name_entry->signal_activate()
+               .connect(sigc::mem_fun(*this, &DashboardHMINode::on_gnss_point_name_entry_activated));
