@@ -18,9 +18,10 @@ class DashboardHMINode : public rclcpp::Node, public Gtk::Window
 {
 public:
     DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true)),
-    gnss_saver("gps_log", "gps")
+    gnss_saver("gps_log", "gps") 
     {
-        set_title("Rover Dashboard"); //set the app/window title
+        set_title("Rover Dashboard swag"); //set the app/window title
+        
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
 
         // Set up pubs n subs
@@ -28,7 +29,7 @@ public:
         //TODO then create a proper feedback using ros2 node or heartbeats?
         
   gnss_sub = create_subscription<sensor_msgs::msg::NavSatFix>(
-    "gps_fix", 10,
+    "gnss_fix", 10,
     std::bind(&DashboardHMINode::gnssCallback, this, std::placeholders::_1)
   );
         ptz_pub = this->create_publisher<geometry_msgs::msg::Vector3>(
@@ -94,7 +95,7 @@ public:
                 global_msg_label->set_label("DASHBOARD STARTING...");
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
-        global_msg_label->set_label("DASHBOARD STARTED");
+        global_msg_label->set_label("DASHBOARD STARTED hehe");
 
     }
     #include "gtkwidgets.h"

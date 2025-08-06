@@ -11,6 +11,7 @@ int main(int argc, char* argv[]){
     //CHAD ROS2 gets the real arguments from the terminal
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DashboardHMINode>();
+    
 //ros2 spin timer
 sigc::connection spin_connection = Glib::signal_timeout().connect([&node]() -> bool {
         rclcpp::spin_some(node);
@@ -240,7 +241,8 @@ if (ms_since_last_beat >= 0 && ms_since_last_beat <= watchdog_timeout_ms) {
 
     void DashboardHMINode::on_gnss_save_button_clicked(){
         auto text = gnss_point_name_entry->get_text();
-          std::time_t t = last_gnss_msg.header.stamp.sec;
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
   std::tm tm{};
   localtime_r(&t, &tm);  // thread‐safe
 
