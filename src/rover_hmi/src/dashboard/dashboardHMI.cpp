@@ -1,5 +1,4 @@
 #include <dashboardHMI.h>
-
 #define DEBUG_MSGS
 
 int main(int argc, char* argv[]){
@@ -239,12 +238,44 @@ if (ms_since_last_beat >= 0 && ms_since_last_beat <= watchdog_timeout_ms) {
 
 
 
+    void DashboardHMINode::on_gnss_save_button_clicked(){
+        auto text = gnss_point_name_entry->get_text();
+          std::time_t t = last_gnss_msg.header.stamp.sec;
+  std::tm tm{};
+  localtime_r(&t, &tm);  // thread‐safe
+
+  // format "YYYY-MM-DD HH:MM:SS"
+  char buf[32];
+  std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+std::ostringstream oss;
+  oss << buf
+      << "." << std::setw(9) << std::setfill('0')
+      << last_gnss_msg.header.stamp.nanosec;
+  std::string time_of_gps_msg = oss.str();
+
+        std::string entry = text + "| LAT: " + std::to_string(last_gnss_msg.latitude) + "| LONG: " + std::to_string(last_gnss_msg.longitude) + "| ALT: " + std::to_string(last_gnss_msg.altitude) + "| TIME OF GNSS FIX: " + time_of_gps_msg;
+        gnss_saver.write(entry); // Dont write stamped, stamp with timestamp of gps message
+        // gnss_saver.writeStamped(entry); // Other option to also save time of when we saved. If these times don't line up we know something is fucked
+        gnss_saver.writeLine();
+        RCLCPP_INFO(this->get_logger(), "GNSS Pont Saved");
+    }
+
+    void DashboardHMINode::on_gnss_point_name_entry_activated(){
+        /// does nothing. 
+    }
 
 
 
 
+void DashboardHMINode::gnssCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg) {
+    //WARN NO MUTEX where were going we dont need thread safety (button callback counts as a volatile access)
+last_gnss_msg.header = msg->header; //refresh
+last_gnss_msg.longitude = msg->longitude;
+last_gnss_msg.latitude = msg->latitude;
+last_gnss_msg.altitude = msg->altitude;
 
 
+}
 
 
 

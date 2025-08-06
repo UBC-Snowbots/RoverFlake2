@@ -3,7 +3,8 @@
 #include <rover_msgs/msg/heart_request.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include "dashboardDefinitions.h"
-
+#include <rover_utils/include/roverCommon.h>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 // #include <helper_functions.h>
 
 //? Watchdog stuffs..?
@@ -16,7 +17,8 @@ using namespace RoverHmiCommon;
 class DashboardHMINode : public rclcpp::Node, public Gtk::Window
 {
 public:
-    DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true))
+    DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true)),
+    gnss_saver("gps_log", "gps")
     {
         set_title("Rover Dashboard"); //set the app/window title
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
@@ -25,7 +27,10 @@ public:
         // onboard_heart_request_pub = this->create_publisher<
         //TODO then create a proper feedback using ros2 node or heartbeats?
         
-
+  gnss_sub = create_subscription<sensor_msgs::msg::NavSatFix>(
+    "gps_fix", 10,
+    std::bind(&DashboardHMINode::gnssCallback, this, std::placeholders::_1)
+  );
         ptz_pub = this->create_publisher<geometry_msgs::msg::Vector3>(
             "/ptz/control", rclcpp::QoS(10));
         std::string heart_onboard_nuc_topic = "/broken_heart1"; 
@@ -91,7 +96,6 @@ public:
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
 
-
     }
     #include "gtkwidgets.h"
 
@@ -136,8 +140,17 @@ heart_monitor& monitorLookUp(int computer);
     
 
     
-  
-    
+  NonVolatileMemory gnss_saver;
+
+  void gnssCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg);
+
+     Gtk::Button* gnss_save_button;
+    Gtk::Entry*  gnss_point_name_entry;
+
+    // signal handlers
+    void on_gnss_save_button_clicked();
+    void on_gnss_point_name_entry_activated();
+    std::string gnss_point_name = "unspecified_point";
 
 
     heart_monitor control_base_heart_monitor;
@@ -168,14 +181,16 @@ heart_monitor& monitorLookUp(int computer);
   void ptzButtonCallback(int ptz_button, bool pressed);
 
 
+void gpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg);
 
   //* Draw Callbacks - renders cairo stuff
   bool handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, ComputerWatchGrid& computer, int computer_i);
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
-//  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
-rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
+ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
+rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gnss_sub;
+sensor_msgs::msg::NavSatFix last_gnss_msg;
 
   // void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
   // Update hmi when it detects a heartbeat
