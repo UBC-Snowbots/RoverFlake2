@@ -20,7 +20,7 @@ public:
     DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true)),
     gnss_saver("gps_log", "gps") 
     {
-        set_title("Rover Dashboard swag"); //set the app/window title
+        set_title("Rover Dashboard"); //set the app/window title
         
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
 
@@ -95,7 +95,7 @@ public:
                 global_msg_label->set_label("DASHBOARD STARTING...");
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
-        global_msg_label->set_label("DASHBOARD STARTED hehe");
+        global_msg_label->set_label("DASHBOARD STARTED");
 
     }
     #include "gtkwidgets.h"
