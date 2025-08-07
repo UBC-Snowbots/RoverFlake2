@@ -1,7 +1,8 @@
 #include <Servo.h>
 
 // Constants
-double Pos2 = 0.0; // tilt
+int Pos2 = 90; // tilt mid pos
+int speed;
 
 Servo servo1;
 Servo servo2;
@@ -58,39 +59,29 @@ void control_ptz(String cmd) {
   if (direction == '0') { // continuous pan
     int speed = 90 + value; // 90 = stop
     speed = constrain(speed, 0, 180);
-    servo1.write(speed);
-
-    Serial.print("$pan_speed(");
     Serial.print(speed);
-    Serial.println(")");
-  } else if (direction == '1') { // tilt (standard servo)
+    servo1.write(speed);
+  } else if (direction == '1') { // tilt (positional servo)
     Pos2 += value;
     Pos2 = constrain(Pos2, 0, 180);
-    servo2.write((int)Pos2);
-    Serial.print("$tilt(");
     Serial.print(Pos2, 2);
-    Serial.println(")");
+    servo2.write(Pos2);
   }
 }
 
 void serialEvent() {
   while (Serial.available()) {
     char inChar = (char)Serial.read();
-//    Serial.print("I am working");
     if (inChar == '\n') {
       stringComplete = true;
       break;
     } else {
       inputString += inChar;
-//      Serial.print(inChar);
-//      Serial.print(inputString);
     }
   }
 }
 
 void loop() {
-  serialEvent();
-//  Serial.print(stringComplete);
   if (stringComplete) {
     inputString.trim();
     Serial.print(inputString);
@@ -99,14 +90,12 @@ void loop() {
     } else if (inputString == "sensor_off") {
       status = false;
     } else if (inputString == "stop_pan") {
-      servo1.write(90); // stop continuous servo
-      Serial.println("$pan_stop");
+      servo1.write(90); 
     } else if (inputString.charAt(0) == '0' || inputString.charAt(0) == '1') {
       control_ptz(inputString);
     } else {
       Serial.println("Invalid command.");
     }
-
     inputString = "";
     stringComplete = false;
   }
