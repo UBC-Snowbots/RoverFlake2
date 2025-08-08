@@ -40,3 +40,20 @@ struct SubSysStatusGrid
   Gtk::Grid* grid;
   std::vector<SubSysStatusElement> system;
 };
+
+
+struct CamPipe{
+  int index = -1;
+  RoverHmiCommon::button_pair_increase_decrease_t button;
+  Gtk::Label* selected_label;
+
+  std::string selected_topic;
+
+
+};
+
+  std::vector<std::string> camera_input_topics; // SET VIA PARAM
+  std::vector<std::string> camera_output_topics; // SET VIA PARAM
+
+CamPipe campipe_1;
+CamPipe campipe_2;

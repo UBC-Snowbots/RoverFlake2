@@ -41,7 +41,6 @@ public:
 private:
     void arm_panel_callback(const rover_msgs::msg::ArmPanel::SharedPtr msg);
     void left_panel_callback(const rover_msgs::msg::GenericPanel::SharedPtr msg);
-    float max_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
     bool ik = false;
 
     // rclcpp::TimerBase::SharedPtr arm_panel_timer; // Timer handle if we need it

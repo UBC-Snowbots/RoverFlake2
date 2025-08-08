@@ -33,6 +33,16 @@
     subsystems_onboard_jetson: # Not implemented in the dashboard gui yet
       - "yolo_detection"
       - "aruco_detection"
+    camera_selection_topic: # topic name that takes an integer as the camera index
+      - "campipe1/select"
+      - "campipe2/select"
+    camera_input_topics: # all camera feeds on board rover 
+      - "cam1/compressed" # idk actual topic names
+      - "cam2/compressed"
+      - "armcam"
+    camera_output_topics: # cameras we want to see
+      - "campipe/output1" # idk actual topic names
+      - "campipe/output2" 
 
 
 /heart_control_base: # (/heart_control_base <- control_base)
