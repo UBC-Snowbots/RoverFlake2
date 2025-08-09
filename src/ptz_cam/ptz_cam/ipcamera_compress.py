@@ -14,7 +14,8 @@ class CameraEncoder(Node):
                 lambda: [
                     'ffmpeg', '-f', 'v4l2', '-i', '/dev/video0',
                     '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
-                    '-f', 'mpegts', 'udp://127.0.0.1:5000?pkt_size=1316'                ]
+                    '-f', 'mpegts', 'udp://127.0.0.1:5000?pkt_size=1316'
+                ]
             ),
             'arm_rgb': (
                 '/camera/arm/rgb_active',
@@ -49,7 +50,7 @@ class CameraEncoder(Node):
             'ptz': (
                 '/camera/ptz/active',
                 lambda: [
-                    'ffmpeg', '-rtsp_transport', 'tcp', '-i', 'rtsp://admin:123456@192.168.0.95:554',
+                    'ffmpeg', '-rtsp_transport', 'tcp', '-i', 'rtsp://admin:123456@192.168.2.95:554',
                     '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
                     '-f', 'mpegts', 'udp://127.0.0.1:5005?pkt_size=1316'
                 ]
