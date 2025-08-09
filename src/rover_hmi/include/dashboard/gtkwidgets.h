@@ -1,4 +1,6 @@
-  Gtk::Window* dash_window;
+ // Terrible fucking way of manageing dependencies. JUst a horrible header.
+ 
+ Gtk::Window* dash_window;
     Gtk::Layout* dash_layout;
 
       //* Global Messaging System
@@ -8,11 +10,19 @@ struct ComputerWatchGrid
 {
   Gtk::Widget* line_draw_area;
   Gtk::Label* status_label;
-};
+ };
 ComputerWatchGrid control_base_watch_grid;
 ComputerWatchGrid on_board_nuc_watch_grid;
 // ComputerWatchGrid* computer_watch_grids; //TODO change into array or smt
 
+struct PTZCameraControllerGrid
+{
+  button_pair_increase_decrease_t pan;
+  button_pair_increase_decrease_t tilt;
+  button_pair_increase_decrease_t zoom;
+
+};
+PTZCameraControllerGrid ptz_buttons;
 
 //* Subsystem Status Grid
 
@@ -30,4 +40,3 @@ struct SubSysStatusGrid
   Gtk::Grid* grid;
   std::vector<SubSysStatusElement> system;
 };
-

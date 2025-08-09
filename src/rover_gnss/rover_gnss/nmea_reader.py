@@ -10,7 +10,6 @@ from os.path import expanduser
 
 
 DEVICE = '/dev/ttyACM0'
-# DEVICE = 'usb-Emlid_ReachM+_82435519E0ADA406-if02' # hows this for long max
 BAUD_RATE = 38400
 REACH_LOG = f"{expanduser('~')}/reach_log.txt"
 

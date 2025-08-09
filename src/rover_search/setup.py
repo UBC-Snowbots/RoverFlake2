@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'ipcamerafeed'
+package_name = 'rover_search'
 
 setup(
     name=package_name,
@@ -11,21 +11,16 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=[
-        'setuptools',
-        'opencv-python',
-        'onvif-zeep'
-    ],
+    install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='kingcammy',
-    maintainer_email='cameronbasara@gmail.com',
+    maintainer='rv',
+    maintainer_email='zawadzkirowan@gmail.com',
     description='TODO: Package description',
-    license='Apache-2.0',
+    license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ipcamera = ipcamerafeed.ipcamera:main',
-            'ipcamerazoom = ipcamerafeed.ipcamerazoom:main'
+            'navigate_waypoints = rover_search.navigate_waypoints:main'
         ],
     },
 )

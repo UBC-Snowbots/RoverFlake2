@@ -1,8 +1,10 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/sub_system_health.hpp>
 #include <rover_msgs/msg/heart_request.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include "dashboardDefinitions.h"
-
+#include <rover_utils/include/roverCommon.h>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 // #include <helper_functions.h>
 
 //? Watchdog stuffs..?
@@ -10,18 +12,28 @@
 #include <sys/types.h>  // For pid_t
 #include <stdlib.h>     // For exit
 
+using namespace RoverHmiCommon;
 
 class DashboardHMINode : public rclcpp::Node, public Gtk::Window
 {
 public:
-    DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true))
+    DashboardHMINode() : Node("dashboard_hmi_node", rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true)),
+    gnss_saver("gps_log", "gps") 
     {
         set_title("Rover Dashboard"); //set the app/window title
+        
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
 
         // Set up pubs n subs
         // onboard_heart_request_pub = this->create_publisher<
         //TODO then create a proper feedback using ros2 node or heartbeats?
+        
+  gnss_sub = create_subscription<sensor_msgs::msg::NavSatFix>(
+    "gnss_fix", 10,
+    std::bind(&DashboardHMINode::gnssCallback, this, std::placeholders::_1)
+  );
+        ptz_pub = this->create_publisher<geometry_msgs::msg::Vector3>(
+            "/ptz/control", rclcpp::QoS(10));
         std::string heart_onboard_nuc_topic = "/broken_heart1"; 
         std::string heart_control_base_topic = "/broken_heart2";
         rclcpp::Parameter computer_control_base;
@@ -85,8 +97,9 @@ public:
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
 
-
     }
+    #include "gtkwidgets.h"
+
 
     ~DashboardHMINode(){
         std::system("notify-send DASHBOARD_OFFLINE going down with regular cleanup!");
@@ -100,38 +113,50 @@ public:
       app->run(*dash_window);
       RCLCPP_INFO(this->get_logger(), "App Run Success");
     }
+
+    // Redraws widgets based on framerate
+    double fps = 30.0;
+    void handle_fps_draw(){
+      static bool halfer;
+      if(halfer){
+        control_base_watch_grid.line_draw_area->queue_draw();
+        on_board_nuc_watch_grid.line_draw_area->queue_draw();
+      }
+      halfer = !halfer;
+    }
+
     Glib::RefPtr<Gtk::Application> app;
 
 private:
+
+bool is_heartbeat_alive(const rclcpp::Time &last_heartbeat);
+heart_monitor& monitorLookUp(int computer);
+
+    float pan_tilt_zoom_speed = 1.0;
+
+
     int watchdog_timeout_ms = 0;
     std::string main_css_file_path;
     std::string package_share_dir;
     
-    struct SystemProcess{
-      int type = LAUNCHFILE;
-      std::string pkg;
-      std::string exec;
-    };
+
     
-    
-    struct MonitoredSystem{ 
-      std::string name;
-      pid_t pid;
-      pid_t gpid;
-      pid_t sid;
-      bool online = false;
-      Gtk::Label* status_label;
-      Gtk::Label* name_label;
-      // std::vector<SubSystemProcess> processes; //! Currently, each subsystem can only run one process (so make it a launch file)
-      SystemProcess process;
-    };
-    
-    // This is to monitor the hearts, so one monitor for each device/computer
-    struct heart_monitor {
-      std::string host_device_name;
-      uint32_t last_timestamp = NULL;
-      std::vector<MonitoredSystem> systems;
-    };
+  NonVolatileMemory gnss_saver;
+
+  void gnssCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg);
+
+     Gtk::Button* gnss_save_button;
+    Gtk::Entry*  gnss_point_name_entry;
+
+    // signal handlers
+    void on_gnss_save_button_clicked();
+    void on_gnss_point_name_entry_activated();
+    std::string gnss_point_name = "unspecified_point";
+
+
+    heart_monitor control_base_heart_monitor;
+    heart_monitor onboard_nuc_heart_monitor;
+    heart_monitor null_heart_monitor;
 
     //! Should be cleaned up. Like too many custom structs to do this setup
     std::vector<std::string> monitored_system_names_control_base; // = {"control_base", "drive_control", "camera_decompressors", "arm_control", "science", "perceptions"};
@@ -141,13 +166,12 @@ private:
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_control_base;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_nuc;
     std::unordered_map<std::string, MonitoredSystem> monitored_systems_onboard_jetson;
-    bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer);
 
-    
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr ptz_pub;
+
     // std::map
 
     //? Gtk Stuffs
-    #include "gtkwidgets.h"
       SubSysStatusGrid system_health_control_base;
       SubSysStatusGrid system_health_onboard_nuc;
       SubSysStatusGrid system_health_onboard_jetson;
@@ -155,14 +179,19 @@ private:
 
   //* Button callbacks, either to be triggered by a button in the HMI or a control base panel callback
   void subsystemRequest(std::string subsystem_name, int request, int computer = COMPUTER_GLOBAL);
+  void ptzButtonCallback(int ptz_button, bool pressed);
+
+
+void gpsCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg);
 
   //* Draw Callbacks - renders cairo stuff
-  bool handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context);
+  bool handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, ComputerWatchGrid& computer, int computer_i);
   //? Ros2 stuffs
  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_monitor_sub;
 //  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr onboard_nuc_heart_request_pub;
-//  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr control_base_heart_request_pub;
-rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
+ rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr global_heart_request_pub;
+rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gnss_sub;
+sensor_msgs::msg::NavSatFix last_gnss_msg;
 
   // void heartbeatCallback(const rover_msgs::msg::SubSystemHealth::SharedPtr msg);
   // Update hmi when it detects a heartbeat
@@ -171,6 +200,9 @@ std::string MONITORED_COMPUTER_CONTROL_BASE_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_NUC_STRING;
 std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
+static constexpr char MSG_NO_HEARTBEAT_DETECTED[] = "NO HEARTBEAT DETECTED ON HOST";
+static constexpr char HEALTHY_IDLE[] = "HEALTHY! ";
+static constexpr char MSG_WATCHDOG_EXCEEDED[] = "ERROR: WATCHDOG EXCEEDED!";
 
 };
 
@@ -179,14 +211,6 @@ std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 
 
 
-
-namespace computer{
-enum computers{
-  control_base,
-  onboard_nuc,
-  onboard_jetson,
-};
-}
 
 
 

@@ -1,5 +1,4 @@
 #include <dashboardHMI.h>
-
 #define DEBUG_MSGS
 
 int main(int argc, char* argv[]){
@@ -8,15 +7,23 @@ int main(int argc, char* argv[]){
     int nullc = 0;
     char **nullv = nullptr;
 
-    auto app = Gtk::Application::create(nullc, nullv, "dashboard_hmi"); //Make sure the 3rd arg here is unique. If 2 HMIs start with the same id one will die
+    auto app = Gtk::Application::create(nullc, nullv, "com.dashboard.hmi"); //Make sure the 3rd arg here is unique. If 2 HMIs start with the same id one will die
     //CHAD ROS2 gets the real arguments from the terminal
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DashboardHMINode>();
-
-    sigc::connection spin_connection = Glib::signal_timeout().connect([&node]() -> bool {
+    
+//ros2 spin timer
+sigc::connection spin_connection = Glib::signal_timeout().connect([&node]() -> bool {
         rclcpp::spin_some(node);
         return true;
     }, 20); //MILlISECINDS
+
+    // draw timer
+sigc::connection fps_connection = Glib::signal_timeout().connect([&node]() -> bool {
+    node->handle_fps_draw();
+    return true;
+}, 1000/node->fps); //MILlISECINDS
+    
 
     node->app = app;
     node->run();
@@ -26,6 +33,16 @@ int main(int argc, char* argv[]){
 
     return 0;
 
+}
+// Returns true if last heartbeat is within watchdog_time_ms (milliseconds).
+bool DashboardHMINode::is_heartbeat_alive(const rclcpp::Time &last_heartbeat) {
+    if (last_heartbeat.nanoseconds() == 0) {
+        // never seen one
+        return false;
+    }
+    rclcpp::Time now = this->get_clock()->now();
+    rclcpp::Duration delta = now - last_heartbeat; // safe 64-bit duration
+    return delta.nanoseconds() <= static_cast<int64_t>(2000) * 1'000'000LL;
 }
 
 /**
@@ -39,12 +56,22 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
 
     const std::string host = msg->subsystem_host; // Computer running a heart
     const std::string subsys_name = msg->subsystem_name;
-    auto now = this->get_clock()->now();
-    auto time_since_last_heartbeat = now - msg->header.stamp;
-    
+    auto time_since_last_heartbeat = msg->header.stamp;
+    uint32_t time_of_heartbeat_ns = static_cast<uint32_t>(time_since_last_heartbeat.nanosec); // truncate
+    uint32_t time_of_heartbeat_s = static_cast<uint32_t>(time_since_last_heartbeat.sec); // truncate
+        rclcpp::Time heartbeat_time(msg->header.stamp); // combines sec + nanosec safely
+            int64_t full_ns = heartbeat_time.nanoseconds();
+    RCLCPP_INFO(this->get_logger(), "header.stamp: sec=%d nanosec=%u -> full ns=%lld",
+                msg->header.stamp.sec,
+                msg->header.stamp.nanosec,
+                (long long)full_ns);
     Glib::RefPtr<Gtk::StyleContext> subsys_context;
     Gtk::Label* status_label;
     if(host == MONITORED_COMPUTER_CONTROL_BASE_STRING){
+        control_base_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
+        control_base_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+        control_base_heart_monitor.time_of_heartbeat = heartbeat_time;
+
         subsys_context = monitored_systems_control_base[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_control_base[subsys_name].status_label;
     }
@@ -54,6 +81,11 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
       
     }
     if(host == MONITORED_COMPUTER_ONBOARD_NUC_STRING){
+        onboard_nuc_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
+        onboard_nuc_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+        onboard_nuc_heart_monitor.time_of_heartbeat = heartbeat_time;
+
+
         subsys_context = monitored_systems_onboard_nuc[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_nuc[subsys_name].status_label;
 
@@ -76,20 +108,47 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
 
 }
 
+void DashboardHMINode::ptzButtonCallback(int ptz_button, bool pressed){
+        geometry_msgs::msg::Vector3 msg;
+        if (pressed) {
+            switch (ptz_button) {
+                case PAN_INC:
+                    msg.x = pan_tilt_zoom_speed;
+                    break;
+                case PAN_DEC:
+                    msg.x = -pan_tilt_zoom_speed;
+                    break;
+                case TILT_INC:
+                    msg.y = pan_tilt_zoom_speed;
+                    break;
+                case TILT_DEC:
+                    msg.y = -pan_tilt_zoom_speed;
+                    break;
+                case ZOOM_INC:
+                    msg.z = pan_tilt_zoom_speed;
+                    break;
+                case ZOOM_DEC:
+                    msg.z = -pan_tilt_zoom_speed;
+                    break;
+                default:
+                    // Panic! 
+                    break;
+            }
+        } // if not pressed then we got a release signal. pub a zero msg.
+
+        ptz_pub->publish(msg);
+}
+
 void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request, int computer){
+    #ifdef DEBUG_MSGS
     RCLCPP_INFO(this->get_logger(), "Button Clicked");
-    //* Depending on the button clicked, run different child proccesses, or kill different child processes
-    // runChildNode("rviz2", "rviz2");
-    // runChildNode("joy", "joy_node");
+    #endif 
     rover_msgs::msg::HeartRequest msg;
     msg.subsystem_name = subsystem_name;
     if(request == RUN){
-        // runSubSystem(subsystem_name);
-        // runChildNode("rover_launchers", "ps4.launch.py", "control_base", true);
         msg.running = true;
     }
     if(request == KILL){
-        // killSubSystem(subsystem_name);
         msg.running = false;
     }
     switch (computer)
@@ -111,18 +170,121 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
     
 }
 
-    
-bool DashboardHMINode::handleSubsystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, int computer){
+heart_monitor& DashboardHMINode::monitorLookUp(int computer){
     switch(computer){
-        case computer::control_base:
-            
-            break;
-        case computer::onboard_nuc:
+        case control_base:
+            return control_base_heart_monitor;
+            break; // break not needed
+        case onboard_nuc:
+            return onboard_nuc_heart_monitor;
             break;
         default:
+            //no jetson
             break;
     }
+    return null_heart_monitor;
 }
+
+//TODO really interesting bug with passing address at begining -> what made address not static??? 
+bool DashboardHMINode::handleSystemStatusGridDraw(const Cairo::RefPtr<Cairo::Context>& context, DashboardHMINode::ComputerWatchGrid& computer, int computer_i){
+
+    heart_monitor& monitor = monitorLookUp(computer_i);
+
+auto now = this->get_clock()->now();
+int64_t ms_since_last_beat = -1;
+if (monitor.time_of_heartbeat.nanoseconds() != 0) {
+    ms_since_last_beat = (now - monitor.time_of_heartbeat).nanoseconds() / 1'000'000; // safe 64-bit math
+}
+
+bool computer_heart_online = (ms_since_last_beat >= 0 && ms_since_last_beat <= static_cast<int64_t>(watchdog_timeout_ms));
+
+// blinking logic: blink every (watchdog_timeout_ms / 4) ticks of flag as an example
+static uint32_t flag = 0;
+const uint32_t blink_period = 30; // you can tune this for speed of blink
+if (computer_heart_online) {
+    if (((flag / blink_period) % 2) == 0) {
+        context->set_source_rgb(0.2, 1, 0.2); // green phase
+    } else {
+        context->set_source_rgb(0.1, 0.5, 0.1); // dimmer green
+    }
+} else {
+    context->set_source_rgb(0.6, 0.1, 0.1); // offline / bad
+}
+flag++;
+
+if (ms_since_last_beat >= 0) {
+    RCLCPP_INFO(this->get_logger(), "ms_since_last_beat: %lld", (long long)ms_since_last_beat);
+} else {
+    RCLCPP_INFO(this->get_logger(), "No heartbeat seen yet");
+}
+
+// Update status label
+Glib::RefPtr<Gtk::StyleContext> css = computer.status_label->get_style_context();
+if (ms_since_last_beat >= 0 && ms_since_last_beat <= watchdog_timeout_ms) {
+    computer.status_label->set_label(HEALTHY_IDLE + std::to_string(ms_since_last_beat) + "ms"); 
+}else if(ms_since_last_beat > watchdog_timeout_ms){
+    computer.status_label->set_label(MSG_WATCHDOG_EXCEEDED);
+    if(ms_since_last_beat > watchdog_timeout_ms * 10){
+        monitor.time_of_heartbeat = rclcpp::Time();
+    }
+} else {
+    computer.status_label->set_label(MSG_NO_HEARTBEAT_DETECTED);
+}
+    context->paint();  
+
+
+}
+
+
+
+
+
+    void DashboardHMINode::on_gnss_save_button_clicked(){
+        auto text = gnss_point_name_entry->get_text();
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+  std::tm tm{};
+  localtime_r(&t, &tm);  // thread‐safe
+
+  // format "YYYY-MM-DD HH:MM:SS"
+  char buf[32];
+  std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
+std::ostringstream oss;
+  oss << buf
+      << "." << std::setw(9) << std::setfill('0')
+      << last_gnss_msg.header.stamp.nanosec;
+  std::string time_of_gps_msg = oss.str();
+
+        std::string entry = text + "| LAT: " + std::to_string(last_gnss_msg.latitude) + "| LONG: " + std::to_string(last_gnss_msg.longitude) + "| ALT: " + std::to_string(last_gnss_msg.altitude) + "| TIME OF GNSS FIX: " + time_of_gps_msg;
+        gnss_saver.write(entry); // Dont write stamped, stamp with timestamp of gps message
+        // gnss_saver.writeStamped(entry); // Other option to also save time of when we saved. If these times don't line up we know something is fucked
+        gnss_saver.writeLine();
+        RCLCPP_INFO(this->get_logger(), "GNSS Pont Saved");
+    }
+
+    void DashboardHMINode::on_gnss_point_name_entry_activated(){
+        /// does nothing. 
+    }
+
+
+
+
+void DashboardHMINode::gnssCallback(sensor_msgs::msg::NavSatFix::SharedPtr msg) {
+    //WARN NO MUTEX where were going we dont need thread safety (button callback counts as a volatile access)
+last_gnss_msg.header = msg->header; //refresh
+last_gnss_msg.longitude = msg->longitude;
+last_gnss_msg.latitude = msg->latitude;
+last_gnss_msg.altitude = msg->altitude;
+
+
+}
+
+
+
+
+
+
+
 
 
 //* Archive Code (graveyard)

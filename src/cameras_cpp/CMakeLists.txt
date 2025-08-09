@@ -20,6 +20,8 @@ include_directories(include/)
 add_executable(camera_pipeline_node src/cam_pipeline_node.cpp include/cam_pipeline_node.h)
 ament_target_dependencies(camera_pipeline_node rclcpp sensor_msgs)
 
+add_executable(dyn_cam_pipeline_node src/dyn_cam_pipeline_node.cpp)
+ament_target_dependencies(dyn_cam_pipeline_node rclcpp sensor_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -44,6 +46,7 @@ DESTINATION share/${PROJECT_NAME}/config)
 install(
   TARGETS 
   camera_pipeline_node
+  dyn_cam_pipeline_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

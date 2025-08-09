@@ -45,7 +45,7 @@ public:
         // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
 
         image_sub_0 = this->create_subscription<sensor_msgs::msg::Image>(
-            "/vehicle_1/main_feed/image_raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
+            "/camera/color/image_raw", qos, [this](sensor_msgs::msg::Image::SharedPtr msg) {
                 this->imageCallback(msg, 1);
               }
             );
