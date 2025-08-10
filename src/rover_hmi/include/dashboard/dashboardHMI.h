@@ -5,6 +5,7 @@
 #include "dashboardDefinitions.h"
 #include <rover_utils/include/roverCommon.h>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <std_msgs/msg/int16.hpp>
 // #include <helper_functions.h>
 
 //? Watchdog stuffs..?
@@ -41,6 +42,16 @@ public:
         rclcpp::Parameter computer_onboard_jetson;
         rclcpp::Parameter watchdog_timeout_ms_param;
 
+        // rclcpp::Parameter camera_input_topics_param;
+        // rclcpp::Parameter camera_output_topics_param;
+        rclcpp::Parameter camera_selection_topic_param;
+        this->get_parameter("camera_selection_topic", camera_selection_topic_param);
+        // this->get_parameter("camera_input_topics", camera_input_topics_param);
+        // this->get_parameter("camera_output_topics", camera_output_topics_param);
+        camera_selection_topics = camera_selection_topic_param.as_string_array();
+        // camera_output_topics = camera_input_topics_param.as_string_array();
+        // camera_output_topics = camera_output_topics_param.as_string_array();
+
         this->get_parameter("watchdog_timeout_ms", watchdog_timeout_ms_param);
         this->get_parameter("computer_control_base", computer_control_base);
         this->get_parameter("computer_onboard_nuc", computer_onboard_nuc);
@@ -66,7 +77,8 @@ public:
           heart_monitor_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
             feedback_topic, 10, std::bind(&DashboardHMINode::heartFeedbackCallback, this, std::placeholders::_1));
           global_heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(global_heart_topic, 10);
-
+            cam_pipe_select_pub[0] = this->create_publisher<std_msgs::msg::Int16>(camera_selection_topics[0], 2);
+            cam_pipe_select_pub[1] = this->create_publisher<std_msgs::msg::Int16>(camera_selection_topics[1], 2);
 
           rclcpp::Parameter control_base_subsystems_param;
             this->get_parameter("subsystems_control_base", control_base_subsystems_param);
@@ -96,6 +108,8 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "BUILDER SUCCESS");
         global_msg_label->set_label("DASHBOARD STARTED");
+campipe_1.index = 1;
+campipe_2.index = 2;
 
     }
     #include "gtkwidgets.h"
@@ -203,6 +217,13 @@ std::string MONITORED_COMPUTER_ONBOARD_JETSON_STRING;
 static constexpr char MSG_NO_HEARTBEAT_DETECTED[] = "NO HEARTBEAT DETECTED ON HOST";
 static constexpr char HEALTHY_IDLE[] = "HEALTHY! ";
 static constexpr char MSG_WATCHDOG_EXCEEDED[] = "ERROR: WATCHDOG EXCEEDED!";
+
+
+rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr cam_pipe_select_pub[2];
+
+std::vector<std::string> camera_selection_topics;
+
+void on_campipe_button_clicked(int pipeline, bool increase);
 
 };
 

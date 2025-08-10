@@ -559,7 +559,7 @@
             </child>
           </object>
           <packing>
-            <property name="x">133</property>
+            <property name="x">50</property>
             <property name="y">173</property>
           </packing>
         </child>
@@ -599,7 +599,7 @@
             </child>
           </object>
           <packing>
-            <property name="x">595</property>
+            <property name="x">200</property>
             <property name="y">49</property>
           </packing>
         </child>
@@ -1136,7 +1136,7 @@
             </child>
           </object>
           <packing>
-            <property name="x">635</property>
+            <property name="x">450</property>
             <property name="y">173</property>
           </packing>
         </child>
@@ -1260,7 +1260,7 @@
         </child>
         <child>
           <!-- n-columns=3 n-rows=3 -->
-          <object class="GtkGrid">
+          <object class="GtkGrid" id="gnss_point_save_grid">
             <property name="width-request">100</property>
             <property name="height-request">80</property>
             <property name="visible">True</property>
@@ -1318,6 +1318,134 @@
           <packing>
             <property name="x">833</property>
             <property name="y">890</property>
+          </packing>
+        </child>
+        <child>
+          <!-- n-columns=4 n-rows=3 -->
+          <object class="GtkGrid" id="camera_pipeline_grid">
+            <property name="width-request">443</property>
+            <property name="height-request">90</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">CAMERA PIPELINES FUCKIN JORKED 
+DON"T USE THESE BUTTONS</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+                <property name="width">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">PIPE 1:</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">PIPE 2:</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="campipe_1_prev">
+                <property name="label" translatable="yes">PREV</property>
+                <property name="width-request">100</property>
+                <property name="height-request">50</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="campipe__selected_label">
+                <property name="width-request">206</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="campipe_1_next">
+                <property name="label" translatable="yes">NEXT</property>
+                <property name="width-request">100</property>
+                <property name="height-request">50</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">3</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="campipe_2_prev">
+                <property name="label" translatable="yes">PREV</property>
+                <property name="width-request">100</property>
+                <property name="height-request">50</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="campipe_2_next">
+                <property name="label" translatable="yes">NEXT</property>
+                <property name="width-request">100</property>
+                <property name="height-request">50</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">3</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="campipe_2_selected_label">
+                <property name="width-request">206</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ERROR</property>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="x">856</property>
+            <property name="y">173</property>
           </packing>
         </child>
         <style>

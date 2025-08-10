@@ -104,3 +104,14 @@
 
         gnss_point_name_entry->signal_activate()
                .connect(sigc::mem_fun(*this, &DashboardHMINode::on_gnss_point_name_entry_activated));
+
+
+builder->get_widget("campipe_1_next", campipe_1.button.inc);
+builder->get_widget("campipe_1_prev", campipe_1.button.dec);
+
+builder->get_widget("campipe_2_next", campipe_2.button.inc);
+builder->get_widget("campipe_2_prev", campipe_2.button.dec);
+
+builder->get_widget("campipe_1_selected_label", campipe_1.selected_label);
+builder->get_widget("campipe_2_selected_label", campipe_2.selected_label);
+

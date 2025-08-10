@@ -15,7 +15,54 @@
 #define EE_INDEX 6
 #define EE_SPEED_SCALE 1
 #define PI 3.14
-struct ArmConstants{
+
+// Uncomment the one you want, comment the one you dont
+    #define SELECT_MOTEUS_ARM
+    // #define SELECT_OLD_ARM
+
+    
+#ifdef SELECT_MOTEUS_ARM
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
+#endif
+
+#ifdef SELECT_OLD_ARM
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
+#endif
+
+namespace MoteusArmParams{
+  static constexpr float base_max_accel = 3.0;
+  static constexpr float max_accel[NUM_JOINTS] = {base_max_accel,  //A1
+                                                  base_max_accel,  //A2
+                                                  base_max_accel,  //A3
+                                                  base_max_accel,  //A4
+                                                  base_max_accel,  //A5
+                                                  base_max_accel,  //A6
+                                                  base_max_accel}; //A7 (End Effector)
+  // No use:
+  // static constexpr float base_max_velocity = 3.5;
+  // static constexpr float max_velocity[NUM_JOINTS] = { base_max_velocity,  //A1
+  //                                                     base_max_velocity,  //A2
+  //                                                     base_max_velocity,  //A3
+  //                                                     base_max_velocity,  //A4
+  //                                                     base_max_velocity,  //A5
+  //                                                     base_max_velocity,  //A6
+  //                                                     base_max_velocity}; //A7 (End Effector)
+
+     }
+
+
+
+
+
+
+
+
+
+
+
+// OLD ARM
+
+                                                struct ArmConstants{
     static constexpr float axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
                                                     -1.9390,          //* Axis 2 Offset
                                                     -1.3460,         //* Axis 3 Offset
@@ -49,13 +96,6 @@ struct ArmConstants{
 
 
 };
-
-
-//Can use a namespace if we want:
-namespace ArmParams{
-
-
-}
 
 //From moveit_control.h (the one we use)
 //         //? new arm offsets

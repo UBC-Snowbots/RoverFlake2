@@ -7,12 +7,12 @@ void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::Shared
     ik_msg.header.stamp = rclcpp::Clock(RCL_SYSTEM_TIME).now();
     ik_msg.header.frame_id = "link_tt";
    //  ik_msg.twist.linear.x = static_cast<float>(msg->
-    ik_msg.twist.linear.x = (static_cast<float>(msg->left.x) - 50)/100 * max_speed_deg[0]*2 / 180;
-     ik_msg.twist.linear.y = (static_cast<float>(msg->left.y) - 50)/100 * max_speed_deg[1]*2 *-1 / 180;
-     ik_msg.twist.linear.z = (static_cast<float>(msg->right.x) - 50)/100 * max_speed_deg[4]*2 / 180;
-     ik_msg.twist.angular.x = (static_cast<float>(msg->right.z) - 50)/100 * max_speed_deg[5]*2 / 180;
-    ik_msg.twist.angular.y = (static_cast<float>(msg->right.y) - 50)/100 * max_speed_deg[2]*2*-1 / 180;
-     ik_msg.twist.angular.z = (static_cast<float>(msg->left.z) - 50)/100 * max_speed_deg[3]*2 / 180;
+    ik_msg.twist.linear.x = (static_cast<float>(msg->left.x) - 50)/100 * max_joysticks_output_speed_deg[0]*2 / 180;
+     ik_msg.twist.linear.y = (static_cast<float>(msg->left.y) - 50)/100 * max_joysticks_output_speed_deg[1]*2 *-1 / 180;
+     ik_msg.twist.linear.z = (static_cast<float>(msg->right.x) - 50)/100 * max_joysticks_output_speed_deg[4]*2 / 180;
+     ik_msg.twist.angular.x = (static_cast<float>(msg->right.z) - 50)/100 * max_joysticks_output_speed_deg[5]*2 / 180;
+    ik_msg.twist.angular.y = (static_cast<float>(msg->right.y) - 50)/100 * max_joysticks_output_speed_deg[2]*2*-1 / 180;
+     ik_msg.twist.angular.z = (static_cast<float>(msg->left.z) - 50)/100 * max_joysticks_output_speed_deg[3]*2 / 180;
     // float value = ik_hmi_speed[index]; ///TODO get speed based on spinbuttons
     // switch (index)
     // {
@@ -47,12 +47,12 @@ void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::Shared
     rover_msgs::msg::ArmCommand cmd_msg;
     cmd_msg.cmd_type = 'V'; //!SHOULD BE FROM ArmSerialProtocol.h
     cmd_msg.velocities.resize(NUM_JOINTS);
-    cmd_msg.velocities[0] = (static_cast<float>(msg->left.x) - 50)/100 * max_speed_deg[0]*2;
-     cmd_msg.velocities[1] = (static_cast<float>(msg->left.y) - 50)/100 * max_speed_deg[1]*2 *-1;
-     cmd_msg.velocities[2] = (static_cast<float>(msg->right.y) - 50)/100 * max_speed_deg[2]*2*-1;
-     cmd_msg.velocities[3] = (static_cast<float>(msg->left.z) - 50)/100 * max_speed_deg[3]*2;
-     cmd_msg.velocities[4] = (static_cast<float>(msg->right.x) - 50)/100 * max_speed_deg[4]*2;
-     cmd_msg.velocities[5] = (static_cast<float>(msg->right.z) - 50)/100 * max_speed_deg[5]*2;
+    cmd_msg.velocities[0] = (static_cast<float>(msg->left.x) - 50)/100 * max_joysticks_output_speed_deg[0]*2;
+     cmd_msg.velocities[1] = (static_cast<float>(msg->left.y) - 50)/100 * max_joysticks_output_speed_deg[1]*2 *-1;
+     cmd_msg.velocities[2] = (static_cast<float>(msg->right.y) - 50)/100 * max_joysticks_output_speed_deg[2]*2*-1;
+     cmd_msg.velocities[3] = (static_cast<float>(msg->left.z) - 50)/100 * max_joysticks_output_speed_deg[3]*2;
+     cmd_msg.velocities[4] = (static_cast<float>(msg->right.x) - 50)/100 * max_joysticks_output_speed_deg[4]*2;
+     cmd_msg.velocities[5] = (static_cast<float>(msg->right.z) - 50)/100 * max_joysticks_output_speed_deg[5]*2;
     
     if(msg->left.button && msg->right.button){
 

@@ -6,3 +6,4 @@ science_cam_pipeline_node:
       - "/science/cam1/compressed"
     cam_output_topic: "/science/active_feed"
     cam_selection_topic: "/science/selected_cam"
+#SEE heart.yaml FOR camera pipeline controlled by dashboard

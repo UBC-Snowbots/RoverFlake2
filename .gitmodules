@@ -1,3 +1,6 @@
 [submodule "src/external_pkgs/serial"]
 	path = src/external_pkgs/serial
 	url = https://github.com/RoverRobotics-forks/serial-ros2.git
+[submodule "src/external_pkgs/moteus_ros2"]
+	path = src/external_pkgs/moteus_ros2
+	url = https://github.com/mjbots/moteus_ros2
