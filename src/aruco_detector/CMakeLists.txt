@@ -17,7 +17,8 @@ find_package(OpenCV REQUIRED)
 
 # Add executable
 add_executable(aruco_detector_node src/DetectMarker.cpp)
-
+# add_executable(color_encoder src/Encoder.cpp)
+# add_executable(color_encoder src/EncodeFeed.cpp)
 # Link dependencies to your executable
 ament_target_dependencies(aruco_detector_node
   rclcpp
@@ -27,10 +28,28 @@ ament_target_dependencies(aruco_detector_node
   std_msgs  
   OpenCV
 )
+# ament_target_dependencies(color_encoder
+#   rclcpp
+#   image_transport
+#   cv_bridge
+#   sensor_msgs
+#   std_msgs  
+#   OpenCV
+# )
+
+# ament_target_dependencies(color_encoder
+#   rclcpp
+#   image_transport
+#   cv_bridge
+#   sensor_msgs
+#   std_msgs  
+#   OpenCV
+# )
 
 # Install the executable
 install(TARGETS
   aruco_detector_node
+  # color_encoder
   DESTINATION lib/${PROJECT_NAME}
 )
 

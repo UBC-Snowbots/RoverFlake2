@@ -6,8 +6,6 @@ from geometry_msgs.msg import Vector3
 import serial
 
 class PTZPanTiltNode(Node):
-    """
-    """
     def __init__(self):
         super().__init__('Pan_tilt_node')    
 
@@ -41,10 +39,10 @@ class PTZPanTiltNode(Node):
             # self.ser.write(p.encode('ascii'))
             if pan_cmd == 0:
                 # pcmd = 'stop_pan\n'
-                pcmd = f'0+{pan_cmd*2}'
+                pcmd = f'stop_pan\n'
                 self.ser.write(pcmd.encode('ascii'))
             else:
-                pcmd = f'0+{pan_cmd*2}\n' if pan_cmd > 0 else f'0{pan_cmd*2}\n'
+                pcmd = f'0+{pan_cmd*2}\n' if pan_cmd > 0 else f'0-{pan_cmd*2}\n'
                 self.ser.write(pcmd.encode('ascii'))
             
             # resp = self.ser.read_until(b'\n').decode('ascii') # retrive positional msg

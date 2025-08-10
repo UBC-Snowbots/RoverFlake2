@@ -36,11 +36,11 @@ class ColourDetectionNode(Node):
                 'upper': [np.array([10, 255, 255]), np.array([180, 255, 255])],
                 'bgr': (0, 0, 255)
             },
-            # 'blue': {
-            #     'lower': [np.array([100, 150, 50])],
-            #     'upper': [np.array([140, 255, 255])],
-            #     'bgr': (255, 0, 0)
-            # },
+            'blue': {
+                'lower': [np.array([100, 150, 50])],
+                'upper': [np.array([140, 255, 255])],
+                'bgr': (255, 0, 0)
+            },
             # 'ir_white': {
             #     'lower': [np.array([0, 0, 200])],  
             #     'upper': [np.array([180, 30, 255])], 
