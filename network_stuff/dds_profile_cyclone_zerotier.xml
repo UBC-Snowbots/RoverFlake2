@@ -7,7 +7,7 @@
     <General>
         <Interfaces>
                 <!-- <NetworkInterface address="10.147.20.8" priority="0" /> -->
-                <NetworkInterface address="172.30.0.22" priority="0" />
+                <NetworkInterface address="172.30.0.20" priority="0" />
         </Interfaces>
         <AllowMulticast>default</AllowMulticast>
       <!--<EnableMulticastLoopback>true</EnableMulticastLoopback>-->
@@ -24,6 +24,7 @@
         <MaxAutoParticipantIndex>1000</MaxAutoParticipantIndex>
         <Peers>
 		<Peer Address="172.30.0.20"/>
+		<Peer Address="172.30.0.21"/>
 		<Peer Address="172.30.0.22"/>
              <!--   <Peer Address="192.168.1.104"/>-->
              <!--   <Peer Address="192.168.1.120"/>-->

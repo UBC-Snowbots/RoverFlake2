@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ptz_cam</name>
+  <version>0.1.0</version>
+  <description>ROS 2 package for IP camera RTSP streaming and PTZ control via ONVIF and Serial.</description>
+  <maintainer email="cameronbasara@gmail.com">Cameron Basara</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-serial</exec_depend>
+  <exec_depend>onvif-zeep</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

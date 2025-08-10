@@ -51,7 +51,8 @@
 /heart_onboard_nuc:
   ros__parameters:
     subsystems:
-      drive_interface: "ros2 launch drive_control drive_control_onboard_bringup.launch.py"
+      drive_interface: "ros2 launch drive_control drive_control_launch.launch.py"
+      # drive_control: "ros2 launch drive_control drive_the_rover.launch.py"
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
       cucumber: "ros2 run demo_nodes_cpp talker"
       meow: "ros2 run demo_nodes_cpp listener"

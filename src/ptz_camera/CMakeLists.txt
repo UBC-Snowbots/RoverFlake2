@@ -14,18 +14,9 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-
-# Generate service interfaces
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/SetFloat64.srv"
-  "srv/SetMovement.srv"
-  DEPENDENCIES std_msgs
-)
-
+find_package(geometry_msgs REQUIRED)
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
@@ -43,7 +34,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
-ament_export_dependencies(rosidl_default_runtime)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
