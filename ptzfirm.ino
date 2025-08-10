@@ -4,7 +4,7 @@
 int Pos2 = 90; // tilt mid pos
 int speed;
 
-Servo servo1;
+//Servo servo1;
 Servo servo2;
 
 // === Constants for gas sensor ===
@@ -26,7 +26,12 @@ bool status = false;
 void setup() {
   Serial.begin(9600);
   inputString.reserve(50);
-  servo1.attach(10);
+//  servo1.attach(10);
+  pinMode(3,OUTPUT);
+  pinMode(5,OUTPUT);
+  digitalWrite(3,LOW);
+  digitalWrite(5,LOW);
+  delay(10);
   servo2.attach(11);
 }
 
@@ -55,16 +60,38 @@ void control_ptz(String cmd) {
 
   char direction = cmd.charAt(0);
   float value = cmd.substring(1).toFloat();
+//  speed = value;
+//  speed = constrain(speed, 0, 255);
+//  Serial.print(speed);
 
   if (direction == '0') { // continuous pan
-    int speed = 90 + value; // 90 = stop
-    speed = constrain(speed, 0, 180);
+    char panDir = cmd.charAt(1);
+    Serial.print(panDir);
+    if (panDir == '+'){
+      // positive value
+      digitalWrite(5, LOW);
+//      analogWrite(3, speed);
+      digitalWrite(3, HIGH);  
+      delay(50);
+      digitalWrite(3, LOW);
+    }
+    else{
+//    speed = contrain(speed, 0, 255);
+      digitalWrite(3, LOW);
+//      analogWrite(5,speed);
+      digitalWrite(5, HIGH);
+      delay(50);
+      digitalWrite(5, LOW);
+      
+      delay(100);
+    }
     Serial.print(speed);
-    servo1.write(speed);
+    Serial.print(direction);
+    
   } else if (direction == '1') { // tilt (positional servo)
     Pos2 += value;
-    Pos2 = constrain(Pos2, 0, 180);
-    Serial.print(Pos2, 2);
+    Pos2 = constrain(Pos2, 80, 165);
+    Serial.print(Pos2, 2); //meow
     servo2.write(Pos2);
   }
 }
@@ -90,7 +117,8 @@ void loop() {
     } else if (inputString == "sensor_off") {
       status = false;
     } else if (inputString == "stop_pan") {
-      servo1.write(90); 
+      digitalWrite(3, LOW);
+      digitalWrite(5, LOW);
     } else if (inputString.charAt(0) == '0' || inputString.charAt(0) == '1') {
       control_ptz(inputString);
     } else {
