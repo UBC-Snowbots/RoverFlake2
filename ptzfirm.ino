@@ -22,6 +22,7 @@ String inputString = "";
 bool stringComplete = true;
 
 bool status = false;
+bool gstat = false;
 
 void setup() {
   Serial.begin(9600);
@@ -53,6 +54,16 @@ void get_sensor_data() {
     Serial.print(ppm, 2);
     Serial.println(")");
   }
+}
+
+void geigar(){
+  if (gstat){
+    int mSv = analogRead(A1)
+    Serial.print("$GEI(");
+    Serial.print(mSv, 2);
+    Serial.println(")");
+  }
+
 }
 
 void control_ptz(String cmd) {
@@ -91,7 +102,7 @@ void control_ptz(String cmd) {
   } else if (direction == '1') { // tilt (positional servo)
     Pos2 += value;
     Pos2 = constrain(Pos2, 80, 165);
-    Serial.print(Pos2, 2); //meow
+    Serial.print(Pos2, 2); // meow
     servo2.write(Pos2);
   }
 }
@@ -109,19 +120,29 @@ void serialEvent() {
 }
 
 void loop() {
-  if (stringComplete) {
+  if (stringComplete) {a
     inputString.trim();
     Serial.print(inputString);
     if (inputString == "sensor_on") {
       status = true;
-    } else if (inputString == "sensor_off") {
+    } 
+    else if (inputString == "sensor_off") {
       status = false;
-    } else if (inputString == "stop_pan") {
+    } 
+    else if (inputString == "geigar_on"){
+      gstat = true;
+    }
+    else if (inputString == "geigar_off"){
+      gstat = false;
+    }
+    else if (inputString == "stop_pan") {
       digitalWrite(3, LOW);
       digitalWrite(5, LOW);
-    } else if (inputString.charAt(0) == '0' || inputString.charAt(0) == '1') {
+    } 
+    else if (inputString.charAt(0) == '0' || inputString.charAt(0) == '1') {
       control_ptz(inputString);
-    } else {
+    } 
+    else {
       Serial.println("Invalid command.");
     }
     inputString = "";
