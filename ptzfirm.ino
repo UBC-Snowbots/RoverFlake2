@@ -120,7 +120,7 @@ void serialEvent() {
 }
 
 void loop() {
-  if (stringComplete) {a
+  if (stringComplete) {
     inputString.trim();
     Serial.print(inputString);
     if (inputString == "sensor_on") {
