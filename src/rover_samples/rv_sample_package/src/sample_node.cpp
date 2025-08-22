@@ -1,109 +1,36 @@
-//this is a sample node, with a joy input
+//A little blurb here or in your header is always welcome
 #include "sample_node.h"
 
+// Constructor
+SampleNode::SampleNode() : Node("sample_node") { // We create a class using rclcpp::Node as a base class. You can still use another base class if you need, albeit sometimes with difficulties in passing args..
+    // Quality of service example
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
 
-#include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/joy.hpp"
-
-
-
-class SampleNode : public rclcpp::Node {
-public:
-    SampleNode() : Node("sample_node") {
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-        //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
-        //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
-
-        double period = 1.0/CONTROL_RATE;
-        // timer_ = this->create_wall_timer(
-        // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
-        g29_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&SampleNode::joy_callback, this, std::placeholders::_1));
+    double period = 1.0/CONTROL_RATE_HZ;
+    // timer_ = this->create_wall_timer(
+    // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
+    g29_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
+        "/joy", qos /* or an int for quick qos*/, std::bind(&SampleNode::joy_callback, this, std::placeholders::_1));
 
 
-        // parameters:
-        this->declare_parameter("param_name", std::vector<std::string>({"Watchdog"}));
+    // parameters:
+    this->declare_parameter("param_name", std::vector<std::string>({"Watchdog"}));
 
-    }
+}
 
-    void send_command(float steering_angle, float speed, float acceleration, float jerk) {
-        //params can be refreshed at runtime
-        std::vector<std::string> expected_nodes = this->get_parameter("expected_nodes").as_string_array();
 
-    }
-
-    void send_gear_command(int gear){
-      
-    }
-
-    
-
-    // void test_send(){
-    //     send_command(0.5, 1.0, 1.0, 0.5);
-    //     // rclcpp::logger
-
-    // }
-
-private:
-    int gears[4] = {GEAR_PARKING, GEAR_REVERSE, GEAR_NEUTRAL, GEAR_1};
-    int current_gear = 0;
-    int prev_paddleR = 0;
-    int prev_paddleL = 0;
-
-    // rclcpp::Publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr command_publisher_;
-    // rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::GearCommand>::SharedPtr gear_publisher_;
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr g29_subscriber_;
-
-    rclcpp::TimerBase::SharedPtr timer_;
-
-    void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-        float steering_angle = msg->axes[0];
-        float speed = 99.0 - (msg->axes[3] + 1)*100;
-        float acceleration = (msg->axes[2] + 1)*20 - (msg->axes[3] + 1)*20;
-        float jerk = (msg->axes[2] + 1)*20 - (msg->axes[3] + 1)*20;
-        int paddleR = msg->buttons[4];
-        int paddleL = msg->buttons[5];
-        
-        if(paddleL == 0){
-            prev_paddleL = 0;
-        }
-        if(paddleR == 0){
-            prev_paddleR = 0;
-        }
-
-        if(paddleR){
-        if(prev_paddleR != paddleR){
-            prev_paddleR = paddleR;
-            current_gear++;
-        }
-        }else if(paddleL){
-        if(prev_paddleL != paddleL){
-            prev_paddleL = paddleL;
-            current_gear--;
-        }
-        }
-        if(current_gear < 0){
-            current_gear = 0;
-        }
-
-        if(current_gear > 4){
-            current_gear = 4;
-        }
-
-        send_command(steering_angle, speed, acceleration, jerk);
-        send_gear_command(gears[current_gear]);
-    }
-};
-
+// Main function (entry point of node)
 int main(int argc, char *argv[]) {
+    // Init ros2 with args. 
     rclcpp::init(argc, argv);
+
+    // Instatiate your node
     auto node = std::make_shared<SampleNode>();
-
-    // Example: send a command with a steering angle of 0.5 rad and speed of 1.0 m/s
-
-    
+    // Spin it! (this is what runs pubs and subs. This is a blocking function)
     rclcpp::spin(node);
+    // There is also rclcpp::spinSome(node) if you need more control over when the node spins / need to not block while spinning.
     
+    // Code only reaches here if we crash or shutdown the node
     rclcpp::shutdown();
     return 0;
 }
