@@ -1,6 +1,6 @@
 // A little blurb at the top of your header or .cpp is always welcome!!
 //? Best to keep this blurb in header? probably?
-
+#pragma once // Tells compiler to only include this header once. When in doubt, add to all headers.
 // Includes
 // If file is not in this directory, use <>
 // If file path is reative to this directory, use "". 
@@ -15,20 +15,23 @@
 
 // Defines go after includes, but before class definitions
 // If you need a lot of defines, create a seperate defines file (see sample_node_defines.h for more info)
+#define DEBUG_MSGS // Comment to turn off debug messages
 #define TIMER_HZ 5
 #define MACRO(x) 45*x
 #define TIMER_PERIOD_MS (1.0/TIMER_HZ)
 
 
+// using std::your_mom; //? using goes above the class, after definitions
+
 // Class definition
 class SampleNode : public rclcpp::Node {
 public:
-    SampleNode(); // Constructor is usually defined in .cpp. Its okay if you want to define it here instead. 
-
+    SampleNode(); // Constructor is defined in .cpp.
 
 private:
     // Most member structures and functions are private in a custom ros2 node. 
 
+    // Data types and structs go first
     int current_gear = 0;
     int prev_paddleR = 0;
     int prev_paddleL = 0;
@@ -42,12 +45,14 @@ private:
 
     // OTHER ROS2 OBJECTS (Timers)
     rclcpp::TimerBase::SharedPtr timer_;
+
+
+    // Member function prototypes
     void timer_callback(); // Timer callbacks should go below timer def.
-
     void send_generic_command(float steering_angle, float speed, float acceleration, float jerk);
-
     void send_gear_command(int gear);
 
-      
-
 };    
+
+
+// Static inline funcs go here?
