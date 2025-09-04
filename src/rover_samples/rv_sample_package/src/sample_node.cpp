@@ -55,10 +55,13 @@ void SampleNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
 
 void SampleNode::timer_callback()
 {
+    // Debug messages are good to wrap in a compiler instruction - Then you can turn on / turn off debug messages easily. For comp, we don't want every node to be spamming info as it is uneeded overhead
+    #ifdef DEBUG_MSGS
     std::cout << "Node is running (std cout)" << std::endl; // Standard C++ is always available
     RCLCPP_INFO(this->get_logger(), "Node is running (ros2 info)"); // ROS2 (rclcpp) also has functions/macros that can replace some of the standard c++ workflow.
     RCLCPP_WARN(this->get_logger(), "Node is running (ros2 warn)"); // ROS2 (rclcpp) also has functions that can replace some of the standard c++ workflow.
     RCLCPP_ERROR(this->get_logger(), "Node is running (ros2 error)"); // ROS2 (rclcpp) also has functions that can replace some of the standard c++ workflow.
+    #endif // DEBUG_MSGS
 }
 
 
@@ -79,3 +82,5 @@ void SampleNode::send_generic_command(float steering_angle, float speed, float a
 
 //params can be refreshed at runtime
 // std::vector<std::string> expected_nodes = this->get_parameter("expected_nodes").as_string_array();
+
+

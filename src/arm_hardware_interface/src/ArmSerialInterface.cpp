@@ -13,16 +13,12 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       RCLCPP_INFO(this->get_logger(), "Axis %i /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", i+1, axes[i].dir, axes[i].zero_rad);
     #endif
   }
-  // axis_EE.zero_rad = ArmConstants::ee_zero_rads;
-  // axis_EE.dir = ArmConstants::ee_dir;
-      // RCLCPP_INFO(this->get_logger(), "Axis END_EFF /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", axis_EE.dir, axis_EE.zero_rad);
 
 
         // auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(); //Very hack way of only using "live" messages - iffy, and may still operate off of one stale message. in the future we should use a time stamped message, and check the stamp time against current time to make sure msg is not stale.
        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile(); //? AHHHH WHAT THE FUCK IS A QOS
-        //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
-        //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
-        arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
+
+       arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
        double period = 1.0/COMM_POLL_RATE;
 
@@ -31,32 +27,122 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
             "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
 
-        // joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-        //     "/joy", 10, std::bind(&ArmSerial::joy_callback, this, std::placeholders::_1));
         if(!SIMULATE){
         teensy.setPort(port);
         teensy.open();
         timer_ = this->create_wall_timer(
           std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
         }
-      //  teensy.setDTR(true);
-      //  teensy.setRTS(false);
+
         sleep(0.1);
 
         int flag = 1;
-        // while(rclcpp::ok()){
-        //     recieveMsg();
-        // }
-        //set serial rx on a quick polling timer
- 
 
     }
 
-void ArmSerial::recieveMsg() {
+// Entry Point
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<ArmSerial>();
 
+    RCLCPP_INFO(node->get_logger(), "ArmSerial init");
+    //std::thread arm_thread(ArmSerial::SerialRxThread, std::ref(node));
 
+     
 
+    rclcpp::spin(node);
+    
+    rclcpp::shutdown();
+    return 0;
 }
+//Callbacks
+
+
+void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
+  char type = msg->cmd_type;
+  switch (type)
+  {
+  case HOME_CMD:
+    if(!SIMULATE){
+      sendHomeCmd(msg->cmd_value);
+    }
+    break;
+  case COMM_CMD:
+    if(!SIMULATE){
+      sendCommCmd(msg->cmd_value);
+    }
+    break;
+  case TEST_LIMITS_CMD:
+    if(!SIMULATE){
+      send_test_limits_command();
+    }
+    break;
+  case ABS_POS_CMD:
+    float target_positions[NUM_JOINTS];
+    for (int i = 0; i < NUM_JOINTS; i++){
+      target_positions[i] = msg->positions[i];
+    }
+    if(SIMULATE){
+       sensor_msgs::msg::JointState joint_states_;
+       joint_states_.position.resize(NUM_JOINTS);
+       joint_states_.name.resize(NUM_JOINTS);
+        for(int i = 0; i < NUM_JOINTS; i++){
+        joint_states_.name[i] = joint_names[i];
+        joint_states_.position[i] = firmToMoveitOffsetPos(target_positions[i], i);
+        joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
+         }
+         joint_states_.header.stamp = rclcpp::Clock().now();
+
+         joint_state_publisher_->publish(joint_states_);
+
+    }else{
+          send_position_command(target_positions);
+
+    }
+    break;
+    case ABS_VEL_CMD:
+      // double sim_target_velocities[NUM_JOINTS];
+        for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
+      target_velocities[i] = msg->velocities[i];
+      #ifdef DEBUG_MSGS
+        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
+      #endif// DEBUG_MSGS
+      target_velocities[EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
+      // current_velocity[i] = msg->velocities[i];
+
+    }
+     if(SIMULATE){
+       sensor_msgs::msg::JointState joint_states_;
+      // auto curr_time = this->get_clock()->now();
+         joint_states_.header.stamp = rclcpp::Clock().now();
+
+       joint_states_.velocity.resize(NUM_JOINTS);
+       joint_states_.position.resize(NUM_JOINTS);
+       joint_states_.name.resize(NUM_JOINTS);
+        for(int i = 0; i < NUM_JOINTS; i++){
+        joint_states_.name[i] = joint_names[i];
+        joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
+        rclcpp::Time current_time(joint_states_.header.stamp);
+        rclcpp::Time prev_time(prev_joint_states.header.stamp);
+        joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
+        prev_joint_states.position[i] = joint_states_.position[i];
+        joint_states_.position[i] -= axes[i].zero_rad;
+         }
+          prev_joint_states.header.stamp = joint_states_.header.stamp;
+         joint_state_publisher_->publish(joint_states_);
+
+    }else{
+   
+        send_velocity_command(target_velocities); //!
+    }
+    break;
+  default:
+    break;
+  
+ }
+}
+
+// Member functions
 
 float ArmSerial::degToRad(float deg){
   float rad = deg * 3.14159/180; //14159265359
@@ -163,7 +249,6 @@ void ArmSerial::sendHomeCmd(int target_axis) {
   }
 
   sendMsg(home_msg);
-
 }
 
 void ArmSerial::sendCommCmd(int target_state) {
@@ -179,100 +264,73 @@ void ArmSerial::sendCommCmd(int target_state) {
 
 }
 
-void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
-  char type = msg->cmd_type;
-  switch (type)
-  {
-  case HOME_CMD:
-    if(!SIMULATE){
-      sendHomeCmd(msg->cmd_value);
-    }
-    break;
-  case COMM_CMD:
-    if(!SIMULATE){
-      sendCommCmd(msg->cmd_value);
-    }
-    break;
-  case TEST_LIMITS_CMD:
-    if(!SIMULATE){
-      send_test_limits_command();
-    }
-    break;
-  case ABS_POS_CMD:
-    float target_positions[NUM_JOINTS];
-    for (int i = 0; i < NUM_JOINTS; i++){
-      target_positions[i] = msg->positions[i];
-    }
-    if(SIMULATE){
-       sensor_msgs::msg::JointState joint_states_;
-       joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.name.resize(NUM_JOINTS);
-        for(int i = 0; i < NUM_JOINTS; i++){
-        joint_states_.name[i] = joint_names[i];
-        joint_states_.position[i] = firmToMoveitOffsetPos(target_positions[i], i);
-        joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
-         }
-         joint_states_.header.stamp = rclcpp::Clock().now();
 
-         joint_state_publisher_->publish(joint_states_);
+    void ArmSerial::serial_rx(){
+    //rclcpp::Rate loop_rate(50);
+    std::string next_char = "";
+    std::string buffer = "";
+    int timeoutCounter = 0;
+    //zephyrComm.teensy.flushInput();
+   if (teensy.available() > 0){
+       // ROS_WARN("Reading");
 
-    }else{
-          send_position_command(target_positions);
+        //timeoutCounter ++;
+       // next_char = teensy.read(); 
+        buffer = teensy.read(RX_UART_BUFF);
+        RCLCPP_WARN(this->get_logger(), "%s", buffer.c_str());
+        // if(next_char == "\n" || next_char == "\r" || next_char == "\0"){
+        //     timeoutCounter = RX_UART_BUFF;
+        // }
+        if (buffer.size() > 0){
+        if(buffer.find("Arm Ready") != std::string::npos){
+        homed = true;
+        homing = false;
+       // fresh_rx_angle = true;
+     }else if(buffer.find("my_angleP") != std::string::npos){
+        parseArmAngleUart(buffer);
+     }else if(buffer.find("Limit Switch")){
+        parseLimitSwitchTest(buffer);
+     }
 
+
+   }
+    
     }
-    break;
-    case ABS_VEL_CMD:
-      // double sim_target_velocities[NUM_JOINTS];
-        for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
-      target_velocities[i] = msg->velocities[i];
-        RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
-      target_velocities[EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
-      // current_velocity[i] = msg->velocities[i];
-
     }
-     if(SIMULATE){
-       sensor_msgs::msg::JointState joint_states_;
-      // auto curr_time = this->get_clock()->now();
-         joint_states_.header.stamp = rclcpp::Clock().now();
 
-       joint_states_.velocity.resize(NUM_JOINTS);
-       joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.name.resize(NUM_JOINTS);
-        for(int i = 0; i < NUM_JOINTS; i++){
-        joint_states_.name[i] = joint_names[i];
-        joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
-        rclcpp::Time current_time(joint_states_.header.stamp);
-        rclcpp::Time prev_time(prev_joint_states.header.stamp);
-        joint_states_.position[i] = (prev_joint_states.position[i]) + (joint_states_.velocity[i] * (current_time - prev_time).seconds());
-        prev_joint_states.position[i] = joint_states_.position[i];
-        joint_states_.position[i] -= axes[i].zero_rad;
-         }
-          prev_joint_states.header.stamp = joint_states_.header.stamp;
-         joint_state_publisher_->publish(joint_states_);
 
-    }else{
-   
-        send_velocity_command(target_velocities); //!
-    }
-    break;
-  default:
-    break;
+
+void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
+
+    char tx_msg[TX_UART_BUFF];
   
- }
+    sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6]);
+
+    sendMsg(tx_msg);
+    RCLCPP_INFO(this->get_logger(), "Positions Sent %s", tx_msg);    
 }
 
 
-int main(int argc, char *argv[]) {
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<ArmSerial>();
+void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
 
-    RCLCPP_INFO(node->get_logger(), "ArmSerial init");
-    //std::thread arm_thread(ArmSerial::SerialRxThread, std::ref(node));
-
-     
-
-    rclcpp::spin(node);
+    char tx_msg[TX_UART_BUFF];
+  
+    sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5], vel[6]);
+    for(int i = 0; i < NUM_JOINTS; i++){
+      current_velocity[i] = vel[i];
+    }
     
-    rclcpp::shutdown();
-    return 0;
+    
+    sendMsg(tx_msg);
+    #ifdef DEBUG_MSGS
+    RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
+    #endif //DEBUG_MSGS
+}
+
+void ArmSerial::send_test_limits_command(){
+  char tx_msg[TX_UART_BUFF];
+  sprintf(tx_msg, "$t()\n");
+  sendMsg(tx_msg);
+  RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
+
 }
