@@ -1,1 +1,8 @@
 name: test_workflow
+on: push
+jobs:
+  demo:
+    runs-on: ubuntu-22.04
+    steps:
+     - uses: actions/checkout@v4
+     - run: echo "hello world"
