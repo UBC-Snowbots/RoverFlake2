@@ -1,4 +1,4 @@
-source $REPO_ROOT/setup_scripts/utils/common.sh
+source $ROVERFLAKE_ROOT/setup_scripts/utils/common.sh
 
 echo CHECKING FOR ROS2 DESKTOP
 if is_package_installed "ros-humble-desktop"; then
