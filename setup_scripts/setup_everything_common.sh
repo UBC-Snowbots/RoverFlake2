@@ -1,4 +1,9 @@
-source $HOME/RoverFlake2/setup_scripts/utils/common.sh
+
+# ? we can do a script dir, but easier and more explicit just to get the user to define their repo root
+# SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+echo $ROVERFLAKE_ROOT
+
+source $ROVERFLAKE_ROOT/utils/common.sh
 
 clear
 
@@ -20,7 +25,7 @@ sleep 1.0
 echo starting with ros2...
 
 #sudo apt update
-cd $HOME/RoverFlake2/setup_scripts/
+cd $ROVERFLAKE_ROOT/setup_scripts/
 bash install_dependencies.sh
 bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
 
@@ -53,7 +58,7 @@ for package in "${apt_packages_to_install[@]}"; do
         fi
     fi
 done
-cd $HOME/RoverFlake2/
+cd $ROVERFLAKE_ROOT
 source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
