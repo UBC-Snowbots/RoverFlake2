@@ -5,6 +5,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
      - uses: actions/checkout@v4
-     - run: echo "ROVERFLAKE_ROOT="${HOME}/work/RoverFlake2/"" >> $GITHUB_ENV
-     - run: echo "hello world meow meow"
-     - run: yes | ./setup_scripts/setup_everything_common.sh
+     - run: |
+         export ROVERFLAKE_ROOT="${HOME}/work/RoverFlake2/"
+         yes | ./setup_scripts/setup_everything_common.sh
