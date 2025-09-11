@@ -15,11 +15,10 @@
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>serial</depend>
   <depend>rover_msgs</depend>
   <depend>arm_control</depend>
 
-<!-- Rosdep fails with the following: -->
-  <!-- <depend>serial</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

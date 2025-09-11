@@ -16,10 +16,7 @@
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
   <exec_depend>python3-serial</exec_depend>
-
-  
-<!-- Rosdep fails with the following: -->
-  <!-- <exec_depend>onvif-zeep</exec_depend> -->
+  <exec_depend>onvif-zeep</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
