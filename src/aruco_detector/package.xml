@@ -15,7 +15,8 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>OpenCV</depend>
-  <depend>cv2_aruco</depend>  
+  <!-- Rosdep fails with the following: -->
+  <!-- <depend>cv2_aruco</depend>   -->
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

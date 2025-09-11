@@ -14,10 +14,13 @@
 
   <exec_depend>rclpy</exec_depend>  
   <exec_depend>std_msgs</exec_depend>
-  <exec_depend>pyserial</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>
   <exec_depend>python3-serial</exec_depend>
 
+<!-- Rosdep complains about:  -->
+  <!-- <exec_depend>pyserial</exec_depend> -->
+ 
+ 
   <export>
     <build_type>ament_python</build_type>
   </export>
