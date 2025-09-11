@@ -13,7 +13,9 @@
   <test_depend>ament_lint_common</test_depend>
   <depend>rclcpp</depend>
     <depend>std_msgs</depend>
-  <depend>amment_index_cpp</depend>
+
+<!-- Rosdep fails with the following: -->
+  <!-- <depend>amment_index_cpp</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

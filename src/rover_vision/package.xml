@@ -24,7 +24,9 @@
   <exec_depend>python3-opencv</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>librealsense2</exec_depend>
-  <exec_depend>geopy</exec_depend>
+
+<!-- Rosdep fails with the following -->
+  <!-- <exec_depend>geopy</exec_depend> -->
 
 
   <export>
