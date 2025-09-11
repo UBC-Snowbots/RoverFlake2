@@ -12,15 +12,15 @@ jobs:
        if: ${{ success() }}
        uses: appleboy/discord-action@v1.0.0
        with:
-       webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
-       message: |
-             :) ${{ github.repository }} on `${{ github.ref_name }}`
-             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        webhook_url: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
+        message: |
+              :) ${{ github.repository }} on `${{ github.ref_name }}`
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
      - name: Notify Discord (success)
        if: ${{ failure() }}
        uses: appleboy/discord-action@v1.0.0
        with:
-       webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
-       message: |
-             _you have saddened me ${{ github.actor }}_
-             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        webhook_url: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
+        message: |
+              _you have saddened me ${{ github.actor }}_
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
