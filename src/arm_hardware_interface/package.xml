@@ -19,7 +19,7 @@
   <depend>arm_control</depend>
 
 <!-- Rosdep fails with the following: -->
-  <!-- <depend>serial</depend> -->
+  <depend>serial</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

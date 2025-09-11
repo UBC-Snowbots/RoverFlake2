@@ -5,22 +5,33 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
      - uses: actions/checkout@v4
-     - run: |
+     - name: enviroment setupg
+       run: |
          export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
          yes | ./setup_scripts/setup_everything_common.sh
+     - name: build
+       run: |
+         cd $ROVERFLAKE_ROOT
+         echo $ROS_DISTRO
+         source /opt/ros/humble/setup.bash
+         echo $ROS_DISTRO
+         colcon build --symlink-install
      - name: Notify Discord (success)
        if: ${{ success() }}
        uses: appleboy/discord-action@v1.0.0
        with:
-        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
+        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
+        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
         message: |
               :) ${{ github.repository }} on `${{ github.ref_name }}`
               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-     - name: Notify Discord (success)
+     - name: Notify Discord (failure)
        if: ${{ failure() }}
        uses: appleboy/discord-action@v1.0.0
        with:
-        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_URL }} # it also accepts full URL
+        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
+        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
         message: |
               _you have saddened me ${{ github.actor }}_
               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  

@@ -23,7 +23,6 @@ echo Will install ros2 humble, vscode, btop, tmux and other useful tools.
 echo This script will NOT install discord. run install-discord.sh if you want discord.
 sleep 1.0
 echo starting with ros2...
-exit 1
 
 #sudo apt update
 cd $ROVERFLAKE_ROOT/setup_scripts/
@@ -63,7 +62,7 @@ source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
 rosdep update
-rosdep install --from-paths src -y --ignore-src
+rosdep install --from-paths src -y --ignore-src --skip-keys="serial"
 # for package in "${ros_packages_to_install[@]}"; do
 #     if is_package_installed "$package"; then
 #         echo "Package '$package' is already installed."
