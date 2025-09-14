@@ -62,7 +62,7 @@ source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
 rosdep update
-rosdep install --from-paths src -y --ignore-src --skip-keys="serial"
+bash setup_scripts/install_rosdeps.sh
 # for package in "${ros_packages_to_install[@]}"; do
 #     if is_package_installed "$package"; then
 #         echo "Package '$package' is already installed."
