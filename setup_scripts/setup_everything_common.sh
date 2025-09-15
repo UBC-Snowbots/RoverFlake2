@@ -80,7 +80,7 @@ echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >>
 
 
 # install libsweep
-bash setup_scripts/install_libsweepsdk.sh
+bash ${ROVERFLAKE_ROOT}/setup_scripts/install_libsweepsdk.sh
 
 
 
