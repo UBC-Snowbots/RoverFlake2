@@ -15,7 +15,7 @@ jobs:
          echo $ROS_DISTRO
          source /opt/ros/humble/setup.bash
          echo $ROS_DISTRO
-         colcon build --symlink-install --packges-skip sweeppy  
+         colcon build --symlink-install --packages-skip sweeppy  
      - name: Notify Discord (success)
        if: ${{ success() }}
        uses: appleboy/discord-action@v1.0.0
