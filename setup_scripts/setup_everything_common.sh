@@ -3,6 +3,15 @@
 # SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 echo $ROVERFLAKE_ROOT
 
+# check if VAR is unset or empty
+if [ -z "${ROVERFLAKE_ROOT}" ]; then
+  echo "ROVERFLAKE_ROOT is not set (or empty). That makes me really sad."
+  sleep 2
+  echo "Please set the enviroment variable in your bashrc to the root of RoverFlake2/"
+  exit 1
+fi
+
+
 source $ROVERFLAKE_ROOT/utils/common.sh
 
 clear
@@ -58,11 +67,23 @@ for package in "${apt_packages_to_install[@]}"; do
     fi
 done
 cd $ROVERFLAKE_ROOT
+
 source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
 rosdep update
 bash setup_scripts/install_rosdeps.sh
+
+# setup user enviroment
+echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >> ~/.bashrc
+
+
+
+
+
+
+
+
 # for package in "${ros_packages_to_install[@]}"; do
 #     if is_package_installed "$package"; then
 #         echo "Package '$package' is already installed."
