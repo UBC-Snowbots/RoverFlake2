@@ -75,8 +75,12 @@ rosdep update
 bash setup_scripts/install_rosdeps.sh
 
 # setup user enviroment
+mkdir ${ROVERFLAKE_ROOT}/random_install_files
 echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >> ~/.bashrc
 
+
+# install libsweep
+bash setup_scripts/install_libsweepsdk.sh
 
 
 
