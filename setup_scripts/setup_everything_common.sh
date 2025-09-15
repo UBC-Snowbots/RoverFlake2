@@ -83,7 +83,8 @@ echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >>
 bash ${ROVERFLAKE_ROOT}/setup_scripts/install_libsweepsdk.sh
 
 
-
+cd ${ROVERFLAKE_ROOT}
+bash setup_scripts/submodule_update.sh
 
 
 
