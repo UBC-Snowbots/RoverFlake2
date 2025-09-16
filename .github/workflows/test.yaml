@@ -1,4 +1,4 @@
-name: test_workflow
+name: setup_and_build_check
 on: push
 jobs:
   demo:
@@ -23,7 +23,7 @@ jobs:
         webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
         webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
         message: |
-              :) ${{ github.repository }} on `${{ github.ref_name }}`
+              *I'm happy now, and I'll let you merge, ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
      - name: Notify Discord (failure)
        if: ${{ failure() }}
