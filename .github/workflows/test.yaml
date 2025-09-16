@@ -1,4 +1,4 @@
-name: setup_and_build_check
+name: Run setup and colcon build for Dev
 on: push
 jobs:
   setup_and_build_check:
