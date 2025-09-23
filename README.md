@@ -24,8 +24,9 @@ Then cd in, and we can use setup scripts from here.
 Before using setup scripts, you need to set your `ROVERFLAKE_ROOT` enviroment variable. Its best to throw this in your .bashrc file so that it sets permanently. 
 One liner to do that:
 > `echo "export ROVERFLAKE_ROOT=<path_to_roverflake>" >> ~/.bashrc`
+
 If the repo is in your home directory, youd do:
-> `echo "export ROVERFLAKE_ROOT=/home/<your_user>/Roverflake2`
+> `echo "export ROVERFLAKE_ROOT=/home/<your_user>/Roverflake2" >> ~/.bashrc`
 
 > `bash setup_scripts/setup_everything_common.sh`
 
