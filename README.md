@@ -21,10 +21,22 @@ _Obviously you are welcome to use HTTPS or another form of authentication (like 
 
 Then cd in, and we can use setup scripts from here. 
 
+Before using setup scripts, you need to set your `ROVERFLAKE_ROOT` enviroment variable. Its best to throw this in your .bashrc file so that it sets permanently. 
+One liner to do that:
+> `echo "export ROVERFLAKE_ROOT=<path_to_roverflake>" >> ~/.bashrc`
+If the repo is in your home directory, youd do:
+> `echo "export ROVERFLAKE_ROOT=/home/<your_user>/Roverflake2`
+
 > `bash setup_scripts/setup_everything_common.sh`
 
 This script will install ros2, as well as other common dependencies. 
 
+After that script finishes, try to build!
+From the root of RoverFlake2:
+> `colcon build`
+(it should automatically use --symlink-install as set in `colcon_defaults.yaml`)
+
+If you get an error... panic, scream, and hurl insults at your computer. Then look at common issues and ask for help in the discord. 
 
 ### COMMON ISSUES & TROUBLESHOOTING
 arm_hardware_interface fails to build:
