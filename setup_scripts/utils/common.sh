@@ -1,5 +1,8 @@
-
 # export ROVERFLAKE_INSTALL_SCRIPTS_UTILS_SOURCED="true"
+# Resolve repo root
+COMMON_SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+REPO_ROOT="${COMMON_SCRIPT_DIR}/../../"
 
 is_package_installed(){
         local package_name="$1"

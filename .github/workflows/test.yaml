@@ -1,0 +1,37 @@
+name: Run setup and colcon build for Dev
+on: push
+jobs:
+  setup_and_build_check:
+    runs-on: ubuntu-22.04
+    steps:
+     - uses: actions/checkout@v4
+     - name: enviroment setupg
+       run: |
+         export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
+         yes | ./setup_scripts/setup_everything_common.sh
+     - name: build
+       run: |
+         cd $ROVERFLAKE_ROOT
+         echo $ROS_DISTRO
+         source /opt/ros/humble/setup.bash
+         echo $ROS_DISTRO
+         colcon build --symlink-install --packages-skip sweeppy  
+     - name: Notify Discord (success)
+       if: ${{ success() }}
+       uses: appleboy/discord-action@v1.0.0
+       with:
+        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
+        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
+        message: |
+              *I'm happy now and I'll let you merge ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+     - name: Notify Discord (failure)
+       if: ${{ failure() }}
+       uses: appleboy/discord-action@v1.0.0
+       with:
+        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
+        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
+        message: |
+              _you have saddened me ${{ github.actor }}_
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  

@@ -14,10 +14,8 @@
 
   <depend>rclcpp</depend>
   <depend>rover_msgs</depend>
-  <depend>serial</depend>
-
-  
-
+  <build_export_depend>serial</build_export_depend> 
+  <build_export_depend>rover_utils</build_export_depend> 
 
   <export>
     <build_type>ament_cmake</build_type>

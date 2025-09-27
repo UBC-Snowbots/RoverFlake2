@@ -1,5 +1,6 @@
 source $HOME/RoverFlake2/setup_scripts/utils/common.sh
-echo script not ready yet
+echo script not ready yet && false
+
 
 # apt_packages_to_install=(
 #     "ros-humble-moveit-"

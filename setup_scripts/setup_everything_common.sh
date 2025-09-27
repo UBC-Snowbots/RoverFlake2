@@ -1,4 +1,18 @@
-source $HOME/RoverFlake2/setup_scripts/utils/common.sh
+
+# ? we can do a script dir, but easier and more explicit just to get the user to define their repo root
+# SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+echo $ROVERFLAKE_ROOT
+
+# check if VAR is unset or empty
+if [ -z "${ROVERFLAKE_ROOT}" ]; then
+  echo "ROVERFLAKE_ROOT is not set (or empty). That makes me really sad."
+  sleep 2
+  echo "Please set the enviroment variable in your bashrc to the root of RoverFlake2/"
+  exit 1
+fi
+
+
+source $ROVERFLAKE_ROOT/utils/common.sh
 
 clear
 
@@ -20,10 +34,9 @@ sleep 1.0
 echo starting with ros2...
 
 #sudo apt update
-cd $HOME/RoverFlake2/setup_scripts/
+cd $ROVERFLAKE_ROOT/setup_scripts/
 bash install_dependencies.sh
 bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
-
 
 apt_packages_to_install=(
     "curl"
@@ -53,12 +66,29 @@ for package in "${apt_packages_to_install[@]}"; do
         fi
     fi
 done
-cd $HOME/RoverFlake2/
+cd $ROVERFLAKE_ROOT
+
 source /opt/ros/humble/setup.bash
 #install ros2 packages
 sudo rosdep init
 rosdep update
-rosdep install --from-paths src -y --ignore-src
+bash setup_scripts/install_rosdeps.sh
+
+# setup user enviroment
+mkdir ${ROVERFLAKE_ROOT}/random_install_files
+echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >> ~/.bashrc
+
+
+# install libsweep
+bash ${ROVERFLAKE_ROOT}/setup_scripts/install_libsweepsdk.sh
+
+
+cd ${ROVERFLAKE_ROOT}
+bash setup_scripts/submodule_update.sh
+
+
+
+
 # for package in "${ros_packages_to_install[@]}"; do
 #     if is_package_installed "$package"; then
 #         echo "Package '$package' is already installed."
