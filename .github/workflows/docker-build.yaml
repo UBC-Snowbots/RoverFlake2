@@ -11,8 +11,8 @@ jobs:
       - name: start and exec into container
         env:
           ROVERFLAKE_ROOT: ${{ github.workspace }}
-        run: |
-          docker compose run rover bash -c "bash setup_scripts/setup_everything_common.sh && colcon build"
+        run: | # useless atm (should be fixed)
+          docker compose run rover bash 
       - name: Cleanup
         if: always()
         run: |

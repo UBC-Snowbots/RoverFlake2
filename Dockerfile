@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     ros-humble-image-transport \
     ros-humble-cv-bridge \
     ros-humble-xacro \
+    ros-humble-moteus-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # copy root into container
