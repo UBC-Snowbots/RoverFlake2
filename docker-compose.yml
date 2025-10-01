@@ -1,0 +1,32 @@
+# More documention for how to create containers:
+# https://docs.ros.org/en/humble/How-To-Guides/Run-2-nodes-in-single-or-separate-docker-containers.html
+
+# version: '2' # idk why this not working
+
+services:
+  # Rover equivalent:
+  # docker run -it \
+  # --name rover_dev \
+  # --network host \
+  # -v $(pwd):/RoverFlake2 \
+  # -e ROVERFLAKE_ROOT=/RoverFlake2 \
+  # -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+  # roverflake2:dev \
+  # bash
+  rover: # default container, add more containers by making more services
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: roverflake2:dev
+    container_name: rover_dev
+    working_dir: /RoverFlake2
+    tty: true
+    stdin_open: true
+    volumes: # Purpose: docker env watches for changes in repo and updates
+      # preferred method is to specify a directory
+      # e.g. '- ./node_practice:/RoverFlake2/node_practice'
+      # Bind-mount the whole repo into the container
+      - ./:/RoverFlake2
+    environment:
+      - ROVERFLAKE_ROOT=/RoverFlake2
+    network_mode: host
