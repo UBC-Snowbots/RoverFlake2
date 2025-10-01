@@ -7,6 +7,7 @@ FROM osrf/ros:humble-desktop
 
 # consistency with setup files
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 ENV ROVERFLAKE_ROOT=/RoverFlake2
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
@@ -37,6 +38,9 @@ RUN apt-get update && apt-get install -y \
 # copy root into container
 WORKDIR $ROVERFLAKE_ROOT
 COPY . $ROVERFLAKE_ROOT
+
+# run full setup to install dependencies inside the image (auto-confirm prompts)
+RUN yes | bash setup_scripts/setup_everything_common.sh
 
 # copy and set entrypoint (runs setup)
 COPY docker/entrypoint.sh /entrypoint.sh
