@@ -1,5 +1,5 @@
 # Build with 'docker compose build'
-# Create and enter container with 'docker compose up'
+# Create and enter container with 'docker compose run rover bash'
 # if you have anymore questions ask Aaron
 
 # official base image in docs
