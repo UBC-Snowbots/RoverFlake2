@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with: # added this, might fix a bug that's taken over 3 hours to find
+          submodules: recursive
       - name: build
         run: |
           docker compose build --no-cache
@@ -33,4 +35,3 @@ jobs:
           message: |
             poo you ${{ github.actor }}! Run it through chat rq to fix your bugs  ||
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
