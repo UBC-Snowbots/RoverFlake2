@@ -13,6 +13,19 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - uses: actions/checkout@v4
+        with: # added this, might fix a bug that's taken over 3 hours to find
+          submodules: recursive
+      - name: build
+        run: |
+          docker compose build --no-cache
+      - name: start and exec into container
+        run: | # install moteus_msgs before arm_control is configured
+          docker compose run --rm -T rover colcon build --symlink-install --packages-up-to arm_control
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down --remove-orphans || true
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
