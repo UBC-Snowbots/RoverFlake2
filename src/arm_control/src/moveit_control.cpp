@@ -65,7 +65,7 @@ if (!servo_parameters)
 //RCLCPP_ERROR(LOGGER, "Failed to load the servo parameters");
   return EXIT_FAILURE;
 }
- auto tf_buffer = std::zmake_shared<tf2_ros::Buffer>(node->get_clock());
+ auto tf_buffer = std::make_shared<tf2_ros::Buffer>(node->get_clock());
 auto planning_scene_monitor = std::make_shared<planning_scene_monitor::PlanningSceneMonitor>(
     node, "robot_description", tf_buffer, "planning_scene_monitor");   
 if (planning_scene_monitor->getPlanningScene())
