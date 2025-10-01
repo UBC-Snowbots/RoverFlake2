@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR $ROVERFLAKE_ROOT
 COPY . $ROVERFLAKE_ROOT
 
-# run full setup to install dependencies inside the image (auto-confirm prompts)
+# run the full setup script (confirms everything including nested setup scripts)
 RUN yes | bash setup_scripts/setup_everything_common.sh
 
 # copy and set entrypoint (runs setup)
