@@ -9,8 +9,8 @@ jobs:
         run: |
           docker compose build --no-cache
       - name: start and exec into container
-        run: | # useless atm (TODO: fix this)
-          docker compose run rover true
+        run: | # install moteus_msgs before arm_control is configured
+          docker compose run --rm -T rover colcon build --symlink-install --packages-up-to arm_control
       - name: Cleanup
         if: always()
         run: |

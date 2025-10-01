@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-image-transport \
     ros-humble-cv-bridge \
     ros-humble-xacro \
+    ros-humble-rosidl-default-generators \
+    ros-humble-rosidl-default-runtime \
     && rm -rf /var/lib/apt/lists/*
 
 # copy root into container
