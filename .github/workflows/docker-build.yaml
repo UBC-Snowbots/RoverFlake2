@@ -9,10 +9,8 @@ jobs:
         run: |
           docker compose build --no-cache
       - name: start and exec into container
-        env:
-          ROVERFLAKE_ROOT: ${{ github.workspace }}
-        run: | # useless atm (should be fixed)
-          docker compose run rover bash 
+        run: | # useless atm (TODO: fix this)
+          docker compose run rover true
       - name: Cleanup
         if: always()
         run: |
@@ -33,6 +31,6 @@ jobs:
           webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
           webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
           message: |
-            _Docker build failed for ${{ github.actor }}_
+            poo you ${{ github.actor }}! Run it through chat rq to fix your bugs  ||
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

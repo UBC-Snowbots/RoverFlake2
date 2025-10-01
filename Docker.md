@@ -54,10 +54,7 @@ docker compose run rover bash
 ```
 
 What is happening here:
-- Uses the Dockerfile to build a custom image from osrf/ros:humble-desktop-full.
-- Installs development tools (colcon, git, cmake, etc.).
-- Copies the repo into /RoverFlake2 inside the container.
-- Adds an entrypoint script that will set up the ROS environment and auto-build your workspace.
+- Creates and enters a container
 
 Extra commands:
 ```bash
