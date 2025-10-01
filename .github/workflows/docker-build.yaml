@@ -1,0 +1,38 @@
+name: Run setup and colcon build for Docker
+on: push
+jobs:
+  docker_setup_and_build_check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: build
+        run: |
+          docker compose build --no-cache
+      - name: start and exec into container
+        env:
+          ROVERFLAKE_ROOT: ${{ github.workspace }}
+        run: |
+          docker compose run rover bash -c "bash setup_scripts/setup_everything_common.sh && colcon build"
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down --remove-orphans || true
+      - name: Notify Discord (success)
+        if: ${{ success() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            Yipee!!! I'lll let you merge now ${{ github.actor }}. _good j*b_! || ${{ github.repository }} on `${{ github.ref_name }}`
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Notify Discord (failure)
+        if: ${{ failure() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            _Docker build failed for ${{ github.actor }}_
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
