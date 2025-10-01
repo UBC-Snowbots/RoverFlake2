@@ -27,11 +27,20 @@ RUN apt-get update && apt-get install -y \
     ros-humble-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
+# common ROS package deps (use this for niche deps)
+RUN apt-get update && apt-get install -y \
+    ros-humble-urdf \
+    ros-humble-image-transport \
+    ros-humble-cv-bridge \
+    ros-humble-xacro \
+    ros-humble-moteus-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
 # copy root into container
 WORKDIR $ROVERFLAKE_ROOT
 COPY . $ROVERFLAKE_ROOT
 
-# run the full setup script (confirms everything including nested setup scripts)
+# run full setup to install dependencies inside the image (auto-confirm prompts)
 RUN yes | bash setup_scripts/setup_everything_common.sh
 
 # copy and set entrypoint (runs setup)
