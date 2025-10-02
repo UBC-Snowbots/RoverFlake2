@@ -12,7 +12,7 @@ if [ -z "${ROVERFLAKE_ROOT}" ]; then
 fi
 
 
-source $ROVERFLAKE_ROOT/utils/common.sh
+source $ROVERFLAKE_ROOT/setup_scripts/utils/common.sh
 
 clear
 
