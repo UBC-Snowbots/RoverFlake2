@@ -3,7 +3,10 @@
 # if you have anymore questions ask Aaron
 
 # official base image in docs
-FROM osrf/ros:humble-desktop
+FROM --platform=$TARGETPLATFORM osrf/ros:humble-desktop
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 
 # consistency with setup files
 ENV DEBIAN_FRONTEND=noninteractive
