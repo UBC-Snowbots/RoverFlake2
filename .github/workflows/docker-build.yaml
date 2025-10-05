@@ -12,7 +12,7 @@ jobs:
           docker compose build --no-cache
       - name: start and exec into container
         run: | # ensure a clean build tree inside container, then build
-          docker compose run --rm -T rover bash -lc 'rm -rf build install log && colcon build --symlink-install --packages-up-to arm_control'
+          docker compose run --platform linux/amd64 --rm -T rover bash -lc 'rm -rf build install log && colcon build --symlink-install --packages-up-to arm_control'
       - name: Cleanup
         if: always()
         run: |

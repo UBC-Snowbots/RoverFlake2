@@ -17,6 +17,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
     image: roverflake2:dev
     container_name: rover_dev
     working_dir: /RoverFlake2
