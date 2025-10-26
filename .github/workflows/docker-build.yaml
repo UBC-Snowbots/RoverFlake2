@@ -5,18 +5,28 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with: # added this, might fix a bug that's taken over 3 hours to find
+        with:
           submodules: recursive
-      - name: build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+          install: true
+
+      - name: Build multi-arch image
         run: |
-          docker compose build --no-cache
-      - name: start and exec into container
-        run: | # ensure a clean build tree inside container, then build
-          docker compose run --platform linux/amd64 --rm -T rover bash -lc 'rm -rf build install log && colcon build --symlink-install --packages-up-to arm_control'
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag roverflake2:dev \
+            --file Dockerfile \
+            --load .
+      - name: Start and exec into container
+        run: |
+          docker compose run --rm -T rover bash -lc \
+            'rm -rf build install log && colcon build --symlink-install --packages-up-to arm_control'
       - name: Cleanup
         if: always()
-        run: |
-          docker compose down --remove-orphans || true
+        run: docker compose down --remove-orphans || true
       - name: Notify Discord (success)
         if: ${{ success() }}
         uses: appleboy/discord-action@v1.0.0
