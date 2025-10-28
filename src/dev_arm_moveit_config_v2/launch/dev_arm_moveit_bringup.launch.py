@@ -174,10 +174,42 @@ def generate_launch_description():
             moveit_config.robot_description_kinematics,
         ]
     )
+    joy_params = {
+        # 'dev': '/dev/input/js0',       # Joystick device file
+        'deadzone': 0.05,              # Deadzone for joystick axes
+        'autorepeat_rate': 100.0,       # Autorepeat rate in Hz
+        'coalesce_interval': 0.01,    # Interval to coalesce events
+    }
+    joy_node = Node(
+        package='joy_linux',
+        executable='joy_linux_node',  # Replace with the correct executable name if different
+        name='joy_node',
+        output='screen',
+        parameters=[joy_params],
+        remappings=[
+            ('/joy', '/joy'),  # Remap topics if necessary
+        ],
+    )
+    hmi_node = Node(
+        package='rover_hmi',
+        executable='main_hmi_node',  # Replace with the correct executable name if different
+		name='hmi_node',
+		output='screen',
+	)
+    arm_hardware_interface_node = Node(
+        package='arm_hardware_interface',
+        executable='arm_serial_driver',  # Replace with the correct executable name if different
+        name='arm_hardware_interface_node',
+        #output='log',
+	)
+   
+
     return LaunchDescription(
         [
             rviz_node,
             ros2_control_node,
+            #hmi_node,
+           # arm_hardware_interface_node,
             # joint_state_broadcaster_spawner,
             arm_controller_spawner,
             # servo_node,
