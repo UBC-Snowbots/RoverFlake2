@@ -122,7 +122,9 @@ void ScienceHMINode::rinseSequence() {
     rinse_step = 0;
 
     // Customize delay between each step in milliseconds
-    std::vector<int> delays_ms = {2000, 1000, 4000, 2000};
+    //first time is wait between button click and starting the sequence
+    //
+    std::vector<int> delays_ms = {2000, 3000, 4000, 2000};
 
     // Use shared_ptr to safely allow recursive lambda
     auto advance_step = std::make_shared<std::function<void()>>();
@@ -172,7 +174,7 @@ void ScienceHMINode::rinseSequence() {
                 return;
         }
 
-        int current_delay = (rinse_step < delays_ms.size()) ? delays_ms[rinse_step] : 3000;
+        int current_delay = (rinse_step < delays_ms.size()) ? delays_ms[rinse_step+1] : 3000;
         rinse_step++;
 
         Glib::signal_timeout().connect_once(*advance_step, current_delay);
@@ -229,7 +231,7 @@ void ScienceHMINode::agitatorSequence() {
                 return;
         }
 
-        int current_delay = (ag_step < delays_ms.size()) ? delays_ms[ag_step] : 3000;
+        int current_delay = (ag_step < delays_ms.size()) ? delays_ms[ag_step +1] : 3000;
         ag_step++;
 
         Glib::signal_timeout().connect_once(*advance_step, current_delay);
@@ -290,7 +292,7 @@ void ScienceHMINode::processSequence() {
                 return;
         }
 
-        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step + 1]  : 3000;
         process_step++;
 
         Glib::signal_timeout().connect_once(*advance_step, current_delay);
@@ -357,7 +359,7 @@ void ScienceHMINode::purgeSequence() {
                 return;
         }
 
-        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step] : 3000;
+        int current_delay = (process_step < delays_ms.size()) ? delays_ms[process_step + 1] : 3000;
         process_step++;
 
         Glib::signal_timeout().connect_once(*advance_step, current_delay);
@@ -609,15 +611,22 @@ void ScienceHMINode::updateStatusLabel() {
     updateOFSBlockedLable();
 }
 
+
+void ScienceHMINode::cameraInputLabel(){
+    auto style_context = cameraInput->get_style_context();
+    cameraInput->set_text("no input");
+    style_context->add_class("label-noinput");
+}
+
 bool is_estopped;
 void ScienceHMINode::updateOFSBlockedLable(){
 
     if (is_purging) return;
 
     if (!osf1_unblocked || !osf2_unblocked) {
-        RCLCPP_ERROR(this->get_logger(), "OSF1 or OSF2 is blocked. Triggering emergency stop.");
+        RCLCPP_ERROR(this->get_logger(), "OFS1 or OFS2 is blocked. Triggering emergency stop.");
 
-        ofsblockedlabel->set_text("ERROR: OSF BLOCKED");
+        ofsblockedlabel->set_text("ERROR: OFS BLOCKED");
         ofsblockedlabel->get_style_context()->remove_class("norm");
         ofsblockedlabel->get_style_context()->add_class("error");
 
@@ -963,4 +972,6 @@ void ScienceHMINode::cameraFeedChosen(bool clicked, int id)
         camera_video_pub->publish(msg);
         RCLCPP_INFO(this->get_logger(), "Camera 1 toggled %s", camera1_on ? "ON" : "OFF");
     }
+
+    cameraInputLabel();
 }

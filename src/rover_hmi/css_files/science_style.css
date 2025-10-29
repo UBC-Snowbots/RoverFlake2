@@ -132,6 +132,13 @@ button.notanalyzing {
     font-weight: bold;
 }
 
+.label-noinput{
+    background-color: rgb(129, 132, 132);  /* Red */
+    color: black;
+    padding: 4px 10px;
+    border-radius: 0px;
+}
+
 .on {
     background-color: green;
     color: white;

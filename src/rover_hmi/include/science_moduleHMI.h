@@ -341,7 +341,7 @@ private:
 
 
   void cameraFeedChosen(bool clicked, int id);
-  //void cameraInputLabel();
+  void cameraInputLabel();
 
   void stopClicked();
 
