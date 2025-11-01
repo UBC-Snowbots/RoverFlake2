@@ -77,7 +77,7 @@ private:
       sensor_msgs::msg::LaserScan laser_scan_msg;
       laser_scan_msg.header.frame_id = _frame_id;
       laser_scan_msg.header.stamp = this->now();
-      
+
       // Calculate samples per rotation
       float samples_per_rotation = static_cast<float>(_sample_rate) / static_cast<float>(_rotation_speed);
 
