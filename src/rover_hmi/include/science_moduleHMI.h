@@ -2,7 +2,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <rover_msgs/msg/science_module.hpp>
-#include <rover_msgs/msg/camera_video.hpp>
+//#include <rover_msgs/msg/camera_video.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -50,7 +50,7 @@ public:
     agitator_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     spectro_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     light_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
-    camera_video_pub = this->create_publisher<rover_msgs::msg::CameraVideo>("/science/camera_video", qos);
+    //camera_video_pub = this->create_publisher<rover_msgs::msg::CameraVideo>("/science/camera_video", qos);
     
 
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
@@ -165,7 +165,7 @@ public:
     light1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::light1Clicked));
     light2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::ligth2Clicked));
 
-    camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
+    //camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
     //camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
 
 
@@ -340,7 +340,7 @@ private:
   void ligth2Clicked();
 
 
-  void cameraFeedChosen(bool clicked, int id);
+  //void cameraFeedChosen(bool clicked, int id);
   void cameraInputLabel();
 
   void stopClicked();
@@ -391,7 +391,7 @@ private:
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr spectro_pub;
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr light_pub;
 
-  rclcpp::Publisher<rover_msgs::msg::CameraVideo>::SharedPtr camera_video_pub;
+  //rclcpp::Publisher<rover_msgs::msg::CameraVideo>::SharedPtr camera_video_pub;
 
 
   //rclcpp::Publisher<rover_msgs::msg::CameraCommand>::SharedPtr camera_pub;

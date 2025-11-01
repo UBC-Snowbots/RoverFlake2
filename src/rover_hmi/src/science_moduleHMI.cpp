@@ -953,25 +953,25 @@ void ScienceHMINode::stopClicked() {
 bool camera1_on = false;
 
 
-void ScienceHMINode::cameraFeedChosen(bool clicked, int id)
-{
-    rover_msgs::msg::CameraVideo msg;
-    msg.camera_id = id;
+// void ScienceHMINode::cameraFeedChosen(bool clicked, int id)
+// {
+//     //rover_msgs::msg::CameraVideo msg;
+//     msg.camera_id = id;
 
-    if (id == 1 && camera1button) {
-        camera1_on = !camera1_on;  // toggle the state
+//     if (id == 1 && camera1button) {
+//         camera1_on = !camera1_on;  // toggle the state
 
-        if (camera1_on) {
-            camera1button->get_style_context()->remove_class("off");
-            camera1button->get_style_context()->add_class("on");
-        } else {
-            camera1button->get_style_context()->remove_class("on");
-            camera1button->get_style_context()->add_class("off");
-        }
+//         if (camera1_on) {
+//             camera1button->get_style_context()->remove_class("off");
+//             camera1button->get_style_context()->add_class("on");
+//         } else {
+//             camera1button->get_style_context()->remove_class("on");
+//             camera1button->get_style_context()->add_class("off");
+//         }
 
-        camera_video_pub->publish(msg);
-        RCLCPP_INFO(this->get_logger(), "Camera 1 toggled %s", camera1_on ? "ON" : "OFF");
-    }
+//         //camera_video_pub->publish(msg);
+//         RCLCPP_INFO(this->get_logger(), "Camera 1 toggled %s", camera1_on ? "ON" : "OFF");
+//     }
 
-    cameraInputLabel();
-}
+//     cameraInputLabel();
+// }
