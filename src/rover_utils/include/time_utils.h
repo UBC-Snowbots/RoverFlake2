@@ -14,6 +14,9 @@
 #include "builtin_interfaces/msg/time.hpp"
 #include "std_msgs/msg/header.hpp"
 
+#define NANOSECONDS_PER_MILLISECOND 1'000'000
+#define MILLISECONDS_PER_SECOND 1'000
+
 namespace rover_utils
 {
 /* -------------------------------------------------------------------------- */
