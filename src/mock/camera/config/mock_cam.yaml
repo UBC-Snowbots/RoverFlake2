@@ -1,0 +1,21 @@
+# For mock camera parameters
+# All of the feilds have defaults, so you only need to specify a new camera name for quick tests.
+# Check mock_camera.h for default values.
+
+# name: name of the topic
+# fps: frames per second. Integer
+# height: height of the frame, essentially the resolution (1080p, 720p, etc).  Integer
+# ratio: aspect ratio. Float.
+# There is no width parameter, its calculated by aspect ratio
+# at least one parameter needs to be defined for each new camera :(
+
+
+/mock_camera_node:
+  ros__parameters:
+    cameras:
+      cam1:
+        fps: 30
+        height: 1080
+      cam2:
+        fps: 30
+        height: 480
