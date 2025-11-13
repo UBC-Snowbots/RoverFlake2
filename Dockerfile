@@ -27,16 +27,6 @@ RUN apt-get update && apt-get install -y \
     ros-humble-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
-# common ROS package deps (use this for niche deps)
-RUN apt-get update && apt-get install -y \
-    ros-humble-urdf \
-    ros-humble-image-transport \
-    ros-humble-cv-bridge \
-    ros-humble-xacro \
-    ros-humble-rosidl-default-generators \
-    ros-humble-rosidl-default-runtime \
-    && rm -rf /var/lib/apt/lists/*
-
 # copy root into container
 WORKDIR $ROVERFLAKE_ROOT
 COPY . $ROVERFLAKE_ROOT
@@ -48,7 +38,12 @@ RUN yes | bash setup_scripts/setup_everything_common.sh
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Mujoco glfw/egl (change the mode in docker-compose.yml)
+ENV MUJOCO_GL=egl
+
 # changed with COPY
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["/bin/bash"]
+
+
