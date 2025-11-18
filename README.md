@@ -39,6 +39,13 @@ From the root of RoverFlake2:
 
 If you get an error... panic, scream, and hurl insults at your computer. Then look at common issues and ask for help in the discord. 
 
+### Unit Tests
+We use Catch2 for CPP unit tests. To keep it simple, we don't integrate with colcon tests, we have a seperate CMakeLists.txt and Makefile at the root, to handle all unit tests.
+To build and run tests: (the -j16 is just to compile faster by specifying how many cores to use)
+> `make -j16 test` 
+To add tests, open up the CMakeLists.txt and manually add paths to test files. Follow the comments within the file.
+Catch2 is powerful, lightweight, and easy to use. It has a lot of built in macros to help with testing but even just the basics is enough to get by.
+
 ### COMMON ISSUES & TROUBLESHOOTING
 arm_hardware_interface fails to build:
  
