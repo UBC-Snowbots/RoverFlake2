@@ -27,6 +27,16 @@ RUN apt-get update && apt-get install -y \
     ros-humble-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
+# Install dependencies (can use a .dev file)
+RUN apt-get update && apt-get install -y \
+    ros-humble-urdf \
+    ros-humble-image-transport \
+    ros-humble-cv-bridge \
+    ros-humble-xacro \
+    ros-humble-rosidl-default-generators \
+    ros-humble-rosidl-default-runtime \
+    && rm -rf /var/lib/apt/lists/*
+
 # copy root into container
 WORKDIR $ROVERFLAKE_ROOT
 COPY . $ROVERFLAKE_ROOT

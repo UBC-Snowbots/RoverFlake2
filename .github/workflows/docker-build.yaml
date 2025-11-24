@@ -14,20 +14,17 @@ jobs:
 
     steps:
       - name: Checkout source code
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # fetches full history for better caching
           submodules: recursive
 
-      - name: Setup Docker Buildx
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
+      - name: Build image
+        uses: docker/build-push-action@v5
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-buildx-
+          context: .
+          load: true         # required so you can run it locally in CI
+          tags: rover2025:rover
 
       - name: Notify Discord (success)
         if: ${{ success() }}
