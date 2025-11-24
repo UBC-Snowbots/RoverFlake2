@@ -48,8 +48,6 @@ apt_packages_to_install=(
     "libsfml-dev"
 )
 
-
-
 # Loop through the package list and install missing packages
 for package in "${apt_packages_to_install[@]}"; do
     if is_package_installed "$package"; then

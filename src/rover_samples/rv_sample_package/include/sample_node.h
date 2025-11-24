@@ -29,13 +29,13 @@ public:
     SampleNode(); // Constructor is defined in .cpp.
 
 private:
-    // Most member structures and functions are private in a custom ros2 node. 
+    // Most member structures and functions are private in a custom ros2 node. - However, for ease of testing, 
+    // you can make some functions public... or just everything public - goes against best practices but were a student team, not a company past series C
 
     // Data types and structs go first
     int current_gear = 0;
     int prev_paddleR = 0;
     int prev_paddleL = 0;
-
 
     // SUBS AND PUBS
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_pub;

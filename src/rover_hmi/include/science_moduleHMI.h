@@ -2,6 +2,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <rover_msgs/msg/science_module.hpp>
+//#include <rover_msgs/msg/camera_video.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
@@ -49,6 +50,8 @@ public:
     agitator_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     spectro_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
     light_pub = this->create_publisher<rover_msgs::msg::ScienceModule>("/science/command", qos);
+    //camera_video_pub = this->create_publisher<rover_msgs::msg::CameraVideo>("/science/camera_video", qos);
+    
 
     // valve_feedback_sub = this->create_subscription<rover_msgs::msg::ScienceCommand>(
     //     "/science/feedback", qos, std::bind(&ScienceHMINode::valveFeedbackCallback, this, std::placeholders::_1));
@@ -58,8 +61,8 @@ public:
     
     
     // **Text Input for Integer 0-15**
-    builder->get_widget("indexnumberentry", indexnumberentry);
-    indexnumberentry->signal_changed().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
+    // builder->get_widget("indexnumberentry", indexnumberentry);
+    // indexnumberentry->signal_activate().connect(sigc::mem_fun(*this, &ScienceHMINode::handleTextboxInput));
 
     // **Button Handling**
     builder->get_widget("rinsebutton", rinsebutton);
@@ -71,8 +74,6 @@ public:
     builder->get_widget("sv2button", sv2button);
     builder->get_widget("sv3button", sv3button);
     builder->get_widget("sv4button", sv4button);
-    builder->get_widget("svf1button", svf1button);
-    builder->get_widget("svf2button", svf2button);
 
 
     // std::vector<std::string> valve_ids = {
@@ -89,12 +90,22 @@ public:
     // }
     
 
-    builder->get_widget("p1button", p1button);
+    //builder->get_widget("p1button", p1button);
+    builder->get_widget("p1reverse", p1reverse);
+    builder->get_widget("p1stop", p1stop);
+    builder->get_widget("p1forward", p1forward);
+    builder->get_widget("pumpstatuslabel", pumpstatuslabel);
+
+
     builder->get_widget("osf1button", osf1button);
     builder->get_widget("osf2button", osf2button);
+    builder->get_widget("statuslabel", statuslabel);
+    builder->get_widget("ofsblockedlabel", ofsblockedlabel);
 
     builder->get_widget("prevIndexbutton", prevIndexbutton);
     builder->get_widget("nextidxbutton", nextidxbutton);
+    builder->get_widget("resetbutton", resetbutton);
+    builder->get_widget("label_carousel", label_carousel);
     builder->get_widget("smallbutton", smallbutton);
     builder->get_widget("largebutton", largebutton);
 
@@ -104,8 +115,15 @@ public:
     builder->get_widget("agitatorpowerbutton", agitatorpowerbutton);
 
 
+    builder->get_widget("camera1button", camera1button);
+    builder->get_widget("cameraInput", cameraInput);
+
+    builder->get_widget("estopbutton", estopbutton);
+
+
+
     //Constructor for sequence_buttons
-    sequence_buttons = { rinsebutton };
+    sequence_buttons = { rinsebutton, agitatorbutton, processbutton, purgebutton };
 
     rinsebutton->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setSequence), 
                                                         true, static_cast<int>(sequence_status::rinse)));
@@ -116,20 +134,29 @@ public:
     purgebutton->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setSequence), 
                                                         true, static_cast<int>(sequence_status::purge)));
     
+
+                                                        
     sv1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV1clicked));
     sv2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV2clicked));
     sv3button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV3clicked));
     sv4button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SV4clicked));
-    svf1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SVF1clicked));
-    svf2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::SVF2clicked));
+    
+    pump_buttons = {p1reverse, p1stop, p1forward};
 
 
-    p1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::P1clicked));
+    p1reverse->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Reverse)));
+    p1stop->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Stop)));
+    p1forward->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::setPump), true, static_cast<int>(PumpStatus::Forward)));
+
+
+    //p1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::P1clicked));
     osf1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::OSF1clicked));
     osf2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::OSF2clicked));
 
     prevIndexbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::prevClicked));
     nextidxbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::nextClicked));
+    resetbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::resetClicked));
+
     smallbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::smallClicked));
     largebutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::largeClicked));
 
@@ -138,17 +165,32 @@ public:
     light1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::light1Clicked));
     light2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::ligth2Clicked));
 
+    //camera1button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 1));
+    //camera2button->signal_clicked().connect(sigc::bind(sigc::mem_fun(*this, &ScienceHMINode::cameraFeedChosen), true, 2));
+
+
+    estopbutton->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::stopClicked));
+
+
+
+    // camera1button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera1clicked));
+    // camera2button->signal_clicked().connect(sigc::mem_fun(*this, &ScienceHMINode::camera2clicked));
+
+
+
+
 
     //* css files
-    main_css_file_path = this->package_share_dir + "/css_files/science_style.css";
-    RCLCPP_INFO(this->get_logger(), main_css_file_path.c_str());
-    auto css_provider = Gtk::CssProvider::create();
-    load_css(css_provider, main_css_file_path);
+    // main_css_file_path = this->package_share_dir + "/css_files/science_style.css";
+    // RCLCPP_INFO(this->get_logger(), main_css_file_path.c_str());
+    // auto css_provider = Gtk::CssProvider::create();
+    // load_css(css_provider, main_css_file_path);
     RCLCPP_INFO(this->get_logger(), "Meowing css");
 
     auto screen = Gdk::Screen::get_default();
-    auto style_context = get_style_context();
-    style_context->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    //auto style_context = get_style_context();
+    //style_context->add_provider_for_screen(screen, css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
     RCLCPP_INFO(this->get_logger(), "Meowing builder");
 
     // //* Setup GTK widgets
@@ -159,12 +201,31 @@ public:
   }
 
   void run()
-  {
+{
     RCLCPP_INFO(this->get_logger(), "Start");
 
+    // Load and apply CSS before the UI starts
+    auto cssProvider = Gtk::CssProvider::create();
+
+    try {
+        cssProvider->load_from_path("/home/ubcrover/RoverFlake2/src/rover_hmi/css_files/science_style.css");  // Make sure this path is correct
+    } catch (const Glib::Error& ex) {
+        std::cerr << "Failed to load CSS: " << ex.what() << std::endl;
+    }
+
+    auto screen = Gdk::Screen::get_default();
+    Gtk::StyleContext::add_provider_for_screen(
+      Gdk::Screen::get_default(),
+      cssProvider,
+      GTK_STYLE_PROVIDER_PRIORITY_APPLICATION  // 🔥 max override
+  );
+  
+    // Now launch the GTK application
     app->run(*science_window);
+
     RCLCPP_INFO(this->get_logger(), "App Run Success");
-  }
+}
+
 
   Glib::RefPtr<Gtk::Application> app;
 
@@ -172,23 +233,43 @@ private:
   std::string main_css_file_path;
 
 
+  // in ScienceHMINode.h
+  rover_msgs::msg::ScienceModule home_msg;
+
+  int rinse_step;
+  sigc::connection rinse_timer;
+
+  int ag_step;
+  sigc::connection ag_timer;
+
+
+  int process_step;
+  sigc::connection process_timer;
+
+
+
   std::string package_share_dir;
 
 
   // Carousel index input (0-15)
-  int carousel_index_;
+  int carousel_index_ = 0;
   Gtk::Window* science_window;
 
   Gtk::Button* sv1button;
   Gtk::Button* sv2button;
   Gtk::Button* sv3button;
   Gtk::Button* sv4button;
-  Gtk::Button* svf1button;
-  Gtk::Button* svf2button;
 
-  Gtk::Button* p1button;
+  Gtk::Button* p1reverse;
+  Gtk::Button* p1forward;
+  Gtk::Button* p1stop;
+  Gtk::Label* pumpstatuslabel;
+ 
   Gtk::Button* osf1button;
   Gtk::Button* osf2button;
+  Gtk::Label* statuslabel;
+  Gtk::Label* ofsblockedlabel;
+
 
 
   Gtk::Button* rinsebutton;
@@ -196,10 +277,10 @@ private:
   Gtk::Button* processbutton;
   Gtk::Button* purgebutton;
 
-
-  Gtk::Entry* indexnumberentry;
+  Gtk::Label* label_carousel;
   Gtk::Button* prevIndexbutton;
   Gtk::Button* nextidxbutton;
+  Gtk::Button* resetbutton;
   Gtk::Button* smallbutton;
   Gtk::Button* largebutton;
 
@@ -207,6 +288,14 @@ private:
   Gtk::Button* spectrobutton;
   Gtk::Button* light1button;
   Gtk::Button* light2button;
+
+  Gtk::Button* camera1button;
+
+  Gtk::Label* cameraInput;
+
+  Gtk::Button* estopbutton;
+
+
 
 
 
@@ -220,20 +309,28 @@ private:
   void SV2clicked();
   void SV3clicked();
   void SV4clicked();
-  void SVF1clicked();
-  void SVF2clicked();
+
+
+  int toggleButtonStyle(Gtk::Button* btn, const std::string& active_class, const std::string& inactive_class);
+
 
   void setSequence(bool pressed, int button); //RECHECK
   void handleTextboxInput();
 
-  void setCarouselIndex(int index);
+  //void setCarouselIndex(int index);
 
-  void P1clicked();
+  void setPump(bool pressed, int button);
+  
+  //void P1clicked();
   void OSF1clicked();
   void OSF2clicked();
+  void updateStatusLabel();
+  void updateOFSBlockedLable();
 
   void prevClicked();
   void nextClicked();
+  void updateCarouselIndexLabel();
+  void resetClicked();
   void smallClicked();
   void largeClicked();
 
@@ -241,6 +338,24 @@ private:
   void agPowerClicked();
   void light1Clicked();
   void ligth2Clicked();
+
+
+  //void cameraFeedChosen(bool clicked, int id);
+  void cameraInputLabel();
+
+  void stopClicked();
+
+
+  void resetSystem();
+  void rinseSequence();
+  void agitatorSequence();
+  void processSequence();
+  void purgeSequence();
+  void updateValveButton(Gtk::Button* button, bool energized);
+   void updateAGButton(Gtk::Button* button, bool energized);
+
+  void updatePumpUI(Gtk::Label* label, Gtk::Button* forwardButton, int pumpStatus);
+
 
 
 
@@ -255,6 +370,16 @@ private:
     purge
   };
 
+  // Store sequence buttons for resetting styles
+  std::vector<Gtk::Button*> pump_buttons;
+
+  enum class PumpStatus {
+    Reverse,
+    Stop, 
+    Forward
+};
+
+
 
   // Publishers **NEED HELP HERE
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr sequence_pub;
@@ -266,8 +391,11 @@ private:
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr spectro_pub;
   rclcpp::Publisher<rover_msgs::msg::ScienceModule>::SharedPtr light_pub;
 
+  //rclcpp::Publisher<rover_msgs::msg::CameraVideo>::SharedPtr camera_video_pub;
 
 
+  //rclcpp::Publisher<rover_msgs::msg::CameraCommand>::SharedPtr camera_pub;
+ // rclcpp::Publisher<std_msgs::msg::int16>::SharedPtr camera_fd;
 
 
  

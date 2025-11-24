@@ -12,12 +12,10 @@ int16 osf2status
 
 int16 largestatus
 int16 smallstatus
-int16 prevstatus
-int16 nextstatus
+int16 carouseldir
+int16 carouselindex
 
 int16 agpowerstatus
 int16 spectrostatus
 int16 light1status
 int16 light2status
-
-int16 carouselindex

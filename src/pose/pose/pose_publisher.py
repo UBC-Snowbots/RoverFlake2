@@ -38,8 +38,8 @@ def quaternion_to_rotation_matrix(q):
     R = np.array([
         [1 - 2*(yy + zz),     2*(xy - zw),         2*(xz + yw)],
         [2*(xy + zw),         1 - 2*(xx + zz),     2*(yz - xw)],
-        [2*(xz - yw),         2*(yz + xw),         1 - 2*(xx +i dnt rememner yy)]
-    ], dtype=np.float64)i dnt rememner
+        [2*(xz - yw),         2*(yz + xw),         1 - 2*(xx + yy)]
+    ], dtype=np.float64)
 
     return R
 
