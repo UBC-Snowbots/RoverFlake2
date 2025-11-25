@@ -1,22 +1,31 @@
-name: Run setup and colcon build for Docker
-on: push
+name: Run setup for Docker
+
+on: 
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
 jobs:
-  docker_setup_and_build_check:
+  build-test-push:
+    name: Build, Test and Push Docker Image
     runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v4
-        with: # added this, might fix a bug that's taken over 3 hours to find
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
           submodules: recursive
-      - name: build
-        run: |
-          docker compose build --no-cache
-      - name: start and exec into container
-        run: | # ensure a clean build tree inside container, then build
-          docker compose run --rm -T rover bash -lc 'rm -rf build install log && colcon build --symlink-install --packages-up-to arm_control'
-      - name: Cleanup
-        if: always()
-        run: |
-          docker compose down --remove-orphans || true
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: myapp:test
+
       - name: Notify Discord (success)
         if: ${{ success() }}
         uses: appleboy/discord-action@v1.0.0
@@ -24,8 +33,10 @@ jobs:
           webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
           webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
           message: |
-            Yipee!!! I'lll let you merge now ${{ github.actor }}. _good j*b_! || ${{ github.repository }} on `${{ github.ref_name }}`
+            Yipee!!! I'lll let you merge now ${{ github.actor }}. _good j*b_! ||
+            ${{ github.repository }} on `${{ github.ref_name }}`
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
       - name: Notify Discord (failure)
         if: ${{ failure() }}
         uses: appleboy/discord-action@v1.0.0
@@ -33,5 +44,5 @@ jobs:
           webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
           webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
           message: |
-            poo you ${{ github.actor }}! Run it through chat rq to fix your bugs  ||
+            poo you ${{ github.actor }}! Run it through chat rq to fix your bugs ||
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
