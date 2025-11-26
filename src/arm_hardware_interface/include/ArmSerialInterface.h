@@ -7,6 +7,7 @@
 #include <thread>
 #include <chrono>
 
+#include "moteus.h"
 #include <arm_hardware_interface/ArmSerialProtocol.h>
 
 
@@ -26,6 +27,7 @@
 #define AXIS_6_DIR 1
 
 using std::string;
+using namespace mjbots;
 
 class ArmSerial : public rclcpp::Node {
 public:
@@ -51,6 +53,11 @@ private:
     serial::Serial teensy;
     serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000); // E.g., 1000 ms or 1 second
 
+
+  std::map<int, std::shared_ptr<moteus::Controller>> controllers;
+  std::map<int, moteus::Query::Result> servo_data;
+  std::shared_ptr<moteus::Transport> transport;
+    bool send_angles = true;
 
     struct Axis{
       float curr_pos;
