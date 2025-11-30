@@ -1,10 +1,9 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
 from cv_bridge import CvBridge
-import subprocess
 import cv2
-import threading
 
 class CameraDecoder(Node):
     def __init__(self):
