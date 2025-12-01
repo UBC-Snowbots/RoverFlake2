@@ -24,7 +24,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: rover_ws
-          path: install/
+          path: ${GITHUB_WORKSPACE}/install/
 
       - name: Notify Discord (success)
         if: ${{ success() }}
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: rover_ws
-          path: install/
+          path: ${GITHUB_WORKSPACE}/install/
 
       - name: run integration tests
         run: |
