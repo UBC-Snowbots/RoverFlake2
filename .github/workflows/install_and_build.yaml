@@ -1,65 +1,75 @@
 name: Run setup and colcon build for Dev
 on: push
+
 jobs:
+
   setup_and_build_check:
     runs-on: ubuntu-22.04
     steps:
-     - uses: actions/checkout@v4
-     - name: enviroment setupg
-       run: |
-         export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
-         yes | ./setup_scripts/setup_everything_common.sh
-     - name: build
-       run: |
-         cd $ROVERFLAKE_ROOT
-         echo $ROS_DISTRO
-         source /opt/ros/humble/setup.bash
-         echo $ROS_DISTRO
-         colcon build --symlink-install --packages-skip sweeppy
-     - uses: actions/upload-artifact@v4
-       with:
-         name: rover_ws
-         path: install/
+      - uses: actions/checkout@v4
 
-     - name: Notify Discord (success)
-       if: ${{ success() }}
-       uses: appleboy/discord-action@v1.0.0
-       with:
-        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
-        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
-        message: |
-              *I'm happy now and I'll let you merge ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
-              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-     - name: Notify Discord (failure)
-       if: ${{ failure() }}
-       uses: appleboy/discord-action@v1.0.0
-       with:
-        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
-        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
-        message: |
-              _you have saddened me ${{ github.actor }}_
-              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: enviroment setupg
+        run: |
+          export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
+          yes | ./setup_scripts/setup_everything_common.sh
+
+      - name: build
+        run: |
+          cd $ROVERFLAKE_ROOT
+          echo $ROS_DISTRO
+          source /opt/ros/humble/setup.bash
+          echo $ROS_DISTRO
+          colcon build --symlink-install --packages-skip sweeppy
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rover_ws
+          path: install/
+
+      - name: Notify Discord (success)
+        if: ${{ success() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            *I'm happy now and I'll let you merge ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Notify Discord (failure)
+        if: ${{ failure() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            _you have saddened me ${{ github.actor }}_
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
   integration_tests:
     runs-on: ubuntu-22.04
     needs: setup_and_build_check
     steps:
-     - uses: actions/checkout@v4
-     - uses: actions/download-artifact@v4
-       with:
-        name: rover_ws
-        path: install/
-     - name: run integration tests
-       run: |
-         source install/setup.bash
-         colcon test --packages-select integration_tests
-         colcon test-result --verbose
-     - name: Notify Discord (failure)
-       if: ${{ failure() }}
-       uses: appleboy/discord-action@v1.0.0
-       with:
-         webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
-         webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
-         message: |
-               _Unit tests have failed ${{ github.actor }}_
-               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-               @rowan Check for integration misshaps
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: rover_ws
+          path: install/
+
+      - name: run integration tests
+        run: |
+          source install/setup.bash
+          colcon test --packages-select integration_tests
+          colcon test-result --verbose
+
+      - name: Notify Discord (failure)
+        if: ${{ failure() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            _Unit tests have failed ${{ github.actor }}_
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            @rowan Check for integration misshaps
