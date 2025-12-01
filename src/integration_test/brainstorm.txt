@@ -1,0 +1,4 @@
+How to integration tests?
+
+scopeout:
+1. can catch2 be used? or should not bother?

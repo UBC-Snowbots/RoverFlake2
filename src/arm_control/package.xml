@@ -25,6 +25,7 @@
   <depend>rover_msgs</depend>
   <depend>trajectory_msgs</depend>
   <depend>moveit_servo</depend>
+  <depend>arm_hardware_interface</depend>
 
 
 

@@ -4,8 +4,7 @@
 #include "armControlParams.h"
 #include "rover_msgs/msg/generic_panel.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-
-
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 
 class CBSArmInterface : public rclcpp::Node
 {
@@ -14,19 +13,17 @@ public:
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
     arm_cmd_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
-     arm_panel_subscriber = this->create_subscription<rover_msgs::msg::ArmPanel>(
+    arm_panel_subscriber = this->create_subscription<rover_msgs::msg::ArmPanel>(
             "/cbs/arm_panel", 10, std::bind(&CBSArmInterface::arm_panel_callback, this, std::placeholders::_1));
     left_panel_subscriber = this->create_subscription<rover_msgs::msg::GenericPanel>(
             "/cbs/left_panel_a", 10, std::bind(&CBSArmInterface::left_panel_callback, this, std::placeholders::_1));
-     
-            arm_ik_pub = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-                "/arm_moveit_control/delta_twist_cmds", qos);  
+
+    arm_ik_pub = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        "/arm_moveit_control/delta_twist_cmds", qos);  
 //    arm_panel_timer = this->create_wall_timer( //Timer setup if we need it
 //         std::chrono::milliseconds(10),  // Timer interval
 //         std::bind(&CBSManagerNode::armPanelPoll, this) // Callback function
 //     );
-
-
     }
 
     ~CBSArmInterface(){
