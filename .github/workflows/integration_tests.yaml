@@ -1,0 +1,29 @@
+name: Run Integration Tests
+on: push
+jobs:
+  integration_tests:
+    needs: setup_and_build_check
+    runs-on: ubuntu-22.04
+    steps:
+     - uses: actions/checkout@v4
+       with: # added this, might fix a bug that's taken over 3 hours to find
+          submodules: recursive
+     - uses: actions/download-artifact@v3
+       with:
+         name: rover_ws
+         path: install/
+     - name: integration_tests
+       run: |
+         cd ${GITHUB_WORKSPACE}
+         colcon test --packages-select integration_tests
+     - name: Notify Discord (failure)
+       if: ${{ failure() }}
+       uses: appleboy/discord-action@v1.0.0
+       with:
+        webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }} # it also accepts full URL
+        webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }} # it also accepts full URL
+        message: |
+              _Unit tests have failed ${{ github.actor }}_
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              @rowan Check for integration misshaps
+  

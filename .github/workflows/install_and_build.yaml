@@ -1,23 +1,26 @@
 name: Run setup and colcon build for Dev
 on: push
 jobs:
-  ci:
+  setup_and_build_check:
     runs-on: ubuntu-22.04
     steps:
      - uses: actions/checkout@v4
      - name: enviroment setupg
-       id: setup
        run: |
          export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
          yes | ./setup_scripts/setup_everything_common.sh
      - name: build
-       id: build
        run: |
          cd $ROVERFLAKE_ROOT
          echo $ROS_DISTRO
          source /opt/ros/humble/setup.bash
          echo $ROS_DISTRO
-         colcon build --symlink-install --packages-skip sweeppy  
+         colcon build --symlink-install --packages-skip sweeppy
+     - uses: actions/upload-artifact@v3
+       with:
+         name: rover_ws
+         path: install/
+
      - name: Notify Discord (success)
        if: ${{ success() }}
        uses: appleboy/discord-action@v1.0.0
@@ -36,7 +39,4 @@ jobs:
         message: |
               _you have saddened me ${{ github.actor }}_
               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-outputs:
-  build_status: ${{ steps.build.outcome }}
-  test_status: ${{ steps.setup.outcome }}
   
