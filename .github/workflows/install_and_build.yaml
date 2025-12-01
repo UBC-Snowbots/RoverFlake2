@@ -36,4 +36,7 @@ jobs:
         message: |
               _you have saddened me ${{ github.actor }}_
               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+outputs:
+  build_status: ${{ steps.build.outcome }}
+  test_status: ${{ steps.setup.outcome }}
   
