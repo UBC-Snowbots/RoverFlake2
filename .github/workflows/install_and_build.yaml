@@ -16,7 +16,7 @@ jobs:
          source /opt/ros/humble/setup.bash
          echo $ROS_DISTRO
          colcon build --symlink-install --packages-skip sweeppy
-     - uses: actions/upload-artifact@v3
+     - uses: actions/upload-artifact@v4
        with:
          name: rover_ws
          path: install/

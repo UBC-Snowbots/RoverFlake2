@@ -8,7 +8,7 @@ jobs:
      - uses: actions/checkout@v4
        with: # added this, might fix a bug that's taken over 3 hours to find
           submodules: recursive
-     - uses: actions/download-artifact@v3
+     - uses: actions/download-artifact@v4
        with:
          name: rover_ws
          path: install/
