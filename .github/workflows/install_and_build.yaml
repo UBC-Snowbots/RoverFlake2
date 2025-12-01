@@ -1,15 +1,17 @@
 name: Run setup and colcon build for Dev
 on: push
 jobs:
-  setup_and_build_check:
+  ci:
     runs-on: ubuntu-22.04
     steps:
      - uses: actions/checkout@v4
      - name: enviroment setupg
+       id: setup
        run: |
          export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
          yes | ./setup_scripts/setup_everything_common.sh
      - name: build
+       id: build
        run: |
          cd $ROVERFLAKE_ROOT
          echo $ROS_DISTRO
