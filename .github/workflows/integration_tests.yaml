@@ -2,7 +2,7 @@ name: Run Integration Tests
 on: push
 jobs:
   integration_tests:
-    needs: setup_and_build_check
+    needs: build
     runs-on: ubuntu-22.04
     steps:
      - uses: actions/checkout@v4
