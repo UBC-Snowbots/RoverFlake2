@@ -1,9 +1,12 @@
-// name?
-
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp> 
 #include <example_interfaces/msg/int32.hpp> 
-#include <catch2/catch_all.hpp>
+// #include <catch2/catch_all.hpp>
+
+// This node is a work in progress, playing around with different ways to setup integration tests.
+// We are aiming for a standard, easy way to add tests, and an easy way to get test results.
+
+#define TEST_INT_VALUE 50
 
 // Class definition
 class IntegrationTestNode : public rclcpp::Node {
@@ -33,11 +36,14 @@ IntegrationTestNode::IntegrationTestNode() : Node("integration_test_node")
         "/joy", qos);
 
     checker_pub = this->create_publisher<example_interfaces::msg::Int32>(
-        "/integration/test_int", qos);
+        "/integration/test_int/output", qos);
     
     checker_sub = this->create_subscription<example_interfaces::msg::Int32>(
-        "/integration/test_int", qos, std::bind(&IntegrationTestNode::test_callback, this, std::placeholders::_1));
-
+        "/integration/test_int/input", qos, std::bind(&IntegrationTestNode::test_callback, this, std::placeholders::_1));
+    
+        // example_interfaces::msg::Int32 test_msg;
+        // test_msg.data = TEST_INT_VALUE;
+        // checker_pub->publish(test_msg);
 }
 
 // Main function (entry point of node)
@@ -59,5 +65,12 @@ int main(int argc, char *argv[])
 
 void IntegrationTestNode::test_callback(example_interfaces::msg::Int32 msg)
 {
-
+    example_interfaces::msg::Int32 output;
+    output.data = msg.data *2;
+    checker_pub->publish(output);
+    // TEST_CASE("integration test check")
+    // {
+    //     REQUIRE(true);
+    //     REQUIRE(msg.data == TEST_INT_VALUE);
+    // }
 }

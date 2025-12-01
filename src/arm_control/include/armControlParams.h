@@ -16,6 +16,7 @@
 #define EE_SPEED_SCALE 1
 #define PI 3.14
 
+//TODO get away from this style of conditional compiling. 
 // Uncomment the one you want, comment the one you dont
     #define SELECT_MOTEUS_ARM
     // #define SELECT_OLD_ARM
