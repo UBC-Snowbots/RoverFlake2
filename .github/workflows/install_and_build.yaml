@@ -59,6 +59,7 @@ jobs:
 
       - name: run integration tests
         run: |
+          cd ${GITHUB_WORKSPACE}
           source install/setup.bash
           colcon test --packages-select integration_tests
           colcon test-result --verbose
