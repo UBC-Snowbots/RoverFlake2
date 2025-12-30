@@ -20,22 +20,22 @@ include_directories(
   ${arm_control_INCLUDE_DIRS}
 )
 
-include(FetchContent)
-FetchContent_Declare(
-  moteus
-  GIT_REPOSITORY https://github.com/mjbots/moteus.git
-  GIT_TAG aa96bf0ae847921a79d2d3d241d65505ee10e209)
-
-FetchContent_MakeAvailable(moteus)
-
+add_subdirectory(moteus)
 add_library(${PROJECT_NAME} src/armprotocol.cpp include/arm_hardware_interface/ArmSerialProtocol.h)
 
-# For old and new arm
-# add_executable(arm_serial_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
-add_executable(arm_serial_driver src/MoteusInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
 
-target_link_libraries(arm_serial_driver moteus::cpp)
-ament_target_dependencies(arm_serial_driver rclcpp sensor_msgs serial rover_msgs arm_control)
+# For old and new arm
+add_executable(serial_arm_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
+add_executable(moteus_arm_driver src/MoteusInterface.cpp include/ArmSerialInterface.h include/arm_hardware_interface/ArmSerialProtocol.h)
+
+target_compile_definitions(moteus_arm_driver
+    PRIVATE
+    BUILDING_NEW_DRIVER=1
+)
+
+target_link_libraries(moteus_arm_driver moteus::cpp)
+ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial rover_msgs arm_control)
+ament_target_dependencies(moteus_arm_driver rclcpp sensor_msgs serial rover_msgs arm_control)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -60,7 +60,8 @@ install(
 )
 
 install(TARGETS
-  arm_serial_driver
+  serial_arm_driver
+  moteus_arm_driver
   ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
   ARCHIVE DESTINATION lib

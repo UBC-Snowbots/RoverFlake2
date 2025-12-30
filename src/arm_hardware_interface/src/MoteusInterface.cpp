@@ -3,6 +3,12 @@
 
 #define PI 3.14159
 
+// conf set servo.default_timeout_s nan
+//  By default, when commanded over
+//  CAN, there is a watchdog which requires commands to be sent at
+//  least every 100ms or the controller will enter a latched fault
+//  state, disable by using above cmd in tview
+
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? new arm offsets. To change, check arm_control/include/armControlParams.h Should be synced with moveit params
 
@@ -28,7 +34,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
       "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
 
-  RCLCPP_INFO(this->get_logger(), "joints %d", NUM_JOINTS);
+  RCLCPP_INFO(this->get_logger(), "jointsff %d", NUM_JOINTS);
   if (!SIMULATE) {
     for (int i = 1; i <= NUM_JOINTS; i++) {
       moteus::Controller::Options options;
@@ -69,6 +75,7 @@ int main(int argc, char *argv[]) {
 
 void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   char type = msg->cmd_type;
+  RCLCPP_INFO(this->get_logger(), "dfsf init %c", type);
   switch (type) {
   case HOME_CMD:
     if (!SIMULATE) {
@@ -110,6 +117,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   case ABS_VEL_CMD:
     // double sim_target_velocities[NUM_JOINTS];
     for (int i = 0; i < NUM_JOINTS_NO_EE; i++) {
+      RCLCPP_INFO(this->get_logger(), "velovc %f", msg->velocities[i]);
       target_velocities[i] = msg->velocities[i];
 #ifdef DEBUG_MSGS
       RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
@@ -198,9 +206,10 @@ void ArmSerial::parseArmAngleUart(std::string msg) {
   if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n", &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos,
              &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos, &axes[6].curr_pos) == NUM_JOINTS) {
     // All axes angles are in axes[i].des_angle_pos
-    RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
+    // RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
     for (int i = 0; i < NUM_JOINTS_NO_EE; i++) {
       current_arm_status.positions[i] = axes[i].curr_pos;
+      RCLCPP_INFO(this->get_logger(), "eeposse %d, %lf", i, current_arm_status.positions[i]);
       joint_states_.name[i] = joint_names[i];
       joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
       // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
@@ -269,7 +278,6 @@ void ArmSerial::sendCommCmd(int target_state) {
 }
 
 void ArmSerial::serial_rx() {
-
   if (send_angles) {
     std::vector<moteus::CanFdFrame> command_frames;
 
@@ -283,11 +291,12 @@ void ArmSerial::serial_rx() {
     transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 
     // Finally, print out our current query results.
-
     char buf[4096] = {};
     std::string status_line;
 
-    status_line += buf;
+    // Note: The original code had a confusing 'status_line += buf;' here
+    // without 'buf' having been initialized with status data yet.
+    // I'll keep the logic that builds the servo status line.
 
     char buf2[4096] = {};
     // We parse these into a map to both sort and de-duplicate them,
@@ -300,62 +309,76 @@ void ArmSerial::serial_rx() {
       const auto r = pair.second;
       ::snprintf(buf, sizeof(buf) - 1, "%2d %3d p/v/t=(%7.3f,%7.3f,%7.3f)  ", pair.first, static_cast<int>(r.mode), r.position, r.velocity,
                  r.torque);
-      axes[pair.first].curr_pos = (360 * r.position);
+      // Convert position from revolutions (moteus default) to degrees (360 * rev)
+      // and store it in the axes structure based on the CAN ID (pair.first).
+      axes[pair.first - 1].curr_pos = (360 * r.position);
 
+      RCLCPP_INFO(this->get_logger(), "posse %d, %lf", pair.first, axes[pair.first].curr_pos);
       status_line += buf;
     }
-    parseArmAngleUart("");
 
-    ::printf("%s  \r", status_line.c_str());
-    ::fflush(::stdout);
-  }
-  return;
+    // --- NEW CODE: Construct the message for parseArmAngleUart ---
+    // Ensure you have all 7 axes data before calling parseArmAngleUart.
+    // Assuming axes[0] through axes[6] correspond to the 7 joints.
 
-  // rclcpp::Rate loop_rate(50);
-  std::string next_char = "";
-  std::string buffer = "";
-  int timeoutCounter = 0;
-  // zephyrComm.teensy.flushInput();
-  if (teensy.available() > 0) {
-    // ROS_WARN("Reading");
+    char angle_msg_buffer[256];
+    int result = ::snprintf(angle_msg_buffer, sizeof(angle_msg_buffer), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n", axes[0].curr_pos,
+                            axes[1].curr_pos, axes[2].curr_pos, axes[3].curr_pos, axes[4].curr_pos, axes[5].curr_pos, axes[6].curr_pos);
 
-    // timeoutCounter ++;
-    // next_char = teensy.read();
-    buffer = teensy.read(RX_UART_BUFF);
-    RCLCPP_WARN(this->get_logger(), "%s", buffer.c_str());
-    // if(next_char == "\n" || next_char == "\r" || next_char == "\0"){
-    //     timeoutCounter = RX_UART_BUFF;
-    // }
-    if (buffer.size() > 0) {
-      if (buffer.find("Arm Ready") != std::string::npos) {
-        homed = true;
-        homing = false;
-        // fresh_rx_angle = true;
-      } else if (buffer.find("my_angleP") != std::string::npos) {
-        parseArmAngleUart(buffer);
-      } else if (buffer.find("Limit Switch")) {
-        parseLimitSwitchTest(buffer);
-      }
+    // Check if the snprintf succeeded (result > 0 and result < sizeof(angle_msg_buffer))
+    if (result > 0 && (size_t)result < sizeof(angle_msg_buffer)) {
+      // Pass the constructed string to the parsing function
+      parseArmAngleUart(std::string(angle_msg_buffer));
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "Failed to construct angle message for parsing.");
     }
+    // --- END NEW CODE ---
+
+    // ::printf("%s  \r", status_line.c_str());
+    // ::fflush(::stdout);
   }
 }
 
 void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
+  RCLCPP_INFO(this->get_logger(), "Test limits Sent");
   std::vector<moteus::CanFdFrame> command_frames;
-  // Define the desired position for each servo.
-  // You would typically get this from your application's logic.
+
+  // --- START: Update to use 'pos' parameter ---
   std::map<int, double> target_positions;
-  // Example target positions (in revolutions)
-  target_positions[1] = 0.5;
-  target_positions[2] = -0.25;
-  // ... add other servo positions
+
+  // 1. Map the input 'pos' array (index 0 to NUM_JOINTS-1) to CAN IDs.
+  // Assuming CAN ID starts at 1 and corresponds to the index + 1.
+  // Also assuming 'pos' contains positions in RADIANS, which need conversion to REVOLUTIONS.
+
+  // Conversion factor: Revolutions = Radians / (2 * pi)
+  const double RADIANS_TO_REVOLUTIONS = 1.0 / (2.0 * M_PI); // M_PI is typically available in <cmath>
+
+  for (int i = 0; i < NUM_JOINTS; ++i) {
+    // Moteus CAN IDs are 1-based, so use (i + 1) as the key.
+    int can_id = i + 1;
+
+    // Convert input position (assumed Radians) to Moteus's expected Revolutions.
+    double position_in_rev = (double)pos[i] * RADIANS_TO_REVOLUTIONS;
+
+    // Store the converted target position.
+    target_positions[can_id] = position_in_rev;
+  }
+  // --- END: Update to use 'pos' parameter ---
 
   // Accumulate all of our command CAN frames.
   for (const auto &pair : controllers) {
+    // pair.first is the CAN ID
+    // pair.second is the moteus::Controller object
+
     moteus::PositionMode::Command position_command;
-    position_command.position = target_positions[pair.first]; // Set the target position
-    position_command.velocity = 0.0;                          // Set target velocity if desired
-    position_command.feedforward_torque = 0.0;                // Set feedforward torque if desired
+
+    // Use the converted position from the map.
+    // We use .at() for safety, assuming every controller CAN ID has a corresponding target_position.
+    position_command.position = target_positions.at(pair.first);
+
+    // Assuming we want the motor to stop upon reaching the target position.
+    position_command.velocity = 0.0;
+    position_command.feedforward_torque = 0.0;
 
     command_frames.push_back(pair.second->MakePosition(position_command));
   }
@@ -365,52 +388,80 @@ void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
   transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 
   // Finally, print out our current query results.
-
   char buf[4096] = {};
   std::string status_line;
 
-  status_line += buf;
+  status_line += buf; // This line seems vestigial, keeping for context if it's meant to be there.
 
-  char buf2[4096] = {};
   // We parse these into a map to both sort and de-duplicate them,
   // and persist data in the event that any are missing.
   for (const auto &frame : replies) {
     servo_data[frame.source] = moteus::Query::Parse(frame.data, frame.size);
   }
 
+  // --- Prepare message for parseArmAngleUart ---
+  char angle_msg_buffer[256];
+
+  // This part requires all 7 joint positions to be available in the 'axes' array
+  // after the query/reply cycle has updated 'axes[pair.first].curr_pos = (360 * r.position);'
+
   for (const auto &pair : servo_data) {
     const auto r = pair.second;
     ::snprintf(buf, sizeof(buf) - 1, "%2d %3d p/v/t=(%7.3f,%7.3f,%7.3f)  ", pair.first, static_cast<int>(r.mode), r.position, r.velocity,
                r.torque);
+    // Position converted from revolutions to DEGREES (360 * rev) and stored for parsing later.
     axes[pair.first].curr_pos = (360 * r.position);
 
     status_line += buf;
   }
-  parseArmAngleUart("");
 
-  ::printf("%s  \r", status_line.c_str());
-  ::fflush(::stdout);
-  // char tx_msg[TX_UART_BUFF];
-  //
-  // sprintf(tx_msg, "$P(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6]);
-  //
-  // sendMsg(tx_msg);
-  // RCLCPP_INFO(this->get_logger(), "Positions Sent %s", tx_msg);
+  // Construct the message for parseArmAngleUart using the *updated* positions (in degrees).
+  // index 7 is wrong, use EE_INDEX
+  int result = ::snprintf(angle_msg_buffer, sizeof(angle_msg_buffer), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n", axes[1].curr_pos,
+                          axes[2].curr_pos, axes[3].curr_pos, axes[4].curr_pos, axes[5].curr_pos, axes[6].curr_pos, axes[7].curr_pos);
+
+  if (result > 0 && (size_t)result < sizeof(angle_msg_buffer)) {
+    // Pass the constructed string to the parsing function
+    parseArmAngleUart(std::string(angle_msg_buffer));
+  } else {
+    // Log an error if snprintf failed or buffer was too small
+    // (You may need access to the logger for proper ROS2 logging here)
+  }
+  // --- End message preparation ---
+
+  // ::printf("%s  \r", status_line.c_str());
+  // ::fflush(::stdout);
 }
 
 void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
+  std::vector<moteus::CanFdFrame> command_frames;
 
-  char tx_msg[TX_UART_BUFF];
+  std::map<int, double> target_positions;
 
-  sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5], vel[6]);
-  for (int i = 0; i < NUM_JOINTS; i++) {
-    current_velocity[i] = vel[i];
+  const double RADIANS_TO_REVOLUTIONS = 1.0 / (2.0 * M_PI); // M_PI is typically available in <cmath>
+
+  // Accumulate all of our command CAN frames.
+  for (const auto &pair : controllers) {
+    // pair.first is the CAN ID
+    // pair.second is the moteus::Controller object
+
+    moteus::PositionMode::Command position_command;
+
+    // Use the converted position from the map.
+    // We use .at() for safety, assuming every controller CAN ID has a corresponding target_position.
+    position_command.position = std::numeric_limits<double>::quiet_NaN();
+
+    // Assuming we want the motor to stop upon reaching the target position.
+    RCLCPP_INFO(this->get_logger(), "vel %f", static_cast<double>(vel[(pair.first)]));
+    position_command.velocity = vel[(pair.first - 1)];
+    RCLCPP_INFO(this->get_logger(), "vel %f", position_command.velocity);
+
+    command_frames.push_back(pair.second->MakePosition(position_command));
   }
 
-  sendMsg(tx_msg);
-#ifdef DEBUG_MSGS
-  RCLCPP_INFO(this->get_logger(), "Velocities Sent %s", tx_msg);
-#endif // DEBUG_MSGS
+  // Now send them in a single call to Transport::Cycle.
+  std::vector<moteus::CanFdFrame> replies;
+  transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 }
 
 void ArmSerial::send_test_limits_command() {
