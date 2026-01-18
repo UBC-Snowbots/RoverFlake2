@@ -34,7 +34,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
       "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
 
-  RCLCPP_INFO(this->get_logger(), "jointsff %d", NUM_JOINTS);
+  RCLCPP_INFO(this->get_logger(), "moteus jointsff %d", NUM_JOINTS);
   if (!SIMULATE) {
     for (int i = 1; i <= NUM_JOINTS; i++) {
       moteus::Controller::Options options;
@@ -42,9 +42,12 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       controllers[i] = std::make_shared<moteus::Controller>(options);
     }
 
-    // Stop everything to clear faults.
+    // Stop everything to clear faults and configure
     for (const auto &pair : controllers) {
       pair.second->SetStop();
+      RCLCPP_INFO(this->get_logger(), "moteuss jointsff %d", NUM_JOINTS);
+      ConfigureMotor(pair.first, *pair.second);
+      RCLCPP_INFO(this->get_logger(), "moteuaas jointsff %d", NUM_JOINTS);
     }
 
     // does send and recv every 10ms- same as arm firmware?
@@ -54,8 +57,6 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   }
 
   sleep(0.1);
-
-  int flag = 1;
 }
 
 // Entry Point
@@ -64,15 +65,14 @@ int main(int argc, char *argv[]) {
   auto node = std::make_shared<ArmSerial>();
 
   RCLCPP_INFO(node->get_logger(), "ArmSerial init");
-  // std::thread arm_thread(ArmSerial::SerialRxThread, std::ref(node));
 
   rclcpp::spin(node);
 
   rclcpp::shutdown();
   return 0;
 }
-// Callbacks
 
+// Callbacks
 void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   char type = msg->cmd_type;
   RCLCPP_INFO(this->get_logger(), "dfsf init %c", type);
@@ -209,7 +209,7 @@ void ArmSerial::parseArmAngleUart(std::string msg) {
     // RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
     for (int i = 0; i < NUM_JOINTS_NO_EE; i++) {
       current_arm_status.positions[i] = axes[i].curr_pos;
-      RCLCPP_INFO(this->get_logger(), "eeposse %d, %lf", i, current_arm_status.positions[i]);
+      RCLCPP_INFO(this->get_logger(), "Curpos %d, %lf", i, current_arm_status.positions[i]);
       joint_states_.name[i] = joint_names[i];
       joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
       // joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
@@ -290,6 +290,27 @@ void ArmSerial::serial_rx() {
     std::vector<moteus::CanFdFrame> replies;
     transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 
+    for (const auto &frame : replies) {
+      // frame.source is the ID of the motor that replied
+      int motor_id = frame.source;
+
+      // Parse the raw CAN data into a readable result
+      // moteus::Query::Parse(data, size) converts the raw bytes into position/velocity/faults
+      auto result = moteus::Query::Parse(frame.data, frame.size);
+
+      RCLCPP_INFO(this->get_logger(), "motor2ID: %d | Mode: %2d | Fault: %2d | Pos: %.3f | Vel: %.3f | Trq: %.3f | Volt: %.1f | Temp: %.1f",
+                  motor_id, static_cast<int>(result.mode), static_cast<int>(result.fault), result.position, result.velocity, result.torque,
+                  result.voltage, result.temperature);
+      // Check if the motor is reporting a fault (anything other than 0 is an error)
+      if (result.mode == moteus::Mode::kFault) {
+        RCLCPP_ERROR(this->get_logger(), "Motor %d FAULT Detected! Code: %d", motor_id, result.fault);
+      }
+
+      if (result.mode == moteus::Mode::kStopped) {
+        RCLCPP_WARN(this->get_logger(), "Motor %d is STOPPED (Driver Disabled)", motor_id);
+      }
+    }
+
     // Finally, print out our current query results.
     char buf[4096] = {};
     std::string status_line;
@@ -313,7 +334,7 @@ void ArmSerial::serial_rx() {
       // and store it in the axes structure based on the CAN ID (pair.first).
       axes[pair.first - 1].curr_pos = (360 * r.position);
 
-      RCLCPP_INFO(this->get_logger(), "posse %d, %lf", pair.first, axes[pair.first].curr_pos);
+      RCLCPP_INFO(this->get_logger(), "Gotpos %d, %lf", pair.first, axes[pair.first - 1].curr_pos);
       status_line += buf;
     }
 
@@ -433,12 +454,14 @@ void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
   // ::fflush(::stdout);
 }
 
+// TODO: should send stop cmd after vel cmd so motor doesnt kepp spinning
 void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
   std::vector<moteus::CanFdFrame> command_frames;
 
   std::map<int, double> target_positions;
 
-  const double RADIANS_TO_REVOLUTIONS = 1.0 / (2.0 * M_PI); // M_PI is typically available in <cmath>
+  // convert deg/s to revolutions/s
+  const double DEG_TO_REVOLUTIONS = 1.0 / 360.0;
 
   // Accumulate all of our command CAN frames.
   for (const auto &pair : controllers) {
@@ -447,21 +470,57 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
 
     moteus::PositionMode::Command position_command;
 
-    // Use the converted position from the map.
-    // We use .at() for safety, assuming every controller CAN ID has a corresponding target_position.
     position_command.position = std::numeric_limits<double>::quiet_NaN();
 
     // Assuming we want the motor to stop upon reaching the target position.
-    RCLCPP_INFO(this->get_logger(), "vel %f", static_cast<double>(vel[(pair.first)]));
-    position_command.velocity = vel[(pair.first - 1)];
+    RCLCPP_INFO(this->get_logger(), "veloc send %f", static_cast<double>(vel[(pair.first)]));
+    position_command.velocity = vel[pair.first - 1] * DEG_TO_REVOLUTIONS;
+    // position_command.velocity = vel[pair.first - 1];
     RCLCPP_INFO(this->get_logger(), "vel %f", position_command.velocity);
 
-    command_frames.push_back(pair.second->MakePosition(position_command));
+    if (position_command.velocity == 0) {
+      RCLCPP_INFO(this->get_logger(), "velocity stop %f", position_command.velocity);
+      pair.second->SetStop();
+    } else {
+      command_frames.push_back(pair.second->MakePosition(position_command));
+    }
   }
 
   // Now send them in a single call to Transport::Cycle.
   std::vector<moteus::CanFdFrame> replies;
-  transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+  if (!command_frames.empty()) {
+    transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+  } else {
+    return;
+  }
+
+  // 3. VERIFICATION LOGIC
+  // A. Check we got the expected number of replies
+  if (replies.size() != command_frames.size()) {
+    RCLCPP_WARN(this->get_logger(), "Packet Loss! Sent %zu, Received %zu", command_frames.size(), replies.size());
+  }
+
+  // B. Match replies to motors and check for faults
+  for (const auto &frame : replies) {
+    // frame.source is the ID of the motor that replied
+    int motor_id = frame.source;
+
+    // Parse the raw CAN data into a readable result
+    // moteus::Query::Parse(data, size) converts the raw bytes into position/velocity/faults
+    auto result = moteus::Query::Parse(frame.data, frame.size);
+
+    RCLCPP_INFO(this->get_logger(), "motorID: %d | Mode: %2d | Fault: %2d | Pos: %.3f | Vel: %.3f | Trq: %.3f | Volt: %.1f | Temp: %.1f",
+                motor_id, static_cast<int>(result.mode), static_cast<int>(result.fault), result.position, result.velocity, result.torque,
+                result.voltage, result.temperature);
+    // Check if the motor is reporting a fault (anything other than 0 is an error)
+    // if (result.mode == moteus::Mode::kFault) {
+    //   RCLCPP_ERROR(this->get_logger(), "Motor %d FAULT Detected! Code: %d", motor_id, result.fault);
+    // }
+    //
+    // if (result.mode == moteus::Mode::kStopped) {
+    //   RCLCPP_WARN(this->get_logger(), "Motor %d is STOPPED (Driver Disabled)", motor_id);
+    // }
+  }
 }
 
 void ArmSerial::send_test_limits_command() {
@@ -469,4 +528,61 @@ void ArmSerial::send_test_limits_command() {
   sprintf(tx_msg, "$t()\n");
   sendMsg(tx_msg);
   RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
+}
+
+void ArmSerial::ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller) {
+  auto maybe_state = controller.SetQuery();
+  if (!maybe_state) {
+    RCLCPP_WARN(this->get_logger(), "Motor %d NOT CONNECTED. Skipping config.", axis_number);
+    return; // <--- Abort! Don't try to send config commands
+  }
+  RCLCPP_INFO(this->get_logger(), "Motor %d detected. Starting config...", axis_number);
+
+  std::vector<std::pair<std::string, std::string>> settings;
+  switch (axis_number) {
+  case 1: {
+    MotorConfigAxis1 config;
+    settings = config.get_configs();
+    break;
+  }
+  case 2: {
+    MotorConfigAxis2 config;
+    settings = config.get_configs();
+    break;
+  }
+  case 3: {
+    MotorConfigAxis3 config;
+    settings = config.get_configs();
+    break;
+  }
+  case 4: {
+    MotorConfigAxis4 config;
+    settings = config.get_configs();
+    break;
+  }
+  case 5: {
+    MotorConfigAxis5 config;
+    settings = config.get_configs();
+    break;
+  }
+  case 6: {
+    MotorConfigAxis6 config;
+    settings = config.get_configs();
+    break;
+  }
+  }
+
+  for (const auto &pair : settings) {
+    std::string cmd = "conf set " + pair.first + " " + pair.second;
+
+    // DiagnosticCommand returns a std::string containing the motor's text reply
+    auto reply = controller.DiagnosticCommand(cmd);
+
+    RCLCPP_INFO(this->get_logger(), "Set Reply: %s | Key: %s | Value: %s", reply.c_str(), pair.first.c_str(), pair.second.c_str());
+  }
+
+  // should not uncomment
+  //  Write to flash so settings persist after power cycle
+  //  auto reply = controller.DiagnosticCommand("conf write");
+  //  std::cout << "Config Write: " << reply << std::endl;
 }

@@ -102,6 +102,9 @@ private:
   float firmToMoveitOffsetVel(float deg, int axis);
   void send_position_command(float pos[NUM_JOINTS]);
   void send_velocity_command(float vel[NUM_JOINTS]);
+#ifdef BUILDING_NEW_DRIVER
+  void ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller);
+#endif
   void send_test_limits_command();
   void sendHomeCmd(int target_axis);
   void sendCommCmd(int target_state);
