@@ -7,3 +7,6 @@
 [submodule "src/external_pkgs/Catch2"]
 	path = src/external_pkgs/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "src/arm_hardware_interface/moteus"]
+	path = src/arm_hardware_interface/moteus
+	url = https://github.com/mjbots/moteus.git
