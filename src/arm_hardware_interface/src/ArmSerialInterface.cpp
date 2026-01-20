@@ -77,9 +77,8 @@ float rad = degToRad(deg);
 
 return ((rad*axes[i].dir));
 
-}
 
-void ArmSerial::parseLimitSwitchTest(std::string msg){
+void ArmSerial::parseSwitchTLimitest(std::string msg){
   int axis = 0;
   int value = 5;
   if (sscanf(msg.c_str(), "Limit Switch %d is %d.", &axis, &value) == 2){

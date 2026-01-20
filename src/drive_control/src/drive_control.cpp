@@ -23,7 +23,7 @@ void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
 
     // Scale the joystick inputs to the desired linear and angular velocity
     float throttle = msg->axes[2] + 1;
-    throttle = throttle *4;
+    throttle = throttle *100;
     twist_msg.linear.x = msg->axes[1] * throttle;
     twist_msg.angular.z = msg->axes[0] * -throttle;
 

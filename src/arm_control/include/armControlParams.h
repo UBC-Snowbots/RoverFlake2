@@ -26,7 +26,7 @@ static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
 #endif
 
 #ifdef SELECT_OLD_ARM
-static float max_joysticks_output_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {100, 60, 160, 80, 100, 200};
 #endif
 
 namespace MoteusArmParams{

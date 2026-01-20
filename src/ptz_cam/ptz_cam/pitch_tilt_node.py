@@ -10,7 +10,7 @@ class PTZPanTiltNode(Node):
         super().__init__('Pan_tilt_node')    
 
         # Serial port stuff
-        self.declare_parameter('serial_port', '/dev/ttyACM0')
+        self.declare_parameter('serial_port', '/dev/ttyACM1')
         self.declare_parameter('baud_rate', 9600) 
 
         # Get parameter values
