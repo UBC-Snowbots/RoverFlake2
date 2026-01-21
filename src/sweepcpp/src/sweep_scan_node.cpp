@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/qos.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sweep/sweep.hpp"
 
@@ -19,9 +20,9 @@ public:
   {
     // Declare parameters
     this->declare_parameter("topic", "scan");
-    this->declare_parameter("serial_port", "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DM00L4EB-if00-port0"); // usbport /dev/ttyUSB0 
-    this->declare_parameter("rotation_speed", 10); // 1-10
-    this->declare_parameter("sample_rate", 1000); //500-1750
+    this->declare_parameter("serial_port", "/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DM00L4EB-if00-port0");  // usbport /dev/ttyUSB0 
+    this->declare_parameter("rotation_speed", 3);  // 1-10
+    this->declare_parameter("sample_rate", 750);  //500-1750
     this->declare_parameter("frame_id", "lidar");
 
     // Get parameters
@@ -39,7 +40,10 @@ public:
     _scanner = std::make_shared<sweep::sweep>(serial_port.c_str());
 
     // Create publisher
-    _lidar_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(topic, 10);
+    rclcpp::QoS qos(100);  // Increased from 10 to handle TF delays
+    qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+    qos.durability(rclcpp::DurabilityPolicy::Volatile);
+    _lidar_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(topic, qos);
 
     // Start scanner thread
     _scanner_thread_active = true;
@@ -78,18 +82,16 @@ private:
       laser_scan_msg.header.frame_id = _frame_id;
       laser_scan_msg.header.stamp = this->now();
 
-      // Calculate samples per rotation
-      float samples_per_rotation = static_cast<float>(_sample_rate) / static_cast<float>(_rotation_speed);
-
+      // Set up LaserScan with actual sample count, not expected
       laser_scan_msg.angle_min       = 0.0;
       laser_scan_msg.angle_max       = 2.0 * M_PI;
-      laser_scan_msg.angle_increment = laser_scan_msg.angle_max / samples_per_rotation;
+      laser_scan_msg.angle_increment = (2.0 * M_PI) / static_cast<float>(scan.samples.size());
       laser_scan_msg.time_increment  = 1.0f / static_cast<float>(_sample_rate);
       laser_scan_msg.range_min       = 0.0f;
       laser_scan_msg.range_max       = 25.0f;
 
-      // Pre-fill ranges with infinity
-      laser_scan_msg.ranges.assign(scan.samples.size(), std::numeric_limits<float>::infinity());
+      // Allocate array for actual number of samples received
+      laser_scan_msg.ranges.resize(scan.samples.size());
 
       size_t idx = 0;
       for (auto [angle_milli_deg, distance_cm, signal_strength] : scan.samples)
