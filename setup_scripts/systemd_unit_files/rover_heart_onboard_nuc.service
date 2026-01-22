@@ -1,0 +1,28 @@
+[Unit]
+Description=Rover: Control Base Heart Daemon 
+After=network.target
+
+[Service]
+Type=simple
+User=rv
+
+ExecStart=/bin/bash -c ' \
+	source /opt/ros/humble/setup.bash && \
+	source /home/rv/RoverFlake2/network_stuff/cyclonedds_env.sh && \
+	source /home/rv/RoverFlake2/install/setup.bash && \
+	exec ros2 launch rover_manager heart_start_on_board_nuc.launch.py \
+'
+
+WorkingDirectory=/home/rv/RoverFlake2
+Restart=always
+RestartSec=5
+
+# make sure children cant escape. Kill entire process tree, not just the parent.
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+
+

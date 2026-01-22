@@ -12,6 +12,10 @@
 #! DO NOT REUSE SUBSYSTEM NAMES UNLESS YOU NEED THE SAME SUBSYSTEM RUN ON MULTIPLE MACHINES
 
 #? You do not have to rebuild when making changes to this file - these params are checked when the nodes are launched. However if in doubt, clean and rebuild
+#! However, you must restart the heart daemons for changes to take effect
+#?    -> sudo systemctl daemon-reload
+#?    -> sudo systemctl restart rover_heart_<press tab here to figure out what the service name is>.service 
+#? OR, just restart computer.
 
 /dashboard_hmi_node:
   ros__parameters:

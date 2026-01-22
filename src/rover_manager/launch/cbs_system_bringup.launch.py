@@ -7,6 +7,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import ThisLaunchFileDir
 from ament_index_python.packages import get_package_share_directory
 
+# Dont start the heart from here, heart is daemonized
+
 def generate_launch_description():
     # sensor_launch = IncludeLaunchDescription(
     #     PythonLaunchDescriptionSource([
