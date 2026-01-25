@@ -63,10 +63,12 @@ class MahonyFilter(Node):
         # self.heading_sub = self.create_subscription(
 
         self.pub = self.create_publisher(
-            Quaternion,
-            '/imu/quaternion',
+            Imu,
+            '/imu/data',
             50
         )
+
+        self.last_raw_imu = None
 
     def imu_callback(self, msg):
         """
@@ -137,6 +139,8 @@ class MahonyFilter(Node):
 
         """
 
+        self.last_raw_imu = msg
+
         # --- Compute dt ---
         if self.last_time is None:
             self.last_time = msg.header.stamp
@@ -188,12 +192,35 @@ class MahonyFilter(Node):
         self.q = self.q / np.linalg.norm(self.q)  # Normalize
                                                   # Non-unit quaternions lead to errors
         # --- Publish quaternion ---
-        quat_msg = Quaternion()
-        quat_msg.w = self.q[0]
-        quat_msg.x = self.q[1]
-        quat_msg.y = self.q[2]
-        quat_msg.z = self.q[3]
-        self.pub.publish(quat_msg)
+        imu_msg = Imu()
+
+        # Header
+        imu_msg.header.stamp = msg.header.stamp
+        imu_msg.header.frame_id = msg.header.frame_id  # imu_link
+
+        # Orientation from Mahony
+        imu_msg.orientation.w = self.q[0]
+        imu_msg.orientation.x = self.q[1]
+        imu_msg.orientation.y = self.q[2]
+        imu_msg.orientation.z = self.q[3]
+
+        # Orientation covariance (tunable)
+        imu_msg.orientation_covariance = [
+            0.02, 0.0,  0.0,
+            0.0,  0.02, 0.0,
+            0.0,  0.0,  0.05
+        ]
+
+        # Pass through gyro
+        imu_msg.angular_velocity = msg.angular_velocity
+        imu_msg.angular_velocity_covariance = msg.angular_velocity_covariance
+
+        # Pass through accel
+        imu_msg.linear_acceleration = msg.linear_acceleration
+        imu_msg.linear_acceleration_covariance = msg.linear_acceleration_covariance
+
+        self.pub.publish(imu_msg)
+
 
 
 def main(args=None):
