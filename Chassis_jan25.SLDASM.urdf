@@ -1,0 +1,597 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Chassis_jan25.SLDASM">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.323229812588613 0.000141183645902293 0.120313130269706"
+        rpy="0 0 0" />
+      <mass
+        value="2.88138671659806" />
+      <inertia
+        ixx="0.0724633578119302"
+        ixy="2.41199616581998E-08"
+        ixz="-3.29816622550491E-05"
+        iyy="0.0548014420223796"
+        iyz="8.02887307229273E-10"
+        izz="0.089802903084083" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Right Rocker">
+    <inertial>
+      <origin
+        xyz="-0.0455943307100283 -0.0442459967114348 -0.118069510941534"
+        rpy="0 0 0" />
+      <mass
+        value="0.976094859825012" />
+      <inertia
+        ixx="0.00285386725019804"
+        ixy="-0.00445778159814522"
+        ixz="1.33471689794833E-09"
+        iyy="0.0173258298046375"
+        iyz="9.60008892383434E-10"
+        izz="0.0196492646870384" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Rocker.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.776470588235294 0.756862745098039 0.737254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Rocker.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Rocker Shaft"
+    type="revolute">
+    <origin
+      xyz="-0.25 -0.23191 0.10318"
+      rpy="1.5708 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="Right Rocker" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Right Bogie">
+    <inertial>
+      <origin
+        xyz="0.203360589039448 0.214605918231519 -0.0517821444364222"
+        rpy="0 0 0" />
+      <mass
+        value="0.685089466146076" />
+      <inertia
+        ixx="0.00438781466217623"
+        ixy="-0.000948428018232623"
+        ixz="-1.88916824887545E-09"
+        iyy="0.000656680946719501"
+        iyz="2.49581957201116E-09"
+        izz="0.00478753104172677" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Bogie.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.776470588235294 0.756862745098039 0.737254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Bogie.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Bogie Shaft"
+    type="revolute">
+    <origin
+      xyz="0 0 -0.071072"
+      rpy="0 0 -1.334" />
+    <parent
+      link="Right Rocker" />
+    <child
+      link="Right Bogie" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Left Rocker">
+    <inertial>
+      <origin
+        xyz="-0.0455944993489959 -0.0442459511312917 0.118069511747513"
+        rpy="0 0 0" />
+      <mass
+        value="0.976094859825025" />
+      <inertia
+        ixx="0.00285386912658681"
+        ixy="-0.00445777838055831"
+        ixz="6.76417857484936E-10"
+        iyy="0.0173258279282488"
+        iyz="-1.47558982536301E-09"
+        izz="0.0196492646870385" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Rocker.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.776470588235294 0.756862745098039 0.737254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Rocker.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left Rocker Shaft"
+    type="revolute">
+    <origin
+      xyz="-0.25 0.23191 0.10318"
+      rpy="1.5708 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="Left Rocker" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Left Bogie">
+    <inertial>
+      <origin
+        xyz="0.27268942770176 0.114242996485603 0.0517821444363109"
+        rpy="0 0 0" />
+      <mass
+        value="0.685089466168687" />
+      <inertia
+        ixx="0.00307912836008487"
+        ixy="-0.00201735952500609"
+        ixz="3.12804197406985E-09"
+        iyy="0.00196536724883863"
+        iyz="1.15710660663841E-10"
+        izz="0.00478753104175515" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Bogie.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.776470588235294 0.756862745098039 0.737254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Bogie.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left Bogie Shaft"
+    type="revolute">
+    <origin
+      xyz="0 0 0.071072"
+      rpy="0 0 -0.91845" />
+    <parent
+      link="Left Rocker" />
+    <child
+      link="Left Bogie" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Differential">
+    <inertial>
+      <origin
+        xyz="0.0710384527730835 0.000112700945178679 -2.36107612987396E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.554107404049971" />
+      <inertia
+        ixx="0.0238053446113574"
+        ixy="-1.15877643456156E-10"
+        ixz="-5.06874192550353E-12"
+        iyy="0.0225057222236207"
+        iyz="-0.00515290954267021"
+        izz="0.00131171927074581" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Differential.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Differential.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Differential Shaft"
+    type="fixed">
+    <origin
+      xyz="-0.53574 0 0.17296"
+      rpy="1.3445 -1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Differential" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="Right Link">
+    <inertial>
+      <origin
+        xyz="-0.000471291878392732 0.011232150649921 0.142506119944639"
+        rpy="0 0 0" />
+      <mass
+        value="0.053985510063761" />
+      <inertia
+        ixx="0.000246620491750831"
+        ixy="2.33572651203837E-09"
+        ixz="-2.91259550536616E-06"
+        iyy="0.000246654922326858"
+        iyz="1.93850799669672E-07"
+        izz="7.40166662235795E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.956862745098039 0.956862745098039 0.956862745098039 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Right Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Ball Joint"
+    type="fixed">
+    <origin
+      xyz="0.056023 0.085356 0.3738"
+      rpy="-1.3176 -0.92154 2.9328" />
+    <parent
+      link="Differential" />
+    <child
+      link="Right Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="Left Link">
+    <inertial>
+      <origin
+        xyz="0.00299799745771068 0.0150427507188394 0.142506103270904"
+        rpy="0 0 0" />
+      <mass
+        value="0.0539855060406584" />
+      <inertia
+        ixx="0.000246654065832621"
+        ixy="5.4121557256702E-09"
+        ixz="-4.65158382498307E-07"
+        iyy="0.000246621269380839"
+        iyz="2.88146120645696E-06"
+        izz="7.40160014603316E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.956862745098039 0.956862745098039 0.956862745098039 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/Left Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Left Ball Joint"
+    type="fixed">
+    <origin
+      xyz="0.035011 -0.08725 -0.37565"
+      rpy="1.1782 0.68589 -0.26229" />
+    <parent
+      link="Differential" />
+    <child
+      link="Left Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="leftGPS">
+    <inertial>
+      <origin
+        xyz="0.00950000000000001 -0.0125 0.00949999999999998"
+        rpy="0 0 0" />
+      <mass
+        value="0.00902500000000001" />
+      <inertia
+        ixx="7.41554166666662E-07"
+        ixy="1.2981977056571E-23"
+        ixz="1.76465197344646E-22"
+        iyy="5.43004166666662E-07"
+        iyz="-3.65912371745863E-22"
+        izz="7.41554166666668E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/leftGPS.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/leftGPS.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="gpsLeft"
+    type="fixed">
+    <origin
+      xyz="-0.2595 0.27326 0.21"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="leftGPS" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="rightGPS">
+    <inertial>
+      <origin
+        xyz="0.00950000000000001 0.0125 0.00950000000000004"
+        rpy="0 0 0" />
+      <mass
+        value="0.00902500000000002" />
+      <inertia
+        ixx="7.41554166666676E-07"
+        ixy="-2.83730506341327E-23"
+        ixz="-2.061810166457E-22"
+        iyy="5.43004166666677E-07"
+        iyz="-1.52473566064512E-22"
+        izz="7.41554166666669E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/rightGPS.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/rightGPS.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="gpsRight"
+    type="fixed">
+    <origin
+      xyz="-0.2595 -0.27326 0.21"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rightGPS" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="IMU">
+    <inertial>
+      <origin
+        xyz="0.00950000000000004 0.0125 0.00950000000000004"
+        rpy="0 0 0" />
+      <mass
+        value="0.00902500000000001" />
+      <inertia
+        ixx="7.41554166666668E-07"
+        ixy="8.38209687387069E-23"
+        ixz="-8.05441709605198E-22"
+        iyy="5.43004166666636E-07"
+        iyz="3.35283874954827E-23"
+        izz="7.41554166666636E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/IMU.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Chassis_jan25.SLDASM/meshes/IMU.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="IMU1"
+    type="fixed">
+    <origin
+      xyz="-0.2575 -0.0125 0.20674"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="IMU" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>
