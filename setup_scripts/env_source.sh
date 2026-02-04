@@ -7,3 +7,5 @@ source /home/${USER}/RoverFlake2/network_stuff/cyclonedds_env.sh
 # gui apps
 export DISPLAY=:0
 export XAUTHORITY="/run/user/1001/gdm"
+export ROVERFLAKE_ROOT="/home/rv/RoverFlake2/"
+source /home/rv/RoverFlake2/setup_scripts/rover_env/cbs_env_setup.sh
