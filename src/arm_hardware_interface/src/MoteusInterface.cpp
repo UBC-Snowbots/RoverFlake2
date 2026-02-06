@@ -476,7 +476,7 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
     RCLCPP_INFO(this->get_logger(), "veloc send %f", static_cast<double>(vel[(pair.first)]));
     position_command.velocity = vel[pair.first - 1] * DEG_TO_REVOLUTIONS;
     // position_command.velocity = vel[pair.first - 1];
-    RCLCPP_INFO(this->get_logger(), "vel %f", position_command.velocity);
+    RCLCPP_INFO(this->get_logger(), "vel %f id: %d", position_command.velocity, pair.first);
 
     if (position_command.velocity == 0) {
       RCLCPP_INFO(this->get_logger(), "velocity stop %f", position_command.velocity);
