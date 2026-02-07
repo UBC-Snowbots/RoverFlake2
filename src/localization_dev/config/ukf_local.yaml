@@ -1,10 +1,12 @@
 ukf_local:
   ros__parameters:
     frequency: 50.0
-    sensor_timeout: 0.1
-    two_d_mode: true
+    two_d_mode: false
 
-    map_frame: map
+    print_diagnostics: true
+    debug: true
+    debug_out_file: /home/arman/debug/debug_out_file.txt
+
     odom_frame: odom
     base_link_frame: base_link
     world_frame: odom
@@ -15,10 +17,9 @@ ukf_local:
     imu0: /imu/data
     imu0_config: [
       false, false, false,   # position
-      true,  true,  true,    # orientation (Mahony)
+      true,  true,  false,    # orientation (Mahony)
       false, false, false,   # velocity
       true,  true,  true,    # angular velocity
-      true,  true,  true     # linear acceleration
+      false,  false,  false     # linear acceleration
     ]
-
     imu0_remove_gravitational_acceleration: false
