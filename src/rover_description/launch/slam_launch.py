@@ -15,11 +15,6 @@ def generate_launch_description():
                 "base_frame": "base_link",
                 "scan_topic": "/scan",
                 "mode": "mapping",
-                "transform_tolerance": 1,
-                "transform_cache_size": 10000,
-                "transform_publish_period": 0.05,
-                "min_laser_range": 0.0,
-                "max_laser_range": 25.0
             }]
         )
     ])

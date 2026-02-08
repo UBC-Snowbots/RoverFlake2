@@ -594,4 +594,12 @@
     <axis
       xyz="0 0 0" />
   </joint>
+  <link name="lidar">
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="lidar" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
 </robot>
