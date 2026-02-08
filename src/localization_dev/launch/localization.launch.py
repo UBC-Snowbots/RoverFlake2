@@ -3,21 +3,16 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution
 
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
 def generate_launch_description():
     ukf_local_yaml = PathJoinSubstitution([
         FindPackageShare('localization_dev'),
         'config',
         'ukf_local.yaml'
-    ])
-    ukf_global_yaml = PathJoinSubstitution([
-        FindPackageShare('localization_dev'),
-        'config',
-        'ukf_global.yaml'
-    ])
-    navsat_yaml = PathJoinSubstitution([
-        FindPackageShare('localization_dev'),
-        'config',
-        'navsat.yaml'
     ])
     return LaunchDescription([
 
@@ -29,20 +24,22 @@ def generate_launch_description():
             parameters=[ukf_local_yaml],
             remappings=[('odometry/filtered', 'odometry/filtered')]
         ),
-
         Node(
-            package='robot_localization',
-            executable='navsat_transform_node',
-            name='navsat_transform',
+            package='imu_filter_madgwick',
+            executable='imu_filter_madgwick_node',
+            name='imu_filter',
             output='screen',
-            parameters=[navsat_yaml]
+            parameters=[{
+                'publish_tf': False
+            }]
         ),
-
-        Node(
-            package='robot_localization',
-            executable='ukf_node',
-            name='ukf_global',
-            output='screen',
-            parameters=[ukf_global_yaml]
-        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('phidgets_spatial'),
+                    'launch',
+                    'spatial-launch.py'
+                )
+            )
+        )
     ])

@@ -542,7 +542,7 @@
       xyz="0 0 0" />
   </joint>
   <link
-    name="IMU">
+    name="imu_link">
     <inertial>
       <origin
         xyz="0.00950000000000004 0.0125 0.00950000000000004"
@@ -590,8 +590,16 @@
     <parent
       link="base_link" />
     <child
-      link="IMU" />
+      link="imu_link" />
     <axis
       xyz="0 0 0" />
+  </joint>
+  <link name="lidar">
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="lidar" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
   </joint>
 </robot>
