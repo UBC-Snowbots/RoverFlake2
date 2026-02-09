@@ -1,5 +1,5 @@
 // TODO: make a good comment
-#include "ArmSerialInterface.h"
+#include "ArmMoteusInterface.h"
 
 #define PI 3.14159
 
@@ -538,39 +538,7 @@ void ArmSerial::ConfigureMotor(int axis_number, mjbots::moteus::Controller &cont
   }
   RCLCPP_INFO(this->get_logger(), "Motor %d detected. Starting config...", axis_number);
 
-  std::vector<std::pair<std::string, std::string>> settings;
-  switch (axis_number) {
-  case 1: {
-    MotorConfigAxis1 config;
-    settings = config.get_configs();
-    break;
-  }
-  case 2: {
-    MotorConfigAxis2 config;
-    settings = config.get_configs();
-    break;
-  }
-  case 3: {
-    MotorConfigAxis3 config;
-    settings = config.get_configs();
-    break;
-  }
-  case 4: {
-    MotorConfigAxis4 config;
-    settings = config.get_configs();
-    break;
-  }
-  case 5: {
-    MotorConfigAxis5 config;
-    settings = config.get_configs();
-    break;
-  }
-  case 6: {
-    MotorConfigAxis6 config;
-    settings = config.get_configs();
-    break;
-  }
-  }
+  std::vector<std::pair<std::string, std::string>> settings = get_arm_configuration()[axis_number - 1].get_configs();
 
   for (const auto &pair : settings) {
     std::string cmd = "conf set " + pair.first + " " + pair.second;
