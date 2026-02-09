@@ -42,6 +42,9 @@ private:
     char errorDetail[100];  // Detailed error message
     size_t errorDetailLen = 100;  // Length of the error detail buffer
 
+        // Failsafe timeout (ms)
+    int failsafe_timeout_ms = 2000;
+
     // Timer to check motor positions periodically
     rclcpp::TimerBase::SharedPtr timer_;
 };

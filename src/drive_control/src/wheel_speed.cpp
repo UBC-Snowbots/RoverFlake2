@@ -1,5 +1,20 @@
 # include "wheel_speed.h"
 
+// Helper function to apply deadzone removal and forward bias
+double applyDeadzoneAndBias(double speed) {
+    if (speed == 0.0) {
+        return FORWARD_BIAS;  // Bias forward when speed is zero
+    }
+    if (speed > 0.0 && speed < MIN_SPEED) {
+        return MIN_SPEED;     // Minimum forward speed
+    }
+    if (speed < 0.0 && speed > -MIN_SPEED) {
+        return -MIN_SPEED;    // Minimum reverse speed
+    }
+    return speed;             // Otherwise use the original speed
+}
+
+
 // Constructor definition for WheelSpeed class
 WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the node with the name "wheel_speed"
     RCLCPP_INFO(this->get_logger(), "Initializing Motor Controller");  // Log that the motor controller is initializing
@@ -30,15 +45,15 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
 
     // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
     std::vector<double> left_wheel_commands = {
-        -linear + angular,   // Left Front Wheel
-        -linear + angular,   // Left Mid Wheel
-        -linear + angular    // Left Rear Wheel
+        applyDeadzoneAndBias(-linear + angular),   // Left Front Wheel
+        applyDeadzoneAndBias(-linear + angular),   // Left Mid Wheel
+        applyDeadzoneAndBias(-linear + angular)     // Left Rear Wheel
     };
     
     std::vector<double> right_wheel_commands = {
-        linear + angular,  // Right Front Wheel
-        linear + angular,  // Right Mid Wheel
-        linear + angular   // Right Rear Wheel
+        applyDeadzoneAndBias(linear + angular),  // Right Front Wheel
+        applyDeadzoneAndBias(linear + angular),  // Right Mid Wheel
+        applyDeadzoneAndBias(linear + angular)   // Right Rear Wheel
     };
 
     // Publish the separate left and right wheel speed messages

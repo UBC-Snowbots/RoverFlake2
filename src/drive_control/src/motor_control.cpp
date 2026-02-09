@@ -37,7 +37,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
     //Enable failsafe for all motors, this will stop the motors if the node crashes or is killed. Right now it is set to 5 seconds, but this can be adjusted as needed.
     for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 2000);
+        PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], failsafe_timeout_ms);
         handlePhidgetError(ret, "enable failsafe", i);
     }
 
