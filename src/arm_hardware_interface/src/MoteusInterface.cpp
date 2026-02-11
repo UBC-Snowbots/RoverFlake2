@@ -44,7 +44,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
     // Stop everything to clear faults and configure
     for (const auto &pair : controllers) {
-      pair.second->SetStop();
+      // pair.second->SetStop();
       RCLCPP_INFO(this->get_logger(), "moteuss jointsff %d", NUM_JOINTS);
       ConfigureMotor(pair.first, *pair.second);
       RCLCPP_INFO(this->get_logger(), "moteuaas jointsff %d", NUM_JOINTS);
@@ -478,12 +478,12 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
     // position_command.velocity = vel[pair.first - 1];
     RCLCPP_INFO(this->get_logger(), "vel %f id: %d", position_command.velocity, pair.first);
 
-    if (position_command.velocity == 0) {
-      RCLCPP_INFO(this->get_logger(), "velocity stop %f", position_command.velocity);
-      pair.second->SetStop();
-    } else {
+    // if (position_command.velocity == 0) {
+    //   RCLCPP_INFO(this->get_logger(), "velocity stop %f", position_command.velocity);
+    //   pair.second->SetStop();
+    // } else {
       command_frames.push_back(pair.second->MakePosition(position_command));
-    }
+    // }
   }
 
   // Now send them in a single call to Transport::Cycle.

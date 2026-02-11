@@ -35,11 +35,11 @@ struct MotorConfigAxis1 {
   // ---------------------------------------------------------
   // Maximum acceleration for trajectory generation (revolutions/s^2)
   // Moteus Config: servo.default_accel_limit
-  float max_acceleration = 20.0f;
+  float max_acceleration = 0.5f;
 
   // Maximum velocity limit (revolutions/s)
   // Moteus Config: servo.velocity_limit (soft) or servo.max_velocity (hard limit)
-  float max_velocity = 10.0f;
+  float max_velocity = 1.0f;
 
   // Position Limits (revolutions)
   // Moteus Config: servopos.position_min / servopos.position_max
@@ -58,9 +58,9 @@ struct MotorConfigAxis1 {
   // 3. PID Tuning Parameters
   // ---------------------------------------------------------
   // Moteus Config: servo.pid_position.kp, ki, kd
-  float kp = 50.0f;
+  float kp = 10.0f;
   float ki = 0.0f;
-  float kd = 1.0f;
+  float kd = 0.0f;
 
   // ---------------------------------------------------------
   // 4. Safety Limits (Voltage & Power)
@@ -105,16 +105,18 @@ struct MotorConfigAxis1 {
 };
 
 struct MotorConfigAxis2 {
-  float max_acceleration = 20.0f;
-  float max_velocity = 10.0f;
+  float max_acceleration = 0.5f;
+  float max_velocity = 1.0f;
   float position_min = -10.0f;
   float position_max = 10.0f;
-  float max_current_A = 0.0f; // Used to enforce Max Torque
-  float kp = 50.0f;
+  float max_current_A = 10.0f; // Used to enforce Max Torque
+  float kp = 15.0f;
   float ki = 0.0f;
-  float kd = 1.0f;
+  float kd = 0.0f;
   float max_voltage = 26.0f;
   float max_power_W = 450.0f;
+  float def_timeout = std::numeric_limits<double>::quiet_NaN();
+
   // gear reduction
 
   std::vector<std::pair<std::string, std::string>> get_configs() const {
@@ -128,23 +130,26 @@ struct MotorConfigAxis2 {
             {"servo.pid_position.ki", std::to_string(ki)},
             {"servo.pid_position.kd", std::to_string(kd)},
             {"servo.max_voltage", std::to_string(max_voltage)},
+            {"servo.default_timeout_s", std::to_string(def_timeout)},
             {"servo.max_power_W", std::to_string(max_power_W)}};
   }
 };
 
 struct MotorConfigAxis3 {
-  float max_acceleration = std::numeric_limits<double>::quiet_NaN();
-  float max_velocity = std::numeric_limits<double>::quiet_NaN();
+  // float max_acceleration = std::numeric_limits<double>::quiet_NaN();
+  float max_acceleration = 0.5;
+  float max_velocity = 0.5;
+  // float max_velocity = std::numeric_limits<double>::quiet_NaN();
   // float position_min = -12.0f;
   // float position_max = 10.0f;
-  float position_min = std::numeric_limits<double>::quiet_NaN();
-  float position_max = std::numeric_limits<double>::quiet_NaN();
-  // float max_current_A = 20.0f; // Used to enforce Max Torque
-  // float kp = 50.0f;
-  // float ki = 0.0f;
-  // float kd = 1.0f;
-  // float max_voltage = 48.0f;
-  // float max_power_W = 450.0f;
+  float position_min = -10.0; //std::numeric_limits<double>::quiet_NaN();
+  float position_max = 10.0; //std::numeric_limits<double>::quiet_NaN();
+  float max_current_A = 4.0f; // Used to enforce Max Torque
+  float kp = 15.0f; //1200 with reduction. accel 3
+  float ki = 0.0f;
+  float kd = 0.0f;
+  float max_voltage = 26.0f;
+  float max_power_W = 250.0f;
   // gear reduction
   float def_timeout = std::numeric_limits<double>::quiet_NaN();
 
@@ -156,12 +161,12 @@ struct MotorConfigAxis3 {
         {"servopos.position_min", std::to_string(position_min)},
         {"servopos.position_max", std::to_string(position_max)},
         {"servo.default_timeout_s", std::to_string(def_timeout)},
-        // {"servo.max_current_A", std::to_string(max_current_A)},
-        // {"servo.pid_position.kp", std::to_string(kp)},
-        // {"servo.pid_position.ki", std::to_string(ki)},
-        // {"servo.pid_position.kd", std::to_string(kd)},
-        // {"servo.max_voltage", std::to_string(max_voltage)},
-        // {"servo.max_power_W", std::to_string(max_power_W)}
+        {"servo.max_current_A", std::to_string(max_current_A)},
+        {"servo.pid_position.kp", std::to_string(kp)},
+        {"servo.pid_position.ki", std::to_string(ki)},
+        {"servo.pid_position.kd", std::to_string(kd)},
+        {"servo.max_voltage", std::to_string(max_voltage)},
+        {"servo.max_power_W", std::to_string(max_power_W)}
     };
   }
 };
@@ -176,7 +181,7 @@ struct MotorConfigAxis4 {
   float ki = 0.0f;
   float kd = 1.0f;
   float max_voltage = 26.0f;
-  float max_power_W = 450.0f;
+  float max_power_W = 150.0f;
   // gear reduction
 
   std::vector<std::pair<std::string, std::string>> get_configs() const {
@@ -204,7 +209,7 @@ struct MotorConfigAxis5 {
   float ki = 0.0f;
   float kd = 1.0f;
   float max_voltage = 26.0f;
-  float max_power_W = 450.0f;
+  float max_power_W = 150.0f;
   // gear reduction
 
   std::vector<std::pair<std::string, std::string>> get_configs() const {
@@ -223,19 +228,19 @@ struct MotorConfigAxis5 {
 };
 
 struct MotorConfigAxis6 {
-  float max_acceleration = 20.0f;
-  float max_velocity = 10.0f;
+  float max_acceleration = 0.20f;
+  float max_velocity = 1.5f;
   // float position_min = -10.0f;
   // float position_max = 10.0f;
   float position_min = std::numeric_limits<double>::quiet_NaN();
   float position_max = std::numeric_limits<double>::quiet_NaN();
-  float max_current_A = 1.5f; // Used to enforce Max Torque
-  float kp = 15.0f;
+  float max_current_A = 0.5f; // Used to enforce Max Torque
+  float kp = 0.01f;
   float ki = 0.0f;
-  float kd = 1.0f;
+  float kd = 0.0f;
   float max_voltage = 26.0f;
-  float max_power_W = 450.0f;
-  float gear_red = (1.0f);
+  float max_power_W = 150.0f;
+  float gear_red = (1.0f/66.0f);
   
   // gear reduction
 
