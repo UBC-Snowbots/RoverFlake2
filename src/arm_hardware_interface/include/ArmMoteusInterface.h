@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "rover_msgs/msg/arm_command.hpp"
+#include "rover_msgs/msg/moteus_arm_status.hpp"
 #include <chrono>
 #include <thread>
 
@@ -50,6 +51,8 @@ private:
 
   bool send_angles = true;
 
+  // struct 
+
   struct Axis {
     float curr_pos;
     float target_pos;
@@ -58,6 +61,29 @@ private:
     float max_rad;
     int dir;
   };
+
+  // Motors cannot be linked to axes with new arm (differential wrist)
+  struct MotorTelem {
+    MotorConfig config; // Just report back the config
+
+    float curr_voltage_V = 0;
+    float curr_current_A = 0;
+    float curr_power_W = 0;
+    float driver_temp_C = 0;
+
+    float curr_velocity = 0;
+    float curr_position = 0;
+    float curr_torque_Nm = 0;
+
+    // Desired
+    float des_velocity = 0;
+    float des_position = 0;
+
+    int moteus_mode = 0;
+    int moteus_fault = 0;
+
+  };
+  MotorTelem motor_telem[NUM_JOINTS];
 
   Axis axes[NUM_JOINTS];
 
@@ -78,6 +104,7 @@ private:
 
   sensor_msgs::msg::JointState prev_joint_states;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
+  rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr arm_status_publisher;
 
   rclcpp::TimerBase::SharedPtr timer_;
 

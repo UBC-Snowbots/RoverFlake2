@@ -26,6 +26,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile(); //? AHHHH WHAT THE FUCK IS A QOS
 
   arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
+  arm_status_publisher = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
   joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
   double period = 1.0 / COMM_POLL_RATE;
 
@@ -41,6 +42,10 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       options.id = i;
       controllers[i] = std::make_shared<moteus::Controller>(options);
     }
+    
+    // does send and recv every 10ms- same as arm firmware?
+    period = 1 / 100;
+    transport = moteus::Controller::MakeSingletonTransport({});
 
     // Stop everything to clear faults and configure
     for (const auto &pair : controllers) {
@@ -49,10 +54,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       ConfigureMotor(pair.first, *pair.second);
       RCLCPP_INFO(this->get_logger(), "moteuaas jointsff %d", NUM_JOINTS);
     }
-
-    // does send and recv every 10ms- same as arm firmware?
-    period = 1 / 100;
-    transport = moteus::Controller::MakeSingletonTransport({});
+    
     timer_ = this->create_wall_timer(std::chrono::duration<double>(period), std::bind(&ArmSerial::serial_rx, this));
   }
 
@@ -301,6 +303,15 @@ void ArmSerial::serial_rx() {
       RCLCPP_INFO(this->get_logger(), "motor2ID: %d | Mode: %2d | Fault: %2d | Pos: %.3f | Vel: %.3f | Trq: %.3f | Volt: %.1f | Temp: %.1f",
                   motor_id, static_cast<int>(result.mode), static_cast<int>(result.fault), result.position, result.velocity, result.torque,
                   result.voltage, result.temperature);
+      motor_telem[motor_id - 1].moteus_mode = static_cast<int>(result.mode);
+      motor_telem[motor_id - 1].moteus_fault = static_cast<int>(result.fault);
+      motor_telem[motor_id - 1].curr_position = result.position;
+      motor_telem[motor_id - 1].curr_velocity = result.velocity;
+      motor_telem[motor_id - 1].curr_torque_Nm = result.torque;
+      motor_telem[motor_id - 1].curr_voltage_V = result.voltage;
+      motor_telem[motor_id - 1].driver_temp_C = result.temperature;
+      
+
       // Check if the motor is reporting a fault (anything other than 0 is an error)
       if (result.mode == moteus::Mode::kFault) {
         RCLCPP_ERROR(this->get_logger(), "Motor %d FAULT Detected! Code: %d", motor_id, result.fault);
@@ -358,6 +369,45 @@ void ArmSerial::serial_rx() {
     // ::printf("%s  \r", status_line.c_str());
     // ::fflush(::stdout);
   }
+
+  rover_msgs::msg::MoteusArmStatus debug_msg;
+  debug_msg.config.resize(NUM_JOINTS);
+  debug_msg.status.resize(NUM_JOINTS);
+  for(int i = 0; i < NUM_JOINTS_NO_EE; i++)
+  {
+    debug_msg.config[i].max_acceleration = motor_telem[i].config.max_acceleration;
+    debug_msg.config[i].max_velocity = motor_telem[i].config.max_velocity;
+    debug_msg.config[i].max_position = motor_telem[i].config.position_max;
+    debug_msg.config[i].min_position = motor_telem[i].config.position_min;
+    debug_msg.config[i].gear_reduction = motor_telem[i].config.gear_red;
+
+    debug_msg.config[i].kp = motor_telem[i].config.kp;
+    debug_msg.config[i].ki = motor_telem[i].config.ki;
+    debug_msg.config[i].kd = motor_telem[i].config.kd;
+
+    debug_msg.config[i].max_current_amps = motor_telem[i].config.max_current_A;
+    debug_msg.config[i].max_voltage_volts = motor_telem[i].config.max_voltage;
+    debug_msg.config[i].max_power_watts = motor_telem[i].config.max_power_W;
+    debug_msg.config[i].cmd_timeout_s = motor_telem[i].config.def_timeout;
+
+
+    
+    debug_msg.status[i].curr_voltage_volts = motor_telem[i].curr_voltage_V;
+    debug_msg.status[i].curr_current_amps = motor_telem[i].curr_current_A;
+    debug_msg.status[i].curr_power_watts = motor_telem[i].curr_power_W;
+    debug_msg.status[i].driver_temp_degreesc = motor_telem[i].driver_temp_C;
+
+    debug_msg.status[i].des_velocity = motor_telem[i].des_velocity;
+    debug_msg.status[i].des_position = motor_telem[i].des_position;
+
+    debug_msg.status[i].moteus_mode = motor_telem[i].moteus_mode;
+    debug_msg.status[i].moteus_fault = motor_telem[i].moteus_fault;
+
+    
+    
+
+  }
+  arm_status_publisher->publish(debug_msg);
 }
 
 void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
@@ -539,6 +589,10 @@ void ArmSerial::ConfigureMotor(int axis_number, mjbots::moteus::Controller &cont
   RCLCPP_INFO(this->get_logger(), "Motor %d detected. Starting config...", axis_number);
 
   std::vector<std::pair<std::string, std::string>> settings = get_arm_configuration()[axis_number - 1].get_configs();
+
+
+  motor_telem[axis_number - 1].config = get_arm_configuration()[axis_number -1];
+
 
   for (const auto &pair : settings) {
     std::string cmd = "conf set " + pair.first + " " + pair.second;

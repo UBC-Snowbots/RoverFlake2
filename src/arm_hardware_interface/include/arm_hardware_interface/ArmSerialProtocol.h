@@ -17,6 +17,12 @@
 
 #define TEST_LIMITS_CMD 't'
 
+#define AXIS_1_INDEX 0
+#define AXIS_2_INDEX 1
+#define AXIS_3_INDEX 2
+#define AXIS_4_INDEX 3
+#define AXIS_5_INDEX 4
+#define AXIS_6_INDEX 5
 #define EE_INDEX 6
 
 // use one array with axis idx for motor config
@@ -38,16 +44,16 @@ struct MotorConfig {
   // ---------------------------------------------------------
   // Maximum acceleration for trajectory generation (revolutions/s^2)
   // Moteus Config: servo.default_accel_limit
-  float max_acceleration = 20.0f;
+  float max_acceleration = 3.0f;
 
   // Maximum velocity limit (revolutions/s)
   // Moteus Config: servo.velocity_limit (soft) or servo.max_velocity (hard limit)
-  float max_velocity = 10.0f;
+  float max_velocity = 0.05f;
 
   // Position Limits (revolutions)
   // Moteus Config: servopos.position_min / servopos.position_max
-  float position_min = -10.0f;
-  float position_max = 10.0f;
+  float position_min = -1.0f;
+  float position_max = 1.0f;
 
   // ---------------------------------------------------------
   // 2. Torque / Current Limits
@@ -55,7 +61,7 @@ struct MotorConfig {
   // Max Torque is primarily limited by Phase Current in moteus.
   // Torque (Nm) ~= Current (A) * Torque_Constant (Nm/A)
   // Moteus Config: servo.max_current_A
-  float max_current_A = 20.0f; // Used to enforce Max Torque
+  float max_current_A = 0.5f; // Used to enforce Max Torque
 
   // ---------------------------------------------------------
   // 3. PID Tuning Parameters
@@ -63,23 +69,24 @@ struct MotorConfig {
   // Moteus Config: servo.pid_position.kp, ki, kd
   float kp = 50.0f;
   float ki = 0.0f;
-  float kd = 1.0f;
+  float kd = 0.0f;
 
   // ---------------------------------------------------------
   // 4. Safety Limits (Voltage & Power)
   // ---------------------------------------------------------
   // Maximum input voltage allowed before faulting (Volts)
   // Moteus Config: servo.max_voltage
-  float max_voltage = 48.0f;
+  float max_voltage = 26.0f;
 
   // Optional: Max Power limit to prevent overheating (Watts)
   // Moteus Config: servo.max_power_W
-  float max_power_W = 450.0f;
+  float max_power_W = 200.0f;
 
   // Timing parameter
   // Moteus Config: servo.default_timeout_s
   float def_timeout = std::numeric_limits<float>::quiet_NaN();
 
+  float gear_red = 1;
   // others maybe to use:
   //  servo.default_timeout_s
   //  servo.timeout_mode
@@ -117,19 +124,46 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   // Initialize 6 axes (Defaults match Axis 1, 2, 4, 5)
   std::vector<MotorConfig> axes(6);
 
-  // --- Axis 3 Customization ---
-  // gear reduction
-  axes[2].max_acceleration = std::numeric_limits<float>::quiet_NaN();
-  axes[2].max_velocity = std::numeric_limits<float>::quiet_NaN();
-  axes[2].position_min = std::numeric_limits<float>::quiet_NaN();
-  axes[2].position_max = std::numeric_limits<float>::quiet_NaN();
-  axes[2].def_timeout = std::numeric_limits<float>::quiet_NaN();
+  // PID
+  axes[AXIS_1_INDEX].kp = 150.0;
+  axes[AXIS_1_INDEX].kd = 0.0;
 
-  // --- Axis 6 Customization ---
-  // gear reduction
-  axes[5].position_min = std::numeric_limits<float>::quiet_NaN();
-  axes[5].position_max = std::numeric_limits<float>::quiet_NaN();
-  axes[5].def_timeout = std::numeric_limits<float>::quiet_NaN();
+  axes[AXIS_2_INDEX].kp = 1200.0; //1200
+  axes[AXIS_2_INDEX].kd = 0.0;
+
+  axes[AXIS_3_INDEX].kp = 50.0;
+  axes[AXIS_3_INDEX].kd = 0.0;
+
+  axes[AXIS_4_INDEX].kp = 50.0;
+  axes[AXIS_4_INDEX].kd = 0.0;
+  
+  axes[AXIS_5_INDEX].kp = 50.0;
+  axes[AXIS_5_INDEX].kd = 0.0;
+  
+  axes[AXIS_6_INDEX].kp = 50.0;
+  axes[AXIS_6_INDEX].kd = 0.0;
+
+
+  // GEAR REDUCTION
+  axes[AXIS_1_INDEX].gear_red = (1.0f/190.0f);
+  axes[AXIS_2_INDEX].gear_red = (1.0f/160.0f);
+  axes[AXIS_3_INDEX].gear_red = (1.0f/120.0f);
+  axes[AXIS_4_INDEX].gear_red = (1.0f/190.0f);
+  axes[AXIS_5_INDEX].gear_red = (1.0f/66.0f);
+  axes[AXIS_6_INDEX].gear_red = (1.0f/66.0f);
+  // EE coming soon
+  // axes[EE_INDEX].gear_red = (1.0f/190.0f);
+
+
+  // CURRENT LIMITS
+  axes[AXIS_1_INDEX].max_current_A = 1.5f;
+  axes[AXIS_2_INDEX].max_current_A = 5.0f; 
+  axes[AXIS_3_INDEX].max_current_A = 2.0f; 
+  axes[AXIS_4_INDEX].max_current_A = 0.5f; 
+  axes[AXIS_5_INDEX].max_current_A = 0.5f;
+  axes[AXIS_6_INDEX].max_current_A = 0.5f;
+  
+
 
   // Note: Other axes (1, 2, 4, 5) use the default struct values
   return axes;
