@@ -45,7 +45,7 @@ void CBSArmInterface::arm_panel_callback(const rover_msgs::msg::ArmPanel::Shared
    
 
     rover_msgs::msg::ArmCommand cmd_msg;
-    cmd_msg.cmd_type = 'V'; //!SHOULD BE FROM ArmSerialProtocol.h
+    cmd_msg.cmd_type = ABS_VEL_CMD; //!SHOULD BE FROM ArmSerialProtocol.h
     cmd_msg.velocities.resize(NUM_JOINTS);
     cmd_msg.velocities[0] = (static_cast<float>(msg->left.x) - 50)/100 * max_joysticks_output_speed_deg[0]*2;
      cmd_msg.velocities[1] = (static_cast<float>(msg->left.y) - 50)/100 * max_joysticks_output_speed_deg[1]*2 *-1;
