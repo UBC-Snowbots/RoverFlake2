@@ -32,7 +32,7 @@ The purpose of this is so that you don't have any dangling containers/images and
 
 ### 2. Build the image:
 ```bash
-docker compose build
+docker compose build <service>
 ```
 
 What happens here:
@@ -43,7 +43,7 @@ What happens here:
 
 Extra commands:
 ```bash
-docker compose build --no-cache # I use this often bc I'm terrible at managing stuff
+docker compose build --no-cache
 docker compose ps # list running images/containers started with compose
 docker compose --version
 ```
@@ -58,7 +58,7 @@ What is happening here:
 
 Extra commands:
 ```bash
-docker compose up -d # boots up a detached container (avoid non-detached version)
+docker compose up <service> -d # boots up a detached container (avoid non-detached version)
 docker compose prune # removes dangling pointers to any images/containers
 ```
 

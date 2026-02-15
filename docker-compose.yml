@@ -30,3 +30,52 @@ services:
     environment:
       - ROVERFLAKE_ROOT=/RoverFlake2
     network_mode: host
+  rover_gpu: # GUI support + NVIDIA GPU support
+    container_name: rover_gpu
+    image: roverflake2:gpu
+    working_dir: /RoverFlake2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    runtime: nvidia
+    environment:
+      - DISPLAY=${DISPLAY}
+      - XAUTHORITY=/tmp/.docker.xauth # auto accept
+      - ROVERFLAKE_ROOT=/RoverFlake2
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - __GLX_VENDOR_LIBRARY_NAME=nvidia
+    volumes:
+      - ./:/RoverFlake2
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/.docker.xauth:/tmp/.docker.xauth
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    tty: true
+    stdin_open: true
+    network_mode: host
+  rover_x11: # Do not use if you don't have a nvidia GPU with supported cuda cores
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: roverflake2:dev
+    container_name: rover_dev
+    working_dir: /RoverFlake2
+    tty: true
+    stdin_open: true
+    volumes: # Purpose: docker env watches for changes in repo and updates
+      # preferred method is to specify a directory
+      # e.g. '- ./node_practice:/RoverFlake2/node_practice'
+      # Bind-mount the whole repo into the container
+      - ./:/RoverFlake2
+      - /tmp/.X11-unix:/tmp/.X11-unix # GUI compatibility
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROVERFLAKE_ROOT=/RoverFlake2
+      - MUJOCO_GL=glfw # or egl (headless GUI)
+    network_mode: host
