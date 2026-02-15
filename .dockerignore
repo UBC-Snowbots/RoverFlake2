@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+install/
+log/
+
+# Version control
+.gitmodules
+
+# Model weights (large files)
+*.pt
+
+# Python cache
+*.pyc
+__pycache__/
+*.egg-info/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+nmealog.txt
+*.gv
