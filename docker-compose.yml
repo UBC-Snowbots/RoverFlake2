@@ -59,3 +59,23 @@ services:
     tty: true
     stdin_open: true
     network_mode: host
+  rover_x11: # Do not use if you don't have a nvidia GPU with supported cuda cores
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: roverflake2:dev
+    container_name: rover_dev
+    working_dir: /RoverFlake2
+    tty: true
+    stdin_open: true
+    volumes: # Purpose: docker env watches for changes in repo and updates
+      # preferred method is to specify a directory
+      # e.g. '- ./node_practice:/RoverFlake2/node_practice'
+      # Bind-mount the whole repo into the container
+      - ./:/RoverFlake2
+      - /tmp/.X11-unix:/tmp/.X11-unix # GUI compatibility
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROVERFLAKE_ROOT=/RoverFlake2
+      - MUJOCO_GL=glfw # or egl (headless GUI)
+    network_mode: host
