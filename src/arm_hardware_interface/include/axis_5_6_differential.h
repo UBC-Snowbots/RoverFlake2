@@ -6,7 +6,7 @@ def differential_drive(axis5_input, axis6_input):
     ex. A5 = -5, A6 = -3 means spin A5 -5 R to L and A6 down by 3.
     This requires M5 to move 3 from L to R (positive direction) and M6 to move 3 from R to L (negative direction)
     from a top down view of each motor. The A5 spin also requires M5 to move 5 more in the positive direction. 
-    (We choose to move the motor to execute the spin as the one in the current direction of motions)
+    (We choose to move the motor to execute the spin as the one that can continue in the current direction of motion)
 
     takes:
         axis5_input: Unitless input for axis 5 
