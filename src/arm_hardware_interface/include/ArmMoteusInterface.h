@@ -7,6 +7,9 @@
 #include <chrono>
 #include <thread>
 
+#include "moteus.h"
+using namespace mjbots;
+
 #include <arm_hardware_interface/ArmSerialProtocol.h>
 #include <serial/serial.h>
 
@@ -40,6 +43,10 @@ private:
 
   serial::Serial teensy;
   serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000);
+
+  std::map<int, std::shared_ptr<moteus::Controller>> controllers;
+  std::map<int, moteus::Query::Result> servo_data;
+  std::shared_ptr<moteus::Transport> transport;
 
   bool send_angles = true;
 
@@ -82,7 +89,7 @@ private:
   float firmToMoveitOffsetVel(float deg, int axis);
   void send_position_command(float pos[NUM_JOINTS]);
   void send_velocity_command(float vel[NUM_JOINTS]);
-
+  void ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller);
   void send_test_limits_command();
   void sendHomeCmd(int target_axis);
   void sendCommCmd(int target_state);
