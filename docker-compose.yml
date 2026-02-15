@@ -40,6 +40,7 @@ services:
     runtime: nvidia
     environment:
       - DISPLAY=${DISPLAY}
+      - XAUTHORITY=/tmp/.docker.xauth # auto accept
       - ROVERFLAKE_ROOT=/RoverFlake2
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
@@ -47,6 +48,7 @@ services:
     volumes:
       - ./:/RoverFlake2
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/.docker.xauth:/tmp/.docker.xauth
     deploy:
       resources:
         reservations:
