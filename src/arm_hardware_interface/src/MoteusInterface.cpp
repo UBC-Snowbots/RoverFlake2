@@ -524,7 +524,7 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
 
     // Assuming we want the motor to stop upon reaching the target position.
     RCLCPP_INFO(this->get_logger(), "veloc send %f", static_cast<double>(vel[(pair.first)]));
-    position_command.velocity = vel[pair.first - 1] * DEG_TO_REVOLUTIONS;
+    position_command.velocity = vel[pair.first - 1];
     // position_command.velocity = vel[pair.first - 1];
     RCLCPP_INFO(this->get_logger(), "vel %f id: %d", position_command.velocity, pair.first);
 

@@ -125,14 +125,14 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   std::vector<MotorConfig> axes(6);
 
   // PID
-  axes[AXIS_1_INDEX].kp = 150.0;
-  axes[AXIS_1_INDEX].kd = 0.0;
+  axes[AXIS_1_INDEX].kp = 180.0; // SET - WORKING with p 180, d 40 ( 5 min spent tuning )
+  axes[AXIS_1_INDEX].kd = 40.0;
 
-  axes[AXIS_2_INDEX].kp = 1200.0; //1200
-  axes[AXIS_2_INDEX].kd = 0.0;
+  axes[AXIS_2_INDEX].kp = 2100.0; // SET - WORKING with p 2100 d 100 (2 min spent tuning)
+  axes[AXIS_2_INDEX].kd = 100.0;
 
-  axes[AXIS_3_INDEX].kp = 50.0;
-  axes[AXIS_3_INDEX].kd = 0.0;
+  axes[AXIS_3_INDEX].kp = 4000.0; // SET - working okay with p 4000, d 750 ( 5 min spent tuning )
+  axes[AXIS_3_INDEX].kd = 750.0;
 
   axes[AXIS_4_INDEX].kp = 50.0;
   axes[AXIS_4_INDEX].kd = 0.0;
@@ -163,7 +163,14 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_5_INDEX].max_current_A = 0.5f;
   axes[AXIS_6_INDEX].max_current_A = 0.5f;
   
+  axes[AXIS_1_INDEX].position_min = -0.15;
+  axes[AXIS_1_INDEX].position_max = 0.15;
 
+  axes[AXIS_2_INDEX].position_min = -0.18;
+  axes[AXIS_2_INDEX].position_max = 0.15;
+
+  axes[AXIS_3_INDEX].position_min = -0.2;
+  axes[AXIS_3_INDEX].position_max = 0.2;
 
   // Note: Other axes (1, 2, 4, 5) use the default struct values
   return axes;
