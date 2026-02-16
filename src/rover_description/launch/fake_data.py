@@ -38,7 +38,7 @@ class FakeGPS(Node):
         
         # Set timestamp
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'gps'  # Frame name
+        msg.header.frame_id = 'leftGPS'  # Frame name
         
         self.publisher_.publish(msg)
         self.get_logger().info(f'Publishing fixed GPS: ({self.latitude}, {self.longitude})')
