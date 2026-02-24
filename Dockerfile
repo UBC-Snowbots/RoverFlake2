@@ -35,6 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-xacro \
     ros-humble-rosidl-default-generators \
     ros-humble-rosidl-default-runtime \
+    ros-humble-robot-localization \
+    ros-humble-imu-filter-madgwick \
+    ros-humble-phidgets-spatial \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR $ROVERFLAKE_ROOT

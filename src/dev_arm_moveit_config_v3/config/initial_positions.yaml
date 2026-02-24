@@ -1,0 +1,11 @@
+# Default initial positions for dev_arm's ros2_control fake system
+
+initial_positions:
+  finger_left_joint: 0
+  finger_right_joint: 0
+  shoulder_joint: 0
+  link_1_joint: 0
+  link1_link2: 0
+  a4_rotation: 0
+  a5_rotation: 0
+  a6_rotation: 0

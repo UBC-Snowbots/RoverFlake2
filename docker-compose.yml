@@ -29,10 +29,12 @@ services:
       # Bind-mount the whole repo into the container
       - ./:/RoverFlake2
       - /dev:/dev # Pass through USB devices (e.g. Phidgets IMU)
+      - /tmp/.X11-unix:/tmp/.X11-unix # GUI support
     environment:
       - ROVERFLAKE_ROOT=/RoverFlake2
+      - DISPLAY=${DISPLAY}
     network_mode: host
-  rover_gpu: # GUI support + NVIDIA GPU support
+  rover_ros: # GUI support + NVIDIA GPU support
     container_name: rover_gpu
     image: roverflake2:gpu
     working_dir: /RoverFlake2
@@ -40,6 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile
     runtime: nvidia
+    privileged: true
     environment:
       - DISPLAY=${DISPLAY}
       - XAUTHORITY=/tmp/.docker.xauth # auto accept
@@ -51,6 +54,7 @@ services:
       - ./:/RoverFlake2
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /tmp/.docker.xauth:/tmp/.docker.xauth
+      - /dev:/dev # Pass through all devices (USB, etc.)
     deploy:
       resources:
         reservations:
