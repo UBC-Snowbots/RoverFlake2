@@ -22,11 +22,13 @@ services:
     working_dir: /RoverFlake2
     tty: true
     stdin_open: true
+    privileged: true
     volumes: # Purpose: docker env watches for changes in repo and updates
       # preferred method is to specify a directory
       # e.g. '- ./node_practice:/RoverFlake2/node_practice'
       # Bind-mount the whole repo into the container
       - ./:/RoverFlake2
+      - /dev:/dev # Pass through USB devices (e.g. Phidgets IMU)
     environment:
       - ROVERFLAKE_ROOT=/RoverFlake2
     network_mode: host
