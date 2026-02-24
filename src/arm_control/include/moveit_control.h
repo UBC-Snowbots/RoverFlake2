@@ -55,7 +55,7 @@ public:
         // trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>( //! Do we need this?
         //     "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
          joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/jnhdnhdnhdoy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
+            "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
           servo_output_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
             "/arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
         
