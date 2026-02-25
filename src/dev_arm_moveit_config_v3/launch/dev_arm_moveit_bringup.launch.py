@@ -105,6 +105,12 @@ def generate_launch_description():
         arguments=["arm_controller", "-c", "/controller_manager"],
     )
 
+    gripper_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["gripper_controller", "-c", "/controller_manager"],
+    )
+
     # Launch as much as possible in components
     container = ComposableNodeContainer(
         name="moveit_servo_demo_container",
@@ -174,6 +180,12 @@ def generate_launch_description():
             moveit_config.robot_description_kinematics,
         ]
     )
+    # joy_arm_control — clean joystick → TwistStamped mapper
+    joy_arm_node = Node(
+        package="arm_control",
+        executable="joy_arm_control",
+        output="screen",
+    )
     joy_params = {
         # 'dev': '/dev/input/js0',       # Joystick device file
         'deadzone': 0.1,               # Deadzone for joystick axes
@@ -212,8 +224,10 @@ def generate_launch_description():
            # arm_hardware_interface_node,
             joint_state_broadcaster_spawner,
             arm_controller_spawner,
-            # servo_node,
-            custom_servo_node,
+            gripper_controller_spawner,
+            servo_node,
+            # custom_servo_node,
+            joy_arm_node,
             joy_node,
             container,
         ]

@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "sensor_msgs/msg/joy_feedback.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 
 #define NUM_JOINTS 6
 
@@ -19,6 +20,7 @@ private:
 // Pubs
 rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
 rclcpp::Publisher<sensor_msgs::msg::JoyFeedback>::SharedPtr joy_vibrator;
+rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
 
 // Subs
 rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr ps4_subscriber;

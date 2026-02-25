@@ -8,7 +8,7 @@ controller_manager:
 
 
     gripper_controller:
-      type: position_controllers/GripperActionController
+      type: position_controllers/JointGroupPositionController
 
 
     joint_state_broadcaster:
@@ -41,3 +41,5 @@ gripper_controller:
     joints:
       - finger_left_joint
       - finger_right_joint
+    command_interfaces:
+      - position

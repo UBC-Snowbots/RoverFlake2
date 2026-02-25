@@ -498,10 +498,10 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
-      effort="0"
-      velocity="0" />
+      lower="-0.04"
+      upper="0.04"
+      effort="10"
+      velocity="0.5" />
   </joint>
   <link
     name="finger_right">
@@ -556,9 +556,9 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
-      effort="0"
-      velocity="0" />
+      lower="-0.04"
+      upper="0.04"
+      effort="10"
+      velocity="0.5" />
   </joint>
 </robot>
