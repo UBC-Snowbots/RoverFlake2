@@ -36,7 +36,7 @@ public:
 
 private:
   unsigned long baud = 115200;
-  string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100C6224069D7-if00";
+  string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100542B2831AA-if00";
 
   serial::Serial teensy;
   serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000);
