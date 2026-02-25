@@ -236,10 +236,10 @@ def generate_launch_description():
             joint_state_broadcaster_spawner,
             arm_controller_spawner,
             gripper_controller_spawner,
-            # servo_node,
-            custom_servo_node,
-            # joy_arm_node,
-            joy_node,  # Commented out — run manually with: ros2 run joy joy_node
+            servo_node,
+            # custom_servo_node,
+            joy_arm_node,
+            joy_node,
             container,
             # start_servo,
         ]

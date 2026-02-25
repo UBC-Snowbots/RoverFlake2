@@ -9,6 +9,9 @@ Node("arm_joy_control")
 
     joy_vibrator = this->create_publisher<sensor_msgs::msg::JoyFeedback>("/joy/feedback", qos);
 
+    twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        "/servo_node/delta_twist_cmds", 10);
+
     // timer_ = this->create_wall_timer(
     // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
     ps4_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
@@ -69,6 +72,28 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     target.velocities[5] = 0;
         arm_publisher->publish(target);
 
+    // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
+    auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+    twist_msg->header.stamp = this->get_clock()->now();
+    twist_msg->header.frame_id = "ee_base_link";
+
+    // Saitek Cyborg USB Stick -> Cartesian twist mapping
+    // axes[0] = stick X, axes[1] = stick Y, axes[3] = twist/rudder
+    // axes[4] = hat X, axes[5] = hat Y
+    // (axes[2] = throttle slider, rests non-zero — NOT used)
+    auto applyDeadzone = [](double val, double dz) -> double {
+      return (std::abs(val) < dz) ? 0.0 : val;
+    };
+    const double DEADZONE = 0.15;
+
+    twist_msg->twist.linear.x  = applyDeadzone(-msg->axes[0], DEADZONE);  // stick X
+    twist_msg->twist.linear.y  = applyDeadzone(msg->axes[1], DEADZONE);   // stick Y
+    twist_msg->twist.linear.z  = (msg->axes.size() > 5) ? applyDeadzone(msg->axes[5], DEADZONE) : 0.0;  // hat Y
+    twist_msg->twist.angular.x = (msg->axes.size() > 4) ? applyDeadzone(msg->axes[4], DEADZONE) : 0.0;  // hat X (roll)
+    twist_msg->twist.angular.y = applyDeadzone(msg->axes[3], DEADZONE);   // twist/rudder (pitch)
+    twist_msg->twist.angular.z = 0.0;
+
+    twist_publisher->publish(std::move(twist_msg));
 }
 
 

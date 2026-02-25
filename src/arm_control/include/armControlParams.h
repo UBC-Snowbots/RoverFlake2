@@ -17,8 +17,8 @@
 #define PI 3.14
 
 // Uncomment the one you want, comment the one you dont
-    #define SELECT_MOTEUS_ARM
-    // #define SELECT_OLD_ARM
+    // #define SELECT_MOTEUS_ARM
+    #define SELECT_OLD_ARM
 
     
 #ifdef SELECT_MOTEUS_ARM

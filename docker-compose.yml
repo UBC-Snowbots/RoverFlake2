@@ -55,6 +55,8 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /tmp/.docker.xauth:/tmp/.docker.xauth
       - /dev:/dev # Pass through all devices (USB, etc.)
+    devices:
+      - /dev/serial/by-id:/dev/serial/by-id # Pass through USB devices by ID (e.g. Phidgets IMU)
     deploy:
       resources:
         reservations:

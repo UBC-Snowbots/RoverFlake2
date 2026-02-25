@@ -37,6 +37,9 @@ public:
     }
 
 private:
+    // Persistent gripper state — only updated by 'G' commands, NOT overwritten by velocity commands
+    double gripper_state_ = 0.0;
+
     void armCommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg)
     {
         // Prepare the Float64MultiArray message
@@ -50,13 +53,27 @@ private:
         {
             sim_command_msg.data[i] = msg->velocities[i];
         }
-        // 7th element: end-effector/gripper command (standardized for IL pipeline)
-        sim_command_msg.data[6] = msg->end_effector;
 
-        // Also publish EE separately for backward compatibility
-        std_msgs::msg::Float64 arm_sim_ee_msg;
-        arm_sim_ee_msg.data = msg->end_effector;
-        arm_sim_ee_publisher->publish(arm_sim_ee_msg);
+        // Only update gripper state on explicit gripper commands ('G')
+        // Velocity commands ('V') have end_effector=0.0 by default and would
+        // constantly overwrite the gripper state if we used it blindly.
+        if (msg->cmd_type == 'G')
+        {
+            gripper_state_ = msg->end_effector;
+            RCLCPP_INFO(this->get_logger(), "Gripper command: end_effector=%.1f", gripper_state_);
+        }
+
+        // Always include the persistent gripper state in the sim command
+        sim_command_msg.data[6] = gripper_state_;
+
+        // Publish EE state only when it actually changes (on 'G' commands)
+        if (msg->cmd_type == 'G')
+        {
+            std_msgs::msg::Float64 arm_sim_ee_msg;
+            arm_sim_ee_msg.data = gripper_state_;
+            arm_sim_ee_publisher->publish(arm_sim_ee_msg);
+        }
+
         // Publish the message
         sim_command_publisher_->publish(sim_command_msg);
     }
