@@ -40,15 +40,20 @@ private:
     void armCommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg)
     {
         // Prepare the Float64MultiArray message
+        // 7 elements: 6 joint velocities + 1 end-effector (gripper) command
+        // This standardized 7-float format is consumed by both RViz sim and MuJoCo bridge
         auto sim_command_msg = std_msgs::msg::Float64MultiArray();
-        sim_command_msg.data.resize(6, 0.0); // Resize to 6 and initialize to 0
+        sim_command_msg.data.resize(7, 0.0); // Resize to 7 and initialize to 0
 
         // Copy the velocities from the incoming ArmCommand message
         for (size_t i = 0; i < std::min(msg->velocities.size(), static_cast<size_t>(6)); ++i)
         {
             sim_command_msg.data[i] = msg->velocities[i];
         }
-        // auto sim_ee_msg = std_msgs::msg::Float64(); //* idk just don't like this form of initilazation.
+        // 7th element: end-effector/gripper command (standardized for IL pipeline)
+        sim_command_msg.data[6] = msg->end_effector;
+
+        // Also publish EE separately for backward compatibility
         std_msgs::msg::Float64 arm_sim_ee_msg;
         arm_sim_ee_msg.data = msg->end_effector;
         arm_sim_ee_publisher->publish(arm_sim_ee_msg);

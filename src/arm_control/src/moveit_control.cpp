@@ -49,11 +49,12 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
       // Log raw axes on every callback (throttled to 1Hz) so we can see rest values
       if (joy_msg->axes.size() >= 6) {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-          "RAW JOY axes[0-5]: [%.3f, %.3f, %.3f, %.3f, %.3f, %.3f] buttons[4,5]: [%d, %d]",
+          "RAW JOY axes[0-5]: [%.3f, %.3f, %.3f, %.3f, %.3f, %.3f] num_buttons=%zu btn[0]=%d btn[1]=%d",
           joy_msg->axes[0], joy_msg->axes[1], joy_msg->axes[2],
           joy_msg->axes[3], joy_msg->axes[4], joy_msg->axes[5],
-          (joy_msg->buttons.size() > 5) ? joy_msg->buttons[4] : 0,
-          (joy_msg->buttons.size() > 5) ? joy_msg->buttons[5] : 0);
+          joy_msg->buttons.size(),
+          (joy_msg->buttons.size() > 0) ? joy_msg->buttons[0] : -1,
+          (joy_msg->buttons.size() > 1) ? joy_msg->buttons[1] : -1);
       }
 
       // Saitek Cyborg USB Stick mapping:
@@ -96,7 +97,30 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
 
       twist_cmd_publisher->publish(std::move(servo_msg));
 
+      bool gripper_btn = (joy_msg->buttons.size() > GRIPPER_TOGGLE_BTN) && joy_msg->buttons[GRIPPER_TOGGLE_BTN];
 
+      // Debug: log every button press/release change on button 1
+      if (gripper_btn != prev_gripper_btn_) {
+        RCLCPP_INFO(this->get_logger(), "GRIPPER BTN[%d] changed: %d -> %d (buttons.size()=%zu)",
+          GRIPPER_TOGGLE_BTN, (int)prev_gripper_btn_, (int)gripper_btn, joy_msg->buttons.size());
+      }
+
+      if (gripper_btn && !prev_gripper_btn_) {
+        gripper_open_ = !gripper_open_;
+        double val = gripper_open_ ? GRIPPER_OPEN_VALUE : GRIPPER_CLOSE_VALUE;
+        sendGripperCommand(val);
+        RCLCPP_INFO(this->get_logger(), "Gripper %s command sent (end_effector=%.1f)",
+          gripper_open_ ? "OPEN" : "CLOSE", val);
+      }
+
+      prev_gripper_btn_ = gripper_btn;
+}
+
+void ArmMoveitControl::sendGripperCommand(double value) {
+  auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
+  cmd->cmd_type = 'G';  // Gripper command type
+  cmd->end_effector = value;
+  arm_publisher->publish(std::move(cmd));
 }
 
 

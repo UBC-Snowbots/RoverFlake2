@@ -24,6 +24,13 @@ purpose: to handle moveit control, as well as servo.
 #define CARTESIAN_BASE_FRAME 3
 
 #define PI 3.14159
+
+// Gripper toggle button index
+#define GRIPPER_TOGGLE_BTN 0  // joystick "button 1" is index 0 (zero-indexed)
+
+// Gripper end-effector command values
+#define GRIPPER_OPEN_VALUE  1.0
+#define GRIPPER_CLOSE_VALUE 0.0
 class ArmMoveitControl : public rclcpp::Node {
 public:
     //rclcpp::NodeOptions node_options;
@@ -70,7 +77,12 @@ public:
 int count_ = 0;    
 void publishCommands();	
 void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
+void sendGripperCommand(double value);
 int joyControlMode = CARTESIAN_EE_FRAME;
+
+// Gripper state tracking
+bool gripper_open_ = false;
+bool prev_gripper_btn_ = false;
 
     // void test_send(){
     //     send_command(0.5, 1.0, 1.0, 0.5);
