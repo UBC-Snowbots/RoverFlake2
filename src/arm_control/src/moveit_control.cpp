@@ -1,5 +1,6 @@
 //this is a sample node, with a joy input
 #include "moveit_control.h"
+#include <cmath>
 
 void ArmMoveitControl::publishCommands(){
 // 	if (count_ < 100)
@@ -29,25 +30,75 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
   switch (joyControlMode)  {
     case CARTESIAN_BASE_FRAME:
     {
-      servo_msg->header.frame_id = "link_0";
+      servo_msg->header.frame_id = "base_link";
       break;
     }
     case CARTESIAN_EE_FRAME:
-        // ee_msg->header.frame_id = "link_ender";
-        servo_msg->header.frame_id = "link_tt";
+        servo_msg->header.frame_id = "ee_base_link";
 
       break;
 
   }
-      servo_msg->twist.linear.x = -joy_msg->axes[0];
-      servo_msg->twist.linear.y = joy_msg->axes[1];
-      servo_msg->twist.linear.z = static_cast<_Float64>(joy_msg->buttons[4] - joy_msg->buttons[5])/2;
-      servo_msg->twist.angular.x = joy_msg->axes[3];
-      servo_msg->twist.angular.y = (-joy_msg->axes[5] + joy_msg->axes[2])/2;
-      servo_msg->twist.angular.z = joy_msg->axes[4];
+
+      // Apply deadzone to filter joystick noise
+      auto applyDeadzone = [](double val, double dz) -> double {
+        return (std::abs(val) < dz) ? 0.0 : val;
+      };
+      const double DEADZONE = 0.15;
+
+      // Saitek Cyborg USB Stick mapping:
+      // axes[0] = stick X (left/right)
+      // axes[1] = stick Y (forward/back)
+      // axes[2] = throttle slider (-1.0 to 1.0) -- DO NOT USE for continuous motion
+      // axes[3] = stick twist/rudder (rotation)
+      // axes[4] = hat X
+      // axes[5] = hat Y
+      // Use only stick axes for arm control:
+      double lx = applyDeadzone(-joy_msg->axes[0], DEADZONE);   // stick X -> linear X
+      double ly = applyDeadzone(joy_msg->axes[1], DEADZONE);    // stick Y -> linear Y
+      double lz = 0.0;
+      // Use hat Y (axes[5]) for linear Z (up/down) if available
+      if (joy_msg->axes.size() > 5) {
+        lz = applyDeadzone(joy_msg->axes[5], DEADZONE);
+      }
+      double ax = 0.0;  // angular X - use hat X if available
+      if (joy_msg->axes.size() > 4) {
+        ax = applyDeadzone(joy_msg->axes[4], DEADZONE);
+      }
+      double ay = 0.0;  // angular Y - use stick twist
+      ay = applyDeadzone(joy_msg->axes[3], DEADZONE);
+      double az = 0.0;  // not mapped (need more axes)
+
+      servo_msg->twist.linear.x = lx;
+      servo_msg->twist.linear.y = ly;
+      servo_msg->twist.linear.z = lz;
+      servo_msg->twist.angular.x = ax;
+      servo_msg->twist.angular.y = ay;
+      servo_msg->twist.angular.z = az;
+
+      bool is_zero = (lx == 0.0 && ly == 0.0 && lz == 0.0 && ax == 0.0 && ay == 0.0 && az == 0.0);
       twist_cmd_publisher->publish(std::move(servo_msg));
+      bool gripper_btn = (joy_msg->buttons.size() > GRIPPER_TOGGLE_BTN) && joy_msg->buttons[GRIPPER_TOGGLE_BTN];
 
+      if (gripper_btn && !prev_gripper_btn_) {
+        gripper_open_ = !gripper_open_;
+        double val = gripper_open_ ? GRIPPER_OPEN_VALUE : GRIPPER_CLOSE_VALUE;
+        sendGripperCommand(val);
+        RCLCPP_INFO(this->get_logger(), "Gripper %s command sent (end_effector=%.1f)",
+          gripper_open_ ? "OPEN" : "CLOSE", val);
+      }
 
+      prev_gripper_btn_ = gripper_btn;
+}
+
+void ArmMoveitControl::sendGripperCommand(double value) {
+  // Send as a velocity command with zero joint velocities, only end_effector set.
+  // The arm_hardware_interface handles end_effector inside ABS_VEL_CMD ('V').
+  auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
+  cmd->cmd_type = 'V';
+  cmd->velocities.resize(NUM_JOINTS_NO_EE, 0.0);
+  cmd->end_effector = value;
+  arm_publisher->publish(std::move(cmd));
 }
 
 
@@ -85,7 +136,17 @@ else
 auto servo = std::make_unique<moveit_servo::Servo>(node, servo_parameters, planning_scene_monitor);
 servo->start();
 
-
+RCLCPP_INFO(node->get_logger(), "=== SERVO STARTED ===");
+RCLCPP_INFO(node->get_logger(), "Servo twist topic: %s", servo_parameters->cartesian_command_in_topic.c_str());
+RCLCPP_INFO(node->get_logger(), "Servo joint topic: %s", servo_parameters->joint_command_in_topic.c_str());
+RCLCPP_INFO(node->get_logger(), "Servo command out topic: %s", servo_parameters->command_out_topic.c_str());
+RCLCPP_INFO(node->get_logger(), "Planning frame: %s", servo_parameters->planning_frame.c_str());
+RCLCPP_INFO(node->get_logger(), "EE frame: %s", servo_parameters->ee_frame_name.c_str());
+RCLCPP_INFO(node->get_logger(), "Move group: %s", servo_parameters->move_group_name.c_str());
+RCLCPP_INFO(node->get_logger(), "Scale linear: %.4f, rotational: %.4f", servo_parameters->linear_scale, servo_parameters->rotational_scale);
+RCLCPP_INFO(node->get_logger(), "Publish period: %.4f", servo_parameters->publish_period);
+RCLCPP_INFO(node->get_logger(), "Command in type: %s", servo_parameters->command_in_type.c_str());
+RCLCPP_INFO(node->get_logger(), "=== END SERVO CONFIG ===");
 
 rclcpp::spin(node);
     
