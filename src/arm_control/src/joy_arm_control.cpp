@@ -148,15 +148,24 @@ bool fk = false;
     twist_publisher->publish(std::move(twist_msg));
     }
 
-    // ========== /arm/command for physical arm (velocity mode) ==========
-    // TODO: Adapt this section when physical arm Cartesian control is needed.
-    //       For now, only publish if there is actual button input.
-    // rover_msgs::msg::ArmCommand target;
-    // target.cmd_type = 'V';
-    // target.velocities.resize(NUM_JOINTS, 0.0);
-    // target.end_effector = 0.0;
-    // Physical arm velocity commands would go here in the future.
-    // arm_publisher->publish(target);
+    // ========== Gripper toggle (edge-triggered) ==========
+    bool gripper_btn = btnPressed(msg, ControllerConfig::BTN_GRIPPER_TOGGLE);
+    if (gripper_btn && !prev_gripper_btn_) {
+        gripper_open_ = !gripper_open_;
+        RCLCPP_INFO(this->get_logger(), "Gripper %s",
+            gripper_open_ ? "OPEN" : "CLOSED");
+    }
+    prev_gripper_btn_ = gripper_btn;
+
+    // ========== /arm/command for physical arm ==========
+    // Publishes every callback so the hardware interface stays in sync.
+    // Velocities are zero (Cartesian control is via Servo); only gripper state is sent.
+    rover_msgs::msg::ArmCommand target;
+    target.cmd_type = 'V';
+    target.velocities.resize(NUM_JOINTS, 0.0);
+    target.end_effector = gripper_open_ ? ControllerConfig::GRIPPER_OPEN_VALUE
+                                        : ControllerConfig::GRIPPER_CLOSE_VALUE;
+    arm_publisher->publish(target);
 }
 
 
