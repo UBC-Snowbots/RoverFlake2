@@ -42,6 +42,10 @@ int current_gear = 0;
 int prev_paddleR = 0;
 int prev_paddleL = 0;
 
+// Gripper state tracking
+bool gripper_open_ = false;
+bool prev_gripper_btn_ = false;
+
 struct Axis{
     float position = 00.00;
     float velocity = 00.00;

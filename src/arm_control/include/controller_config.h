@@ -97,6 +97,11 @@ namespace ControllerConfig {
     constexpr bool INVERT_ROLL  = false;
     constexpr bool INVERT_PITCH = false;
     constexpr bool INVERT_YAW   = true;   // typical: push left = positive yaw
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
+    constexpr double GRIPPER_OPEN_VALUE  = 1.0;
+    constexpr double GRIPPER_CLOSE_VALUE = 0.0;
 }
 
 #elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
@@ -141,6 +146,11 @@ namespace ControllerConfig {
     constexpr double CART_BUTTON_SPEED = 0.3;
     constexpr double AXIS_DEADZONE = 0.15;
     constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr double GRIPPER_OPEN_VALUE  = 1.0;
+    constexpr double GRIPPER_CLOSE_VALUE = 0.0;
 }
 
 #else
