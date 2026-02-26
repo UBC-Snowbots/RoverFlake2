@@ -46,17 +46,6 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
       };
       const double DEADZONE = 0.15;
 
-      // Log raw axes on every callback (throttled to 1Hz) so we can see rest values
-      if (joy_msg->axes.size() >= 6) {
-        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-          "RAW JOY axes[0-5]: [%.3f, %.3f, %.3f, %.3f, %.3f, %.3f] num_buttons=%zu btn[0]=%d btn[1]=%d",
-          joy_msg->axes[0], joy_msg->axes[1], joy_msg->axes[2],
-          joy_msg->axes[3], joy_msg->axes[4], joy_msg->axes[5],
-          joy_msg->buttons.size(),
-          (joy_msg->buttons.size() > 0) ? joy_msg->buttons[0] : -1,
-          (joy_msg->buttons.size() > 1) ? joy_msg->buttons[1] : -1);
-      }
-
       // Saitek Cyborg USB Stick mapping:
       // axes[0] = stick X (left/right)
       // axes[1] = stick Y (forward/back)
@@ -88,22 +77,8 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
       servo_msg->twist.angular.z = az;
 
       bool is_zero = (lx == 0.0 && ly == 0.0 && lz == 0.0 && ax == 0.0 && ay == 0.0 && az == 0.0);
-
-      if (!is_zero) {
-        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500,
-          "Twist cmd: lin[%.3f, %.3f, %.3f] ang[%.3f, %.3f, %.3f] frame=%s",
-          lx, ly, lz, ax, ay, az, servo_msg->header.frame_id.c_str());
-      }
-
       twist_cmd_publisher->publish(std::move(servo_msg));
-
       bool gripper_btn = (joy_msg->buttons.size() > GRIPPER_TOGGLE_BTN) && joy_msg->buttons[GRIPPER_TOGGLE_BTN];
-
-      // Debug: log every button press/release change on button 1
-      if (gripper_btn != prev_gripper_btn_) {
-        RCLCPP_INFO(this->get_logger(), "GRIPPER BTN[%d] changed: %d -> %d (buttons.size()=%zu)",
-          GRIPPER_TOGGLE_BTN, (int)prev_gripper_btn_, (int)gripper_btn, joy_msg->buttons.size());
-      }
 
       if (gripper_btn && !prev_gripper_btn_) {
         gripper_open_ = !gripper_open_;
