@@ -1,5 +1,4 @@
-def differential_drive(axis5_input, axis6_input):
-    """
+/*
     Converts differential drive requests to motor outputs.
     Directions given from bird eye view and top down view of each motor.
 
@@ -13,20 +12,20 @@ def differential_drive(axis5_input, axis6_input):
         axis6_input: Unitless input for axis 6
     returns: 
         (motor5_output, motor6_output) Unitless values for motors 5 and 6
-        
-    """
+*/
+void differential_drive(float axis5_input, float axis6_input, float &motor5_output, float &motor6_output) {
+
     // If the inputs have the same sign, to continue in the same direction of motion, use axis 5 for rotation
-    if((axis5_input > 0 && axis6_input > 0) || (axis5_input > 0 && axis6_input > 0)) {
-
-        motor5 = - axis5_input - axis6_input
-        motor6 = axis5_input
-
+    if((axis5_input > 0 && axis6_input > 0) || (axis5_input < 0 && axis6_input < 0)) {
+        motor5_output = - axis5_input - axis6_input;
+        motor6_output = axis5_input;
     }
+
     // Else, use axis 6 for rotation
     else {
-
-        motor5 = - axis5_input
-        motor6 = axis5_input - axis6_input
-
+        motor5_output = - axis5_input;
+        motor6_output = axis5_input - axis6_input;
     }  
-    return motor5, motor6
+
+    return;
+}
