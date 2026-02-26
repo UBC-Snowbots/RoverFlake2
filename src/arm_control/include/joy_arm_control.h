@@ -3,6 +3,7 @@
 #include "sensor_msgs/msg/joy_feedback.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "controller_config.h"
 
 #define NUM_JOINTS 6
 
@@ -23,7 +24,7 @@ rclcpp::Publisher<sensor_msgs::msg::JoyFeedback>::SharedPtr joy_vibrator;
 rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
 
 // Subs
-rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr ps4_subscriber;
+rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;
 rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_subscriber;
 
 // Callbacks
@@ -33,6 +34,9 @@ void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 // Timers
 rclcpp::TimerBase::SharedPtr timer_;
 
+// Helpers
+/// Returns true if btn index is valid and pressed
+static bool btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx);
 
 int current_gear = 0;
 int prev_paddleR = 0;

@@ -5,7 +5,7 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
-from launch.actions import ExecuteProcess
+from launch.actions import ExecuteProcess, TimerAction
 import xacro
 from moveit_configs_utils import MoveItConfigsBuilder
 from xacro import process_file
@@ -214,6 +214,17 @@ def generate_launch_description():
         name='arm_hardware_interface_node',
         #output='log',
 	)
+
+    # Auto-start servo after a delay to let the planning scene initialize
+    start_servo = TimerAction(
+        period=3.0,  # seconds — wait for servo_node, controllers, and planning scene to be ready
+        actions=[
+            ExecuteProcess(
+                cmd=['ros2', 'service', 'call', '/servo_node/start_servo', 'std_srvs/srv/Trigger', '{}'],
+                output='screen',
+            )
+        ],
+    )
    
 
     return LaunchDescription(
@@ -228,8 +239,9 @@ def generate_launch_description():
             servo_node,
             # custom_servo_node,
             joy_arm_node,
-            joy_node,
+            # joy_node,  # Commented out — run manually with: ros2 run joy joy_node
             container,
+            start_servo,
         ]
     )
 
