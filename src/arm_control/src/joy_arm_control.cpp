@@ -41,13 +41,20 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     float target_positions[6];
     float inputs[6];
 
+    // inputs[2] = msg->axes[0];
+    // inputs[1] = msg->axes[1];
+    // inputs[0] = msg->axes[5] - msg->axes[2];
+    // inputs[3] = msg->axes[3];
+    // inputs[4] = msg->axes[4];
+    // inputs[5] = msg->axes[6];
+    
     inputs[2] = msg->axes[0];
     inputs[1] = msg->axes[1];
-    inputs[0] = msg->axes[5] - msg->axes[2];
+    inputs[0] = msg->axes[5] - msg->axes[4];
     inputs[3] = msg->axes[3];
     inputs[4] = msg->axes[4];
     inputs[5] = msg->axes[6];
-    
+
     if(CONTROL_MODE == POSITION_CONTROL){
         target.cmd_type = 'P';
 
@@ -57,10 +64,12 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }else if(CONTROL_MODE == VELOCITY_CONTROL){
         target.cmd_type = 'V';
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.velocities[i] = inputs[i] * 100;
+        target.velocities[i] = inputs[i] / 10;
     }
     }
-
+    target.velocities[3] = 0;
+    target.velocities[4] = 0;
+    target.velocities[5] = 0;
         arm_publisher->publish(target);
 
     // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
