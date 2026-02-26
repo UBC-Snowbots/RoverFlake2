@@ -86,7 +86,7 @@
   </link>
   <joint
     name="shoulder_joint"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0.0875 0.17 0.0381"
       rpy="0 0 -3.1416" />
@@ -97,8 +97,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.22"
-      upper="5.5"
+      lower="-3.14"
+      upper="3.14"
       effort="10"
       velocity="1.5" />
   </joint>
@@ -213,7 +213,7 @@
     <axis
       xyz="-1 0 0" />
     <limit
-      lower="0"
+      lower="-3.14"
       upper="3.14"
       effort="10"
       velocity="1.5" />
@@ -272,7 +272,7 @@
       xyz="-1 0 0" />
     <limit
       lower="-1.57"
-      upper="1.57"
+      upper="3.14"
       effort="10"
       velocity="1.5" />
   </joint>

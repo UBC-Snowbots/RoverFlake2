@@ -8,7 +8,7 @@ command_in_type: "unitless" # "unitless"> in the range [-1:1], as if from joysti
 scale:
   # Scale parameters are only used if command_in_type=="unitless"
   linear:  0.5  # Max linear velocity. Unit is [m/s]. Only used for Cartesian commands.
-  rotational:  0.5 # Max angular velocity. Unit is [rad/s]. Only used for Cartesian commands.
+  rotational:  1.2 # Max angular velocity. Unit is [rad/s]. Only used for Cartesian commands.
   # Max joint angular/linear velocity. Only used for joint commands on joint_command_in_topic.
   joint: 0.5
 
@@ -35,7 +35,7 @@ smoothing_filter_plugin_name: "online_signal_smoothing::ButterworthFilterPlugin"
 # which other nodes can use as a source for information about the planning environment.
 # NOTE: If a different node in your system is responsible for the "primary" planning scene instance (e.g. the MoveGroup node),
 # then is_primary_planning_scene_monitor needs to be set to false.
-is_primary_planning_scene_monitor: false
+is_primary_planning_scene_monitor: true
 
 ## MoveIt properties
 move_group_name:  arm  # Often 'manipulator' or 'arm'
@@ -54,7 +54,7 @@ num_outgoing_halt_msgs_to_publish: 4
 ## Configure handling of singularities and joint limits
 lower_singularity_threshold:  1000.0  # Start decelerating when the condition number hits this (close to singularity)
 hard_stop_singularity_threshold: 5000.0 # Stop when the condition number hits this
-joint_limit_margin: 0.01 # added as a buffer to joint limits [radians]. If moving quickly, make this larger.
+joint_limit_margin: 0.02 # added as a buffer to joint limits [radians]. If moving quickly, make this larger.
 leaving_singularity_threshold_multiplier: 2.0 # Multiply the hard stop limit by this when leaving singularity (see https://github.com/ros-planning/moveit2/pull/620)
 
 ## Topic names
@@ -65,7 +65,7 @@ status_topic: ~/status # Publish status to this topic
 command_out_topic: /arm_controller/joint_trajectory # Publish outgoing commands here
 
 ## Collision checking for the entire robot body
-check_collisions: false # Check collisions?
+check_collisions: false # Disabled — URDF link geometry overlaps at home pose, causing false positives
 collision_check_rate: 10.0 # [Hz] Collision-checking can easily bog down a CPU if done too often.
 self_collision_proximity_threshold: 0.01 # Start decelerating when a self-collision is this far [m]
 scene_collision_proximity_threshold: 0.02 # Start decelerating when a scene collision is this far [m]

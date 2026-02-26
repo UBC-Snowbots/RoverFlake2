@@ -40,11 +40,11 @@ joint_limits:
     max_acceleration: 0
   a5_rotation:
     has_velocity_limits: true
-    max_velocity: 0.8
+    max_velocity: 4.0
     has_acceleration_limits: false
     max_acceleration: 0
   a6_rotation:
     has_velocity_limits: true
-    max_velocity: 1
+    max_velocity: 50
     has_acceleration_limits: false
     max_acceleration: 0

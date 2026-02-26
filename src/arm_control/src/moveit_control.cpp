@@ -92,8 +92,11 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
 }
 
 void ArmMoveitControl::sendGripperCommand(double value) {
+  // Send as a velocity command with zero joint velocities, only end_effector set.
+  // The arm_hardware_interface handles end_effector inside ABS_VEL_CMD ('V').
   auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
-  cmd->cmd_type = 'G';  // Gripper command type
+  cmd->cmd_type = 'V';
+  cmd->velocities.resize(NUM_JOINTS_NO_EE, 0.0);
   cmd->end_effector = value;
   arm_publisher->publish(std::move(cmd));
 }
