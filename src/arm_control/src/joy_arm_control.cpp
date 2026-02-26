@@ -18,6 +18,24 @@ Node("arm_joy_control")
     arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/feedback", 10, std::bind(&ArmJoy::arm_callback, this, std::placeholders::_1));
 
+    // ===== Servo → Physical Arm Bridge =====
+    // Subscribe to MoveIt Servo's JointTrajectory output.  The callback
+    // converts IK-solved joint velocities (rad/s, MoveIt frame) into
+    // ArmCommand velocities (deg/s, firmware frame) and publishes on /arm/command.
+    traj_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
+        "/arm_controller/joint_trajectory", 10,
+        std::bind(&ArmJoy::trajectory_callback, this, std::placeholders::_1));
+
+    // Map URDF joint names → firmware axis indices (matches SRDF 'arm' group)
+    urdf_to_axis_ = {
+        {"shoulder_joint", 0},
+        {"link_1_joint",   1},
+        {"link1_link2",    2},
+        {"a4_rotation",    3},
+        {"a5_rotation",    4},
+        {"a6_rotation",    5},
+    };
+
     RCLCPP_INFO(this->get_logger(), "=== ArmJoy started ===");
 #if ACTIVE_CONTROLLER == CONTROLLER_PRO_CONTROLLER
     RCLCPP_INFO(this->get_logger(), "Active controller: Nintendo Switch Pro Controller");
@@ -122,15 +140,10 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
     prev_gripper_btn_ = gripper_btn;
 
-    // ========== /arm/command for physical arm ==========
-    // Publishes every callback so the hardware interface stays in sync.
-    // Velocities are zero (Cartesian control is via Servo); only gripper state is sent.
-    rover_msgs::msg::ArmCommand target;
-    target.cmd_type = 'V';
-    target.velocities.resize(NUM_JOINTS, 0.0);
-    target.end_effector = gripper_open_ ? ControllerConfig::GRIPPER_OPEN_VALUE
-                                        : ControllerConfig::GRIPPER_CLOSE_VALUE;
-    arm_publisher->publish(target);
+    // NOTE: ArmCommand (joint velocities + gripper) is now published in
+    // trajectory_callback(), which fires whenever MoveIt Servo outputs a
+    // JointTrajectory.  This ensures the physical arm receives the actual
+    // IK-solved velocities rather than zeros.
 }
 
 
