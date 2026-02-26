@@ -147,6 +147,36 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
 }
 
 
+void ArmJoy::trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg) {
+    if (msg->points.empty()) return;
+
+    auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
+    cmd->cmd_type = 'V';
+    cmd->velocities.resize(NUM_JOINTS, 0.0);
+    cmd->positions.resize(NUM_JOINTS, 0.0);
+    cmd->end_effector = gripper_open_ ? 1.0 : 0.0;
+
+    const auto& point = msg->points.back();
+
+    for (size_t j = 0; j < msg->joint_names.size(); ++j) {
+        auto it = urdf_to_axis_.find(msg->joint_names[j]);
+        if (it == urdf_to_axis_.end()) continue;
+        int axis = it->second;
+
+        // Convert rad/s → deg/s and apply firmware direction
+        if (axis >= 0 && axis < NUM_JOINTS) {
+            double vel_rad = (j < point.velocities.size()) ? point.velocities[j] : 0.0;
+            cmd->velocities[axis] = vel_rad * (180.0 / M_PI) * AXIS_DIR[axis];
+
+            if (j < point.positions.size()) {
+                cmd->positions[axis] = point.positions[j];
+            }
+        }
+    }
+
+    arm_publisher->publish(std::move(cmd));
+}
+
 void ArmJoy::arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg){
 
     for (int i = 0; i < NUM_JOINTS; i++){

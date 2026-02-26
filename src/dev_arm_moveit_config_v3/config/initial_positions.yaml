@@ -3,9 +3,9 @@
 initial_positions:
   finger_left_joint: 0
   finger_right_joint: 0
-  shoulder_joint: 1.57
+  shoulder_joint: -1.57
   link_1_joint: -1.57
-  link1_link2: 1.57
-  a4_rotation: 0.0
-  a5_rotation: 0.0
+  link1_link2: 0.9
+  a4_rotation: 0
+  a5_rotation: 1.2
   a6_rotation: 0.0
