@@ -12,14 +12,12 @@ moveit_simple_controller_manager:
     action_ns: follow_joint_trajectory
     default: true
     joints:
-      - joint_1
-      - joint_2
-      - joint_3
-      - joint_4
-      - joint_5
-      - joint_6
-    action_ns: follow_joint_trajectory
-    default: true
+      - shoulder_joint
+      - link_1_joint
+      - link1_link2
+      - a4_rotation
+      - a5_rotation
+      - a6_rotation
   gripper_controller:
     type: FollowJointTrajectory
     joints:
