@@ -69,15 +69,13 @@ bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
 
 void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
 bool fk = false;
-    // inputs[2] = msg->axes[0];
-    // inputs[1] = msg->axes[1];
-    // inputs[0] = msg->axes[5] - msg->axes[2];
-    // inputs[3] = msg->axes[3];
-    // inputs[4] = msg->axes[4];
-    // inputs[5] = msg->axes[6];
     if(fk)
     {
-
+    rover_msgs::msg::ArmCommand target;
+    target.positions.resize(NUM_JOINTS);
+    target.velocities.resize(NUM_JOINTS);
+    float target_positions[6];
+    float inputs[6];
     inputs[2] = msg->axes[0];
     inputs[1] = msg->axes[1];
     inputs[0] = msg->axes[5] - msg->axes[4];
