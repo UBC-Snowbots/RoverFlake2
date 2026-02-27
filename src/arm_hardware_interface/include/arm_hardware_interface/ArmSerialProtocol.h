@@ -173,6 +173,11 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_3_INDEX].position_min = 0.01;
   axes[AXIS_3_INDEX].position_max = 0.4;
 
+    axes[AXIS_5_INDEX].position_min = -999.01;
+  axes[AXIS_5_INDEX].position_max = 999.4;
+    axes[AXIS_6_INDEX].position_min = -999.01;
+  axes[AXIS_6_INDEX].position_max = 999.4;
+
   // Note: Other axes (1, 2, 4, 5) use the default struct values
   return axes;
 }
