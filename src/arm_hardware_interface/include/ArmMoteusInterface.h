@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include <rclcpp/rclcpp.hpp>
+#include "axis_5_6_differential.h"
 
 #include "rover_msgs/msg/arm_command.hpp"
 #include "rover_msgs/msg/moteus_arm_status.hpp"

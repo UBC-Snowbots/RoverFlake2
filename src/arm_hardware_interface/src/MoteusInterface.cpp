@@ -565,7 +565,7 @@ void ArmCAN::send_velocity_command(float vel[NUM_JOINTS]) {
   // convert deg/s to revolutions/s
   const double DEG_TO_REVOLUTIONS = 1.0 / 360.0;
 
-  handleWristDifferential(vel[AXIS_5_INDEX], vel[AXIS_6_INDEX], vel[AXIS_5_INDEX], vel[AXIS_6_INDEX]);
+  differential_drive(vel[AXIS_5_INDEX], vel[AXIS_6_INDEX], vel[AXIS_5_INDEX], vel[AXIS_6_INDEX]);
 
 
   // Accumulate all of our command CAN frames.
