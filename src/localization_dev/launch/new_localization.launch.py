@@ -1,56 +1,13 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
 import os
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    
-    # Navsat transform node (GPS -> Odometry)
-    navsat_transform_node = Node(
-        package='robot_localization',
-        executable='navsat_transform_node',
-        name='navsat_transform',
-        parameters=[{
-            'frequency': 10.0,
-            'delay': 3.0,
-            'magnetic_declination_radians': 0.0,  # Set for your location
-            'yaw_offset': 0.0,
-            'broadcast_utm_transform': True,
-            'publish_filtered_gps': True,
-            'use_odometry_yaw': False,
-            'wait_for_datum': False,
-        }],
-        remappings=[
-            ('/imu/data', '/imu/data'),
-            ('/gps/fix', '/gps/fix'),  # Your GNSS topic
-            ('/odometry/filtered', '/odometry/local'),
-        ]
-    )
-    
-    # EKF node
-    ekf_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        parameters=[os.path.join(get_package_share_directory('localization_dev'), 
-                                 'config', 'ekf.yaml')],
-        remappings=[
-            ('/odometry/filtered', '/odometry/local')
-        ]
-    )
-    
-    # SLAM Toolbox
-    slam_toolbox_node = Node(
-        package='slam_toolbox',
-        executable='async_slam_toolbox_node',
-        name='slam_toolbox',
-        parameters=[os.path.join(get_package_share_directory('localization_dev'),
-                                'config', 'slam_toolbox_config.yaml')],
-        output='screen'
-    )
 
+    config_dir = get_package_share_directory('localization_dev')
+
+    # Madgwick IMU filter
     madwick_filter_node = Node(
         package='imu_filter_madgwick',
         executable='imu_filter_madgwick_node',
@@ -60,10 +17,68 @@ def generate_launch_description():
             'publish_tf': False
         }]
     )
-    
+
+    # LOCAL EKF: IMU + cmd_vel → odom -> base_link (starts immediately)
+    ekf_local_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_local_node',
+        parameters=[os.path.join(config_dir, 'config', 'ekf.yaml')],
+        remappings=[
+            ('/odometry/filtered', '/odometry/local'),
+        ]
+    )
+
+    # Navsat transform: GPS + IMU + local odom → /odometry/gps
+    navsat_transform_node = Node(
+        package='robot_localization',
+        executable='navsat_transform_node',
+        name='navsat_transform',
+        output='screen',
+        arguments=['--ros-args', '--log-level', 'debug'],
+        parameters=[{
+            'frequency': 10.0,
+            'delay': 0.0,
+            'magnetic_declination_radians': 0.0,
+            'yaw_offset': 0.0,
+            'broadcast_utm_transform': True,
+            'publish_filtered_gps': True,
+            'use_odometry_yaw': False,
+            'wait_for_datum': False,
+            'world_frame': 'odom',
+            'base_link_frame': 'base_link',
+        }],
+        remappings=[
+            ('/imu/data', '/imu/data'),
+            ('/gps/fix', '/gnss_fix'),
+            ('/odometry/filtered', '/odometry/local'),  # Feedback from local EKF
+        ]
+    )
+
+    # GLOBAL EKF: IMU + GPS → map -> odom (absolute position)
+    ekf_global_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_global_node',
+        parameters=[os.path.join(config_dir, 'config', 'ekf.yaml')],
+        remappings=[
+            ('/odometry/filtered', '/odometry/global'),
+        ]
+    )
+
+    # SLAM Toolbox: generates map only, no TF (global EKF owns map->odom)
+    slam_toolbox_node = Node(
+        package='slam_toolbox',
+        executable='async_slam_toolbox_node',
+        name='slam_toolbox',
+        parameters=[os.path.join(config_dir, 'config', 'slam_toolbox_config.yaml')],
+        output='screen'
+    )
+
     return LaunchDescription([
         madwick_filter_node,
+        ekf_local_node,
         navsat_transform_node,
-        ekf_node,
+        ekf_global_node,
         slam_toolbox_node,
     ])

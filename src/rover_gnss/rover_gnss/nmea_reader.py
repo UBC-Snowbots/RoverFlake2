@@ -126,6 +126,8 @@ class NMEAReader(Node):
             return None
         else:
             navsat_fix = NavSatFix()
+            navsat_fix.header.stamp = self.get_clock().now().to_msg()
+            navsat_fix.header.frame_id = 'leftGPS'
             navsat_fix.latitude = msg.latitude
             navsat_fix.longitude = msg.longitude
 
@@ -134,7 +136,15 @@ class NMEAReader(Node):
                 navsat_fix.altitude = msg.altitude
             else:
                 navsat_fix.altitude = 0.0
-            
+
+            # Set covariance so navsat_transform accepts the fix
+            navsat_fix.position_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED
+            navsat_fix.position_covariance = [
+                1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, 1.0,
+            ]
+
             return navsat_fix
 
 

@@ -1,33 +1,72 @@
-ekf_filter_node:
+# LOCAL EKF: IMU + cmd_vel prediction → odom -> base_link
+# Starts immediately. cmd_vel gives velocity prediction.
+# Feeds navsat_transform with odometry feedback.
+ekf_local_node:
   ros__parameters:
     frequency: 30.0
-    sensor_timeout: 0.1
+    sensor_timeout: 0.5
     two_d_mode: true
-    
-    # Output frame
+    publish_tf: true
+    print_diagnostics: true
+
     map_frame: map
     odom_frame: odom
     base_link_frame: base_link
     world_frame: odom
-    
-    # IMU configuration
-    imu0: /imu/data  # Your IMU topic
-    imu0_config: [false, false, false,  # x, y, z position
-                  true,  true,  true,   # roll, pitch, yaw
-                  false, false, false,  # x_vel, y_vel, z_vel
-                  true, true, true,  # roll_vel, pitch_vel, yaw_vel
-                  false,  false,  false]   # x_accel, y_accel, z_accel
+
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  true,  true,  true,
+                  false, false, false,
+                  true,  true,  true,
+                  false, false, false]
     imu0_differential: false
     imu0_relative: false
     imu0_queue_size: 10
-    
-    # GPS odometry configuration
-    odom0: /odometry/gps  # From navsat_transform
-    odom0_config: [true,  true,  false,   # x, y, z position
-                   false, false, false,   # roll, pitch, yaw
-                   false, false, false,   # velocities
-                   false, false, false,   # rotational velocities
-                   false, false, false]   # accelerations
+    imu0_remove_gravitational_acceleration: true
+
+    # cmd_vel velocity prediction
+    use_control: true
+    stamped_control: false
+    control_timeout: 0.2
+    control_config: [true,  false, false,
+                     false, false, true]
+    acceleration_limits: [1.5, 0.0, 0.0,
+                          0.0, 0.0, 2.0]
+    deceleration_limits: [1.5, 0.0, 0.0,
+                          0.0, 0.0, 2.0]
+
+# GLOBAL EKF: IMU + GPS → map -> odom
+# Absolute position from GPS. Owns map->odom transform.
+ekf_global_node:
+  ros__parameters:
+    frequency: 30.0
+    sensor_timeout: 0.5
+    two_d_mode: true
+    publish_tf: true
+    print_diagnostics: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: map
+
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  true,  true,  true,
+                  false, false, false,
+                  true,  true,  true,
+                  false, false, false]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
+
+    odom0: /odometry/gps
+    odom0_config: [true,  true,  false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false]
     odom0_queue_size: 10
     odom0_differential: false
-  

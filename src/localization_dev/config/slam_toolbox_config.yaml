@@ -13,7 +13,9 @@ slam_toolbox:
     map_frame: map
     base_frame: base_link
     scan_topic: /scan  # Your LiDAR topic
+    use_scan_matching: true
     mode: mapping
+    transform_publish_period: 0.0  # Don't publish map->odom TF (global EKF does that)
     
     # Tuning parameters
     minimum_travel_distance: 0.2  # meters
