@@ -68,8 +68,7 @@ bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
 // ---------- Callbacks ----------
 
 void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-bool fk = false;
-    if(fk)
+    if(this->fk)
     {
     rover_msgs::msg::ArmCommand target;
     target.positions.resize(NUM_JOINTS);

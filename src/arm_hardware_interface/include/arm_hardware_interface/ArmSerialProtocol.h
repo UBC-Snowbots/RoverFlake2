@@ -54,6 +54,7 @@ struct MotorConfig {
   // Moteus Config: servopos.position_min / servopos.position_max
   float position_min = -1.0f;
   float position_max = 1.0f;
+  float position_warn_rev_padding = 0.01; // If position gets to within this amount to min or max, raise rover alert
 
   // ---------------------------------------------------------
   // 2. Torque / Current Limits

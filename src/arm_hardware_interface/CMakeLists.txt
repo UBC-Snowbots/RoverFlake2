@@ -12,6 +12,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(arm_control REQUIRED)
+find_package(std_msgs REQUIRED)
 # uncomment the following section in order to fill in further dependencies
 # manually. find_package(<dependency> REQUIRED)
 include_directories(include ${arm_control_INCLUDE_DIRS})
@@ -34,7 +35,7 @@ target_link_libraries(moteus_arm_driver moteus::cpp)
 ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial
                           rover_msgs arm_control)
 ament_target_dependencies(moteus_arm_driver rclcpp sensor_msgs serial
-                          rover_msgs arm_control)
+                          rover_msgs arm_control std_msgs) 
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
