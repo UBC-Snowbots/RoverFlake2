@@ -12,6 +12,8 @@ Node("arm_joy_control")
 
     twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(
         "/servo_node/delta_twist_cmds", 10);
+    gripper_sim_publisher = this->create_publisher<std_msgs::msg::Float64MultiArray>(
+        "/gripper_controller/commands", 10);
 
     joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
         "/joy", 10, std::bind(&ArmJoy::joy_callback, this, std::placeholders::_1));
@@ -46,6 +48,9 @@ Node("arm_joy_control")
 #endif
     RCLCPP_INFO(this->get_logger(), "Cartesian frame: %s  |  Button speed: %.2f",
         ControllerConfig::CART_FRAME_ID, ControllerConfig::CART_BUTTON_SPEED);
+
+    // Initialize RViz/FakeSystem gripper pose.
+    publish_rviz_gripper_command();
 }
 
 // Program Entry Point
@@ -63,6 +68,19 @@ int main(int argc, char *argv[]) {
 
 bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
     return idx >= 0 && idx < static_cast<int>(msg->buttons.size()) && msg->buttons[idx];
+}
+
+void ArmJoy::publish_rviz_gripper_command() {
+    auto gripper_msg = std_msgs::msg::Float64MultiArray();
+    gripper_msg.data.resize(2);
+    if (gripper_open_) {
+        gripper_msg.data[0] = ControllerConfig::GRIPPER_SIM_LEFT_OPEN_POS;
+        gripper_msg.data[1] = ControllerConfig::GRIPPER_SIM_RIGHT_OPEN_POS;
+    } else {
+        gripper_msg.data[0] = ControllerConfig::GRIPPER_SIM_LEFT_CLOSE_POS;
+        gripper_msg.data[1] = ControllerConfig::GRIPPER_SIM_RIGHT_CLOSE_POS;
+    }
+    gripper_sim_publisher->publish(gripper_msg);
 }
 
 // ---------- Callbacks ----------
@@ -133,8 +151,16 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
 
     // ========== Gripper toggle (edge-triggered) ==========
     bool gripper_btn = btnPressed(msg, ControllerConfig::BTN_GRIPPER_TOGGLE);
+    if (ControllerConfig::AXIS_GRIPPER_TOGGLE >= 0 &&
+        ControllerConfig::AXIS_GRIPPER_TOGGLE < static_cast<int>(msg->axes.size())) {
+        const double trigger_val = msg->axes[ControllerConfig::AXIS_GRIPPER_TOGGLE];
+        gripper_btn = gripper_btn ||
+            (trigger_val < ControllerConfig::AXIS_GRIPPER_PRESSED_THRESHOLD);
+    }
+
     if (gripper_btn && !prev_gripper_btn_) {
         gripper_open_ = !gripper_open_;
+        publish_rviz_gripper_command();
         RCLCPP_INFO(this->get_logger(), "Gripper %s",
             gripper_open_ ? "OPEN" : "CLOSED");
     }

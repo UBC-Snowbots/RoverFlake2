@@ -99,9 +99,18 @@ namespace ControllerConfig {
     constexpr bool INVERT_YAW   = true;   // typical: push left = positive yaw
 
     // --- Gripper ---
-    constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
+    // Pro controller trigger is exposed as an analog axis.  Use axis[5]
+    // (1.0 at rest, -1.0 when fully pressed) for edge-triggered toggle.
+    constexpr int BTN_GRIPPER_TOGGLE = -1;  // button disabled for Pro trigger control
+    constexpr int AXIS_GRIPPER_TOGGLE = 5;  // "axis 6" in 1-based indexing
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0;
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+    // RViz/FakeSystem gripper command positions (position controller)
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS = 0.035;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS = -0.035;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS = 0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS = 0.0;
 }
 
 #elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
@@ -148,9 +157,15 @@ namespace ControllerConfig {
     constexpr const char* CART_FRAME_ID = "base_link";
 
     // --- Gripper ---
-    constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger button = gripper toggle
+    constexpr int AXIS_GRIPPER_TOGGLE = -1;          // no analog trigger axis
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0;
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS = 0.035;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS = -0.035;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS = 0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS = 0.0;
 }
 
 #else

@@ -5,6 +5,8 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "armControlParams.h"
 #include "rover_utils/include/fancyOutput.h"
+
+#include <cmath>
 class ArmCommandNode : public rclcpp::Node
 {
 public:
@@ -37,7 +39,7 @@ public:
     }
 
 private:
-    // Persistent gripper state — only updated by 'G' commands, NOT overwritten by velocity commands
+    // Persistent gripper state carried into every /arm/sim_command publication.
     double gripper_state_ = 0.0;
 
     void armCommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg)
@@ -54,10 +56,11 @@ private:
             sim_command_msg.data[i] = msg->velocities[i];
         }
 
-        // Only update gripper state on explicit gripper commands ('G')
-        // Velocity commands ('V') have end_effector=0.0 by default and would
-        // constantly overwrite the gripper state if we used it blindly.
-        if (msg->cmd_type == 'G')
+        // Update gripper state when we receive explicit gripper commands or
+        // streamed velocity commands that include end_effector state.
+        const bool has_gripper_field = (msg->cmd_type == 'G' || msg->cmd_type == 'V');
+        const bool gripper_changed = std::abs(msg->end_effector - gripper_state_) > 1e-6;
+        if (has_gripper_field && gripper_changed)
         {
             gripper_state_ = msg->end_effector;
             RCLCPP_INFO(this->get_logger(), "Gripper command: end_effector=%.1f", gripper_state_);
@@ -66,8 +69,8 @@ private:
         // Always include the persistent gripper state in the sim command
         sim_command_msg.data[6] = gripper_state_;
 
-        // Publish EE state only when it actually changes (on 'G' commands)
-        if (msg->cmd_type == 'G')
+        // Publish EE state only when it actually changes.
+        if (has_gripper_field && gripper_changed)
         {
             std_msgs::msg::Float64 arm_sim_ee_msg;
             arm_sim_ee_msg.data = gripper_state_;

@@ -25,8 +25,10 @@ purpose: to handle moveit control, as well as servo.
 
 #define PI 3.14159
 
-// Gripper toggle button index
-#define GRIPPER_TOGGLE_BTN 0  // joystick "button 1" is index 0 (zero-indexed)
+// Gripper toggle inputs (Nintendo Pro trigger axis)
+#define GRIPPER_TOGGLE_BTN -1
+#define GRIPPER_TOGGLE_AXIS 5
+#define GRIPPER_AXIS_PRESSED_THRESHOLD 0.0
 
 // Gripper end-effector command values
 #define GRIPPER_OPEN_VALUE  1.0
@@ -78,7 +80,7 @@ int count_ = 0;
 void publishCommands();	
 void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
 void sendGripperCommand(double value);
-int joyControlMode = CARTESIAN_EE_FRAME;
+int joyControlMode = CARTESIAN_BASE_FRAME;
 
 // Gripper state tracking
 bool gripper_open_ = false;
@@ -168,30 +170,25 @@ private:
     }
 
     void servoCallback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg){
-              rover_msgs::msg::ArmCommand target;
-        //TODO position or vel
-        // target.positions.resize(NUM_JOINTS);
+        if(msg->points.empty()){
+          RCLCPP_WARN(this->get_logger(), "Servo output trajectory has no points. Ignoring.");
+          return;
+        }
+
+        rover_msgs::msg::ArmCommand target;
         target.velocities.resize(NUM_JOINTS_NO_EE);
         target.cmd_type = 'V';
-        // float target_positions[NUM_JOINTS];
-        // float target_velocities[NUM_JOINTS];
-        float inputs[NUM_JOINTS_NO_EE];
-        if(msg->points[0].velocities.size() == NUM_JOINTS_NO_EE){
-     for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
-            // float temp_pos = msg->position[i];
-            // target.positions[i] = moveitToFirmwareOffset(msg->reference.positions[i], i);
-            target.velocities[i] = moveitVelocityToFirmwareOffset(msg->points[0].velocities[i], i);
-        // RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, target.velocities[i]);
+        target.end_effector = gripper_open_ ? GRIPPER_OPEN_VALUE : GRIPPER_CLOSE_VALUE;
 
-        }   
-         arm_publisher->publish(target);
-        // RCLCPP_INFO(this->get_logger(), "Joint Trajrectory Controller good. Servo is commanding arm!");
-
-    
+        const auto& point = msg->points.back();
+        if(point.velocities.size() == NUM_JOINTS_NO_EE){
+          for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
+            target.velocities[i] = moveitVelocityToFirmwareOffset(point.velocities[i], i);
+          }
+          arm_publisher->publish(target);
         }else{
           RCLCPP_ERROR(this->get_logger(), "Joint Trajrectory Controller going wack. Output does not match size of joints. Ignoring this message.");
         }
-    
     }
 
     void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg){

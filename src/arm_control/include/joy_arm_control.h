@@ -4,6 +4,7 @@
 #include "rover_msgs/msg/arm_command.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include "controller_config.h"
 
 #include <unordered_map>
@@ -27,6 +28,7 @@ private:
 rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
 rclcpp::Publisher<sensor_msgs::msg::JoyFeedback>::SharedPtr joy_vibrator;
 rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
+rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr gripper_sim_publisher;
 
 // Subs
 rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;
@@ -38,6 +40,7 @@ void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
 void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 /// Bridge: converts MoveIt Servo JointTrajectory → ArmCommand for the physical arm
 void trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
+void publish_rviz_gripper_command();
 
 // Timers
 rclcpp::TimerBase::SharedPtr timer_;
