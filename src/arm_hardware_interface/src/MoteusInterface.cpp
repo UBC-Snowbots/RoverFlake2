@@ -9,12 +9,13 @@
 //  least every 100ms or the controller will enter a latched fault
 //  state, disable by using above cmd in tview
 
-ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
+ArmCAN::ArmCAN() : Node("ArmCanDriver") {
   //? new arm offsets. To change, check arm_control/include/armControlParams.h Should be synced with moveit params
 
   for (int i = 0; i < NUM_JOINTS; i++) {
     axes[i].zero_rad = ArmConstants::axis_zero_rads[i];
     axes[i].dir = ArmConstants::axis_dirs[i];
+    axes[i].index = i;
 #ifdef PRINTOUT_AXIS_PARAMS
     RCLCPP_INFO(this->get_logger(), "Axis %i /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", i + 1, axes[i].dir, axes[i].zero_rad);
 #endif
@@ -28,12 +29,13 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
   arm_status_publisher = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
   joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
+  speaker_publisher = this->create_publisher<std_msgs::msg::String>("/speaker/command", qos);
   double period = 1.0 / COMM_POLL_RATE;
 
   current_arm_status.positions.resize(NUM_JOINTS);
 
   command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
-      "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
+      "/arm/command", 10, std::bind(&ArmCAN::CommandCallback, this, std::placeholders::_1));
 
   RCLCPP_INFO(this->get_logger(), "moteus jointsff %d", NUM_JOINTS);
   if (!SIMULATE) {
@@ -55,18 +57,22 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
       RCLCPP_INFO(this->get_logger(), "moteuaas jointsff %d", NUM_JOINTS);
     }
     
-    timer_ = this->create_wall_timer(std::chrono::duration<double>(period), std::bind(&ArmSerial::serial_rx, this));
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(period), std::bind(&ArmCAN::serial_rx, this));
   }
 
   sleep(0.1);
+
+  std_msgs::msg::String start_sound_msg;
+  start_sound_msg.data = "AI_welcome_attention.wav";
+  speaker_publisher->publish(start_sound_msg);
 }
 
 // Entry Point
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<ArmSerial>();
+  auto node = std::make_shared<ArmCAN>();
 
-  RCLCPP_INFO(node->get_logger(), "ArmSerial init");
+  RCLCPP_INFO(node->get_logger(), "ArmCAN init");
 
   rclcpp::spin(node);
 
@@ -75,7 +81,7 @@ int main(int argc, char *argv[]) {
 }
 
 // Callbacks
-void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
+void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   char type = msg->cmd_type;
   RCLCPP_INFO(this->get_logger(), "dfsf init %c", type);
   switch (type) {
@@ -159,26 +165,26 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
 
 // Member functions
 
-float ArmSerial::degToRad(float deg) {
+float ArmCAN::degToRad(float deg) {
   float rad = deg * 3.14159 / 180; // 14159265359
 
   return (rad);
 }
 
-float ArmSerial::firmToMoveitOffsetPos(float deg, int i) {
+float ArmCAN::firmToMoveitOffsetPos(float deg, int i) {
 
   float rad = degToRad(deg);
   return ((rad * axes[i].dir) + (axes[i].zero_rad));
 }
 
-float ArmSerial::firmToMoveitOffsetVel(float deg, int i) {
+float ArmCAN::firmToMoveitOffsetVel(float deg, int i) {
 
   float rad = degToRad(deg);
 
   return ((rad * axes[i].dir));
 }
 
-void ArmSerial::parseLimitSwitchTest(std::string msg) {
+void ArmCAN::parseLimitSwitchTest(std::string msg) {
   // TODO: can remove, no need for limit switches i think, use pos feedback?
   // also can set moteus position limits using
   // 2>servopos.position_min
@@ -197,7 +203,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg) {
   // }
 }
 
-void ArmSerial::parseArmAngleUart(std::string msg) {
+void ArmCAN::parseArmAngleUart(std::string msg) {
   // TODO: need to recalculate
   // ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
   sensor_msgs::msg::JointState joint_states_;
@@ -244,14 +250,14 @@ void ArmSerial::parseArmAngleUart(std::string msg) {
   }
 }
 
-void ArmSerial::sendMsg(std::string outMsg) {
+void ArmCAN::sendMsg(std::string outMsg) {
   // TODO: prob remove, do send in specific funcs
 
   //  teensy.write(outMsg);
   //  teensy.flushOutput();
 }
 
-void ArmSerial::sendHomeCmd(int target_axis) {
+void ArmCAN::sendHomeCmd(int target_axis) {
   // TODO: use moteus pos feedback to get const home position values
 
   // send home request
@@ -265,7 +271,7 @@ void ArmSerial::sendHomeCmd(int target_axis) {
   // sendMsg(home_msg);
 }
 
-void ArmSerial::sendCommCmd(int target_state) {
+void ArmCAN::sendCommCmd(int target_state) {
   // send communication request
   std::string msg;
   if (target_state) {
@@ -279,7 +285,7 @@ void ArmSerial::sendCommCmd(int target_state) {
   // sendMsg(msg);
 }
 
-void ArmSerial::serial_rx() {
+void ArmCAN::serial_rx() {
   if (send_angles) {
     std::vector<moteus::CanFdFrame> command_frames;
 
@@ -305,11 +311,11 @@ void ArmSerial::serial_rx() {
                   result.voltage, result.temperature);
       motor_telem[motor_id - 1].moteus_mode = static_cast<int>(result.mode);
       motor_telem[motor_id - 1].moteus_fault = static_cast<int>(result.fault);
-      motor_telem[motor_id - 1].curr_position = result.position;
-      motor_telem[motor_id - 1].curr_velocity = result.velocity;
-      motor_telem[motor_id - 1].curr_torque_Nm = result.torque;
-      motor_telem[motor_id - 1].curr_voltage_V = result.voltage;
-      motor_telem[motor_id - 1].driver_temp_C = result.temperature;
+      motor_telem[motor_id - 1].curr_position = static_cast<float>(result.position);
+      motor_telem[motor_id - 1].curr_velocity = static_cast<float>(result.velocity);
+      motor_telem[motor_id - 1].curr_torque_Nm = static_cast<float>(result.torque);
+      motor_telem[motor_id - 1].curr_voltage_V = static_cast<float>(result.voltage);
+      motor_telem[motor_id - 1].driver_temp_C = static_cast<float>(result.temperature);
       
 
       // Check if the motor is reporting a fault (anything other than 0 is an error)
@@ -390,7 +396,9 @@ void ArmSerial::serial_rx() {
     debug_msg.config[i].max_power_watts = motor_telem[i].config.max_power_W;
     debug_msg.config[i].cmd_timeout_s = motor_telem[i].config.def_timeout;
 
-
+    debug_msg.status[i].curr_position          = motor_telem[i].curr_position;
+    debug_msg.status[i].curr_velocity          = motor_telem[i].curr_velocity;
+    debug_msg.status[i].curr_torque            = motor_telem[i].curr_torque_Nm;
     
     debug_msg.status[i].curr_voltage_volts = motor_telem[i].curr_voltage_V;
     debug_msg.status[i].curr_current_amps = motor_telem[i].curr_current_A;
@@ -408,9 +416,47 @@ void ArmSerial::serial_rx() {
 
   }
   arm_status_publisher->publish(debug_msg);
+
+  checkAlerts();
 }
 
-void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
+void ArmCAN::checkAlerts()
+{
+  for(auto &axis : axes)
+  {
+    
+    if(motor_telem[axis.index].curr_position >= motor_telem[axis.index].config.position_max - motor_telem[axis.index].config.position_warn_rev_padding)
+    {
+      if(axis.alerts.position_alert_raised == false)
+      {
+        axis.alerts.position_alert_raised = true;
+        // Above limit, raise alert and trigger sound
+        std_msgs::msg::String msg;
+        msg.data = "gary_meow.wav";
+        speaker_publisher->publish(msg);
+      }
+    } 
+    else if(motor_telem[axis.index].curr_position <= motor_telem[axis.index].config.position_min +  motor_telem[axis.index].config.position_warn_rev_padding)
+    {
+      if(axis.alerts.position_alert_raised == false)
+      {
+        axis.alerts.position_alert_raised = true;
+        std_msgs::msg::String msg;
+        msg.data = "m-e-o-w.wav";
+        speaker_publisher->publish(msg);
+      }
+
+    } 
+    else 
+    {
+      axis.alerts.position_alert_raised = false;
+    }
+  }
+
+
+}
+
+void ArmCAN::send_position_command(float pos[NUM_JOINTS]) {
   RCLCPP_INFO(this->get_logger(), "Test limits Sent");
   std::vector<moteus::CanFdFrame> command_frames;
 
@@ -504,14 +550,23 @@ void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
   // ::fflush(::stdout);
 }
 
+void ArmCAN::handleWristDifferential(float a5_desired, float a6_desired, float& m5_output, float& m6_output)
+{
+  m5_output = a6_desired;
+  m6_output = a5_desired;
+
+}
 // TODO: should send stop cmd after vel cmd so motor doesnt kepp spinning
-void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
+void ArmCAN::send_velocity_command(float vel[NUM_JOINTS]) {
   std::vector<moteus::CanFdFrame> command_frames;
 
   std::map<int, double> target_positions;
 
   // convert deg/s to revolutions/s
   const double DEG_TO_REVOLUTIONS = 1.0 / 360.0;
+
+  differential_drive(vel[AXIS_5_INDEX], vel[AXIS_6_INDEX], vel[AXIS_5_INDEX], vel[AXIS_6_INDEX]);
+
 
   // Accumulate all of our command CAN frames.
   for (const auto &pair : controllers) {
@@ -534,7 +589,7 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
     } else {
       if(pair.first != 4)
       {
-        command_frames.push_back(pair.second->MakePosition(position_command));
+          command_frames.push_back(pair.second->MakePosition(position_command));
       }
     }
   }
@@ -576,14 +631,14 @@ void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
   }
 }
 
-void ArmSerial::send_test_limits_command() {
+void ArmCAN::send_test_limits_command() {
   char tx_msg[TX_UART_BUFF];
   sprintf(tx_msg, "$t()\n");
   sendMsg(tx_msg);
   RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
 }
 
-void ArmSerial::ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller) {
+void ArmCAN::ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller) {
   auto maybe_state = controller.SetQuery();
   if (!maybe_state) {
     RCLCPP_WARN(this->get_logger(), "Motor %d NOT CONNECTED. Skipping config.", axis_number);
