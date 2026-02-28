@@ -35,7 +35,7 @@ services:
       - DISPLAY=${DISPLAY}
     network_mode: host
   rover_ros: # GUI support + NVIDIA GPU support
-    container_name: rover_gpu
+    container_name: rover_ros
     image: roverflake2:gpu
     working_dir: /RoverFlake2
     build:
@@ -72,7 +72,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: roverflake2:dev
-    container_name: rover_dev
+    container_name: rover_x11_dev
     working_dir: /RoverFlake2
     tty: true
     stdin_open: true
