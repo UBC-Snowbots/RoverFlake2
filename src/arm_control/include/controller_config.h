@@ -11,8 +11,9 @@
 // Set ONE of these as the active controller:
 #define CONTROLLER_PRO_CONTROLLER   1
 #define CONTROLLER_CYBORG_STICK     2
+#define CONTROLLER_PS4              3
 
-#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
+#define ACTIVE_CONTROLLER CONTROLLER_PS4
 
 // ============================================================
 //  Nintendo Switch Pro Controller
@@ -149,6 +150,103 @@ namespace ControllerConfig {
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr double GRIPPER_OPEN_VALUE  = 1.0;
+    constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+}
+
+#elif ACTIVE_CONTROLLER == CONTROLLER_PS4
+
+// ============================================================
+//  Sony DualShock 4 / PS4 Controller
+// ============================================================
+//  Tested with the Linux kernel hid-sony driver + ROS 2 joy node.
+//  Verify your indices with:  ros2 topic echo /joy
+//
+//  Buttons:
+//    0 = Cross (X)      1 = Circle (O)
+//    2 = Triangle        3 = Square
+//    4 = L1              5 = R1
+//    6 = L2 (digital)    7 = R2 (digital)
+//    8 = Share           9 = Options
+//   10 = PS button      11 = L3 (left stick press)
+//   12 = R3 (right stick press)
+//
+//  Axes:
+//    0 = Left stick X   (left +1, right -1)
+//    1 = Left stick Y   (up +1, down -1)
+//    2 = L2 trigger     (rest 1.0, pressed -1.0)
+//    3 = Right stick X  (left +1, right -1)
+//    4 = Right stick Y  (up +1, down -1)
+//    5 = R2 trigger     (rest 1.0, pressed -1.0)
+//    6 = D-pad X        (left +1, right -1)
+//    7 = D-pad Y        (up +1, down -1)
+// ============================================================
+
+namespace ControllerConfig {
+
+    // --- Face Buttons ---
+    constexpr int BTN_CROSS    = 0;
+    constexpr int BTN_CIRCLE   = 1;
+    constexpr int BTN_TRIANGLE = 2;
+    constexpr int BTN_SQUARE   = 3;
+    constexpr int BTN_L1       = 4;
+    constexpr int BTN_R1       = 5;
+    constexpr int BTN_L2       = 6;
+    constexpr int BTN_R2       = 7;
+    constexpr int BTN_SHARE    = 8;
+    constexpr int BTN_OPTIONS  = 9;
+    constexpr int BTN_PS       = 10;
+    constexpr int BTN_L3       = 11;
+    constexpr int BTN_R3       = 12;
+
+    // --- Axes ---
+    constexpr int AXIS_LEFT_X  = 0;
+    constexpr int AXIS_LEFT_Y  = 1;
+    constexpr int AXIS_L2_TRIG = 2;   // rests at 1.0 — avoid for motion
+    constexpr int AXIS_RIGHT_X = 3;
+    constexpr int AXIS_RIGHT_Y = 4;
+    constexpr int AXIS_R2_TRIG = 5;   // rests at 1.0 — avoid for motion
+    constexpr int AXIS_DPAD_X  = 6;
+    constexpr int AXIS_DPAD_Y  = 7;
+
+    // --- Cartesian Button Mapping (6 buttons → 6 translation directions) ---
+    //  Face buttons control X/Y plane, shoulders control Z
+    //
+    //        Triangle (+X forward)
+    //  Square (+Y)           Circle (-Y)
+    //        Cross (-X backward)
+    //
+    //   R1 → +Z (up)
+    //   L1 → -Z (down)
+    constexpr int BTN_CART_POS_X = BTN_TRIANGLE;  // North face  → +X (forward)
+    constexpr int BTN_CART_NEG_X = BTN_CROSS;     // South face  → -X (backward)
+    constexpr int BTN_CART_POS_Y = BTN_SQUARE;    // West face   → +Y (left)
+    constexpr int BTN_CART_NEG_Y = BTN_CIRCLE;    // East face   → -Y (right)
+    constexpr int BTN_CART_POS_Z = BTN_R1;        // R1 shoulder → +Z (up)
+    constexpr int BTN_CART_NEG_Z = BTN_L1;        // L1 shoulder → -Z (down)
+
+    // --- Twist Speed ---
+    constexpr double CART_BUTTON_SPEED = 0.5;  // unitless, range [0.0, 1.0]
+    constexpr double ROT_STICK_SPEED   = 0.6;  // unitless, range [0.0, 1.0] for angular
+
+    // --- Deadzone for analog axes ---
+    constexpr double AXIS_DEADZONE = 0.15;
+
+    // --- Frame for Cartesian twist commands ---
+    constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- EE Orientation Stick Mapping ---
+    // Left stick  → pitch / yaw
+    // Right stick → roll
+    constexpr int AXIS_ROLL  = AXIS_RIGHT_X;  // right stick X → roll
+    constexpr int AXIS_PITCH = AXIS_LEFT_Y;    // left stick Y  → pitch
+    constexpr int AXIS_YAW   = AXIS_LEFT_X;    // left stick X  → yaw
+    constexpr bool INVERT_ROLL  = false;
+    constexpr bool INVERT_PITCH = false;
+    constexpr bool INVERT_YAW   = true;   // push left = positive yaw
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = BTN_R2;  // R2 — edge-triggered toggle
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
 }

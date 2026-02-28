@@ -41,6 +41,8 @@ Node("arm_joy_control")
     RCLCPP_INFO(this->get_logger(), "Active controller: Nintendo Switch Pro Controller");
 #elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
     RCLCPP_INFO(this->get_logger(), "Active controller: Saitek Cyborg USB Stick");
+#elif ACTIVE_CONTROLLER == CONTROLLER_PS4
+    RCLCPP_INFO(this->get_logger(), "Active controller: Sony DualShock 4 (PS4)");
 #else
     RCLCPP_INFO(this->get_logger(), "Active controller: Unknown");
 #endif
