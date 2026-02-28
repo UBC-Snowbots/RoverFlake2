@@ -23,7 +23,7 @@ void differential_drive(float axis5_input, float axis6_input, float &motor5_outp
 
     // Else, use axis 6 for rotation
     else {
-        motor5_output = - axis5_input;
+        motor5_output = axis6_input;
         motor6_output = axis5_input - axis6_input;
     }  
 
