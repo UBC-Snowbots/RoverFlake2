@@ -13,7 +13,7 @@
 #define CONTROLLER_CYBORG_STICK     2
 #define CONTROLLER_PS4              3
 
-#define ACTIVE_CONTROLLER CONTROLLER_PS4
+#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
 // ============================================================
 //  Nintendo Switch Pro Controller

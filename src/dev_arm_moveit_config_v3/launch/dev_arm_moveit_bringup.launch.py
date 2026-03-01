@@ -239,9 +239,9 @@ def generate_launch_description():
             servo_node,
             # custom_servo_node,
             joy_arm_node,
-            # joy_node,  # Commented out — run manually with: ros2 run joy joy_node
+            joy_node,
             container,
-            # start_servo,
+            start_servo,
         ]
     )
 
