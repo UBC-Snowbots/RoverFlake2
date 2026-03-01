@@ -79,8 +79,10 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     inputs[1] = msg->axes[1];
     inputs[0] = msg->axes[5] - msg->axes[4];
     inputs[3] = msg->axes[3];
-    inputs[4] = msg->axes[4];
-    inputs[5] = msg->axes[6];
+    inputs[4] = (msg->buttons[0] - msg->buttons[3]);
+    inputs[5] = (msg->buttons[1] - msg->buttons[2]);
+
+    target.end_effector = (msg->buttons[9] -  msg->buttons[10]) * 60;
 
     if(CONTROL_MODE == POSITION_CONTROL){
         target.cmd_type = 'P';
@@ -91,12 +93,12 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }else if(CONTROL_MODE == VELOCITY_CONTROL){
         target.cmd_type = 'V';
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.velocities[i] = inputs[i] * 45;
+        target.velocities[i] = inputs[i] * 10;
     }
     }
-    target.velocities[3] = 0;
-    target.velocities[4] = 0;
-    target.velocities[5] = 0;
+    // target.velocities[3] = 0;
+    // target.velocities[4] = 0;
+    // target.velocities[5] = 0;
         arm_publisher->publish(target);
     } else {
 

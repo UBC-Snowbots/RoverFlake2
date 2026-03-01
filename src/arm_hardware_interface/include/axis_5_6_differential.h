@@ -18,13 +18,13 @@ void differential_drive(float axis5_input, float axis6_input, float &motor5_outp
     // If the inputs have the same sign, to continue in the same direction of motion, use axis 5 for rotation
     if((axis5_input > 0 && axis6_input > 0) || (axis5_input < 0 && axis6_input < 0)) {
         motor5_output = - axis5_input - axis6_input;
-        motor6_output = axis5_input;
+        motor6_output = motor5_output;
     }
 
     // Else, use axis 6 for rotation
     else {
-        motor5_output = - axis5_input;
-        motor6_output = axis5_input - axis6_input;
+        motor5_output = - axis6_input;
+        motor6_output = axis6_input;
     }  
 
     return;
