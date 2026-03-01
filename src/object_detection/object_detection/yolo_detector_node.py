@@ -57,17 +57,23 @@ class YOLODetectorNode(Node):
         annotated_frame = frame.copy()
         for result in results:
             classes_names = result.names
-            for box in result.boxes:
-                if box.conf[0] > 0.4:
-                    [x1, y1, x2, y2] = box.xyxy[0]
-                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                    cls = int(box.cls[0])
-                    class_name = classes_names[cls]
-                    colour = self.get_colours(cls)
-
-                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), colour, 2)
-                    cv2.putText(annotated_frame, f'{class_name} {box.conf[0]:.2f}',
-                                (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 2)
+            boxes = result.boxes
+            if len(boxes) == 0:
+                continue
+            confs = boxes.conf.cpu().numpy()
+            mask = confs > 0.4
+            if not np.any(mask):
+                continue
+            coords = boxes.xyxy.cpu().numpy()[mask].astype(int)
+            cls_ids = boxes.cls.cpu().numpy()[mask].astype(int)
+            confs = confs[mask]
+            for i in range(len(coords)):
+                x1, y1, x2, y2 = coords[i].tolist()
+                cls = int(cls_ids[i])
+                colour = self.get_colours(cls)
+                cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), colour, 2)
+                cv2.putText(annotated_frame, f'{classes_names[cls]} {confs[i]:.2f}',
+                            (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, colour, 2)
         
         # Convert frame to ROS2 Image message and publish
         detected_msg = Image()
