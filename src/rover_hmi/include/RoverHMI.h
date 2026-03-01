@@ -1,6 +1,7 @@
 #pragma once
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
+#include <rover_msgs/msg/moteus_arm_status.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
@@ -39,6 +40,8 @@ public:
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
     arm_status_sub = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/feedback", qos, std::bind(&MainHMINode::armFeedbackCallback, this, std::placeholders::_1));
+    moteus_status_sub = this->create_subscription<rover_msgs::msg::MoteusArmStatus>(
+      "/arm/moteus_feedback", qos, std::bind(&MainHMINode::moteusDebugFeedbackCallback, this, std::placeholders::_1));
     arm_cmd_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
     image_feed_sub = this->create_subscription<sensor_msgs::msg::Image>(
@@ -117,6 +120,32 @@ public:
     builder->get_widget("a4_readout_pos", axis_pos_label[3]);
     builder->get_widget("a5_readout_pos", axis_pos_label[4]);
     builder->get_widget("a6_readout_pos", axis_pos_label[5]);
+    builder->get_widget("ee_readout_pos", axis_pos_label[6]);
+
+    builder->get_widget("a1_readout_torque", axis_torque_label[0]);
+    builder->get_widget("a2_readout_torque", axis_torque_label[1]);
+    builder->get_widget("a3_readout_torque", axis_torque_label[2]);
+    builder->get_widget("a4_readout_torque", axis_torque_label[3]);
+    builder->get_widget("a5_readout_torque", axis_torque_label[4]);
+    builder->get_widget("a6_readout_torque", axis_torque_label[5]);
+    builder->get_widget("ee_readout_torque", axis_torque_label[6]);
+
+    builder->get_widget("a1_readout_driver_temp", axis_driver_temp_label[0]);
+    builder->get_widget("a2_readout_driver_temp", axis_driver_temp_label[1]);
+    builder->get_widget("a3_readout_driver_temp", axis_driver_temp_label[2]);
+    builder->get_widget("a4_readout_driver_temp", axis_driver_temp_label[3]);
+    builder->get_widget("a5_readout_driver_temp", axis_driver_temp_label[4]);
+    builder->get_widget("a6_readout_driver_temp", axis_driver_temp_label[5]);
+    builder->get_widget("ee_readout_driver_temp", axis_driver_temp_label[6]);
+
+
+    builder->get_widget("a1_readout_current", axis_current_label[0]);
+    builder->get_widget("a2_readout_current", axis_current_label[1]);
+    builder->get_widget("a3_readout_current", axis_current_label[2]);
+    builder->get_widget("a4_readout_current", axis_current_label[3]);
+    builder->get_widget("a5_readout_current", axis_current_label[4]);
+    builder->get_widget("a6_readout_current", axis_current_label[5]);
+    builder->get_widget("ee_readout_current", axis_current_label[6]);
 
     builder->get_widget("forward_button", forward_button);
     forward_button->signal_pressed().connect(sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleCmdVelButton), true,
@@ -302,6 +331,7 @@ private:
   void armFeedbackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
   // rclcpp::TimerBase
   void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+  void moteusDebugFeedbackCallback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
   void handleHomeAllButtonClick();
   void handlePosFeedOnButtonClick();
   void handlePosFeedOffButtonClick();
@@ -331,7 +361,10 @@ private:
 
   Gtk::Widget* image_draw_area;
 
-  Gtk::Label* axis_pos_label[6];
+  Gtk::Label* axis_pos_label[7];
+  Gtk::Label* axis_torque_label[7];
+  Gtk::Label* axis_driver_temp_label[7];
+  Gtk::Label* axis_current_label[7];
 
   Gtk::Button* home_all_button;
   Gtk::Button* next_panel_button;
@@ -428,6 +461,7 @@ private:
   std::string package_share_dir;
 
   rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr arm_status_sub;
+  rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr moteus_status_sub;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_pub;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr arm_ik_pub;

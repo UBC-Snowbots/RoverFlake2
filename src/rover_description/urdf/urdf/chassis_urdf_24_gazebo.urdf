@@ -1,0 +1,956 @@
+<robot
+  name="chassis_24">
+
+    <gazebo reference="right_bogie_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <gazebo reference="chassis_link">
+        <material>Gazebo/DarkGrey</material>
+    </gazebo>
+
+    <gazebo reference="back_bogie_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+ <gazebo reference="left_bogie_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+  <link
+    name="base_link">
+  </link>
+  <link name="imu_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <link name="camera_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <link name="ptz_link">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+  <link
+    name="chassis_link">
+    <inertial>
+      <origin
+        xyz="-0.00699772914672339 -0.000493988226808267 -0.0760612416617474"
+        rpy="0 0 0" />
+      <mass
+        value="6.00267889513792" />
+      <inertia
+        ixx="0.083640189086461"
+        ixy="9.73287606877216E-08"
+        ixz="-2.81094847222989E-08"
+        iyy="0.0834818888944717"
+        iyz="-2.26303252326449E-05"
+        izz="0.156921606709253" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="imu_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <joint name="camera_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+  </joint>
+  <joint name="ptz_joint" type="fixed">
+    <parent link="chassis_link"/>
+    <child link="ptz_link"/>
+    <origin xyz="-0.3 -0.5 0.8" rpy="0 0 0"/>
+  </joint>
+  <joint
+    name="chassis_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="chassis_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="back_bogie_link">
+    <inertial>
+      <origin
+        xyz="-7.25827789399558E-08 0.174260110659829 -0.00696236307424686"
+        rpy="0 0 0" />
+      <mass
+        value="1.93502364267459" />
+      <inertia
+        ixx="0.00229542248691092"
+        ixy="-3.03037924544473E-09"
+        ixz="7.58017790753532E-19"
+        iyy="0.00623201882648166"
+        iyz="-1.25455581601917E-19"
+        izz="0.00766650770807597" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_bogie_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_bogie_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="back_bogie_joint"
+    type="revolute">
+    <origin
+      xyz="-0.3638 -4.51E-05 -0.070631"
+      rpy="-1.5708 -0.14612 1.5708" />
+    <parent
+      link="chassis_link" />
+    <child
+      link="back_bogie_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.4"
+      upper="1.4"
+      effort="5"
+      velocity="5" />
+  </joint>
+  <link
+    name="back_left_wheel_link">
+    <inertial>
+      <origin
+        xyz="-2.77555756156289E-17 -5.55111512312578E-17 0.0508"
+        rpy="0 0 0" />
+      <mass
+        value="4.27542162637791" />
+      <inertia
+        ixx="0.00178347294732951"
+        ixy="-1.08937077959432E-19"
+        ixz="7.62806346074387E-19"
+        iyy="0.00178347294732951"
+        iyz="0.001"
+        izz="0.00289167430570026" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_left_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_left_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="back_left_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.34327 0.24109 -0.00635"
+      rpy="0 1.5708 0" />
+    <parent
+      link="back_bogie_link" />
+    <child
+      link="back_left_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="back_right_wheel_link">
+    <inertial>
+      <origin
+        xyz="0 2.77555756156289E-17 0.0508"
+        rpy="0 0 0" />
+      <mass
+        value="4.27542162637791" />
+      <inertia
+        ixx="0.00178347294732951"
+        ixy="2.28071735391806E-20"
+        ixz="6.12456854997538E-19"
+        iyy="0.00178347294732951"
+        iyz="1.73472347597681E-18"
+        izz="0.002089167430570026" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_right_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/back_right_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="back_right_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.34327 0.24109 -0.00635"
+      rpy="3.1416 1.5708 0" />
+    <parent
+      link="back_bogie_link" />
+    <child
+      link="back_right_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="left_bogie_link">
+    <inertial>
+      <origin
+        xyz="-1.54984377143119E-05 0.182050794641678 -0.00837596251404105"
+        rpy="0 0 0" />
+      <mass
+        value="3.24500143198311" />
+      <inertia
+        ixx="0.005056643655294"
+        ixy="-8.9378372078344E-07"
+        ixz="1.10820141993538E-18"
+        iyy="0.00747448697437576"
+        iyz="1.67485869207298E-19"
+        izz="0.0081282264814984" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_bogie_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_bogie_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_bogie_joint"
+    type="revolute">
+    <origin
+      xyz="0.18553 0.33879 -0.0755"
+      rpy="-1.5708 -0.22079 0" />
+    <parent
+      link="chassis_link" />
+    <child
+      link="left_bogie_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.5"
+      upper="1.5"
+      effort="5"
+      velocity="5" />
+  </joint>
+  <link
+    name="left_front_wheel_link">
+    <inertial>
+      <origin
+        xyz="0 1.3878E-17 0.0508"
+        rpy="0 0 0" />
+      <mass
+        value="4.2754" />
+      <inertia
+        ixx="0.017835"
+        ixy="-4.5898E-19"
+        ixz="-1.231E-17"
+        iyy="0.017835"
+        iyz="5.6373E-19"
+        izz="0.028917" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_front_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_front_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_front_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.22348 0.24192 0.06705"
+      rpy="0 0 0.22079" />
+    <parent
+      link="left_bogie_link" />
+    <child
+      link="left_front_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+    <!-- <limit
+      lower="-1.5"
+      upper="1.5"
+      effort="5"
+      velocity="5" /> -->
+  </joint>
+  <link
+    name="left_mid_wheel_link">
+    <inertial>
+      <origin
+        xyz="-2.77555756156289E-17 0 0.0508"
+        rpy="0 0 0" />
+      <mass
+        value="4.27542162637791" />
+      <inertia
+        ixx="0.00178347294732951"
+        ixy="-4.00883753276516E-19"
+        ixz="-8.20366047356053E-18"
+        iyy="0.00178347294732951"
+        iyz="1.56646894184784E-18"
+        izz="0.00289167430570026" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_mid_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/left_mid_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_mid_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.22348 0.24192 0.06705"
+      rpy="0 0 0.22079" />
+    <parent
+      link="left_bogie_link" />
+    <child
+      link="left_mid_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.5"
+      upper="1"
+      effort="5"
+      velocity="5" />
+  </joint>
+  <link
+    name="right_bogie_link">
+    <inertial>
+      <origin
+        xyz="-1.54984377143119E-05 0.182050794641678 -0.0083759625140411"
+        rpy="0 0 0" />
+      <mass
+        value="3.2450014319831" />
+      <inertia
+        ixx="0.005056643655294"
+        ixy="-8.93783720780405E-07"
+        ixz="1.14069009289248E-18"
+        iyy="0.00747448697437575"
+        iyz="7.82677189295528E-20"
+        izz="0.00812822648149838" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_bogie_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_bogie_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_bogie_joint"
+    type="revolute">
+    <origin
+      xyz="0.18544 -0.33878 -0.07549"
+      rpy="-1.5708 -0.22079 3.1416" />
+    <parent
+      link="chassis_link" />
+    <child
+      link="right_bogie_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.5"
+      upper="1.5"
+      effort="5"
+      velocity="5" />
+  </joint>
+  <link
+    name="right_front_wheel_link">
+    <inertial>
+      <origin
+        xyz="1.11022302462516E-16 0 0.0508000000000001"
+        rpy="0 0 0" />
+      <mass
+        value="4.27542162637791" />
+      <inertia
+        ixx="0.00178347294732951"
+        ixy="1.7347234759768E-18"
+        ixz="7.43332005281035E-18"
+        iyy="0.0178347294732951"
+        iyz="4.51025868803808E-18"
+        izz="0.00289167430570026" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_front_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_front_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_front_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.22348 0.24192 0.06705"
+      rpy="0 0 2.618" />
+    <parent
+      link="right_bogie_link" />
+    <child
+      link="right_front_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="right_mid_wheel_link">
+    <inertial>
+      <origin
+        xyz="4.5102810375397E-17 -2.77555756156289E-17 0.0508000000000002"
+        rpy="0 0 0" />
+      <mass
+        value="4.27542162637791" />
+      <inertia
+        ixx="0.0178347294732951"
+        ixy="-2.16840434497102E-18"
+        ixz="1.04477411869742E-17"
+        iyy="0.0178347294732951"
+        iyz="-3.12590163345014E-18"
+        izz="0.0289167430570026" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_mid_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="$(find rover_description)/meshes/right_mid_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_mid_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.22348 0.24192 0.06705"
+      rpy="0 0 -2.618" />
+    <parent
+      link="right_bogie_link" />
+    <child
+      link="right_mid_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <!-- motors and stuff -->
+  <transmission name="back_left_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="back_left_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="back_left_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="back_right_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="back_right_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="back_right_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+
+  <transmission name="left_mid_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="left_mid_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="left_mid_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="left_front_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="left_front_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="left_front_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+
+  <transmission name="right_front_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="right_front_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="right_front_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="right_mid_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="right_mid_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="right_mid_wheel_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>5</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+  <!-- Gazebo plugin for ros2_control -->
+  <gazebo>
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <robot_param>robot_description</robot_param>
+      <robot_param_node>robot_state_publisher</robot_param_node>
+      <parameters>$(find rover_simulate)/config/chassis_controller_params.yaml</parameters>
+    </plugin>
+    <!-- <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <bodyName>imu_link</bodyName>
+      <topicName>/imu</topicName>
+      <gaussianNoise>0.01</gaussianNoise>
+      <xyzOffset>0 0 0</xyzOffset>
+      <rpyOffset>0 0 0</rpyOffset>
+    </plugin> -->
+  </gazebo>
+  <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>__default_topic__</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="camera1">
+      <update_rate>30.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>1000</width>
+          <height>800</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <!-- Noise is sampled independently per pixel on each frame.
+               That pixel's noise value is added to each of its color
+               channels, which at that point lie in the range [0,1]. -->
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>/camera1</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+    <gazebo reference="ptz_link">
+    <sensor type="camera" name="ptz">
+      <update_rate>30.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>1000</width>
+          <height>800</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <!-- Noise is sampled independently per pixel on each frame.
+               That pixel's noise value is added to each of its color
+               channels, which at that point lie in the range [0,1]. -->
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>/ptz</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>ptz_link</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+  <!-- <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>__default_topic__</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo> -->
+
+    <!-- hokuyo 2d lidar -->
+   <!-- <gazebo reference="hokuyo_link">
+    <sensor type="gpu_ray" name="head_hokuyo_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>false</visualize>
+      <update_rate>40</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.10</min>
+          <max>30.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          Noise parameters based on published spec for Hokuyo laser
+               achieving "+-30mm" accuracy at range < 10m.  A mean of 0.0m and
+               stddev of 0.01m will put 99.7% of samples within 0.03m of the true
+               reading.
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_gpu_laser.so">
+        <topicName>/laser/scan</topicName>
+        <frameName>hokuyo_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>  -->
+
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+    <joint name="back_left_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">-1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="left_mid_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="left_front_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">-1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="right_front_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">-1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="right_mid_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="back_right_wheel_joint">
+      <command_interface name="velocity">
+        <param name="min">-100</param>
+        <param name="max">100</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">1.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="back_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="left_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="right_bogie_joint">
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+</robot>

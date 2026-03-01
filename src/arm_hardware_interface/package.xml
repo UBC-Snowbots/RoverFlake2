@@ -17,7 +17,7 @@
   <depend>sensor_msgs</depend>
   <depend>rover_msgs</depend>
   <depend>arm_control</depend>
-
+  <depend>std_msgs</depend>
 <!-- Rosdep fails with the following: -->
   <depend>serial</depend>
 

@@ -35,6 +35,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SubSystemHealth.msg"
   "msg/HeartRequest.msg"
   "msg/ScienceModule.msg"
+  "msg/BldcServoConfig.msg"
+  "msg/BldcServoStatus.msg"
+  "msg/MoteusArmStatus.msg"
   
   DEPENDENCIES std_msgs
  )
