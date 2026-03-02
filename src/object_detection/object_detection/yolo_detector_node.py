@@ -56,7 +56,7 @@ class YOLODetectorNode(Node):
         # Draw detections on frame
         annotated_frame = frame.copy()
         for result in results:
-            classes_names = result.names
+            classes_names = result.names2
             for box in result.boxes:
                 if box.conf[0] > 0.4:
                     [x1, y1, x2, y2] = box.xyxy[0]
