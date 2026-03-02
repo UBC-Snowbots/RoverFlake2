@@ -26,7 +26,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/base_link.STL" />
+          filename="package://rover_description/meshes/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -40,7 +40,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/base_link.STL" />
+          filename="package://rover_description/meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -66,7 +66,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Rocker.STL" />
+          filename="package://rover_description/meshes/right_rocker.STL" />
       </geometry>
       <material
         name="">
@@ -80,7 +80,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Rocker.STL" />
+          filename="package://rover_description/meshes/right_rocker.STL" />
       </geometry>
     </collision>
   </link>
@@ -124,7 +124,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Bogie.STL" />
+          filename="package://rover_description/meshes/right_bogie.STL" />
       </geometry>
       <material
         name="">
@@ -138,7 +138,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Bogie.STL" />
+          filename="package://rover_description/meshes/right_bogie.STL" />
       </geometry>
     </collision>
   </link>
@@ -182,7 +182,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Rocker.STL" />
+          filename="package://rover_description/meshes/left_rocker.STL" />
       </geometry>
       <material
         name="">
@@ -196,7 +196,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Rocker.STL" />
+          filename="package://rover_description/meshes/left_rocker.STL" />
       </geometry>
     </collision>
   </link>
@@ -240,7 +240,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Bogie.STL" />
+          filename="package://rover_description/meshes/left_bogie.STL" />
       </geometry>
       <material
         name="">
@@ -254,7 +254,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Bogie.STL" />
+          filename="package://rover_description/meshes/left_bogie.STL" />
       </geometry>
     </collision>
   </link>
@@ -298,7 +298,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Differential.STL" />
+          filename="package://rover_description/meshes/differential.STL" />
       </geometry>
       <material
         name="">
@@ -312,7 +312,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Differential.STL" />
+          filename="package://rover_description/meshes/differential.STL" />
       </geometry>
     </collision>
   </link>
@@ -351,7 +351,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Link.STL" />
+          filename="package://rover_description/meshes/right_link.STL" />
       </geometry>
       <material
         name="">
@@ -365,7 +365,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Right Link.STL" />
+          filename="package://rover_description/meshes/right_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -404,7 +404,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Link.STL" />
+          filename="package://rover_description/meshes/left_link.STL" />
       </geometry>
       <material
         name="">
@@ -418,7 +418,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/Left Link.STL" />
+          filename="package://rover_description/meshes/left_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -457,7 +457,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/leftGPS.STL" />
+          filename="package://rover_description/meshes/left_gps.STL" />
       </geometry>
       <material
         name="">
@@ -471,7 +471,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/leftGPS.STL" />
+          filename="package://rover_description/meshes/left_gps.STL" />
       </geometry>
     </collision>
   </link>
@@ -510,7 +510,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/rightGPS.STL" />
+          filename="package://rover_description/meshes/right_gps.STL" />
       </geometry>
       <material
         name="">
@@ -524,7 +524,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/rightGPS.STL" />
+          filename="package://rover_description/meshes/right_gps.STL" />
       </geometry>
     </collision>
   </link>
@@ -563,7 +563,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/IMU.STL" />
+          filename="package://rover_description/meshes/imu.STL" />
       </geometry>
       <material
         name="">
@@ -577,7 +577,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://Chassis_jan25.SLDASM/meshes/IMU.STL" />
+          filename="package://rover_description/meshes/imu.STL" />
       </geometry>
     </collision>
   </link>
@@ -600,6 +600,6 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link" />
     <child link="lidar" />
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 0.20674" rpy="0 0 0" />
   </joint>
 </robot>
