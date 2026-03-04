@@ -147,6 +147,9 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[EE_INDEX].kp = 300.0;
   axes[EE_INDEX].kd = 25.0;
 
+  axes[EE_INDEX].kp = 300.0;
+  axes[EE_INDEX].kd = 25.0;
+
 
   // GEAR REDUCTION
   axes[AXIS_1_INDEX].gear_red = (1.0f/190.0f);
