@@ -9,6 +9,10 @@ from launch.actions import ExecuteProcess, TimerAction
 import xacro
 from moveit_configs_utils import MoveItConfigsBuilder
 from xacro import process_file
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.substitutions import FindPackageShare
+from launch.substitutions import PathJoinSubstitution
 
 def xacro_to_urdf(package_name, file_path):
     package_path = get_package_share_directory(package_name)
@@ -186,22 +190,32 @@ def generate_launch_description():
         executable="joy_arm_control",
         output="screen",
     )
-    joy_params = {
-        # 'dev': '/dev/input/js0',       # Joystick device file
-        'deadzone': 0.1,               # Deadzone for joystick axes
-        'autorepeat_rate': 20.0,       # Autorepeat rate in Hz
-        'coalesce_interval': 0.05,     # Interval to coalesce events
-    }
-    joy_node = Node(
-        package='joy',
-        executable='joy_node',
-        name='joy_node',
-        output='screen',
-        parameters=[joy_params],
-        remappings=[
-            ('/joy', '/joy'),  # Remap topics if necessary
-        ],
+    joy_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([
+                FindPackageShare("rover_launchers"),
+                "launch",
+                "game_controller.launch.py"
+            ])
+        )
     )
+
+    # joy_params = {
+    #     # 'dev': '/dev/input/js0',       # Joystick device file
+    #     'deadzone': 0.1,               # Deadzone for joystick axes
+    #     'autorepeat_rate': 20.0,       # Autorepeat rate in Hz
+    #     'coalesce_interval': 0.05,     # Interval to coalesce events
+    # }
+    # joy_node = Node(
+    #     package='joy',
+    #     executable='joy_node',
+    #     name='joy_node',
+    #     output='screen',
+    #     parameters=[joy_params],
+    #     remappings=[
+    #         ('/joy', '/joy'),  # Remap topics if necessary
+    #     ],
+    # )
     hmi_node = Node(
         package='rover_hmi',
         executable='main_hmi_node',  # Replace with the correct executable name if different
@@ -239,7 +253,7 @@ def generate_launch_description():
             servo_node,
             # custom_servo_node,
             joy_arm_node,
-            # joy_node,  # Commented out — run manually with: ros2 run joy joy_node
+            joy_node,  # Commented out — run manually with: ros2 run joy joy_node
             container,
             # start_servo,
         ]
