@@ -35,35 +35,35 @@ echo starting with ros2...
 
 #sudo apt update
 cd $ROVERFLAKE_ROOT/setup_scripts/
-bash install_dependencies.sh
-bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
+# bash install_dependencies.sh
+# bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
 
-apt_packages_to_install=(
-    "curl"
-    "git"
-    "btop"
-    "tmux"
-    "libgtkmm-3.0-dev"
-    "python3-rosdep"
-    "libsfml-dev"
-)
+# apt_packages_to_install=(
+#     "curl"
+#     "git"
+#     "btop"
+#     "tmux"
+#     "libgtkmm-3.0-dev"
+#     "python3-rosdep"
+#     "libsfml-dev"
+# )
 
-# Loop through the package list and install missing packages
-for package in "${apt_packages_to_install[@]}"; do
-    if is_package_installed "$package"; then
-        echo "Package '$package' is already installed."
-    else
-        echo "Installing package '$package'..."
-        # sudo apt update
-        sudo apt install -y "$package"
+# # Loop through the package list and install missing packages
+# for package in "${apt_packages_to_install[@]}"; do
+#     if is_package_installed "$package"; then
+#         echo "Package '$package' is already installed."
+#     else
+#         echo "Installing package '$package'..."
+#         # sudo apt update
+#         sudo apt install -y "$package"
         
-        if [ $? -eq 0 ]; then
-            echo "Package '$package' installed successfully."
-        else
-            echo "Failed to install package '$package'."
-        fi
-    fi
-done
+#         if [ $? -eq 0 ]; then
+#             echo "Package '$package' installed successfully."
+#         else
+#             echo "Failed to install package '$package'."
+#         fi
+#     fi
+# done
 cd $ROVERFLAKE_ROOT
 
 source /opt/ros/humble/setup.bash
@@ -73,7 +73,7 @@ rosdep update
 bash setup_scripts/install_rosdeps.sh
 
 # setup user enviroment
-mkdir ${ROVERFLAKE_ROOT}/random_install_files
+mkdir -p ${ROVERFLAKE_ROOT}/random_install_files
 echo "source ${ROVERFLAKE_ROOT}/setup_scripts/rover_env/rover_env_common.sh " >> ~/.bashrc
 
 
