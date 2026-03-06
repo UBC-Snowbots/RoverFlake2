@@ -82,6 +82,7 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
 }
 
 void ArmCAN::sendHomeCmd(int target_axis) {
+  
   // TODO: use moteus pos feedback to get const home position values
 
   // send home request
