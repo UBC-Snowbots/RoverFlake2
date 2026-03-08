@@ -60,7 +60,9 @@ endforeach()
 #   EXECUTABLE servo_node
 # )
 include_directories(include)
-
+add_library(${PROJECT_NAME}_lib src/armconfig.cpp
+            include/armControlParams.h include/controller_config.h) 
+ament_target_dependencies(${PROJECT_NAME}_lib sensor_msgs)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -81,6 +83,10 @@ ament_target_dependencies(cbs_arm_interface rclcpp rover_msgs sensor_msgs std_ms
 add_executable(moteus_control_adapter src/moteus_control_adapter_node.cpp include/moteus_control_adapter_node.h)
 ament_target_dependencies(moteus_control_adapter ${THIS_PACKAGE_INCLUDE_DEPENDS})
 install(
+  DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
+install(
   TARGETS
  #   old_arm_servo
     cbs_arm_interface
@@ -89,14 +95,13 @@ install(
     sim_helper
     moteus_control_adapter
     # servo_cpp_interface_demo
+    ${PROJECT_NAME}_lib # the library
   DESTINATION
     lib/${PROJECT_NAME}
-)
-install(
-  DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}/include
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
 )
 
-
+ament_export_libraries(${PROJECT_NAME})
 ament_export_include_directories(include)
 ament_package()

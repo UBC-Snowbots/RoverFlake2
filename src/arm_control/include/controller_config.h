@@ -10,13 +10,17 @@
  */
 #pragma once
 
+#include <sensor_msgs/msg/joy.hpp>
+inline static constexpr int MAX_BUTTONS = 20;
+inline static constexpr int MAX_AXES    = 10;
+
 // ============ Controller Selection ============
 // Set ONE of these as the active controller:
 #define CONTROLLER_PRO_CONTROLLER   1
 #define CONTROLLER_CYBORG_STICK     2
 #define CONTROLLER_PS4_JOY_LINUX    3 //! Use joy_linux package, not joy!
 
-#define ACTIVE_CONTROLLER CONTROLLER_PS4_JOY_LINUX
+#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
 // ============================================================
 //  Nintendo Switch Pro Controller
@@ -161,13 +165,38 @@ namespace ControllerConfig {
 #pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
 #endif
 
-enum class GameController {
-    PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
-    SWITCH_PRO_CONTROLLER
-};
 
-struct GameControllerMap {
-    
-};
+namespace ArmControllerConfig { // Can make into a class later?
 
-inline static GameController
+    enum class GameController {
+        PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+        SWITCH_PRO_CONTROLLER,
+        CYBORG_JOYSTICK
+    };
+
+    struct ArmControlInput {
+        float axes[MAX_AXES]; // Static arrays, not vectors here
+        int buttons[MAX_BUTTONS];
+    };
+
+    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
+    {
+        
+        switch (controller)
+        {
+        case GameController::PS4_JOY_LINUX:
+            
+            break;
+        case GameController::SWITCH_PRO_CONTROLLER:
+
+            break;
+        case GameController::CYBORG_JOYSTICK:
+            
+            break;
+        default:
+            return false;
+
+        return true;
+        }
+    }
+}
