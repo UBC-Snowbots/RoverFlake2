@@ -16,7 +16,7 @@
 #define CONTROLLER_CYBORG_STICK     2
 #define CONTROLLER_PS4_JOY_LINUX    3 //! Use joy_linux package, not joy!
 
-#define ACTIVE_CONTROLLER CONTROLLER_PS4_JOY_LINUX
+#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
 // ============================================================
 //  Nintendo Switch Pro Controller
@@ -161,13 +161,13 @@ namespace ControllerConfig {
 #pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
 #endif
 
-enum class GameController {
-    PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
-    SWITCH_PRO_CONTROLLER
-};
+// enum class GameController {
+//     PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+//     SWITCH_PRO_CONTROLLER
+// };
 
-struct GameControllerMap {
+// struct GameControllerMap {
     
-};
+// };
 
-inline static GameController
+// inline static GameController
