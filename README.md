@@ -2,6 +2,9 @@
 2023 - Present ROS2 repo for rover
 RoverFlake1 is old.
 
+### Other documentation
+[Live view doc to consolidate block diagrams, setup procedures, and more](https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=RoverStartupEverything.drawio&dark=1#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1oTCJmi5VluUgLIwTO4EpU9Yp7SvRvJsf%26export%3Ddownload)
+
 ### Setting up this repo on your computer
 _Reccomended/Required: Ubuntu 22.04_
 
