@@ -95,7 +95,6 @@ void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float 
 
 void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
-    message.header.stamp = this->now();
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         double velocity = 0.0, target_velocity = 0.0, position = 0.0;
