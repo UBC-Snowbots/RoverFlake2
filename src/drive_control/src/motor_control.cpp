@@ -23,23 +23,23 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         handlePhidgetError(ret, "attachment", i);
     }
 
-    // // Set up a timer to check motor positions every 100 ms
-    // timer_ = this->create_wall_timer(
-    //     std::chrono::milliseconds(100),
-    //     std::bind(&MotorControlNode::checkMotorPositions, this)
-    // );
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
+    drive_feedback_pub_ = this->create_publisher<rover_msgs::msg::DriveFeedback>(
+        "drive/feedback",
+        qos
+    );
 
-    // Create a timer to call printTargetVelocity every 100 ms
+    // Setup a timer to check position, velocity and target velocity of each motor every 100ms
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100), 
-        std::bind(&MotorControlNode::printTargetVelocity, this)  // For motor 0, for example
+        std::chrono::milliseconds(100),
+        std::bind(&MotorControlNode::publishDriveFeedback, this)
     );
 
     // Enable failsafe for all motors
-    // for (int i = 0; i < NUM_MOTORS; i++) {
-    //     PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 5000);
-    //     handlePhidgetError(ret, "enable failsafe", i);
-    // }
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 500);
+        handlePhidgetError(ret, "enable failsafe", i);
+    }
 
     // Create subscribers for left and right wheel velocity commands
     left_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
@@ -93,29 +93,28 @@ void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float 
     }
 }
 
-// void MotorControlNode::checkMotorPositions() {
-//     for (int i = 0; i < NUM_MOTORS; i++) {
-//         double position = 0.0;
-//         PhidgetReturnCode ret = PhidgetBLDCMotor_getPosition(motors[i], &position);
-//         if (ret != EPHIDGET_OK) {
-//             handlePhidgetError(ret, "get position", i);
-//             continue;
-//         }
-//         RCLCPP_INFO(this->get_logger(), "Motor %d Position: %f", i, position * 1.3666);
-//     }
-// }
+void MotorControlNode::publishDriveFeedback() {
+    rover_msgs::msg::DriveFeedback message;
+    message.header.stamp = this->now();
 
-void MotorControlNode::printTargetVelocity() {
-    
-        double targetVelocity = 0.0;
-        PhidgetReturnCode ret = PhidgetBLDCMotor_getTargetVelocity(motors[5], &targetVelocity);
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        double velocity = 0.0, target_velocity = 0.0, position = 0.0;
 
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "get target velocity", 5);  // Use i instead of motor_index
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Motor %d Target Velocity: %f", 5, targetVelocity);
-        }
+        ret = PhidgetBLDCMotor_getVelocity(motors[i], &velocity);
+        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get velocity", i);
 
+        ret = PhidgetBLDCMotor_getTargetVelocity(motors[i], &target_velocity);
+        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get target velocity", i);
+
+        ret = PhidgetBLDCMotor_getPosition(motors[i], &position);
+        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get position", i);
+
+        message.velocities[i] = velocity;
+        message.target_velocities[i] = target_velocity;
+        message.positions[i] = position;
+    }
+
+    drive_feedback_pub_->publish(message);
 }
 
 int main(int argc, char **argv) {

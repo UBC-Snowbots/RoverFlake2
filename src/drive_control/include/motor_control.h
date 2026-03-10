@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"  // Correct include for Float64MultiArray message type
+#include "rover_msgs/msg/drive_feedback.hpp"
 #include "phidget22.h"
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
@@ -14,6 +15,9 @@ public:
     ~MotorControlNode(); // Destructor
 
 private:
+    // Publisher for drive feedback (velocity and position of each motor)
+    rclcpp::Publisher<rover_msgs::msg::DriveFeedback>::SharedPtr drive_feedback_pub_;
+
     // Subscriber declarations for left and right wheel velocities as Float64MultiArray
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_sub_;
@@ -24,15 +28,15 @@ private:
     // Method to run motors at a specified velocity
     void runMotors(const std::vector<int>& selected_motors, float velocity);
 
-    // Periodic motor position check
-    void checkMotorPositions();
-
     // Callback functions for left and right wheel velocity subscriptions
     void leftWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
     void rightWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
-    // Function to print the target velocity of each motor
-    void printTargetVelocity();  // New function declaration
+    // Function to publish the velocity, target velocity and position of each motor
+    void publishDriveFeedback();
+
+    // Timer to check motor state (velocities and positions) periodically
+    rclcpp::TimerBase::SharedPtr timer_;
 
     // Constants and motor-related variables
     static const int NUM_MOTORS = 6;  // Number of motors
@@ -41,9 +45,6 @@ private:
     const char* errorString;  // Error string for logging
     char errorDetail[100];  // Detailed error message
     size_t errorDetailLen = 100;  // Length of the error detail buffer
-
-    // Timer to check motor positions periodically
-    rclcpp::TimerBase::SharedPtr timer_;
 };
 
 #endif // MOTOR_CONTROL_NODE_H
