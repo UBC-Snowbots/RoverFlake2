@@ -97,20 +97,17 @@ void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
     for (int i = 0; i < NUM_MOTORS; i++) {
-        double velocity = 0.0, target_velocity = 0.0, position = 0.0;
+        auto get_phidget_val = [&](auto phidget_func, double& val, const char* label) {
+            ret = phidget_func(motors[i], &val);
+            if (ret != EPHIDGET_OK) {
+                handlePhidgetError(ret, label, i);
+                message.valid_data[i] = false;
+            }
+        };
 
-        ret = PhidgetBLDCMotor_getVelocity(motors[i], &velocity);
-        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get velocity", i);
-
-        ret = PhidgetBLDCMotor_getTargetVelocity(motors[i], &target_velocity);
-        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get target velocity", i);
-
-        ret = PhidgetBLDCMotor_getPosition(motors[i], &position);
-        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "get position", i);
-
-        message.velocities[i] = velocity;
-        message.target_velocities[i] = target_velocity;
-        message.positions[i] = position;
+        get_phidget_val(PhidgetBLDCMotor_getVelocity, message.velocities[i], "get velocity");
+        get_phidget_val(PhidgetBLDCMotor_getTargetVelocity, message.target_velocities[i], "get target velocity");
+        get_phidget_val(PhidgetBLDCMotor_getPosition, message.positions[i], "get position");
     }
 
     drive_feedback_pub_->publish(message);
