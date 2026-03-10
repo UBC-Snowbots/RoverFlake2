@@ -39,7 +39,7 @@ public:
     }
 
 private:
-    // Persistent gripper state carried into every /arm/sim_command publication.
+    // Persistent gripper state — only updated by 'G' commands, NOT overwritten by velocity commands
     double gripper_state_ = 0.0;
 
     void armCommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg)

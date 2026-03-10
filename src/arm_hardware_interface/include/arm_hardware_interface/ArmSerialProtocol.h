@@ -122,7 +122,8 @@ struct MotorConfig {
 
 // Function to generate the configuration for all axes
 inline std::vector<MotorConfig> get_arm_configuration() {
-  std::vector<MotorConfig> axes(EE_INDEX + 1);
+  // Initialize 6 axes (Defaults match Axis 1, 2, 4, 5)
+  std::vector<MotorConfig> axes(7);
 
   // PID
   axes[AXIS_1_INDEX].kp = 180.0; // SET - WORKING with p 180, d 40 ( 5 min spent tuning )
@@ -143,6 +144,9 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_6_INDEX].kp = 50.0;
   axes[AXIS_6_INDEX].kd = 0.0;
 
+  axes[EE_INDEX].kp = 300.0;
+  axes[EE_INDEX].kd = 25.0;
+
 
   // GEAR REDUCTION
   axes[AXIS_1_INDEX].gear_red = (1.0f/190.0f);
@@ -151,29 +155,35 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_4_INDEX].gear_red = (1.0f/190.0f);
   axes[AXIS_5_INDEX].gear_red = (1.0f/66.0f);
   axes[AXIS_6_INDEX].gear_red = (1.0f/66.0f);
-  axes[EE_INDEX].gear_red = 1.0f;
+  // EE coming soon
+  // axes[EE_INDEX].gear_red = (1.0f/190.0f);
 
 
   // CURRENT LIMITS
   axes[AXIS_1_INDEX].max_current_A = 1.5f;
-  axes[AXIS_2_INDEX].max_current_A = 5.0f; 
-  axes[AXIS_3_INDEX].max_current_A = 2.0f; 
+  axes[AXIS_2_INDEX].max_current_A = 8.0f; 
+  axes[AXIS_3_INDEX].max_current_A = 4.1f; 
   axes[AXIS_4_INDEX].max_current_A = 0.5f; 
-  axes[AXIS_5_INDEX].max_current_A = 0.5f;
-  axes[AXIS_6_INDEX].max_current_A = 0.5f;
-  axes[EE_INDEX].max_current_A = 0.5f;
+  axes[AXIS_5_INDEX].max_current_A = 1.0f;
+  axes[AXIS_6_INDEX].max_current_A = 1.0f;
   
-  axes[AXIS_1_INDEX].position_min = -0.15;
-  axes[AXIS_1_INDEX].position_max = 0.15;
+  axes[AXIS_1_INDEX].position_min = -0.3;
+  axes[AXIS_1_INDEX].position_max = 0.3;
 
-  axes[AXIS_2_INDEX].position_min = -0.18;
-  axes[AXIS_2_INDEX].position_max = 0.15;
+  axes[AXIS_2_INDEX].position_min = -0.47;
+  axes[AXIS_2_INDEX].position_max = -0.05;
 
-  axes[AXIS_3_INDEX].position_min = -0.2;
-  axes[AXIS_3_INDEX].position_max = 0.2;
+  axes[AXIS_3_INDEX].position_min = 0.01;
+  axes[AXIS_3_INDEX].position_max = 0.4;
 
-  axes[EE_INDEX].position_min = -1.0f;
-  axes[EE_INDEX].position_max = 1.0f;
+  axes[AXIS_5_INDEX].position_min = -999.01;
+  axes[AXIS_5_INDEX].position_max = 999.4;
+
+  axes[AXIS_6_INDEX].position_min = -999.01;
+  axes[AXIS_6_INDEX].position_max = 999.4;
+
+  axes[EE_INDEX].position_min = -999.01;
+  axes[EE_INDEX].position_max = 999.4;
 
   // Note: Other axes (1, 2, 4, 5) use the default struct values
   return axes;

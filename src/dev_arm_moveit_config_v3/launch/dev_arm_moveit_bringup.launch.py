@@ -188,7 +188,7 @@ def generate_launch_description():
     )
     joy_params = {
         # 'dev': '/dev/input/js0',       # Joystick device file
-        'deadzone': 0.15,              # Deadzone for joystick axes
+        'deadzone': 0.1,               # Deadzone for joystick axes
         'autorepeat_rate': 20.0,       # Autorepeat rate in Hz
         'coalesce_interval': 0.05,     # Interval to coalesce events
     }
@@ -241,7 +241,7 @@ def generate_launch_description():
             joy_arm_node,
             # joy_node,  # Commented out — run manually with: ros2 run joy joy_node
             container,
-            start_servo,
+            # start_servo,
         ]
     )
 

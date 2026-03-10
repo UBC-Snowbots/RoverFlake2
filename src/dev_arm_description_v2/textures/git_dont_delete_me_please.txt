@@ -1,0 +1,1 @@
+Git ignores empty file paths. TOo lazy to reconfigure git to not do that

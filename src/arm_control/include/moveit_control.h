@@ -26,9 +26,10 @@ purpose: to handle moveit control, as well as servo.
 #define PI 3.14159
 
 // Gripper toggle inputs (Nintendo Pro trigger axis)
-#define GRIPPER_TOGGLE_BTN -1
+// #define GRIPPER_TOGGLE_BTN -1
 #define GRIPPER_TOGGLE_AXIS 5
 #define GRIPPER_AXIS_PRESSED_THRESHOLD 0.0
+#define GRIPPER_TOGGLE_BTN 0  // joystick "button 1" is index 0 (zero-indexed)
 
 // Gripper end-effector command values
 #define GRIPPER_OPEN_VALUE  1.0
@@ -80,7 +81,12 @@ int count_ = 0;
 void publishCommands();	
 void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
 void sendGripperCommand(double value);
-int joyControlMode = CARTESIAN_BASE_FRAME;
+// int joyControlMode = CARTESIAN_BASE_FRAME;
+
+// Gripper state tracking
+bool gripper_open_ = false;
+bool prev_gripper_btn_ = false;
+int joyControlMode = CARTESIAN_EE_FRAME;
 
 // Gripper state tracking
 bool gripper_open_ = false;
