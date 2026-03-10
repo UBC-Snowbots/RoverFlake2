@@ -48,12 +48,13 @@ struct MotorConfig {
 
   // Maximum velocity limit (revolutions/s)
   // Moteus Config: servo.velocity_limit (soft) or servo.max_velocity (hard limit)
-  float max_velocity = 0.05f;
+  float max_velocity = 0.3f;
 
   // Position Limits (revolutions)
   // Moteus Config: servopos.position_min / servopos.position_max
   float position_min = -1.0f;
   float position_max = 1.0f;
+  float position_warn_rev_padding = 0.02f;
 
   // ---------------------------------------------------------
   // 2. Torque / Current Limits
@@ -121,8 +122,7 @@ struct MotorConfig {
 
 // Function to generate the configuration for all axes
 inline std::vector<MotorConfig> get_arm_configuration() {
-  // Initialize 6 axes (Defaults match Axis 1, 2, 4, 5)
-  std::vector<MotorConfig> axes(6);
+  std::vector<MotorConfig> axes(EE_INDEX + 1);
 
   // PID
   axes[AXIS_1_INDEX].kp = 180.0; // SET - WORKING with p 180, d 40 ( 5 min spent tuning )
@@ -151,8 +151,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_4_INDEX].gear_red = (1.0f/190.0f);
   axes[AXIS_5_INDEX].gear_red = (1.0f/66.0f);
   axes[AXIS_6_INDEX].gear_red = (1.0f/66.0f);
-  // EE coming soon
-  // axes[EE_INDEX].gear_red = (1.0f/190.0f);
+  axes[EE_INDEX].gear_red = 1.0f;
 
 
   // CURRENT LIMITS
@@ -162,6 +161,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_4_INDEX].max_current_A = 0.5f; 
   axes[AXIS_5_INDEX].max_current_A = 0.5f;
   axes[AXIS_6_INDEX].max_current_A = 0.5f;
+  axes[EE_INDEX].max_current_A = 0.5f;
   
   axes[AXIS_1_INDEX].position_min = -0.15;
   axes[AXIS_1_INDEX].position_max = 0.15;
@@ -171,6 +171,9 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
   axes[AXIS_3_INDEX].position_min = -0.2;
   axes[AXIS_3_INDEX].position_max = 0.2;
+
+  axes[EE_INDEX].position_min = -1.0f;
+  axes[EE_INDEX].position_max = 1.0f;
 
   // Note: Other axes (1, 2, 4, 5) use the default struct values
   return axes;

@@ -41,10 +41,12 @@
 namespace ControllerConfig {
 
     // --- Face Buttons ---
-    constexpr int BTN_B      = 0;   // East
-    constexpr int BTN_A      = 1;   // South
-    constexpr int BTN_Y      = 2;   // North
-    constexpr int BTN_X      = 3;   // West
+    constexpr int BTN_B = 0;   // East (A)
+    constexpr int BTN_A = 1;   // South (B)
+    constexpr int BTN_Y = 2;   // North (X)
+    constexpr int BTN_X = 3;   // West (Y)
+
+    constexpr int BTN_HOME = 5; // Home
 
     constexpr int BTN_UP     = 12;   // Left shoulder
     constexpr int BTN_DOWN   = 13;   // Right shoulder
@@ -77,9 +79,6 @@ namespace ControllerConfig {
     // 1.0 → full speed (0.5 m/s per servo config)
     constexpr double CART_BUTTON_SPEED = 0.5;  // unitless, range [0.0, 1.0]
     constexpr double ROT_STICK_SPEED   = 0.6;  // unitless, range [0.0, 1.0] for angular
-
-    // --- Deadzone for analog axes (used later for joystick support) ---
-    constexpr double AXIS_DEADZONE = 0.15;
 
     // --- Frame for Cartesian twist commands ---
     // "base_link" = world-fixed directions (forward is always forward)
@@ -153,7 +152,6 @@ namespace ControllerConfig {
     constexpr int BTN_CART_NEG_Z = -1;
 
     constexpr double CART_BUTTON_SPEED = 0.3;
-    constexpr double AXIS_DEADZONE = 0.15;
     constexpr const char* CART_FRAME_ID = "base_link";
 
     // --- Gripper ---

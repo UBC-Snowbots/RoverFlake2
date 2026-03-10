@@ -41,7 +41,7 @@ ArmCAN::ArmCAN() : Node("ArmCanDriver") {
     }
     
     // set period to 10ms (100Hz) to match firmware
-    period = 1 / 100;
+    period = 1.0 / 100.0;
     transport = moteus::Controller::MakeSingletonTransport({});
 
     // Stop everything to clear faults and configure
@@ -56,7 +56,7 @@ ArmCAN::ArmCAN() : Node("ArmCanDriver") {
     timer_ = this->create_wall_timer(std::chrono::duration<double>(period), std::bind(&ArmCAN::serial_rx, this));
   }
 
-  sleep(0.1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   std_msgs::msg::String start_sound_msg;
   start_sound_msg.data = "AI_welcome_attention.wav";

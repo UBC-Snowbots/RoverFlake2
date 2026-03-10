@@ -38,7 +38,6 @@ rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr traj_subs
 // Callbacks
 void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
 void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
-/// Bridge: converts MoveIt Servo JointTrajectory → ArmCommand for the physical arm
 void trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
 void publish_rviz_gripper_command();
 
@@ -53,12 +52,11 @@ int current_gear = 0;
 int prev_paddleR = 0;
 int prev_paddleL = 0;
 
-// Gripper state tracking
+// edge detection
 bool gripper_open_ = false;
 bool prev_gripper_btn_ = false;
+bool prev_home_btn_ = false;
 
-// ========== Servo → Physical Arm Bridge ==========
-// Maps URDF joint names (from MoveIt Servo) to firmware axis indices (0-5).
 std::unordered_map<std::string, int> urdf_to_axis_;
 // Axis direction multipliers matching armControlParams.h ArmConstants::axis_dirs.
 // Needed to convert between MoveIt (rad/s) and firmware (deg/s) frames.

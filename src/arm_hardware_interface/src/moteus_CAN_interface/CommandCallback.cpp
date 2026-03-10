@@ -9,8 +9,8 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   RCLCPP_INFO(this->get_logger(), "dfsf init %c", type);
   
   switch (type) {
-    case HOME_CMD: // need to implement for new arm
-      if (!SIMULATE) { sendHomeCmd(msg->cmd_value); } 
+    case HOME_CMD:
+      if (!SIMULATE) { sendHomeCmd(); } 
       break;
     case COMM_CMD:
       if (!SIMULATE) { sendCommCmd(msg->cmd_value); }
@@ -43,6 +43,10 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
       }
       break;
     case ABS_VEL_CMD:
+      if (homing) {
+        RCLCPP_WARN(this->get_logger(), "Ignoring velocity command — homing in progress");
+        break;
+      }
       // double sim_target_velocities[NUM_JOINTS];
       for (int i = 0; i < NUM_JOINTS_NO_EE; i++) {
         RCLCPP_INFO(this->get_logger(), "velovc %f", msg->velocities[i]);
@@ -81,19 +85,32 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   }
 }
 
-void ArmCAN::sendHomeCmd(int target_axis) {
-  
-  // TODO: use moteus pos feedback to get const home position values
+void ArmCAN::sendHomeCmd() {
+  RCLCPP_INFO(this->get_logger(), "Homing all axes...");
 
-  // send home request
-  // std::string home_msg;
-  // if (target_axis != HOME_ALL_ID) {
-  //   home_msg = "$h(" + std::to_string(target_axis) + ")\n";
-  // } else {
-  //   home_msg = "$h(A)\n";
-  // }
-  //
-  // sendMsg(home_msg);
+  // Home positions in MoveIt/URDF frame (radians), from initial_positions.yaml
+  constexpr float moveit_home[NUM_JOINTS] = {
+    -1.57f,   // shoulder_joint
+    -1.57f,   // link_1_joint
+     0.9f,    // link1_link2
+     0.0f,    // a4_rotation
+     1.2f,    // a5_rotation
+     0.0f,    // a6_rotation
+     0.0f     // EE
+  };
+
+  // Convert MoveIt frame -> firmware frame (radians)
+  // Then send_position_command will convert rad -> rev
+  for (int i = 0; i < NUM_JOINTS; i++) {
+    home_target_[i] = (moveit_home[i] - axes[i].zero_rad) / axes[i].dir;
+  }
+
+  homing = true;
+  homed = 0;
+
+  // Send the first position command immediately
+  send_position_command(home_target_);
+  RCLCPP_INFO(this->get_logger(), "Homing started — blocking velocity commands until arrival.");
 }
 
 void ArmCAN::sendCommCmd(int target_state) {

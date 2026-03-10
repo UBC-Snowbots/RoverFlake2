@@ -1,55 +1,26 @@
-// TODO: make a good comment
 #include "ArmMoteusInterface.h"
-
-#define PI 3.14159
 
 /**
 TView commands for moteus:
  * conf set servo.default_timeout_s nan - disable watchdog fault state
 **/
 
-// Callbacks
-
-
-// Member functions
-
 float ArmCAN::degToRad(float deg) {
-  float rad = deg * 3.14159 / 180; // 14159265359
-
+  float rad = deg * M_PI / 180;
   return (rad);
 }
 
 float ArmCAN::firmToMoveitOffsetPos(float deg, int i) {
-
   float rad = degToRad(deg);
   return ((rad * axes[i].dir) + (axes[i].zero_rad));
 }
 
 float ArmCAN::firmToMoveitOffsetVel(float deg, int i) {
-
   float rad = degToRad(deg);
-
   return ((rad * axes[i].dir));
 }
 
-void ArmCAN::parseLimitSwitchTest(std::string msg) {
-  // TODO: can remove, no need for limit switches i think, use pos feedback?
-  // also can set moteus position limits using
-  // 2>servopos.position_min
-  // 2>servopos.position_max
-
-  // int axis = 0;
-  // int value = 5;
-  // if (sscanf(msg.c_str(), "Limit Switch %d is %d.", &axis, &value) == 2) {
-  //   if (axis >= 1 && axis <= 6) {
-  //     if (value == 1 || value == 0) {
-  //       this->current_limit_switches[axis - 1];
-  //       RCLCPP_INFO(this->get_logger(), "limit switches updated");
-  //     }
-  //   }
-  //   RCLCPP_ERROR(this->get_logger(), "Arm limit switch parsing failed");
-  // }
-}
+void ArmCAN::parseLimitSwitchTest(std::string msg) { }
 
 void ArmCAN::parseArmAngleUart(std::string msg) {
   // TODO: need to recalculate
@@ -98,20 +69,36 @@ void ArmCAN::parseArmAngleUart(std::string msg) {
   }
 }
 
-void ArmCAN::sendMsg(std::string outMsg) {
-  // TODO: prob remove, do send in specific funcs
-
-  //  teensy.write(outMsg);
-  //  teensy.flushOutput();
-}
-
 void ArmCAN::serial_rx() {
   if (send_angles) {
     std::vector<moteus::CanFdFrame> command_frames;
 
-    // Accumulate all of our command CAN frames.
+    if (homing) {
+      send_position_command(home_target_);
+
+      bool all_arrived = true;
+      for (int i = 0; i < NUM_JOINTS; i++) {
+        double target_rev = radToRev(home_target_[i]);
+        double current_rev = motor_telem[i].curr_position;
+        if (std::abs(current_rev - target_rev) > kHomePositionThreshold) {
+          all_arrived = false;
+          break;
+        }
+      }
+      if (all_arrived) {
+        homing = false;
+        RCLCPP_INFO(this->get_logger(), "Homing complete — all axes reached home position.");
+      }
+      return;
+    }
+
+    // Normal polling: query all motors for telemetry
     for (const auto &pair : controllers) {
       command_frames.push_back(pair.second->MakeQuery());
+    }
+
+    if (command_frames.empty()) {
+      return;
     }
 
     // Now send them in a single call to Transport::Cycle.
@@ -156,7 +143,6 @@ void ArmCAN::serial_rx() {
     // without 'buf' having been initialized with status data yet.
     // I'll keep the logic that builds the servo status line.
 
-    char buf2[4096] = {};
     // We parse these into a map to both sort and de-duplicate them,
     // and persist data in the event that any are missing.
     for (const auto &frame : replies) {
@@ -199,7 +185,7 @@ void ArmCAN::serial_rx() {
   rover_msgs::msg::MoteusArmStatus debug_msg;
   debug_msg.config.resize(NUM_JOINTS);
   debug_msg.status.resize(NUM_JOINTS);
-  for(int i = 0; i < NUM_JOINTS_NO_EE; i++)
+  for (int i = 0; i < NUM_JOINTS; i++)
   {
     debug_msg.config[i].max_acceleration = motor_telem[i].config.max_acceleration;
     debug_msg.config[i].max_velocity = motor_telem[i].config.max_velocity;
@@ -242,7 +228,7 @@ void ArmCAN::serial_rx() {
 
 void ArmCAN::checkAlerts()
 {
-  for(auto &axis : axes)
+  for (auto &axis : axes)
   {
     
     if(motor_telem[axis.index].curr_position >= motor_telem[axis.index].config.position_max - motor_telem[axis.index].config.position_warn_rev_padding)
@@ -276,7 +262,7 @@ void ArmCAN::checkAlerts()
 
 }
 
-void ArmCAN::handleWristDifferential(float a5_desired, float a6_desired, float& m5_output, float& m6_output)
+void ArmCAN::handleWristDifferential(float a5_desired, float a6_desired, float &m5_output, float &m6_output)
 {
   m5_output = a6_desired;
   m6_output = a5_desired;

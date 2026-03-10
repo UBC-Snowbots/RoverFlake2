@@ -12,6 +12,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(arm_control REQUIRED)
+find_package(std_msgs REQUIRED)
 # uncomment the following section in order to fill in further dependencies
 # manually. find_package(<dependency> REQUIRED)
 include_directories(include ${arm_control_INCLUDE_DIRS})
@@ -25,14 +26,12 @@ add_executable(
   serial_arm_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h
                     include/arm_hardware_interface/ArmSerialProtocol.h)
 add_executable(
-  moteus_arm_driver src/moteus_CAN_interface/MoteusMain.cpp
-                    src/moteus_CAN_interface/MoteusNode.cpp
-                    src/moteus_CAN_interface/CommandCallback.cpp
-                    src/moteus_CAN_interface/MoteusIO.cpp
-                    src/moteus_CAN_interface/MoteusInterface.cpp
-                    include/ArmMoteusInterface.h
-                    include/arm_hardware_interface/ArmSerialProtocol.h)
-
+  moteus_arm_driver
+    src/moteus_CAN_interface/MoteusMain.cpp
+    src/moteus_CAN_interface/MoteusNode.cpp
+    src/moteus_CAN_interface/CommandCallback.cpp
+    src/moteus_CAN_interface/MoteusInterface.cpp
+    src/moteus_CAN_interface/MoteusIO.cpp)
 
 target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1)
 
@@ -40,7 +39,7 @@ target_link_libraries(moteus_arm_driver moteus::cpp)
 ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial
                           rover_msgs arm_control)
 ament_target_dependencies(moteus_arm_driver rclcpp sensor_msgs serial
-                          rover_msgs arm_control)
+                          rover_msgs arm_control std_msgs) 
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
