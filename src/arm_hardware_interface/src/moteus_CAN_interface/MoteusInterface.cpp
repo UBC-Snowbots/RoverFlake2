@@ -97,9 +97,7 @@ void ArmCAN::serial_rx() {
       command_frames.push_back(pair.second->MakeQuery());
     }
 
-    if (command_frames.empty()) {
-      return;
-    }
+    if (command_frames.empty()) { return; }
 
     // Now send them in a single call to Transport::Cycle.
     std::vector<moteus::CanFdFrame> replies;
