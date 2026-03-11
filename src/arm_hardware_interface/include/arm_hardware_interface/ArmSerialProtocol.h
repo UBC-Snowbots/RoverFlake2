@@ -163,7 +163,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
 
   // CURRENT LIMITS
-  axes[AXIS_1_INDEX].max_current_A = 2.2f;
+  axes[AXIS_1_INDEX].max_current_A = 1.0f;
   axes[AXIS_2_INDEX].max_current_A = 8.0f; 
   axes[AXIS_3_INDEX].max_current_A = 5.5f; 
   axes[AXIS_4_INDEX].max_current_A = 0.5f; 
