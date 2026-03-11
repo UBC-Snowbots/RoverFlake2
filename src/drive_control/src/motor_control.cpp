@@ -96,18 +96,23 @@ void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float 
 void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto get_phidget_val = [&](auto phidget_func, double& val, const char* label) {
-            ret = phidget_func(motors[i], &val);
-            if (ret != EPHIDGET_OK) {
-                handlePhidgetError(ret, label, i);
-                message.valid_data[i] = false;
-            }
-        };
+    message.valid_data.resize(NUM_MOTORS, true);
+    message.velocities.resize(NUM_MOTORS);
+    message.target_velocities.resize(NUM_MOTORS);
+    message.positions.resize(NUM_MOTORS);
 
-        get_phidget_val(PhidgetBLDCMotor_getVelocity, message.velocities[i], "get velocity");
-        get_phidget_val(PhidgetBLDCMotor_getTargetVelocity, message.target_velocities[i], "get target velocity");
-        get_phidget_val(PhidgetBLDCMotor_getPosition, message.positions[i], "get position");
+    auto get_phidget_val = [&](auto phidget_func, int i, double& val, const char* label) {
+        ret = phidget_func(motors[i], &val);
+        if (ret != EPHIDGET_OK) {
+            handlePhidgetError(ret, label, i);
+            message.valid_data[i] = false;
+        }
+    };
+
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        get_phidget_val(PhidgetBLDCMotor_getVelocity, i, message.velocities[i], "get velocity");
+        get_phidget_val(PhidgetBLDCMotor_getTargetVelocity, i,  message.target_velocities[i], "get target velocity");
+        get_phidget_val(PhidgetBLDCMotor_getPosition, i, message.positions[i], "get position");
     }
 
     drive_feedback_pub_->publish(message);

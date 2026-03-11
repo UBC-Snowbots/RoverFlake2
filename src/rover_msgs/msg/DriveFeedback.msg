@@ -1,4 +1,4 @@
-bool[6] valid_data
-float64[6] velocities
-float64[6] target_velocities
-float64[6] positions
+bool[] valid_data
+float64[] velocities
+float64[] target_velocities
+float64[] positions
