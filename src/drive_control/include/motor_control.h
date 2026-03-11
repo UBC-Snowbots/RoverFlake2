@@ -9,6 +9,10 @@
 #include <vector>
 #include <algorithm>  // For std::clamp
 
+#define NUM_MOTORS 6
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY 100 // Publish frequency for drive_feedback_pub_
+#define MOTOR_FAILSAFE_INTERVAL 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
+
 class MotorControlNode : public rclcpp::Node {
 public:
     MotorControlNode();  // Constructor
@@ -17,14 +21,14 @@ public:
 private:
     // Publisher for drive feedback (velocity and position of each motor)
     rclcpp::Publisher<rover_msgs::msg::DriveFeedback>::SharedPtr drive_feedback_pub_;
-
+    
     // Subscriber declarations for left and right wheel velocities as Float64MultiArray
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_sub_;
 
     // Phidget error handling function
     void handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int motor_id);
-
+    
     // Method to run motors at a specified velocity
     void runMotors(const std::vector<int>& selected_motors, float velocity);
 
@@ -39,7 +43,6 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
 
     // Constants and motor-related variables
-    static const int NUM_MOTORS = 6;  // Number of motors
     PhidgetBLDCMotorHandle motors[NUM_MOTORS];  // Array of motors
     PhidgetReturnCode ret, errorCode;  // Return codes for Phidget functions
     const char* errorString;  // Error string for logging
