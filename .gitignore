@@ -69,3 +69,6 @@ log/
 
 .vscode/settings.json
 
+# CLAUDE
+CLAUDE.md
+.claude/

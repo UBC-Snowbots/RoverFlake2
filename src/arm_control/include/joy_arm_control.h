@@ -41,6 +41,8 @@ void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
 void arm_callback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 /// Bridge: converts MoveIt Servo JointTrajectory → ArmCommand for the physical arm
 void trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
+/// Publish gripper open/close positions to the simulated gripper controller
+void publish_rviz_gripper_command();
 
 // Timers
 rclcpp::TimerBase::SharedPtr timer_;

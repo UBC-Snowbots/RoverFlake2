@@ -99,8 +99,16 @@ namespace ControllerConfig {
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
+    constexpr int AXIS_GRIPPER_TOGGLE = 5; // ZR analog axis (rests at 1.0, pressed = -1.0)
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0; // trigger considered pressed below this
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+
+    // --- Gripper Sim Positions ---
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS   =  0.04;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS  = -0.04;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS  =  0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS =  0.0;
 }
 
 #elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
@@ -148,8 +156,28 @@ namespace ControllerConfig {
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr int AXIS_GRIPPER_TOGGLE = -1;           // no analog trigger axis
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0;
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+
+    // --- Gripper Sim Positions ---
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS   =  0.04;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS  = -0.04;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS  =  0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS =  0.0;
+
+    // --- Orientation ---
+    constexpr double ROT_STICK_SPEED = 0.4;
+    constexpr int AXIS_ROLL  = AXIS_STICK_X;  // stick X → roll
+    constexpr int AXIS_PITCH = AXIS_STICK_Y;  // stick Y → pitch
+    constexpr int AXIS_YAW   = AXIS_TWIST;    // twist   → yaw
+    constexpr bool INVERT_ROLL  = false;
+    constexpr bool INVERT_PITCH = false;
+    constexpr bool INVERT_YAW   = false;
+
+    // --- Misc ---
+    constexpr int BTN_HOME = -1;  // no home button on Cyborg stick
 }
 
 #else

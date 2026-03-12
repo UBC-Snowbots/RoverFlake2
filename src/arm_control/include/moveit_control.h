@@ -86,11 +86,7 @@ void sendGripperCommand(double value);
 // Gripper state tracking
 bool gripper_open_ = false;
 bool prev_gripper_btn_ = false;
-int joyControlMode = CARTESIAN_EE_FRAME;
 
-// Gripper state tracking
-bool gripper_open_ = false;
-bool prev_gripper_btn_ = false;
 
     // void test_send(){
     //     send_command(0.5, 1.0, 1.0, 0.5);
