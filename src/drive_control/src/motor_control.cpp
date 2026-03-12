@@ -30,7 +30,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     );
 
     // Setup a timer to check position, velocity and target velocity of each motor
-    timer_ = this->create_wall_timer(
+    feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY),
         std::bind(&MotorControlNode::publishDriveFeedback, this)
     );
@@ -40,6 +40,12 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetBLDCMotor_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL);
         handlePhidgetError(ret, "enable failsafe", i);
     }
+
+    // Initialize timer to reset the failsafe
+    failsafe_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL / 5),
+        std::bind(&MotorControlNode::resetFailsafe, this)
+    );
 
     // Create subscribers for left and right wheel velocity commands
     left_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
@@ -116,6 +122,13 @@ void MotorControlNode::publishDriveFeedback() {
     }
 
     drive_feedback_pub_->publish(message);
+}
+
+void MotorControlNode::resetFailsafe() {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ret = PhidgetBLDCMotor_resetFailsafe(motors[i]);
+        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "failsafe", i);
+    }
 }
 
 int main(int argc, char **argv) {

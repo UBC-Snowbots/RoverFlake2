@@ -38,9 +38,13 @@ private:
 
     // Function to publish the velocity, target velocity and position of each motor
     void publishDriveFeedback();
+    void resetFailsafe();
 
     // Timer to check motor state (velocities and positions) periodically
-    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr feedback_timer_;
+
+    // Timer to reset the motor failsafe
+    rclcpp::TimerBase::SharedPtr failsafe_timer_;
 
     // Constants and motor-related variables
     PhidgetBLDCMotorHandle motors[NUM_MOTORS];  // Array of motors
