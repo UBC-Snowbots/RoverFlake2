@@ -23,9 +23,56 @@ inline static constexpr int MAX_AXES    = 10;
 #define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
 // ============================================================
+//  PS4 Controller (Using Joy Linux)
+// ============================================================
+namespace ps4_linux_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0;
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+    }
+
+    namespace buttons {
+        static inline constexpr int x                   = 0;
+        static inline constexpr int square              = 0;
+        static inline constexpr int circle              = 0;
+        static inline constexpr int triangle            = 0;
+        static inline constexpr int L1                  = 0; // Left trigger
+        static inline constexpr int R1                  = 0; // Right trigger
+        static inline constexpr int L3                  = 0; // Left joystick button
+        static inline constexpr int R3                  = 0; // Right joystic button
+
+    }
+
+}
+
+
+// ============================================================
 //  Nintendo Switch Pro Controller
 // ============================================================
 
+namespace switch_pro_linux_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0;
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+    }
+
+    namespace buttons {
+        static inline constexpr int x                   = 0;
+        static inline constexpr int square              = 0;
+        static inline constexpr int circle              = 0;
+        static inline constexpr int triangle            = 0;
+        static inline constexpr int L1                  = 0; // Left trigger
+        static inline constexpr int R1                  = 0; // Right trigger
+        static inline constexpr int L3                  = 0; // Left joystick button
+        static inline constexpr int R3                  = 0; // Right joystic button
+
+    }
+
+}
 //  Button names (used):
 //    0 = BTN_EAST        1 = BTN_SOUTH
 //    2 = BTN_NORTH       3 = BTN_WEST
@@ -174,18 +221,35 @@ namespace ArmControllerConfig { // Can make into a class later?
         CYBORG_JOYSTICK
     };
 
+    // Arm control input, Modelled off of control base joysticks:
+    /* axes:
+    - 0: left joystick x
+    - 1: left joystick y
+    - 2: left joystick z
+    - 3: right joystick x
+    - 4: right joystick y
+    - 5: right joystick z
+
+    example: For a game controller, the below function will do its best to map the game controller inputs to sub out for the arm joysticks
+
+
+    */
     struct ArmControlInput {
         float axes[MAX_AXES]; // Static arrays, not vectors here
         int buttons[MAX_BUTTONS];
     };
 
-    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
+    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &arm_control_msg) 
     {
         
         switch (controller)
         {
         case GameController::PS4_JOY_LINUX:
-            
+            arm_control_msg.axes[0] = joy_msg.axes[0];
+            arm_control_msg.axes[1] = joy_msg.axes[1];
+            // arm_control_msg.axes[2] = joy_msg.axes[1];
+            arm_control_msg.axes[3] = joy_msg.axes[2];
+            arm_control_msg.axes[4] = joy_msg.axes[3];
             break;
         case GameController::SWITCH_PRO_CONTROLLER:
 
@@ -199,4 +263,26 @@ namespace ArmControllerConfig { // Can make into a class later?
         return true;
         }
     }
+
+    // Overload for drive control (later refactor)
+    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
+    // {
+        
+    //     switch (controller)
+    //     {
+    //     case GameController::PS4_JOY_LINUX:
+            
+    //         break;
+    //     case GameController::SWITCH_PRO_CONTROLLER:
+
+    //         break;
+    //     case GameController::CYBORG_JOYSTICK:
+            
+    //         break;
+    //     default:
+    //         return false;
+
+    //     return true;
+    //     }
+    // }
 }
