@@ -23,23 +23,29 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         handlePhidgetError(ret, "attachment", i);
     }
 
-    // // Set up a timer to check motor positions every 100 ms
-    // timer_ = this->create_wall_timer(
-    //     std::chrono::milliseconds(100),
-    //     std::bind(&MotorControlNode::checkMotorPositions, this)
-    // );
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
+    drive_feedback_pub_ = this->create_publisher<rover_msgs::msg::DriveFeedback>(
+        "drive/feedback",
+        qos
+    );
 
-    // Create a timer to call printTargetVelocity every 100 ms
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100), 
-        std::bind(&MotorControlNode::printTargetVelocity, this)  // For motor 0, for example
+    // Setup a timer to check position, velocity and target velocity of each motor
+    feedback_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
+        std::bind(&MotorControlNode::publishDriveFeedback, this)
     );
 
     // Enable failsafe for all motors
-    // for (int i = 0; i < NUM_MOTORS; i++) {
-    //     PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], 5000);
-    //     handlePhidgetError(ret, "enable failsafe", i);
-    // }
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ret = PhidgetBLDCMotor_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL_MS);
+        handlePhidgetError(ret, "enable failsafe", i);
+    }
+
+    // Initialize timer to reset the failsafe
+    failsafe_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 5),
+        std::bind(&MotorControlNode::resetFailsafe, this)
+    );
 
     // Create subscribers for left and right wheel velocity commands
     left_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
@@ -93,29 +99,36 @@ void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float 
     }
 }
 
-// void MotorControlNode::checkMotorPositions() {
-//     for (int i = 0; i < NUM_MOTORS; i++) {
-//         double position = 0.0;
-//         PhidgetReturnCode ret = PhidgetBLDCMotor_getPosition(motors[i], &position);
-//         if (ret != EPHIDGET_OK) {
-//             handlePhidgetError(ret, "get position", i);
-//             continue;
-//         }
-//         RCLCPP_INFO(this->get_logger(), "Motor %d Position: %f", i, position * 1.3666);
-//     }
-// }
+void MotorControlNode::publishDriveFeedback() {
+    rover_msgs::msg::DriveFeedback message;
 
-void MotorControlNode::printTargetVelocity() {
-    
-        double targetVelocity = 0.0;
-        PhidgetReturnCode ret = PhidgetBLDCMotor_getTargetVelocity(motors[5], &targetVelocity);
+    message.valid_data.resize(NUM_MOTORS, true);
+    message.velocities.resize(NUM_MOTORS);
+    message.target_velocities.resize(NUM_MOTORS);
+    message.positions.resize(NUM_MOTORS);
 
+    auto get_phidget_val = [&](auto phidget_func, int i, double& val, const char* label) {
+        ret = phidget_func(motors[i], &val);
         if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "get target velocity", 5);  // Use i instead of motor_index
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Motor %d Target Velocity: %f", 5, targetVelocity);
+            handlePhidgetError(ret, label, i);
+            message.valid_data[i] = false;
         }
+    };
 
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        get_phidget_val(PhidgetBLDCMotor_getVelocity, i, message.velocities[i], "get velocity");
+        get_phidget_val(PhidgetBLDCMotor_getTargetVelocity, i,  message.target_velocities[i], "get target velocity");
+        get_phidget_val(PhidgetBLDCMotor_getPosition, i, message.positions[i], "get position");
+    }
+
+    drive_feedback_pub_->publish(message);
+}
+
+void MotorControlNode::resetFailsafe() {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ret = PhidgetBLDCMotor_resetFailsafe(motors[i]);
+        if (ret != EPHIDGET_OK) handlePhidgetError(ret, "failsafe", i);
+    }
 }
 
 int main(int argc, char **argv) {
