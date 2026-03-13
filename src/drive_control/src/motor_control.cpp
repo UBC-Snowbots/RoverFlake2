@@ -31,19 +31,19 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
     // Setup a timer to check position, velocity and target velocity of each motor
     feedback_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY),
+        std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&MotorControlNode::publishDriveFeedback, this)
     );
 
     // Enable failsafe for all motors
     for (int i = 0; i < NUM_MOTORS; i++) {
-        ret = PhidgetBLDCMotor_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL);
+        ret = PhidgetBLDCMotor_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL_MS);
         handlePhidgetError(ret, "enable failsafe", i);
     }
 
     // Initialize timer to reset the failsafe
     failsafe_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL / 5),
+        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 5),
         std::bind(&MotorControlNode::resetFailsafe, this)
     );
 

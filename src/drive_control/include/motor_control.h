@@ -10,8 +10,8 @@
 #include <algorithm>  // For std::clamp
 
 #define NUM_MOTORS 6
-#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY 100 // Publish frequency for drive_feedback_pub_
-#define MOTOR_FAILSAFE_INTERVAL 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
+#define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
 
 class MotorControlNode : public rclcpp::Node {
 public:
