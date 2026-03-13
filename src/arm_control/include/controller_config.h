@@ -7,6 +7,11 @@
  * To switch controllers, change the ACTIVE_CONTROLLER define below.
  * Button/axis indices can be verified by running: ros2 topic echo /joy
  * 
+ * Joy -> Ros2 package that works with event based (/dev/input/eventx)
+ *          - This has bugs? Cannot seem to set parameters
+ * Joy_linux -> Ros2 package that does the same thing as joy, but uses /dev/input/by-id
+ *          - This was the ros1 joy package and used to be the standard. We are able to set parameters and stuff 
+ * 
  */
 #pragma once
 
@@ -25,7 +30,74 @@ inline static constexpr int MAX_AXES    = 10;
 // ============================================================
 //  PS4 Controller (Using Joy Linux)
 // ============================================================
-namespace ps4_linux_index {
+namespace ps4_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0;
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+    }
+
+    namespace buttons { // Can also be switches
+        static inline constexpr int x                   = 0;
+        static inline constexpr int square              = 0;
+        static inline constexpr int circle              = 0;
+        static inline constexpr int triangle            = 0;
+        static inline constexpr int L1                  = 0; // Left trigger
+        static inline constexpr int R1                  = 0; // Right trigger
+        static inline constexpr int L3                  = 0; // Left joystick button
+        static inline constexpr int R3                  = 0; // Right joystic button
+    }
+
+    // If we need to support both joy and joy_linux, maybe something like:
+    /*
+    namespace your_controller
+    {
+        namespace joy_event {
+            axes...
+            buttons...
+        }
+            
+        namespace joy_linux {
+            axes...
+            buttons...
+        }
+    }
+    
+    */
+
+}
+
+
+// ============================================================
+//  Nintendo Switch Pro Controller (joy linux)
+// ============================================================
+
+namespace switch_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0;
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+    }
+
+    namespace buttons {
+        static inline constexpr int x                   = 0;
+        static inline constexpr int square              = 0;
+        static inline constexpr int circle              = 0;
+        static inline constexpr int triangle            = 0;
+        static inline constexpr int L1                  = 0; // Left trigger
+        static inline constexpr int R1                  = 0; // Right trigger
+        static inline constexpr int L3                  = 0; // Left joystick button
+        static inline constexpr int R3                  = 0; // Right joystic button
+    }
+}
+
+// ============================================================
+//  Cyborg Joystick (joy linux)
+// ============================================================
+
+namespace cyborg_index {
     namespace axes {
         static inline constexpr int LEFT_JOYSTICK_X     = 0;
         static inline constexpr int LEFT_JOYSTICK_Y     = 1;
@@ -47,32 +119,99 @@ namespace ps4_linux_index {
 
 }
 
+namespace ArmControllerConfig { // Can make into a class later?
 
-// ============================================================
-//  Nintendo Switch Pro Controller
-// ============================================================
+    enum class GameController {
+        PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+        SWITCH_PRO_CONTROLLER,
+        CYBORG_JOYSTICK
 
-namespace switch_pro_linux_index {
-    namespace axes {
-        static inline constexpr int LEFT_JOYSTICK_X     = 0;
-        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
-        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
-        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+        //Also possible here:
+        // AARON_STYLE_SWITCH_PRO
+        // ROWAN_PRECISE_PS4
+        // (custom mappings based on which user likes what)
+    };
+
+    // Arm control input, Modelled off of control base joysticks:
+    /* axes:
+    - 0: left joystick x
+    - 1: left joystick y
+    - 2: left joystick z
+    - 3: right joystick x
+    - 4: right joystick y
+    - 5: right joystick z
+
+    example: For a game controller, the below function will do its best to map the game controller inputs to sub out for the arm joysticks
+
+    Note: the above is based on control base arm joysticks "default", we can create other 
+
+
+    */
+    struct ArmControlInput {
+        float axes[MAX_AXES]; // Static arrays, not vectors here
+        int buttons[MAX_BUTTONS];
+    };
+
+    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &arm_control_msg) 
+    {
+        
+        switch (controller)
+        {
+        case GameController::PS4_JOY_LINUX:
+            {
+                using namespace ps4_index;
+                arm_control_msg.axes[0] = joy_msg.axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.axes[1] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
+                // arm_control_msg.axes[2] = joy_msg.axes[1];
+                arm_control_msg.axes[3] = joy_msg.axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.axes[4] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
+    
+                arm_control_msg.buttons[0] = joy_msg.buttons[buttons::square];
+            }
+            break;
+        case GameController::SWITCH_PRO_CONTROLLER:
+            }
+            using namespace switch_index;
+
+            }
+            // TODO
+            break;
+        case GameController::CYBORG_JOYSTICK:
+            // TODO
+            break;
+        default:
+            return false;
+
+        return true;
+        }
     }
 
-    namespace buttons {
-        static inline constexpr int x                   = 0;
-        static inline constexpr int square              = 0;
-        static inline constexpr int circle              = 0;
-        static inline constexpr int triangle            = 0;
-        static inline constexpr int L1                  = 0; // Left trigger
-        static inline constexpr int R1                  = 0; // Right trigger
-        static inline constexpr int L3                  = 0; // Left joystick button
-        static inline constexpr int R3                  = 0; // Right joystic button
+    // Overload for drive control (later refactor)
+    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
+    // {
+        
+    //     switch (controller)
+    //     {
+    //     case GameController::PS4_JOY_LINUX:
+            
+    //         break;
+    //     case GameController::SWITCH_PRO_CONTROLLER:
 
-    }
+    //         break;
+    //     case GameController::CYBORG_JOYSTICK:
+            
+    //         break;
+    //     default:
+    //         return false;
 
+    //     return true;
+    //     }
+    // }
 }
+
+
+
+
 //  Button names (used):
 //    0 = BTN_EAST        1 = BTN_SOUTH
 //    2 = BTN_NORTH       3 = BTN_WEST
@@ -211,78 +350,3 @@ namespace ControllerConfig {
 #else
 #pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
 #endif
-
-
-namespace ArmControllerConfig { // Can make into a class later?
-
-    enum class GameController {
-        PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
-        SWITCH_PRO_CONTROLLER,
-        CYBORG_JOYSTICK
-    };
-
-    // Arm control input, Modelled off of control base joysticks:
-    /* axes:
-    - 0: left joystick x
-    - 1: left joystick y
-    - 2: left joystick z
-    - 3: right joystick x
-    - 4: right joystick y
-    - 5: right joystick z
-
-    example: For a game controller, the below function will do its best to map the game controller inputs to sub out for the arm joysticks
-
-
-    */
-    struct ArmControlInput {
-        float axes[MAX_AXES]; // Static arrays, not vectors here
-        int buttons[MAX_BUTTONS];
-    };
-
-    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &arm_control_msg) 
-    {
-        
-        switch (controller)
-        {
-        case GameController::PS4_JOY_LINUX:
-            arm_control_msg.axes[0] = joy_msg.axes[0];
-            arm_control_msg.axes[1] = joy_msg.axes[1];
-            // arm_control_msg.axes[2] = joy_msg.axes[1];
-            arm_control_msg.axes[3] = joy_msg.axes[2];
-            arm_control_msg.axes[4] = joy_msg.axes[3];
-            break;
-        case GameController::SWITCH_PRO_CONTROLLER:
-
-            break;
-        case GameController::CYBORG_JOYSTICK:
-            
-            break;
-        default:
-            return false;
-
-        return true;
-        }
-    }
-
-    // Overload for drive control (later refactor)
-    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
-    // {
-        
-    //     switch (controller)
-    //     {
-    //     case GameController::PS4_JOY_LINUX:
-            
-    //         break;
-    //     case GameController::SWITCH_PRO_CONTROLLER:
-
-    //         break;
-    //     case GameController::CYBORG_JOYSTICK:
-            
-    //         break;
-    //     default:
-    //         return false;
-
-    //     return true;
-    //     }
-    // }
-}
