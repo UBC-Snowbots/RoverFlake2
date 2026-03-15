@@ -63,7 +63,7 @@ endforeach()
 include_directories(include)
 add_library(${PROJECT_NAME}_lib src/armconfig.cpp
             include/armControlParams.h include/controller_config.h) 
-ament_target_dependencies(${PROJECT_NAME}_lib sensor_msgs)
+ament_target_dependencies(${PROJECT_NAME}_lib sensor_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 # uncomment the following section in order to fill in
 # further dependencies manually.

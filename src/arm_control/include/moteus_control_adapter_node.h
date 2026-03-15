@@ -4,6 +4,7 @@
 #include <rover_msgs/msg/arm_command.hpp>
 #include <moteus_msgs/msg/position_command.hpp>
 #include <armControlParams.h> 
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 
 #include <array>
 #include <vector>

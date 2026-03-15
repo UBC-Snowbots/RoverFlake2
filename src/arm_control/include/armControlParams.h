@@ -12,7 +12,6 @@
 #define POSITION_BASED 2
 #define NUM_JOINTS 7
 #define NUM_JOINTS_NO_EE 6
-#define EE_INDEX 6
 #define EE_SPEED_SCALE 1
 #define PI 3.14
 
