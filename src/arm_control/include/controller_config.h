@@ -16,6 +16,7 @@
 #pragma once
 
 #include <sensor_msgs/msg/joy.hpp>
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 inline static constexpr int MAX_BUTTONS = 20;
 inline static constexpr int MAX_AXES    = 10;
 
@@ -34,20 +35,34 @@ namespace ps4_index {
     namespace axes {
         static inline constexpr int LEFT_JOYSTICK_X     = 0;
         static inline constexpr int LEFT_JOYSTICK_Y     = 1;
-        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
-        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 3;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 4;
+
+        static inline constexpr int L2                  = 2; // Left Trigger
+        static inline constexpr int R2                  = 5; // Right trigger
+
+        static inline constexpr int DPAD_X              = 6;
+        static inline constexpr int DPAD_Y              = 7;
+
     }
 
     namespace buttons { // Can also be switches
-        static inline constexpr int x                   = 0;
-        static inline constexpr int square              = 0;
-        static inline constexpr int circle              = 0;
-        static inline constexpr int triangle            = 0;
-        static inline constexpr int L1                  = 0; // Left trigger
-        static inline constexpr int R1                  = 0; // Right trigger
-        static inline constexpr int L3                  = 0; // Left joystick button
-        static inline constexpr int R3                  = 0; // Right joystic button
+        static inline constexpr int X                   = 0;
+        static inline constexpr int CIRCLE              = 1;
+        static inline constexpr int TRIANGLE            = 2;
+        static inline constexpr int SQUARE              = 3;
+        static inline constexpr int L1                  = 4; // Left bumper
+        static inline constexpr int R1                  = 5; // Right bumber
+        static inline constexpr int SHARE               = 8; // Share button (to the left of the middle trackpad)
+        static inline constexpr int OPTIONS             = 9; // Options button (to the right of the middle trackpad)
+        static inline constexpr int PS_BUTTON           = 10; // Middle playstation button in between joysticks
+        static inline constexpr int L3                  = 11; // Left joystick button
+        static inline constexpr int R3                  = 12; // Right joystic button
+
+        
     }
+
+    //Note for PS4 Controller: Currently there is no 
 
     // If we need to support both joy and joy_linux, maybe something like:
     /*
@@ -148,8 +163,12 @@ namespace ArmControllerConfig { // Can make into a class later?
 
     */
     struct ArmControlInput {
-        float axes[MAX_AXES]; // Static arrays, not vectors here
-        int buttons[MAX_BUTTONS];
+        // Static arrays, not vectors here
+        float fk_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
+        float ik_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
+
+        int home = 0;
+        int kinematics_mode_switch = 0; // Pulse to change from IK to FK
     };
 
     inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &arm_control_msg) 
@@ -160,18 +179,29 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
-                arm_control_msg.axes[0] = joy_msg.axes[axes::LEFT_JOYSTICK_X];
-                arm_control_msg.axes[1] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
-                // arm_control_msg.axes[2] = joy_msg.axes[1];
-                arm_control_msg.axes[3] = joy_msg.axes[axes::RIGHT_JOYSTICK_X];
-                arm_control_msg.axes[4] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg.axes[axes::L2] - joy_msg.axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.fk_axes[AXIS_5_INDEX] = joy_msg.axes[axes::DPAD_Y];
+                arm_control_msg.fk_axes[AXIS_6_INDEX] = joy_msg.axes[axes::DPAD_X];
+
+                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = ((joy_msg.axes[axes::L2] - joy_msg.axes[axes::R2])) / (2.0f);
+                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = joy_msg.axes[axes::DPAD_X];
+                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg.axes[axes::DPAD_Y];
+
     
-                arm_control_msg.buttons[0] = joy_msg.buttons[buttons::square];
+                arm_control_msg.home = joy_msg.buttons[buttons::SHARE];
+                arm_control_msg.kinematics_mode_switch = joy_msg.buttons[buttons::CIRCLE];
             }
             break;
         case GameController::SWITCH_PRO_CONTROLLER:
-            }
-            using namespace switch_index;
+            {
+                using namespace switch_index;
+
 
             }
             // TODO
@@ -180,9 +210,9 @@ namespace ArmControllerConfig { // Can make into a class later?
             // TODO
             break;
         default:
-            return false;
+            return false; // Return Error
 
-        return true;
+        return true; // Return Success
         }
     }
 

@@ -29,6 +29,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   trajectory_msgs
   rover_msgs
   moteus_msgs
+  arm_hardware_interface
 )
 
 find_package(ament_cmake REQUIRED)
