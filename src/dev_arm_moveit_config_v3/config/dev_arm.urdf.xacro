@@ -4,7 +4,7 @@
 
     <!-- Import dev_arm urdf file -->
     <xacro:include filename="$(find dev_arm_description_v2)/urdf/dev_arm.urdf" />
-      <!-- <xacro:include filename="$(find dev_arm_moveit_config)/config/dev_arm.urdf.xacro" />  OLd? -->
+    <!-- <xacro:include filename="$(find dev_arm_moveit_config)/config/dev_arm.urdf.xacro" />  OLd? -->
 
     <!-- Import control_xacro -->
     <xacro:include filename="dev_arm.ros2_control.xacro" />

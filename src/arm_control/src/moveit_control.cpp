@@ -78,8 +78,18 @@ void ArmMoveitControl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_ms
 
       bool is_zero = (lx == 0.0 && ly == 0.0 && lz == 0.0 && ax == 0.0 && ay == 0.0 && az == 0.0);
       twist_cmd_publisher->publish(std::move(servo_msg));
-      bool gripper_btn = (joy_msg->buttons.size() > GRIPPER_TOGGLE_BTN) && joy_msg->buttons[GRIPPER_TOGGLE_BTN];
+      bool gripper_btn = false;
 
+      if (GRIPPER_TOGGLE_BTN >= 0) {
+        gripper_btn = (joy_msg->buttons.size() > static_cast<size_t>(GRIPPER_TOGGLE_BTN)) &&
+                      joy_msg->buttons[GRIPPER_TOGGLE_BTN];
+      }
+
+      if (joy_msg->axes.size() > static_cast<size_t>(GRIPPER_TOGGLE_AXIS)) {
+        const double trigger_val = joy_msg->axes[GRIPPER_TOGGLE_AXIS];
+        gripper_btn = gripper_btn || (trigger_val < GRIPPER_AXIS_PRESSED_THRESHOLD);
+      }
+      
       if (gripper_btn && !prev_gripper_btn_) {
         gripper_open_ = !gripper_open_;
         double val = gripper_open_ ? GRIPPER_OPEN_VALUE : GRIPPER_CLOSE_VALUE;

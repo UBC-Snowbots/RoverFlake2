@@ -45,10 +45,12 @@
 namespace ControllerConfig {
 
     // --- Face Buttons ---
-    constexpr int BTN_B      = 0;   // East
-    constexpr int BTN_A      = 1;   // South
-    constexpr int BTN_Y      = 2;   // North
-    constexpr int BTN_X      = 3;   // West
+    constexpr int BTN_B = 0;   // East (A)
+    constexpr int BTN_A = 1;   // South (B)
+    constexpr int BTN_Y = 2;   // North (X)
+    constexpr int BTN_X = 3;   // West (Y)
+
+    constexpr int BTN_HOME = 5; // Home
 
     constexpr int BTN_UP     = 12;   // Left shoulder
     constexpr int BTN_DOWN   = 13;   // Right shoulder
@@ -82,9 +84,6 @@ namespace ControllerConfig {
     constexpr double CART_BUTTON_SPEED = 0.5;  // unitless, range [0.0, 1.0]
     constexpr double ROT_STICK_SPEED   = 0.6;  // unitless, range [0.0, 1.0] for angular
 
-    // --- Deadzone for analog axes (used later for joystick support) ---
-    constexpr double AXIS_DEADZONE = 0.15;
-
     // --- Frame for Cartesian twist commands ---
     // "base_link" = world-fixed directions (forward is always forward)
     // "ee_base_link" = relative to end-effector orientation
@@ -104,8 +103,16 @@ namespace ControllerConfig {
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
+    constexpr int AXIS_GRIPPER_TOGGLE = 5; // ZR analog axis (rests at 1.0, pressed = -1.0)
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0; // trigger considered pressed below this
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+
+    // --- Gripper Sim Positions ---
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS   =  0.04;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS  = -0.04;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS  =  0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS =  0.0;
 }
 
 #elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
@@ -153,8 +160,28 @@ namespace ControllerConfig {
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr int AXIS_GRIPPER_TOGGLE = -1;           // no analog trigger axis
+    constexpr double AXIS_GRIPPER_PRESSED_THRESHOLD = 0.0;
     constexpr double GRIPPER_OPEN_VALUE  = 1.0;
     constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+
+    // --- Gripper Sim Positions ---
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS   =  0.04;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS  = -0.04;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS  =  0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS =  0.0;
+
+    // --- Orientation ---
+    constexpr double ROT_STICK_SPEED = 0.4;
+    constexpr int AXIS_ROLL  = AXIS_STICK_X;  // stick X → roll
+    constexpr int AXIS_PITCH = AXIS_STICK_Y;  // stick Y → pitch
+    constexpr int AXIS_YAW   = AXIS_TWIST;    // twist   → yaw
+    constexpr bool INVERT_ROLL  = false;
+    constexpr bool INVERT_PITCH = false;
+    constexpr bool INVERT_YAW   = false;
+
+    // --- Misc ---
+    constexpr int BTN_HOME = -1;  // no home button on Cyborg stick
 }
 
 #else

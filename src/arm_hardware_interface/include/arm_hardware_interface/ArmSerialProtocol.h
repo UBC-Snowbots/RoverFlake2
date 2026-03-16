@@ -48,13 +48,13 @@ struct MotorConfig {
 
   // Maximum velocity limit (revolutions/s)
   // Moteus Config: servo.velocity_limit (soft) or servo.max_velocity (hard limit)
-  float max_velocity = 0.05f;
+  float max_velocity = 0.3f;
 
   // Position Limits (revolutions)
   // Moteus Config: servopos.position_min / servopos.position_max
   float position_min = -1.0f;
   float position_max = 1.0f;
-  float position_warn_rev_padding = 0.01; // If position gets to within this amount to min or max, raise rover alert
+  float position_warn_rev_padding = 0.02f;
 
   // ---------------------------------------------------------
   // 2. Torque / Current Limits

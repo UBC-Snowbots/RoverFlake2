@@ -26,8 +26,12 @@ add_executable(
   serial_arm_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h
                     include/arm_hardware_interface/ArmSerialProtocol.h)
 add_executable(
-  moteus_arm_driver src/MoteusInterface.cpp include/ArmMoteusInterface.h
-                    include/arm_hardware_interface/ArmSerialProtocol.h include/axis_5_6_differential.h)
+  moteus_arm_driver
+    src/moteus_CAN_interface/MoteusMain.cpp
+    src/moteus_CAN_interface/MoteusNode.cpp
+    src/moteus_CAN_interface/CommandCallback.cpp
+    src/moteus_CAN_interface/MoteusInterface.cpp
+    src/moteus_CAN_interface/MoteusIO.cpp)
 
 target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1)
 

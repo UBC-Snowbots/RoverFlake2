@@ -59,8 +59,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-// ---------- Helpers ----------
-
+// Helpers
 bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
     return idx >= 0 && idx < static_cast<int>(msg->buttons.size()) && msg->buttons[idx];
 }
@@ -101,9 +100,14 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     // target.velocities[5] = 0;
         arm_publisher->publish(target);
     } else {
+        gripper_msg.data[0] = ControllerConfig::GRIPPER_SIM_LEFT_CLOSE_POS;
+        gripper_msg.data[1] = ControllerConfig::GRIPPER_SIM_RIGHT_CLOSE_POS;
+    }
+    gripper_sim_publisher->publish(gripper_msg);
+}
 
-
-    // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
+void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
+    // publishes to twist topic for IK
     auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
     twist_msg->header.stamp = this->get_clock()->now();
     twist_msg->header.frame_id = ControllerConfig::CART_FRAME_ID;
@@ -124,28 +128,23 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     twist_msg->twist.linear.y  = ly;
     twist_msg->twist.linear.z  = lz;
 
-    // --- EE Orientation from analog sticks ---
-    auto applyDeadzone = [](double val, double dz) -> double {
-        return (std::abs(val) < dz) ? 0.0 : val;
-    };
-
+    // EE Orientation from analog sticks
     double ax_roll  = 0.0, ax_pitch = 0.0, ax_yaw = 0.0;
     const double rot_speed = ControllerConfig::ROT_STICK_SPEED;
-    const double dz = ControllerConfig::AXIS_DEADZONE;
 
     if (ControllerConfig::AXIS_ROLL >= 0 &&
         ControllerConfig::AXIS_ROLL < static_cast<int>(msg->axes.size())) {
-        ax_roll = applyDeadzone(msg->axes[ControllerConfig::AXIS_ROLL], dz) * rot_speed;
+        ax_roll = msg->axes[ControllerConfig::AXIS_ROLL] * rot_speed;
         if (ControllerConfig::INVERT_ROLL) ax_roll = -ax_roll;
     }
     if (ControllerConfig::AXIS_PITCH >= 0 &&
         ControllerConfig::AXIS_PITCH < static_cast<int>(msg->axes.size())) {
-        ax_pitch = applyDeadzone(msg->axes[ControllerConfig::AXIS_PITCH], dz) * rot_speed;
+        ax_pitch = msg->axes[ControllerConfig::AXIS_PITCH] * rot_speed;
         if (ControllerConfig::INVERT_PITCH) ax_pitch = -ax_pitch;
     }
     if (ControllerConfig::AXIS_YAW >= 0 &&
         ControllerConfig::AXIS_YAW < static_cast<int>(msg->axes.size())) {
-        ax_yaw = applyDeadzone(msg->axes[ControllerConfig::AXIS_YAW], dz) * rot_speed;
+        ax_yaw = msg->axes[ControllerConfig::AXIS_YAW] * rot_speed;
         if (ControllerConfig::INVERT_YAW) ax_yaw = -ax_yaw;
     }
 
@@ -162,22 +161,35 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
             ControllerConfig::CART_FRAME_ID);
     }
 
+    // new publish point (goes through IK first)
     twist_publisher->publish(std::move(twist_msg));
+
+    // Gripper (doesn't work yet)
+    bool gripper_btn = btnPressed(msg, ControllerConfig::BTN_GRIPPER_TOGGLE);
+    if (ControllerConfig::AXIS_GRIPPER_TOGGLE >= 0 &&
+        ControllerConfig::AXIS_GRIPPER_TOGGLE < static_cast<int>(msg->axes.size())) {
+        const double trigger_val = msg->axes[ControllerConfig::AXIS_GRIPPER_TOGGLE];
+        gripper_btn = gripper_btn ||
+            (trigger_val < ControllerConfig::AXIS_GRIPPER_PRESSED_THRESHOLD);
     }
 
-    // ========== Gripper toggle (edge-triggered) ==========
-    bool gripper_btn = btnPressed(msg, ControllerConfig::BTN_GRIPPER_TOGGLE);
     if (gripper_btn && !prev_gripper_btn_) {
         gripper_open_ = !gripper_open_;
+        publish_rviz_gripper_command();
         RCLCPP_INFO(this->get_logger(), "Gripper %s",
             gripper_open_ ? "OPEN" : "CLOSED");
     }
     prev_gripper_btn_ = gripper_btn;
 
-    // NOTE: ArmCommand (joint velocities + gripper) is now published in
-    // trajectory_callback(), which fires whenever MoveIt Servo outputs a
-    // JointTrajectory.  This ensures the physical arm receives the actual
-    // IK-solved velocities rather than zeros.
+    // Homing (edge-triggered)
+    bool home_btn = btnPressed(msg, ControllerConfig::BTN_HOME);
+    if (home_btn && !prev_home_btn_) {
+        auto home_cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
+        home_cmd->cmd_type = 'h';   // HOME_CMD
+        arm_publisher->publish(std::move(home_cmd));
+        RCLCPP_INFO(this->get_logger(), "Home button pressed — sending HOME ALL command");
+    }
+    prev_home_btn_ = home_btn;
 }
 
 
