@@ -59,6 +59,7 @@ int prev_paddleL = 0;
 bool gripper_open_ = false;
 bool prev_gripper_btn_ = false;
 bool prev_home_btn_ = false;
+bool prev_mode_btn_ = false;
 
 std::unordered_map<std::string, int> urdf_to_axis_;
 // Axis direction multipliers matching armControlParams.h ArmConstants::axis_dirs.
