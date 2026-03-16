@@ -267,6 +267,10 @@ void ArmCAN::handleWristDifferential(float a5_desired, float a6_desired, float &
 
 }
 
+void ArmCAN::sendMsg(std::string /*outMsg*/) {
+  // No-op: UART send path removed; CAN commands go through controllers directly.
+}
+
 void ArmCAN::send_test_limits_command() {
   char tx_msg[TX_UART_BUFF];
   sprintf(tx_msg, "$t()\n");

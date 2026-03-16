@@ -101,7 +101,10 @@ void ArmCAN::send_position_command(float pos_rad[NUM_JOINTS]) {
 // TODO: should send stop cmd after vel cmd so motor doesnt kepp spinning
 void ArmCAN::send_velocity_command(float vel[NUM_JOINTS]) {
   std::vector<moteus::CanFdFrame> command_frames;
-  differential_drive(vel[AXIS_5_INDEX], vel[AXIS_6_INDEX], vel[AXIS_5_INDEX], vel[AXIS_6_INDEX]);
+  float m5, m6;
+  differential_drive(vel[AXIS_5_INDEX], vel[AXIS_6_INDEX], m5, m6);
+  vel[AXIS_5_INDEX] = m5;
+  vel[AXIS_6_INDEX] = m6;
 
   for (const auto &pair : controllers) {
 
