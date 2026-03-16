@@ -23,7 +23,7 @@ public:
     ArmJoy();
 
 private:
-bool fk = false; // Decides if joystick outputs forward kinematics or inverse
+bool fk = true; // Decides if joystick outputs forward kinematics or inverse
 
 // Pubs
 rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
