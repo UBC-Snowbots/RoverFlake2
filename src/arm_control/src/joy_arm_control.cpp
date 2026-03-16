@@ -68,37 +68,43 @@ bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
 // ---------- Callbacks ----------
 
 void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
+    ArmControllerConfig::ArmControlInput control_input = {};
+
+    // Process joy message depending on selected game controller
+    if ( ArmControllerConfig::process_joy_input(this->game_controller, msg, control_input) != true)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Failure to parse gamepad input. Disregarding joy message");
+        return;
+    }
+
+    // Handle IK / FK switch
+    if(this->last_control_input.home != control_input.home && control_input.home == 1)
+    {
+        this->fk = !this->fk; // Flip it
+    }
+
+
     if(this->fk)
     {
     rover_msgs::msg::ArmCommand target;
     target.positions.resize(NUM_JOINTS);
     target.velocities.resize(NUM_JOINTS);
-    float target_positions[6];
-    float inputs[6];
-    inputs[2] = msg->axes[0];
-    inputs[1] = msg->axes[1];
-    inputs[0] = msg->axes[5] - msg->axes[4];
-    inputs[3] = msg->axes[3];
-    inputs[4] = (msg->buttons[0] - msg->buttons[3]);
-    inputs[5] = (msg->buttons[1] - msg->buttons[2]);
 
-    target.end_effector = (msg->buttons[9] -  msg->buttons[10]) * 60;
+    target.end_effector = control_input.end_effector * ArmControllerConfig::ee_speed_scale;
 
     if(CONTROL_MODE == POSITION_CONTROL){
         target.cmd_type = 'P';
 
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.positions[i] = axes[i].position + inputs[i] * 10;
+        target.positions[i] = axes[i].position + control_input.fk_axes[i] * 10;
     }
+    RCLCPP_WARN(this->get_logger(), "Position control has not been tested on new arm, beware!");
     }else if(CONTROL_MODE == VELOCITY_CONTROL){
         target.cmd_type = 'V';
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.velocities[i] = inputs[i] * 10;
+        target.velocities[i] = control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale;
     }
     }
-    // target.velocities[3] = 0;
-    // target.velocities[4] = 0;
-    // target.velocities[5] = 0;
         arm_publisher->publish(target);
     } else {
 
@@ -178,6 +184,9 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     // trajectory_callback(), which fires whenever MoveIt Servo outputs a
     // JointTrajectory.  This ensures the physical arm receives the actual
     // IK-solved velocities rather than zeros.
+
+
+    last_control_input = control_input;
 }
 
 

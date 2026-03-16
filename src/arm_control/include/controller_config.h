@@ -159,19 +159,21 @@ namespace ArmControllerConfig { // Can make into a class later?
     example: For a game controller, the below function will do its best to map the game controller inputs to sub out for the arm joysticks
 
     Note: the above is based on control base arm joysticks "default", we can create other 
-
-
     */
+
+    float ee_speed_scale = 60;
+    float axis_speed_scale = 10;
+
     struct ArmControlInput {
         // Static arrays, not vectors here
         float fk_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
         float ik_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
-
+        float end_effector = 0; // Standardized from -1 to 1
         int home = 0;
         int kinematics_mode_switch = 0; // Pulse to change from IK to FK
     };
 
-    inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &arm_control_msg) 
+    inline static bool process_joy_input(GameController controller, const sensor_msgs::msg::Joy::SharedPtr joy_msg, ArmControlInput &arm_control_msg) 
     {
         
         switch (controller)
@@ -179,23 +181,24 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
-                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg.axes[axes::L2] - joy_msg.axes[axes::R2])) / (2.0f);
-                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
-                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
-                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_X];
-                arm_control_msg.fk_axes[AXIS_5_INDEX] = joy_msg.axes[axes::DPAD_Y];
-                arm_control_msg.fk_axes[AXIS_6_INDEX] = joy_msg.axes[axes::DPAD_X];
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.fk_axes[AXIS_5_INDEX] = joy_msg->axes[axes::DPAD_Y];
+                arm_control_msg.fk_axes[AXIS_6_INDEX] = joy_msg->axes[axes::DPAD_X];
 
-                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = ((joy_msg.axes[axes::L2] - joy_msg.axes[axes::R2])) / (2.0f);
-                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_Y];
-                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg.axes[axes::RIGHT_JOYSTICK_Y];
-                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg.axes[axes::LEFT_JOYSTICK_X];
-                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = joy_msg.axes[axes::DPAD_X];
-                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg.axes[axes::DPAD_Y];
+                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = joy_msg->axes[axes::DPAD_X];
+                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg->axes[axes::DPAD_Y];
 
+                arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
     
-                arm_control_msg.home = joy_msg.buttons[buttons::SHARE];
-                arm_control_msg.kinematics_mode_switch = joy_msg.buttons[buttons::CIRCLE];
+                arm_control_msg.home = joy_msg->buttons[buttons::SHARE];
+                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::CIRCLE];
             }
             break;
         case GameController::SWITCH_PRO_CONTROLLER:
@@ -211,13 +214,12 @@ namespace ArmControllerConfig { // Can make into a class later?
             break;
         default:
             return false; // Return Error
-
-        return true; // Return Success
         }
+        return true; // Return Success
     }
 
     // Overload for drive control (later refactor)
-    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, ArmControlInput &input) 
+    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, DriveControlInput &input) 
     // {
         
     //     switch (controller)
