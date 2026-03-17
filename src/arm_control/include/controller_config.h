@@ -17,16 +17,9 @@
 
 #include <sensor_msgs/msg/joy.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>
-inline static constexpr int MAX_BUTTONS = 20;
+inline static constexpr int MAX_BUTTONS = 20; // can be decreased
 inline static constexpr int MAX_AXES    = 10;
 
-// ============ Controller Selection ============
-// Set ONE of these as the active controller:
-#define CONTROLLER_PRO_CONTROLLER   1
-#define CONTROLLER_CYBORG_STICK     2
-#define CONTROLLER_PS4_JOY_LINUX    3 //! Use joy_linux package, not joy!
-
-#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
 // ============================================================
 //  PS4 Controller (Using Joy Linux)
@@ -85,28 +78,42 @@ namespace ps4_index {
 
 
 // ============================================================
-//  Nintendo Switch Pro Controller (joy linux)
+//  Nintendo Switch Pro Controller (joy, event based - NOT JOY LINUX WE CANT GET SWITCH WORKING WITH JOY LINUX) 
 // ============================================================
 
 namespace switch_index {
     namespace axes {
-        static inline constexpr int LEFT_JOYSTICK_X     = 0;
-        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
-        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
-        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+        static inline constexpr int LEFT_JOYSTICK_X     = 0; // Positive is Left
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1; // Positive is up
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2; // Positive is left 
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3; // Positive is up
+        static inline constexpr int LEFT_TRIGGER_ZL     = 4; // Positive is unclicked. Negative is clicked. Only -1 and 1
+        static inline constexpr int RIGHT_TRIGGER_ZR    = 5; // Positive is unclicked. Negative is clicked. Only -1 and 1
+
     }
 
     namespace buttons {
-        static inline constexpr int x                   = 0;
-        static inline constexpr int square              = 0;
-        static inline constexpr int circle              = 0;
-        static inline constexpr int triangle            = 0;
-        static inline constexpr int L1                  = 0; // Left trigger
-        static inline constexpr int R1                  = 0; // Right trigger
-        static inline constexpr int L3                  = 0; // Left joystick button
-        static inline constexpr int R3                  = 0; // Right joystic button
+        static inline constexpr int A                   = 0;
+        static inline constexpr int B                   = 1;
+        static inline constexpr int X                   = 2;
+        static inline constexpr int Y                   = 3;
+        static inline constexpr int MINUS               = 4; // the (-) button to the left of the switch logo
+        static inline constexpr int HOME                = 5; // the (home) button to the bottom right of the switch logo
+        static inline constexpr int PLUS                = 6; // the (+) button to the right of the switch logo
+        static inline constexpr int L3                  = 7; // Left joystick button
+        static inline constexpr int R3                  = 8; // Right joystic button
+        static inline constexpr int L1                  = 9; // Left bumper
+        static inline constexpr int R1                  = 10; // Right bumper
+
+        static inline constexpr int DPAD_UP             = 11; 
+        static inline constexpr int DPAD_DOWN           = 12; 
+        static inline constexpr int DPAD_LEFT           = 13; 
+        static inline constexpr int DPAD_RIGHT          = 14; 
+        static inline constexpr int SQURE_CICLE         = 15; // Weird button to the bottom left of the switch logo
+
     }
 }
+
 
 // ============================================================
 //  Cyborg Joystick (joy linux)
@@ -114,25 +121,32 @@ namespace switch_index {
 
 namespace cyborg_index {
     namespace axes {
-        static inline constexpr int LEFT_JOYSTICK_X     = 0;
-        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
-        static inline constexpr int RIGHT_JOYSTICK_X    = 2;
-        static inline constexpr int RIGHT_JOYSTICK_Y    = 3;
+        static inline constexpr int JOYSTICK_X          = 0; // Left is positive
+        static inline constexpr int JOYSTICK_Y          = 1; // up is positive
+        static inline constexpr int THROTTLE            = 2; // up is 1, all the way down is -1
+        static inline constexpr int JOYSTICK_Z          = 3; // CCW is positive
+
+        // Thumb 4way is the dongle thing between buttons 5 and 6
+        static inline constexpr int THUMB_4WAY_X        = 4; // left is positive
+        static inline constexpr int THUMB_4WAY_Y        = 5; // left is positive
     }
 
     namespace buttons {
-        static inline constexpr int x                   = 0;
-        static inline constexpr int square              = 0;
-        static inline constexpr int circle              = 0;
-        static inline constexpr int triangle            = 0;
-        static inline constexpr int L1                  = 0; // Left trigger
-        static inline constexpr int R1                  = 0; // Right trigger
-        static inline constexpr int L3                  = 0; // Left joystick button
-        static inline constexpr int R3                  = 0; // Right joystic button
-
+        static inline constexpr int TRIGGER             = 0;
+        static inline constexpr int BUTTON_2            = 1;
+        static inline constexpr int BUTTON_3            = 2;
+        static inline constexpr int BUTTON_4            = 3;
+        static inline constexpr int BUTTON_5            = 4; // kinda sticky
+        static inline constexpr int BUTTON_6            = 5; // kinda sticky
+        static inline constexpr int F1                  = 6;
+        static inline constexpr int F2                  = 7;
+        static inline constexpr int F3                  = 8;
+        static inline constexpr int F4                  = 9;
+        static inline constexpr int LEFT_UPARROW        = 10;
+        static inline constexpr int RIGHT_UPARROW       = 11;
     }
-
 }
+
 
 namespace ArmControllerConfig { // Can make into a class later?
 
@@ -169,15 +183,13 @@ namespace ArmControllerConfig { // Can make into a class later?
         float fk_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
         float ik_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
         float end_effector = 0; // Standardized from -1 to 1
-        int home = 0;
+        int home = 0;  // Pulse to home
         int kinematics_mode_switch = 0; // Pulse to change from IK to FK
     };
 
     inline static bool process_joy_input(GameController controller, const sensor_msgs::msg::Joy::SharedPtr joy_msg, ArmControlInput &arm_control_msg) 
     {
-        
-        switch (controller)
-        {
+        switch (controller) {
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
@@ -204,13 +216,18 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::SWITCH_PRO_CONTROLLER:
             {
                 using namespace switch_index;
+                // TODO
 
 
             }
-            // TODO
             break;
         case GameController::CYBORG_JOYSTICK:
+            {
+            using namespace cyborg_index;
             // TODO
+
+            
+            }
             break;
         default:
             return false; // Return Error
