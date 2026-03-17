@@ -11,7 +11,9 @@ mkdir -p build
 cd build
 
 # build and install the libsweep library
-cmake .. -DCMAKE_BUILD_TYPE=Release
+echo CONFIGUIRING SWEEPSDK
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+echo BUILDNG SWEEP
 cmake --build .
 sudo cmake --build . --target install
 sudo ldconfig

@@ -22,7 +22,6 @@ public:
     ArmJoy();
 
 private:
-bool fk = true; // Decides if joystick outputs forward kinematics or inverse
 
 // Pubs
 rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
@@ -47,9 +46,12 @@ rclcpp::TimerBase::SharedPtr timer_;
 /// Returns true if btn index is valid and pressed
 static bool btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx);
 
-int current_gear = 0;
-int prev_paddleR = 0;
-int prev_paddleL = 0;
+
+bool fk = true; // Decides if joystick outputs forward kinematics or inverse
+ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::PS4_JOY_LINUX;
+ArmControllerConfig::ArmControlInput last_control_input = {};
+
+
 
 // Gripper state tracking
 bool gripper_open_ = false;
