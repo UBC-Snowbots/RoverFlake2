@@ -33,7 +33,7 @@ add_executable(
     src/moteus_CAN_interface/MoteusInterface.cpp
     src/moteus_CAN_interface/MoteusIO.cpp)
 
-target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1)
+target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1) #??
 
 target_link_libraries(moteus_arm_driver moteus::cpp)
 ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial
