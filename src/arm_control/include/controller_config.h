@@ -1,9 +1,12 @@
 /**
  * controller_config.h
  * 
+ * This is for gamepads / game controllers, not for the control base joysticks
+ * 
  * Modular controller configuration for arm teleoperation.
  * To switch controllers, change the ACTIVE_CONTROLLER define below.
  * Button/axis indices can be verified by running: ros2 topic echo /joy
+ * 
  */
 #pragma once
 
@@ -11,6 +14,7 @@
 // Set ONE of these as the active controller:
 #define CONTROLLER_PRO_CONTROLLER   1
 #define CONTROLLER_CYBORG_STICK     2
+#define CONTROLLER_PS4_JOY_LINUX    3 //! Use joy_linux package, not joy!
 
 #define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
 
@@ -181,5 +185,16 @@ namespace ControllerConfig {
 }
 
 #else
-#error "No valid ACTIVE_CONTROLLER defined in controller_config.h"
+#pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
 #endif
+
+// enum class GameController {
+//     PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+//     SWITCH_PRO_CONTROLLER
+// };
+
+// struct GameControllerMap {
+    
+// };
+
+// inline static GameController

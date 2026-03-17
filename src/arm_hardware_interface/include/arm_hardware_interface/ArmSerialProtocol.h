@@ -127,7 +127,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
   // PID
   axes[AXIS_1_INDEX].kp = 180.0; // SET - WORKING with p 180, d 40 ( 5 min spent tuning )
-  axes[AXIS_1_INDEX].kd = 40.0;
+  axes[AXIS_1_INDEX].kd = 40;
 
   axes[AXIS_2_INDEX].kp = 2100.0; // SET - WORKING with p 2100 d 100 (2 min spent tuning)
   axes[AXIS_2_INDEX].kd = 100.0;
@@ -138,11 +138,14 @@ inline std::vector<MotorConfig> get_arm_configuration() {
   axes[AXIS_4_INDEX].kp = 50.0;
   axes[AXIS_4_INDEX].kd = 0.0;
   
-  axes[AXIS_5_INDEX].kp = 50.0;
-  axes[AXIS_5_INDEX].kd = 0.0;
+  axes[AXIS_5_INDEX].kp = 600.0;
+  axes[AXIS_5_INDEX].kd = 100.0;
   
-  axes[AXIS_6_INDEX].kp = 50.0;
-  axes[AXIS_6_INDEX].kd = 0.0;
+  axes[AXIS_6_INDEX].kp = 600.0;
+  axes[AXIS_6_INDEX].kd = 100.0;
+
+  axes[EE_INDEX].kp = 300.0;
+  axes[EE_INDEX].kd = 25.0;
 
   axes[EE_INDEX].kp = 300.0;
   axes[EE_INDEX].kd = 25.0;
@@ -160,9 +163,9 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
 
   // CURRENT LIMITS
-  axes[AXIS_1_INDEX].max_current_A = 1.5f;
+  axes[AXIS_1_INDEX].max_current_A = 1.0f;
   axes[AXIS_2_INDEX].max_current_A = 8.0f; 
-  axes[AXIS_3_INDEX].max_current_A = 4.1f; 
+  axes[AXIS_3_INDEX].max_current_A = 5.5f; 
   axes[AXIS_4_INDEX].max_current_A = 0.5f; 
   axes[AXIS_5_INDEX].max_current_A = 1.0f;
   axes[AXIS_6_INDEX].max_current_A = 1.0f;

@@ -79,7 +79,42 @@ void ArmJoy::publish_rviz_gripper_command() {
 }
 
 void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-    // publishes to twist topic for IK
+    if(this->fk)
+    {
+    rover_msgs::msg::ArmCommand target;
+    target.positions.resize(NUM_JOINTS);
+    target.velocities.resize(NUM_JOINTS);
+    float target_positions[6];
+    float inputs[6];
+    inputs[2] = msg->axes[0];
+    inputs[1] = msg->axes[1];
+    inputs[0] = msg->axes[5] - msg->axes[4];
+    inputs[3] = msg->axes[3];
+    inputs[4] = (msg->buttons[0] - msg->buttons[3]);
+    inputs[5] = (msg->buttons[1] - msg->buttons[2]);
+
+    target.end_effector = (msg->buttons[9] -  msg->buttons[10]) * 60;
+
+    if(CONTROL_MODE == POSITION_CONTROL){
+        target.cmd_type = 'P';
+
+    for (int i = 0; i < NUM_JOINTS; i++){
+        target.positions[i] = axes[i].position + inputs[i] * 10;
+    }
+    }else if(CONTROL_MODE == VELOCITY_CONTROL){
+        target.cmd_type = 'V';
+    for (int i = 0; i < NUM_JOINTS; i++){
+        target.velocities[i] = inputs[i] * 10;
+    }
+    }
+    // target.velocities[3] = 0;
+    // target.velocities[4] = 0;
+    // target.velocities[5] = 0;
+        arm_publisher->publish(target);
+    } else {
+
+
+    // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
     auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
     twist_msg->header.stamp = this->get_clock()->now();
     twist_msg->header.frame_id = ControllerConfig::CART_FRAME_ID;
