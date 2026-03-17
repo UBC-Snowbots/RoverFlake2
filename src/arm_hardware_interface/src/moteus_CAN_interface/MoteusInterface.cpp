@@ -268,10 +268,7 @@ void ArmCAN::handleWristDifferential(float a5_desired, float a6_desired, float &
 }
 
 void ArmCAN::send_test_limits_command() {
-  char tx_msg[TX_UART_BUFF];
-  sprintf(tx_msg, "$t()\n");
-  sendMsg(tx_msg);
-  RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
+  RCLCPP_WARN(this->get_logger(), "send_test_limits_command not implemented for CAN interface");
 }
 
 void ArmCAN::ConfigureMotor(int axis_number, mjbots::moteus::Controller &controller) {

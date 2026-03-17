@@ -25,7 +25,6 @@
 namespace moteus = mjbots::moteus;
 
 #include <arm_hardware_interface/ArmSerialProtocol.h>
-#include <axis_5_6_differential.h>
 
 #define HOLD_TORQUE_AT_ZERO_VELOCITY true
 
@@ -56,40 +55,6 @@ private:
   static constexpr bool kHoldTorqueAtZeroVelocity = false;
   static constexpr double kHomeVelocityRevPerSecond = -0.1;
   static constexpr double kHomeMaximumTorqueNm = 0.5;
-
-  struct AxisAlerts {
-    bool position_alert_raised = false;
-  };
-
-  struct Axis {
-    float curr_pos = 0.0f;
-    float target_pos = 0.0f;
-    float speed = 0.0f;
-    float zero_rad = 0.0f;
-    float max_rad = 0.0f;
-    int dir = 1;
-    int index = 0;
-    AxisAlerts alerts;
-  };
-
-  struct MotorTelem {
-    MotorConfig config;
-
-    float curr_voltage_V = 0.0f;
-    float curr_current_A = 0.0f;
-    float curr_power_W = 0.0f;
-    float driver_temp_C = 0.0f;
-
-    float curr_velocity = 0.0f;
-    float curr_position = 0.0f;
-    float curr_torque_Nm = 0.0f;
-
-    float des_velocity = 0.0f;
-    float des_position = 0.0f;
-
-    int moteus_mode = 0;
-    int moteus_fault = 0;
-  };
 
   std::map<int, std::shared_ptr<mjbots::moteus::Controller>> controllers;
   std::map<int, mjbots::moteus::Query::Result> servo_data;
@@ -164,6 +129,7 @@ private:
   void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
   void serial_rx();
 
+  float radToRev(float rad);
   float degToRad(float deg);
   float firmToMoveitOffsetPos(float deg, int axis);
   float firmToMoveitOffsetVel(float deg, int axis);
@@ -180,6 +146,4 @@ private:
   void parseArmAngleUart(std::string msg);
   void parseLimitSwitchTest(std::string msg);
 
-  void handleWristDifferential(float a5_desired, float a6_desired, float& m5_output, float& m6_output);
-  void checkAlerts(); // Juust reads from member struct motor_telem
 };

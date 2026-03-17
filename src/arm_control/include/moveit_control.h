@@ -81,7 +81,7 @@ int count_ = 0;
 void publishCommands();	
 void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
 void sendGripperCommand(double value);
-// int joyControlMode = CARTESIAN_BASE_FRAME;
+int joyControlMode = CARTESIAN_BASE_FRAME;
 
 // Gripper state tracking
 bool gripper_open_ = false;
