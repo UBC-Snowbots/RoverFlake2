@@ -33,4 +33,5 @@ void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr rover_msg);
 
 //   std::array<double, kJoints> offsets_deg_{};
   std::vector<std::string> joint_names_;
+  bool homing_ = false;
 };

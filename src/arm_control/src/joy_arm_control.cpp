@@ -197,6 +197,7 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         RCLCPP_INFO(this->get_logger(), "Home button pressed — sending HOME ALL command");
     }
     prev_home_btn_ = home_btn;
+    }
 }
 
 

@@ -241,7 +241,7 @@ def generate_launch_description():
             joy_arm_node,
             joy_node,
             container,
-            # start_servo,
+            start_servo,
         ]
     )
 
