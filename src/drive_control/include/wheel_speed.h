@@ -26,6 +26,7 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
     // Functions for converting cmd_vel_ messages to wheel speeds, for different drive control behavior
+    WheelSpeeds tankDrive(double linear, double angular); // Basic tank drive steering
     WheelSpeeds schmittTrigger(double linear, double angular); // Schmitt trigger/hysteresis
     WheelSpeeds ackermann(double linear, double angular); // Electronic Ackermann Steering
 

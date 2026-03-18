@@ -28,21 +28,9 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     linear *= wheel_speed_factor;
     angular *= wheel_speed_factor;
 
-    WheelSpeeds wheel_speeds = schmittTrigger(linear, angular);
-    // std::vector<double> wheel_commands = ackermann(linear, angular);
-
-    // // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
-    // std::vector<double> left_wheel_commands = {
-    //     -linear + angular,   // Left Front Wheel
-    //     -linear + angular,   // Left Mid Wheel
-    //     -linear + angular    // Left Rear Wheel
-    // };
-    
-    // std::vector<double> right_wheel_commands = {
-    //     linear + angular,  // Right Front Wheel
-    //     linear + angular,  // Right Mid Wheel
-    //     linear + angular   // Right Rear Wheel
-    // };
+    WheelSpeeds wheel_speeds = tankDrive(linear, angular);
+    // WheelSpeeds wheel_speeds = schmittTrigger(linear, angular);
+    // WheelSpeeds wheel_speeds = ackermann(linear, angular);
 
     // Publish the separate left and right wheel speed messages
     std_msgs::msg::Float64MultiArray left_msg;
@@ -52,6 +40,17 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     std_msgs::msg::Float64MultiArray right_msg;
     right_msg.data = wheel_speeds.right_wheel_speeds;  // Set right wheel commands data
     right_wheel_pub_->publish(right_msg);   // Publish to "/right_wheel_speeds"
+}
+
+WheelSpeeds WheelSpeedNode::tankDrive(double linear, double angular) {
+    double l = -linear + angular;
+    double r = linear + angular;
+
+    WheelSpeeds wheelSpeeds;
+    wheelSpeeds.left_wheel_speeds = { l, l, l };
+    wheelSpeeds.right_wheel_speeds = { r, r, r };
+
+    return wheelSpeeds;
 }
 
 WheelSpeeds WheelSpeedNode::schmittTrigger(double linear, double angular) {
