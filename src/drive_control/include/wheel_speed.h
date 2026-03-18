@@ -8,6 +8,11 @@
 #include <vector>
 #include "rclcpp/qos.hpp"  // Include QoS header
 
+struct WheelSpeeds {
+  std::vector<double> left_wheel_speeds;
+  std::vector<double> right_wheel_speeds; 
+};
+
 class WheelSpeedNode : public rclcpp::Node {
 public:
     WheelSpeedNode();
@@ -19,6 +24,10 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+
+    // Functions for converting cmd_vel_ messages to wheel speeds, for different drive control behavior
+    WheelSpeeds schmittTrigger(double linear, double angular); // Schmitt trigger/hysteresis
+    WheelSpeeds ackermann(double linear, double angular); // Electronic Ackermann Steering
 
     static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
     static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
