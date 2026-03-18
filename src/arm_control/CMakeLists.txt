@@ -81,8 +81,6 @@ ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs rove
 add_executable(cbs_arm_interface src/cbs_interface.cpp include/armControlParams.h include/cbs_interface.h)
 ament_target_dependencies(cbs_arm_interface rclcpp rover_msgs sensor_msgs std_msgs rover_utils ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
-add_executable(moteus_control_adapter src/moteus_control_adapter_node.cpp include/moteus_control_adapter_node.h)
-ament_target_dependencies(moteus_control_adapter ${THIS_PACKAGE_INCLUDE_DEPENDS})
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
@@ -94,7 +92,7 @@ install(
     joy_arm_control
     moveit_control
     sim_helper
-    moteus_control_adapter
+    
     # servo_cpp_interface_demo
     ${PROJECT_NAME}_lib # the library
   DESTINATION
