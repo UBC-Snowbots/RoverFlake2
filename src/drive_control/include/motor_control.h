@@ -7,10 +7,9 @@
 #include "phidget22.h"
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
-#include <cmath>
 #include <algorithm>  // For std::clamp
 
-// Motor and wheel specs for calulcating position and velocity factors below
+// Motor and wheel specs for calulcating rescale factors
 #define MOTOR_RPM 41
 #define MOTOR_GEAR_RATIO 23
 #define MOTOR_NUM_POLES 4
@@ -18,7 +17,8 @@
 #define WHEEL_RADIUS_METERS 0.1
 
 /**
- * Multiplier to convert commutations to radians
+ * Converts commutations into radians
+ * Used for velocity and target velocity in the velocity controller and position in the motor controller
  */
 #define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
 

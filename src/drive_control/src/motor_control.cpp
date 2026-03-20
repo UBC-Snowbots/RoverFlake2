@@ -3,12 +3,12 @@
 
 /**
  * @brief Construct a new MotorControlNode object
- * Initializes the motor control node, sets up motor resources, and starts a timer.
+ * Initializes the motor control node, sets up motor resources, and starts timers.
  */
 MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     RCLCPP_INFO(this->get_logger(), "Motor Control Node Initiated");
 
-    // Initialize Phidget Motor Velocity Controllers
+    // Initialize Phidget Motors and Velocity Controllers
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
