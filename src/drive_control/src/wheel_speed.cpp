@@ -93,15 +93,31 @@ WheelSpeeds WheelSpeedNode::applyHysteresis(WheelSpeeds current_wheel_speeds, Wh
 }
 
 WheelSpeeds WheelSpeedNode::ackermann(double linear, double angular) {
-    // Tank drive as placeholder
-    double l = -linear + angular;
-    double r = linear + angular;
+    WheelSpeeds speeds;
+    speeds.left_wheel_speeds.resize(NUM_MOTORS / 2);
+    speeds.right_wheel_speeds.resize(NUM_MOTORS / 2);
 
-    WheelSpeeds wheel_speeds;
-    wheel_speeds.left_wheel_speeds = { l, l, l };
-    wheel_speeds.right_wheel_speeds = { r, r, r };
+    if (angular < MOTOR_START_THRESHOLD) { // Angular velocity is small, don't apply Ackermann steering
+        for (int i = 0; i < NUM_MOTORS / 3; i++) {
+            speeds.left_wheel_speeds[i] = -linear;
+            speeds.right_wheel_speeds[i] = linear;
+        }
+    }
+    else {
+        double radius = linear / angular;
+        double delta = DRIVE_WIDTH_METERS / 2.0;
+        double radius_L = radius - delta;
+        double radius_R = radius + delta;
 
-    return wheel_speeds;
+        double angular_L = linear / radius_L;
+        double angular_R = linear / radius_R;
+
+        for (int i = 0; i < NUM_MOTORS / 2; i++) {
+            speeds.left_wheel_speeds[i] = -linear + angular_L;
+            speeds.right_wheel_speeds[i] = linear + angular_R;
+        }
+    }
+    return speeds;
 }
 
 // Main function to initialize the ROS2 node and start processing

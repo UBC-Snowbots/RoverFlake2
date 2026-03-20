@@ -10,6 +10,10 @@
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include "motor_control.h"
 
+#define WHEEL_RADIUS_METERS 0.1 // Radius of the wheels
+#define DRIVE_WIDTH_METERS 0.9 // Distance between the centres of the left and right wheels
+#define DRIVE_LENGTH_METERS 0.4 // Distance between the centre of the middle wheel and the centre of the front/back wheel on the same side
+
 #define MOTOR_START_THRESHOLD 0.06
 #define MOTOR_STOP_THRESHOLD 0.02
 
@@ -36,9 +40,6 @@ private:
     WheelSpeeds tankDrive(double linear, double angular); // Basic tank drive steering
     WheelSpeeds applyHysteresis(WheelSpeeds current_wheel_speeds, WheelSpeeds target_wheel_speeds); // Schmitt trigger/hysteresis
     WheelSpeeds ackermann(double linear, double angular); // Electronic Ackermann Steering
-
-    static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
-    static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
 
     WheelSpeeds current_wheel_speeds;
 };
