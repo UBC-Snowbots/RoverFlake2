@@ -2,8 +2,8 @@
 #include <cmath>
 
 // Constructor
-ArmJoy::ArmJoy() :
-Node("arm_joy_control")
+ArmJoy::ArmJoy() : 
+Node("arm_joy_control") 
 {
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
     arm_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
@@ -11,7 +11,7 @@ Node("arm_joy_control")
     joy_vibrator = this->create_publisher<sensor_msgs::msg::JoyFeedback>("/joy/feedback", qos);
 
     twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-        "/arm_moveit_control/delta_twist_cmds", 10);
+        "/servo_node/delta_twist_cmds", 10);
 
     joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
         "/joy", 10, std::bind(&ArmJoy::joy_callback, this, std::placeholders::_1));
@@ -52,149 +52,145 @@ Node("arm_joy_control")
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<ArmJoy>();
-
+    
     rclcpp::spin(node);
-
+    
     rclcpp::shutdown();
     return 0;
 }
 
-// Helpers
+// ---------- Helpers ----------
+
 bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
     return idx >= 0 && idx < static_cast<int>(msg->buttons.size()) && msg->buttons[idx];
 }
 
 // ---------- Callbacks ----------
 
-void ArmJoy::publish_rviz_gripper_command() {
-    auto gripper_msg = std_msgs::msg::Float64MultiArray();
-    gripper_msg.data.resize(2);
-    if (gripper_open_) {
-        gripper_msg.data[0] = ControllerConfig::GRIPPER_SIM_LEFT_OPEN_POS;
-        gripper_msg.data[1] = ControllerConfig::GRIPPER_SIM_RIGHT_OPEN_POS;
-    } else {
-        gripper_msg.data[0] = ControllerConfig::GRIPPER_SIM_LEFT_CLOSE_POS;
-        gripper_msg.data[1] = ControllerConfig::GRIPPER_SIM_RIGHT_CLOSE_POS;
-    }
-    gripper_sim_publisher->publish(gripper_msg);
-}
-
 void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
-    // --- Mode toggle (edge-triggered) ---
-    bool mode_btn = btnPressed(msg, ControllerConfig::BTN_MODE_TOGGLE);
-    if (mode_btn && !prev_mode_btn_) {
-        fk = !fk;
-        RCLCPP_INFO(this->get_logger(), "Control mode: %s", fk ? "FK (joint velocity)" : "IK (Cartesian)");
+    ArmControllerConfig::ArmControlInput control_input = {};
+
+    // Process joy message depending on selected game controller
+    if ( ArmControllerConfig::process_joy_input(this->game_controller, msg, control_input) != true)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Failure to parse gamepad input. Disregarding joy message");
+        return;
     }
-    prev_mode_btn_ = mode_btn;
 
-    if (fk) {
-        // ===== FK mode: sticks → joint velocities → ArmCommand =====
-        auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
-        cmd->cmd_type = 'V';
-        cmd->velocities.resize(NUM_JOINTS, 0.0);
+    // Handle IK / FK switch
+    if(this->last_control_input.home != control_input.home && control_input.home == 1)
+    {
+        this->fk = !this->fk; // Flip it
+    }
 
-        const double spd = ControllerConfig::FK_JOINT_SPEED;
 
-        auto axisVal = [&](int axis) -> double {
-            if (axis < 0 || axis >= static_cast<int>(msg->axes.size())) return 0.0;
-            return msg->axes[axis];
-        };
+    if(this->fk)
+    {
+    rover_msgs::msg::ArmCommand target;
+    target.positions.resize(NUM_JOINTS);
+    target.velocities.resize(NUM_JOINTS);
 
-        cmd->velocities[0] = axisVal(ControllerConfig::FK_AXIS_J0) * spd;
-        cmd->velocities[1] = axisVal(ControllerConfig::FK_AXIS_J1) * spd;
-        cmd->velocities[2] = axisVal(ControllerConfig::FK_AXIS_J2) * spd;
-        cmd->velocities[3] = axisVal(ControllerConfig::FK_AXIS_J3) * spd;
-        cmd->velocities[4] = (btnPressed(msg, ControllerConfig::FK_BTN_J4_POS) ? spd : 0.0)
-                           - (btnPressed(msg, ControllerConfig::FK_BTN_J4_NEG) ? spd : 0.0);
-        cmd->velocities[5] = (btnPressed(msg, ControllerConfig::FK_BTN_J5_POS) ? spd : 0.0)
-                           - (btnPressed(msg, ControllerConfig::FK_BTN_J5_NEG) ? spd : 0.0);
+    target.end_effector = control_input.end_effector * ArmControllerConfig::ee_speed_scale;
 
-        arm_publisher->publish(std::move(cmd));
+    if(CONTROL_MODE == POSITION_CONTROL){
+        target.cmd_type = 'P';
 
+    for (int i = 0; i < NUM_JOINTS; i++){
+        target.positions[i] = axes[i].position + control_input.fk_axes[i] * 10;
+    }
+    RCLCPP_WARN(this->get_logger(), "Position control has not been tested on new arm, beware!");
+    }else if(CONTROL_MODE == VELOCITY_CONTROL){
+        target.cmd_type = 'V';
+    for (int i = 0; i < NUM_JOINTS; i++){
+        target.velocities[i] = control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale;
+    }
+    }
+        arm_publisher->publish(target);
     } else {
-        // ===== IK mode: buttons → Cartesian twist → MoveIt Servo =====
-        auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
-        twist_msg->header.stamp = this->get_clock()->now();
-        twist_msg->header.frame_id = ControllerConfig::CART_FRAME_ID;
 
-        const double speed = ControllerConfig::CART_BUTTON_SPEED;
 
-        double lx = 0.0, ly = 0.0, lz = 0.0;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_POS_X)) lx += speed;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_X)) lx -= speed;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_POS_Y)) ly += speed;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_Y)) ly -= speed;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_POS_Z)) lz += speed;
-        if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_Z)) lz -= speed;
+    // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
+    auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+    twist_msg->header.stamp = this->get_clock()->now();
+    twist_msg->header.frame_id = ControllerConfig::CART_FRAME_ID;
 
-        twist_msg->twist.linear.x = lx;
-        twist_msg->twist.linear.y = ly;
-        twist_msg->twist.linear.z = lz;
+    const double speed = ControllerConfig::CART_BUTTON_SPEED;
 
-        double ax_roll = 0.0, ax_pitch = 0.0, ax_yaw = 0.0;
-        const double rot_speed = ControllerConfig::ROT_STICK_SPEED;
+    // Start at zero — only add from pressed buttons
+    double lx = 0.0, ly = 0.0, lz = 0.0;
 
-        if (ControllerConfig::AXIS_ROLL >= 0 &&
-            ControllerConfig::AXIS_ROLL < static_cast<int>(msg->axes.size())) {
-            ax_roll = msg->axes[ControllerConfig::AXIS_ROLL] * rot_speed;
-            if (ControllerConfig::INVERT_ROLL) ax_roll = -ax_roll;
-        }
-        if (ControllerConfig::AXIS_PITCH >= 0 &&
-            ControllerConfig::AXIS_PITCH < static_cast<int>(msg->axes.size())) {
-            ax_pitch = msg->axes[ControllerConfig::AXIS_PITCH] * rot_speed;
-            if (ControllerConfig::INVERT_PITCH) ax_pitch = -ax_pitch;
-        }
-        if (ControllerConfig::AXIS_YAW >= 0 &&
-            ControllerConfig::AXIS_YAW < static_cast<int>(msg->axes.size())) {
-            ax_yaw = msg->axes[ControllerConfig::AXIS_YAW] * rot_speed;
-            if (ControllerConfig::INVERT_YAW) ax_yaw = -ax_yaw;
-        }
+    if (btnPressed(msg, ControllerConfig::BTN_CART_POS_X)) lx += speed;
+    if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_X)) lx -= speed;
+    if (btnPressed(msg, ControllerConfig::BTN_CART_POS_Y)) ly += speed;
+    if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_Y)) ly -= speed;
+    if (btnPressed(msg, ControllerConfig::BTN_CART_POS_Z)) lz += speed;
+    if (btnPressed(msg, ControllerConfig::BTN_CART_NEG_Z)) lz -= speed;
 
-        twist_msg->twist.angular.x = ax_roll;
-        twist_msg->twist.angular.y = ax_pitch;
-        twist_msg->twist.angular.z = ax_yaw;
+    twist_msg->twist.linear.x  = lx;
+    twist_msg->twist.linear.y  = ly;
+    twist_msg->twist.linear.z  = lz;
 
-        bool is_moving = (lx != 0.0 || ly != 0.0 || lz != 0.0);
-        bool is_rotating = (ax_roll != 0.0 || ax_pitch != 0.0 || ax_yaw != 0.0);
-        if (is_moving || is_rotating) {
-            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500,
-                "Twist: lin[%.2f, %.2f, %.2f] ang[%.2f, %.2f, %.2f] frame=%s",
-                lx, ly, lz, ax_roll, ax_pitch, ax_yaw,
-                ControllerConfig::CART_FRAME_ID);
-        }
+    // --- EE Orientation from analog sticks ---
+    auto applyDeadzone = [](double val, double dz) -> double {
+        return (std::abs(val) < dz) ? 0.0 : val;
+    };
 
-        twist_publisher->publish(std::move(twist_msg));
+    double ax_roll  = 0.0, ax_pitch = 0.0, ax_yaw = 0.0;
+    const double rot_speed = ControllerConfig::ROT_STICK_SPEED;
+    const double dz = ControllerConfig::AXIS_DEADZONE;
+
+    if (ControllerConfig::AXIS_ROLL >= 0 &&
+        ControllerConfig::AXIS_ROLL < static_cast<int>(msg->axes.size())) {
+        ax_roll = applyDeadzone(msg->axes[ControllerConfig::AXIS_ROLL], dz) * rot_speed;
+        if (ControllerConfig::INVERT_ROLL) ax_roll = -ax_roll;
+    }
+    if (ControllerConfig::AXIS_PITCH >= 0 &&
+        ControllerConfig::AXIS_PITCH < static_cast<int>(msg->axes.size())) {
+        ax_pitch = applyDeadzone(msg->axes[ControllerConfig::AXIS_PITCH], dz) * rot_speed;
+        if (ControllerConfig::INVERT_PITCH) ax_pitch = -ax_pitch;
+    }
+    if (ControllerConfig::AXIS_YAW >= 0 &&
+        ControllerConfig::AXIS_YAW < static_cast<int>(msg->axes.size())) {
+        ax_yaw = applyDeadzone(msg->axes[ControllerConfig::AXIS_YAW], dz) * rot_speed;
+        if (ControllerConfig::INVERT_YAW) ax_yaw = -ax_yaw;
     }
 
-    // --- Gripper (shared between modes, edge-triggered) ---
+    twist_msg->twist.angular.x = ax_roll;
+    twist_msg->twist.angular.y = ax_pitch;
+    twist_msg->twist.angular.z = ax_yaw;
+
+    bool is_moving = (lx != 0.0 || ly != 0.0 || lz != 0.0);
+    bool is_rotating = (ax_roll != 0.0 || ax_pitch != 0.0 || ax_yaw != 0.0);
+    if (is_moving || is_rotating) {
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500,
+            "Twist: lin[%.2f, %.2f, %.2f] ang[%.2f, %.2f, %.2f] frame=%s",
+            lx, ly, lz, ax_roll, ax_pitch, ax_yaw,
+            ControllerConfig::CART_FRAME_ID);
+    }
+
+    twist_publisher->publish(std::move(twist_msg));
+    }
+
+    // ========== Gripper toggle (edge-triggered) ==========
     bool gripper_btn = btnPressed(msg, ControllerConfig::BTN_GRIPPER_TOGGLE);
-    if (ControllerConfig::AXIS_GRIPPER_TOGGLE >= 0 &&
-        ControllerConfig::AXIS_GRIPPER_TOGGLE < static_cast<int>(msg->axes.size())) {
-        const double trigger_val = msg->axes[ControllerConfig::AXIS_GRIPPER_TOGGLE];
-        gripper_btn = gripper_btn ||
-            (trigger_val < ControllerConfig::AXIS_GRIPPER_PRESSED_THRESHOLD);
-    }
     if (gripper_btn && !prev_gripper_btn_) {
         gripper_open_ = !gripper_open_;
-        publish_rviz_gripper_command();
-        RCLCPP_INFO(this->get_logger(), "Gripper %s", gripper_open_ ? "OPEN" : "CLOSED");
+        RCLCPP_INFO(this->get_logger(), "Gripper %s",
+            gripper_open_ ? "OPEN" : "CLOSED");
     }
     prev_gripper_btn_ = gripper_btn;
 
-    // --- Homing (shared between modes, edge-triggered) ---
-    bool home_btn = btnPressed(msg, ControllerConfig::BTN_HOME);
-    if (home_btn && !prev_home_btn_) {
-        auto home_cmd = std::make_unique<rover_msgs::msg::ArmCommand>();
-        home_cmd->cmd_type = 'h';
-        arm_publisher->publish(std::move(home_cmd));
-        RCLCPP_INFO(this->get_logger(), "Home button pressed — sending HOME ALL command");
-    }
-    prev_home_btn_ = home_btn;
+    // NOTE: ArmCommand (joint velocities + gripper) is now published in
+    // trajectory_callback(), which fires whenever MoveIt Servo outputs a
+    // JointTrajectory.  This ensures the physical arm receives the actual
+    // IK-solved velocities rather than zeros.
+
+
+    last_control_input = control_input;
 }
 
+
 void ArmJoy::trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg) {
-    if (fk) return;  // FK mode: arm is driven directly from joy_callback, not from Servo
     if (msg->points.empty()) return;
 
     auto cmd = std::make_unique<rover_msgs::msg::ArmCommand>();

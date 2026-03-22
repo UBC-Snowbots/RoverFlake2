@@ -16,9 +16,10 @@
 #pragma once
 
 // Controller selection — change ACTIVE_CONTROLLER to switch hardware
-#define CONTROLLER_PRO_CONTROLLER 1
-#define CONTROLLER_CYBORG_STICK   2
-#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
+#define CONTROLLER_PS4_JOY_LINUX  0  // uses joy_linux
+#define CONTROLLER_PRO_CONTROLLER 1  // uses joy (event-based)
+#define CONTROLLER_CYBORG_STICK   2  // uses joy_linux
+#define ACTIVE_CONTROLLER CONTROLLER_PS4_JOY_LINUX
 
 #include <sensor_msgs/msg/joy.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>
@@ -312,7 +313,87 @@ namespace ArmControllerConfig { // Can make into a class later?
 //        and rebuild. Verify with: ros2 topic echo /joy
 // ============================================================
 
-#if ACTIVE_CONTROLLER == CONTROLLER_PRO_CONTROLLER
+#if ACTIVE_CONTROLLER == CONTROLLER_PS4_JOY_LINUX
+
+// ============================================================
+//  PS4 / DualShock 4 (joy_linux)
+// ============================================================
+//  Axes (joy_linux):
+//    0 = Left stick X    1 = Left stick Y
+//    2 = L2 trigger      3 = Right stick X
+//    4 = Right stick Y   5 = R2 trigger
+//    6 = D-pad X         7 = D-pad Y
+//
+//  Buttons:
+//    0 = X   1 = Circle   2 = Triangle   3 = Square
+//    4 = L1  5 = R1       8 = Share      9 = Options
+//   10 = PS  11 = L3      12 = R3
+// ============================================================
+namespace ControllerConfig {
+
+    // --- Buttons ---
+    constexpr int BTN_X        = 0;
+    constexpr int BTN_CIRCLE   = 1;
+    constexpr int BTN_TRIANGLE = 2;
+    constexpr int BTN_SQUARE   = 3;
+    constexpr int BTN_L1       = 4;
+    constexpr int BTN_R1       = 5;
+    constexpr int BTN_SHARE    = 8;
+    constexpr int BTN_OPTIONS  = 9;
+    constexpr int BTN_L3       = 11;
+    constexpr int BTN_R3       = 12;
+
+    constexpr int BTN_HOME = BTN_SHARE;
+
+    // --- Axes ---
+    constexpr int AXIS_LEFT_X  = 0;
+    constexpr int AXIS_LEFT_Y  = 1;
+    constexpr int AXIS_L2      = 2;
+    constexpr int AXIS_RIGHT_X = 3;
+    constexpr int AXIS_RIGHT_Y = 4;
+    constexpr int AXIS_R2      = 5;
+    constexpr int AXIS_DPAD_X  = 6;
+    constexpr int AXIS_DPAD_Y  = 7;
+
+    // --- Cartesian Button Mapping (6 buttons → 6 translation directions) ---
+    //        Triangle (+X forward)
+    //   Square (+Y)         Circle (-Y)
+    //        X (-X backward)
+    //
+    //   R1 → +Z (up)       L1 → -Z (down)
+    constexpr int BTN_CART_POS_X = BTN_TRIANGLE;
+    constexpr int BTN_CART_NEG_X = BTN_X;
+    constexpr int BTN_CART_POS_Y = BTN_SQUARE;
+    constexpr int BTN_CART_NEG_Y = BTN_CIRCLE;
+    constexpr int BTN_CART_POS_Z = BTN_R1;
+    constexpr int BTN_CART_NEG_Z = BTN_L1;
+
+    // --- Twist Speed ---
+    constexpr double CART_BUTTON_SPEED = 0.5;
+    constexpr double ROT_STICK_SPEED   = 0.6;
+
+    constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- EE Orientation Stick Mapping ---
+    constexpr int AXIS_ROLL  = AXIS_RIGHT_X;
+    constexpr int AXIS_PITCH = AXIS_LEFT_Y;
+    constexpr int AXIS_YAW   = AXIS_LEFT_X;
+    constexpr bool INVERT_ROLL  = false;
+    constexpr bool INVERT_PITCH = false;
+    constexpr bool INVERT_YAW   = true;
+    constexpr double AXIS_DEADZONE = 0.08;
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = BTN_R3;  // R3 (right stick click) — edge-triggered toggle
+
+    // --- Gripper Sim Positions ---
+    constexpr double GRIPPER_SIM_LEFT_OPEN_POS   =  0.04;
+    constexpr double GRIPPER_SIM_RIGHT_OPEN_POS  = -0.04;
+    constexpr double GRIPPER_SIM_LEFT_CLOSE_POS  =  0.0;
+    constexpr double GRIPPER_SIM_RIGHT_CLOSE_POS =  0.0;
+}
+
+#elif ACTIVE_CONTROLLER == CONTROLLER_PRO_CONTROLLER
 
 namespace ControllerConfig {
 
@@ -372,6 +453,7 @@ namespace ControllerConfig {
     constexpr bool INVERT_ROLL  = false;
     constexpr bool INVERT_PITCH = false;
     constexpr bool INVERT_YAW   = true;   // typical: push left = positive yaw
+    constexpr double AXIS_DEADZONE = 0.08;
 
     // --- Mode Toggle (FK / IK) ---
     constexpr int BTN_MODE_TOGGLE = 4;      // Minus (-) button — edge-triggered FK/IK toggle
