@@ -9,6 +9,24 @@
 #include <vector>
 #include <algorithm>  // For std::clamp
 
+// Motor and wheel specs for calulcating rescale factors
+#define MOTOR_RPM 41
+#define MOTOR_GEAR_RATIO 23
+#define MOTOR_NUM_POLES 4
+#define MOTOR_NUM_PHASES 3
+#define WHEEL_RADIUS_METERS 0.1
+
+/**
+ * Converts commutations into radians
+ * Used for velocity and target velocity in the velocity controller and position in the motor controller
+ */
+#define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
+
+/**
+ * Theoretical max motor velocity in radians/s
+ */
+#define MOTOR_MAX_VELOCITY_RADIANS (MOTOR_RPM / 60.0) * (2.0 * M_PI)
+
 #define NUM_MOTORS 6
 #define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
 #define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
@@ -47,8 +65,8 @@ private:
     rclcpp::TimerBase::SharedPtr failsafe_timer_;
 
     // Constants and motor-related variables
-    PhidgetBLDCMotorHandle motors[NUM_MOTORS];  // Array of motors
-    PhidgetReturnCode ret, errorCode;  // Return codes for Phidget functions
+    PhidgetBLDCMotorHandle motors[NUM_MOTORS]; // Array of motors
+    PhidgetMotorVelocityControllerHandle motor_velocity_controllers[NUM_MOTORS];  // Array of motor velocity controllers
     const char* errorString;  // Error string for logging
     char errorDetail[100];  // Detailed error message
     size_t errorDetailLen = 100;  // Length of the error detail buffer
