@@ -15,6 +15,11 @@
  */
 #pragma once
 
+// Controller selection — change ACTIVE_CONTROLLER to switch hardware
+#define CONTROLLER_PRO_CONTROLLER 1
+#define CONTROLLER_CYBORG_STICK   2
+#define ACTIVE_CONTROLLER CONTROLLER_PRO_CONTROLLER
+
 #include <sensor_msgs/msg/joy.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>
 inline static constexpr int MAX_BUTTONS = 20; // can be decreased
@@ -216,9 +221,37 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::SWITCH_PRO_CONTROLLER:
             {
                 using namespace switch_index;
-                // TODO
 
+                // D-pad is buttons on Switch, convert to -1/0/1 axis-like values
+                float dpad_x = (joy_msg->buttons[buttons::DPAD_RIGHT] ? 1.0f : 0.0f)
+                             - (joy_msg->buttons[buttons::DPAD_LEFT]  ? 1.0f : 0.0f);
+                float dpad_y = (joy_msg->buttons[buttons::DPAD_UP]    ? 1.0f : 0.0f)
+                             - (joy_msg->buttons[buttons::DPAD_DOWN]  ? 1.0f : 0.0f);
 
+                // ZL/ZR rest at 1.0, pressed = -1.0; normalize to 0.0 (unpressed) / 1.0 (pressed)
+                float zl = (1.0f - joy_msg->axes[axes::LEFT_TRIGGER_ZL]) / 2.0f;
+                float zr = (1.0f - joy_msg->axes[axes::RIGHT_TRIGGER_ZR]) / 2.0f;
+
+                // FK: same layout as PS4
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = (zl - zr) / 2.0f;
+                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.fk_axes[AXIS_5_INDEX] = dpad_y;
+                arm_control_msg.fk_axes[AXIS_6_INDEX] = dpad_x;
+
+                // IK
+                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = (zl - zr) / 2.0f;
+                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = dpad_x;
+                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = dpad_y;
+
+                arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
+
+                arm_control_msg.home = joy_msg->buttons[buttons::MINUS];
+                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::B];
             }
             break;
         case GameController::CYBORG_JOYSTICK:
