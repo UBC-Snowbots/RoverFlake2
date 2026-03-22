@@ -52,7 +52,7 @@ static bool btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx);
 
 
 bool fk = false; // Decides if joystick outputs forward kinematics or inverse
-ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::SWITCH_PRO_CONTROLLER;
+ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::PS4_JOY_LINUX;
 ArmControllerConfig::ArmControlInput last_control_input = {};
 
 

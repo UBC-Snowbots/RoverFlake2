@@ -39,6 +39,6 @@ def generate_launch_description():
     )
     return LaunchDescription([
         # Ensure only one is active:
-        # joy_linux_node # Works with most joysticks, and accepts parameters
-        joy_node # theres a bug where this just doesnt accept parameters. However we need this one for switch controller
+        joy_linux_node # Works with most joysticks, and accepts parameters
+        # joy_node # theres a bug where this just doesnt accept parameters. However we need this one for switch controller
     ])
