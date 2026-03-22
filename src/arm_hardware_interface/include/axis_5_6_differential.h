@@ -13,7 +13,7 @@
     returns: 
         (motor5_output, motor6_output) Unitless values for motors 5 and 6
 */
-void differential_drive(float axis5_input, float axis6_input, float &motor5_output, float &motor6_output) {
+inline void differential_drive(float axis5_input, float axis6_input, float &motor5_output, float &motor6_output) {
 
     // If the inputs have the same sign, to continue in the same direction of motion, use axis 5 for rotation
     if((axis5_input > 0 && axis6_input > 0) || (axis5_input < 0 && axis6_input < 0)) {
