@@ -26,8 +26,6 @@ namespace moteus = mjbots::moteus;
 
 #include <arm_hardware_interface/ArmSerialProtocol.h>
 
-#define HOLD_TORQUE_AT_ZERO_VELOCITY true
-
 #define SIMULATE false
 #define TX_UART_BUFF 128
 #define RX_UART_BUFF 128
@@ -56,49 +54,47 @@ private:
   static constexpr double kHomeVelocityRevPerSecond = -0.1;
   static constexpr double kHomeMaximumTorqueNm = 0.5;
 
-  std::map<int, std::shared_ptr<mjbots::moteus::Controller>> controllers;
-  std::map<int, mjbots::moteus::Query::Result> servo_data;
-  std::shared_ptr<mjbots::moteus::Transport> transport;
-
-  bool send_angles = true;
-
   struct AxisAlertFlags {
     bool position_alert_raised = false;
     bool current_limit_alert_raised = false;
   };
 
   struct Axis {
-    float curr_pos;
-    float target_pos;
-    float speed;
-    float zero_rad;
-    float max_rad;
-    int dir;
+    float curr_pos = 0.0f;
+    float target_pos = 0.0f;
+    float speed = 0.0f;
+    float zero_rad = 0.0f;
+    float max_rad = 0.0f;
+    int dir = 1;
     int index = -1;
     AxisAlertFlags alerts = {};
   };
 
   // Motors cannot be linked to axes with new arm (differential wrist)
   struct MotorTelem {
-    MotorConfig config; // Just report back the config
+    MotorConfig config;
 
-    float curr_voltage_V = 0;
-    float curr_current_A = 0;
-    float curr_power_W = 0;
-    float driver_temp_C = 0;
+    float curr_voltage_V = 0.0f;
+    float curr_current_A = 0.0f;
+    float curr_power_W = 0.0f;
+    float driver_temp_C = 0.0f;
 
-    float curr_velocity = 0;
-    float curr_position = 0;
-    float curr_torque_Nm = 0;
+    float curr_velocity = 0.0f;
+    float curr_position = 0.0f;
+    float curr_torque_Nm = 0.0f;
 
-    // Desired
-    float des_velocity = 0;
-    float des_position = 0;
+    float des_velocity = 0.0f;
+    float des_position = 0.0f;
 
     int moteus_mode = 0;
     int moteus_fault = 0;
-
   };
+
+  std::map<int, std::shared_ptr<mjbots::moteus::Controller>> controllers;
+  std::map<int, mjbots::moteus::Query::Result> servo_data;
+  std::shared_ptr<mjbots::moteus::Transport> transport;
+
+  bool send_angles = true;
   MotorTelem motor_telem[NUM_JOINTS];
 
   Axis axes[NUM_JOINTS];

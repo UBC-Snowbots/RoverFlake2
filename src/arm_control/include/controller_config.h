@@ -373,6 +373,21 @@ namespace ControllerConfig {
     constexpr bool INVERT_PITCH = false;
     constexpr bool INVERT_YAW   = true;   // typical: push left = positive yaw
 
+    // --- Mode Toggle (FK / IK) ---
+    constexpr int BTN_MODE_TOGGLE = 4;      // Minus (-) button — edge-triggered FK/IK toggle
+    constexpr double FK_JOINT_SPEED = 45.0; // deg/s per unit of stick input
+
+    // FK axis mapping: which joy axis drives each joint (sticks → joints 0-3)
+    constexpr int FK_AXIS_J0 = AXIS_LEFT_Y;
+    constexpr int FK_AXIS_J1 = AXIS_RIGHT_Y;
+    constexpr int FK_AXIS_J2 = AXIS_LEFT_X;
+    constexpr int FK_AXIS_J3 = AXIS_RIGHT_X;
+    // Joints 4 and 5 use shoulder buttons (repurposed in FK mode)
+    constexpr int FK_BTN_J4_POS = BTN_UP;
+    constexpr int FK_BTN_J4_NEG = BTN_DOWN;
+    constexpr int FK_BTN_J5_POS = BTN_Y;
+    constexpr int FK_BTN_J5_NEG = BTN_A;
+
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
     constexpr int AXIS_GRIPPER_TOGGLE = 5; // ZR analog axis (rests at 1.0, pressed = -1.0)
@@ -429,6 +444,18 @@ namespace ControllerConfig {
     constexpr double CART_BUTTON_SPEED = 0.3;
     constexpr double AXIS_DEADZONE = 0.15;
     constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- Mode Toggle (FK / IK) ---
+    constexpr int BTN_MODE_TOGGLE = -1;     // no dedicated mode button on Cyborg
+    constexpr double FK_JOINT_SPEED = 45.0;
+    constexpr int FK_AXIS_J0 = AXIS_STICK_Y;
+    constexpr int FK_AXIS_J1 = AXIS_TWIST;
+    constexpr int FK_AXIS_J2 = AXIS_STICK_X;
+    constexpr int FK_AXIS_J3 = -1;
+    constexpr int FK_BTN_J4_POS = -1;
+    constexpr int FK_BTN_J4_NEG = -1;
+    constexpr int FK_BTN_J5_POS = -1;
+    constexpr int FK_BTN_J5_NEG = -1;
 
     // --- Gripper ---
     constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
