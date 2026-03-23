@@ -237,7 +237,7 @@ namespace ArmControllerConfig { // Can make into a class later?
                 arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = static_cast<float>(joy_msg->buttons[buttons::DPAD_UP] - joy_msg->buttons[buttons::DPAD_DOWN]);
 
                 arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
-                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::B];
+                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::MINUS];
             }
             break;
         case GameController::CYBORG_JOYSTICK:
