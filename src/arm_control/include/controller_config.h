@@ -341,6 +341,7 @@ namespace ControllerConfig {
     // 1.0 → full speed (0.5 m/s per servo config)
     constexpr double CART_BUTTON_SPEED = 0.5;  // unitless, range [0.0, 1.0]
     constexpr double ROT_STICK_SPEED   = 0.6;  // unitless, range [0.0, 1.0] for angular
+    constexpr double AXIS_DEADZONE     = 0.15;
 
     // --- Frame for Cartesian twist commands ---
     // "base_link" = world-fixed directions (forward is always forward)
