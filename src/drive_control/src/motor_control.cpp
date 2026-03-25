@@ -12,27 +12,36 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
-        ret = PhidgetBLDCMotor_create(&motors[i]);
+        ret = PhidgetMotorPositionController_create(&motors[i]);
         handlePhidgetError(ret, "creating motor", i);
-        ret = PhidgetMotorVelocityController_create(&motor_velocity_controllers[i]);
-        handlePhidgetError(ret, "creating velocity controller", i);
 
         ret = Phidget_setHubPort((PhidgetHandle)motors[i], i);
         handlePhidgetError(ret, "setting motor hub port", i);
-        ret = Phidget_setHubPort((PhidgetHandle)motor_velocity_controllers[i], i);
-        handlePhidgetError(ret, "setting velocity controller hub port", i);
 
         ret = Phidget_openWaitForAttachment((PhidgetHandle)motors[i], 5000);
-        handlePhidgetError(ret, "opening motor", i);
-        ret = Phidget_openWaitForAttachment((PhidgetHandle)motor_velocity_controllers[i], 5000);
-        handlePhidgetError(ret, "opening velocity controller", i);
+        handlePhidgetError(ret, "opening motor connection", i);
 
-        ret = PhidgetBLDCMotor_setRescaleFactor(motors[i], MOTOR_RESCALE_FACTOR);
-        handlePhidgetError(ret, "set motor rescale factor", i);
-        ret = PhidgetMotorVelocityController_setRescaleFactor(motor_velocity_controllers[i], MOTOR_RESCALE_FACTOR);
-        handlePhidgetError(ret, "set rescale factor", i);
+        ret = PhidgetMotorPositionController_setNormalizePID(motors[i], 1);
+        handlePhidgetError(ret, "normalizing PID controller", i);
 
-        PhidgetMotorVelocityController_setEngaged(motor_velocity_controllers[i], 1);
+        // Setup motor position settings so wheels are stopped by default
+        double position;
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
+        handlePhidgetError(ret, "getting initial motor position", i);
+
+        target_positions[i] = position;
+
+        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], position);
+        handlePhidgetError(ret, "setting initial motor target position", i);
+
+        PhidgetMotorPositionController_setEngaged(motors[i], 1);
+        handlePhidgetError(ret, "engaging motor", i);
+
+        ret = PhidgetMotorPositionController_setRescaleFactor(motors[i], MOTOR_RESCALE_FACTOR);
+        handlePhidgetError(ret, "setting motor rescale factor", i);
+
+        ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
+        handlePhidgetError(ret, "setting motor max velocity", i);
     }
 
     auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
@@ -49,7 +58,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
     // Enable failsafe for all motors
     for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL_MS);
+        PhidgetReturnCode ret = PhidgetMotorPositionController_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL_MS);
         handlePhidgetError(ret, "enable failsafe", i);
     }
 
@@ -57,6 +66,11 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     failsafe_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 5),
         std::bind(&MotorControlNode::resetFailsafe, this)
+    );
+
+    motor_control_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(MOTOR_CONTROL_LOOP_FREQUENCY_MS), 
+            std::bind(&MotorControlNode::motorControlLoop, this)
     );
 
     // Create subscribers for left and right wheel velocity commands
@@ -71,19 +85,21 @@ MotorControlNode::~MotorControlNode() {
     RCLCPP_WARN(this->get_logger(), "Motor Control Node shutting down.");
     for (int i = 0; i < NUM_MOTORS; i++) {
         if (motors[i] != nullptr) {
-            PhidgetBLDCMotor_delete(&motors[i]);
+            PhidgetMotorPositionController_delete(&motors[i]);
         }
     }
 }
 
 void MotorControlNode::leftWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float left_velocity = msg->data.empty() ? 0.0f : msg->data[0];  // Extract velocity safely
-    runMotors({3, 4, 5}, left_velocity);  // Corrected function name
+    setVelocity({3, 4, 5}, left_velocity);
+    // runMotors({3, 4, 5}, left_velocity);  // Corrected function name
 }
 
 void MotorControlNode::rightWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float right_velocity = msg->data.empty() ? 0.0f : msg->data[0];
-    runMotors({0, 1, 2}, right_velocity);  // Corrected function name
+    setVelocity({0, 1, 2}, right_velocity);
+    // runMotors({0, 1, 2}, right_velocity);  // Corrected function name
 }
 
 void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::string& action, int i) {
@@ -99,15 +115,29 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
     }
 }
 
-void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float velocity) {
-    PhidgetLog_enable(PHIDGET_LOG_INFO, "phidgetlog.log");
+void MotorControlNode::motorControlLoop() {
+    PhidgetReturnCode ret;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        double current_position;
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &current_position);
 
-    double velocity_rad_s = velocity / WHEEL_RADIUS_METERS;
-    velocity_rad_s = std::clamp(velocity_rad_s, -MOTOR_MAX_VELOCITY_RADIANS, MOTOR_MAX_VELOCITY_RADIANS);
-    
-    for (int motor_index : selected_motors) {
-        PhidgetReturnCode ret = PhidgetMotorVelocityController_setTargetVelocity(motor_velocity_controllers[motor_index], (double)velocity_rad_s);
-        handlePhidgetError(ret, "set target velocity", motor_index);
+        target_positions[i] = current_position + (velocities[i] * MOTOR_CONTROL_LOOP_FREQUENCY_MS);
+        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
+        handlePhidgetError(ret, "setting motor position", i);
+    }
+}
+
+void MotorControlNode::setVelocity(const std::vector<int>& selected_motors, float velocity) {
+    double velocity_rads;
+    if (std::abs(velocity) < MIN_VELOCITY_MS) {
+        velocity_rads = 0.0;
+    }
+    else {
+        velocity_rads = std::clamp(velocity / WHEEL_RADIUS_METERS, -MAX_VELOCITY_RADS, MAX_VELOCITY_RADS);
+    }
+
+    for (int i : selected_motors) {
+        velocities[i] = velocity_rads;
     }
 }
 
@@ -116,37 +146,24 @@ void MotorControlNode::publishDriveFeedback() {
 
     message.valid_data.resize(NUM_MOTORS, true);
     message.velocities.resize(NUM_MOTORS);
-    message.target_velocities.resize(NUM_MOTORS);
     message.positions.resize(NUM_MOTORS);
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
-        ret = PhidgetMotorVelocityController_getVelocity(motor_velocity_controllers[i], &message.velocities[i]);
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &message.positions[i]);
         if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "get velocity", i);
+            handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
         }
-
-        ret = PhidgetMotorVelocityController_getTargetVelocity(motor_velocity_controllers[i], &message.target_velocities[i]);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "get target velocity", i);
-            message.valid_data[i] = false;
-        }
-
-        ret = PhidgetBLDCMotor_getPosition(motors[i], &message.positions[i]);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "get position", i);
-            message.valid_data[i] = false;
-        }
+        message.velocities[i] = velocities[i];
     }
-
     drive_feedback_pub_->publish(message);
 }
 
 void MotorControlNode::resetFailsafe() {
     for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_resetFailsafe(motors[i]);
+        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
         handlePhidgetError(ret, "failsafe", i);
     }
 }
