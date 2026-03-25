@@ -13,6 +13,8 @@ jobs:
        run: |
          cd $ROVERFLAKE_ROOT
          echo $ROS_DISTRO
+         pwd
+         ls $ROVERFLAKE_ROOT
          source /opt/ros/humble/setup.bash
          echo $ROS_DISTRO
          colcon build --symlink-install --packages-skip sweeppy  
