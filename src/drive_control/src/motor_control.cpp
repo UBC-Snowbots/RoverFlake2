@@ -68,6 +68,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         std::bind(&MotorControlNode::resetFailsafe, this)
     );
 
+    // Initialize timer for the motor control loop
     motor_control_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(MOTOR_CONTROL_LOOP_FREQUENCY_MS), 
             std::bind(&MotorControlNode::motorControlLoop, this)
