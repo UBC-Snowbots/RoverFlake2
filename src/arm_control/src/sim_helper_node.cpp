@@ -37,21 +37,43 @@ public:
     }
 
 private:
+    // Persistent gripper state — only updated by 'G' commands, NOT overwritten by velocity commands
+    double gripper_state_ = 0.0;
+
     void armCommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg)
     {
         // Prepare the Float64MultiArray message
+        // 7 elements: 6 joint velocities + 1 end-effector (gripper) command
+        // This standardized 7-float format is consumed by both RViz sim and MuJoCo bridge
         auto sim_command_msg = std_msgs::msg::Float64MultiArray();
-        sim_command_msg.data.resize(6, 0.0); // Resize to 6 and initialize to 0
+        sim_command_msg.data.resize(7, 0.0); // Resize to 7 and initialize to 0
 
         // Copy the velocities from the incoming ArmCommand message
         for (size_t i = 0; i < std::min(msg->velocities.size(), static_cast<size_t>(6)); ++i)
         {
             sim_command_msg.data[i] = msg->velocities[i];
         }
-        // auto sim_ee_msg = std_msgs::msg::Float64(); //* idk just don't like this form of initilazation.
-        std_msgs::msg::Float64 arm_sim_ee_msg;
-        arm_sim_ee_msg.data = msg->end_effector;
-        arm_sim_ee_publisher->publish(arm_sim_ee_msg);
+
+        // Only update gripper state on explicit gripper commands ('G')
+        // Velocity commands ('V') have end_effector=0.0 by default and would
+        // constantly overwrite the gripper state if we used it blindly.
+        if (msg->cmd_type == 'G')
+        {
+            gripper_state_ = msg->end_effector;
+            RCLCPP_INFO(this->get_logger(), "Gripper command: end_effector=%.1f", gripper_state_);
+        }
+
+        // Always include the persistent gripper state in the sim command
+        sim_command_msg.data[6] = gripper_state_;
+
+        // Publish EE state only when it actually changes (on 'G' commands)
+        if (msg->cmd_type == 'G')
+        {
+            std_msgs::msg::Float64 arm_sim_ee_msg;
+            arm_sim_ee_msg.data = gripper_state_;
+            arm_sim_ee_publisher->publish(arm_sim_ee_msg);
+        }
+
         // Publish the message
         sim_command_publisher_->publish(sim_command_msg);
     }

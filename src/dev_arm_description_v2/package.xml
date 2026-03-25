@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dev_arm_description_v2</name>
+  <version>1.0.0</version>
+  <description>URDF Description package for dev arm v2 (RevB 2025-2026)</description>
+  <author email="rhimaaron@email.com">Aaron Rhim</author>
+  <maintainer email="rhimaaron@email.com">Aaron Rhim</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

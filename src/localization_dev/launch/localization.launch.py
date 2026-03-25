@@ -16,6 +16,14 @@ def generate_launch_description():
     ])
     return LaunchDescription([
 
+        # Static transform: IMU frame -> base_link (adjust translation/rotation if IMU is offset)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='imu_to_base_link',
+            arguments=['0', '0', '0', '0', '0', '0', 'base_link', 'imu_link']
+        ),
+
         Node(
             package='robot_localization',
             executable='ukf_node',
@@ -30,7 +38,10 @@ def generate_launch_description():
             name='imu_filter',
             output='screen',
             parameters=[{
-                'publish_tf': False
+                'publish_tf': False,
+                'use_mag': True,
+                'gain': 0.5,            # Higher = faster response (default 0.1)
+                'world_frame': 'enu',   # East-North-Up convention
             }]
         ),
         IncludeLaunchDescription(

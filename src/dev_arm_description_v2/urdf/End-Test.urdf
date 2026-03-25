@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version:   Build Version: 1.6.9372.31930
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="End-Test">
+  <link
+    name="Base-EE">
+    <inertial>
+      <origin
+        xyz="-0.0011063785182417 0.000415259727448674 -0.0398049819853404"
+        rpy="0 0 0" />
+      <mass
+        value="0.628367460355529" />
+      <inertia
+        ixx="0.000340294819855205"
+        ixy="-1.32628061393646E-05"
+        ixz="-5.77189775258839E-06"
+        iyy="0.000313942030327772"
+        iyz="2.26931733118351E-06"
+        izz="0.000481162425041832" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Base-EE.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Base-EE.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Gripper-1">
+    <inertial>
+      <origin
+        xyz="0.010088 -0.046782 0.08035"
+        rpy="0 0 0" />
+      <mass
+        value="0.59189" />
+      <inertia
+        ixx="0.0016698"
+        ixy="-1.3804E-07"
+        ixz="4.1879E-07"
+        iyy="0.00035722"
+        iyz="-2.0932E-05"
+        izz="0.0015228" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Gripper-1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Gripper-1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Gripper-1"
+    type="prismatic">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Base-EE" />
+    <child
+      link="Gripper-1" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Gripper-2">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Gripper-2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://End-Test/meshes/Gripper-2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Gripper-2"
+    type="prismatic">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Base-EE" />
+    <child
+      link="Gripper-2" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+</robot>

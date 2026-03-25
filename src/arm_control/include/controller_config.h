@@ -1,0 +1,401 @@
+/**
+ * controller_config.h
+ * 
+ * This is for gamepads / game controllers, not for the control base joysticks
+ * 
+ * Modular controller configuration for arm teleoperation.
+ * To switch controllers, change the ACTIVE_CONTROLLER define below.
+ * Button/axis indices can be verified by running: ros2 topic echo /joy
+ * 
+ * Joy -> Ros2 package that works with event based (/dev/input/eventx)
+ *          - This has bugs? Cannot seem to set parameters
+ * Joy_linux -> Ros2 package that does the same thing as joy, but uses /dev/input/by-id
+ *          - This was the ros1 joy package and used to be the standard. We are able to set parameters and stuff 
+ * 
+ */
+#pragma once
+
+#include <sensor_msgs/msg/joy.hpp>
+#include <arm_hardware_interface/ArmSerialProtocol.h>
+inline static constexpr int MAX_BUTTONS = 20; // can be decreased
+inline static constexpr int MAX_AXES    = 10;
+
+
+// ============================================================
+//  PS4 Controller (Using Joy Linux)
+// ============================================================
+namespace ps4_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0;
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1;
+        static inline constexpr int RIGHT_JOYSTICK_X    = 3;
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 4;
+
+        static inline constexpr int L2                  = 2; // Left Trigger
+        static inline constexpr int R2                  = 5; // Right trigger
+
+        static inline constexpr int DPAD_X              = 6;
+        static inline constexpr int DPAD_Y              = 7;
+
+    }
+
+    namespace buttons { // Can also be switches
+        static inline constexpr int X                   = 0;
+        static inline constexpr int CIRCLE              = 1;
+        static inline constexpr int TRIANGLE            = 2;
+        static inline constexpr int SQUARE              = 3;
+        static inline constexpr int L1                  = 4; // Left bumper
+        static inline constexpr int R1                  = 5; // Right bumber
+        static inline constexpr int SHARE               = 8; // Share button (to the left of the middle trackpad)
+        static inline constexpr int OPTIONS             = 9; // Options button (to the right of the middle trackpad)
+        static inline constexpr int PS_BUTTON           = 10; // Middle playstation button in between joysticks
+        static inline constexpr int L3                  = 11; // Left joystick button
+        static inline constexpr int R3                  = 12; // Right joystic button
+
+        
+    }
+
+    //Note for PS4 Controller: Currently there is no 
+
+    // If we need to support both joy and joy_linux, maybe something like:
+    /*
+    namespace your_controller
+    {
+        namespace joy_event {
+            axes...
+            buttons...
+        }
+            
+        namespace joy_linux {
+            axes...
+            buttons...
+        }
+    }
+    
+    */
+
+}
+
+
+// ============================================================
+//  Nintendo Switch Pro Controller (joy, event based - NOT JOY LINUX WE CANT GET SWITCH WORKING WITH JOY LINUX) 
+// ============================================================
+
+namespace switch_index {
+    namespace axes {
+        static inline constexpr int LEFT_JOYSTICK_X     = 0; // Positive is Left
+        static inline constexpr int LEFT_JOYSTICK_Y     = 1; // Positive is up
+        static inline constexpr int RIGHT_JOYSTICK_X    = 2; // Positive is left 
+        static inline constexpr int RIGHT_JOYSTICK_Y    = 3; // Positive is up
+        static inline constexpr int LEFT_TRIGGER_ZL     = 4; // Positive is unclicked. Negative is clicked. Only -1 and 1
+        static inline constexpr int RIGHT_TRIGGER_ZR    = 5; // Positive is unclicked. Negative is clicked. Only -1 and 1
+
+    }
+
+    namespace buttons {
+        static inline constexpr int A                   = 0;
+        static inline constexpr int B                   = 1;
+        static inline constexpr int X                   = 2;
+        static inline constexpr int Y                   = 3;
+        static inline constexpr int MINUS               = 4; // the (-) button to the left of the switch logo
+        static inline constexpr int HOME                = 5; // the (home) button to the bottom right of the switch logo
+        static inline constexpr int PLUS                = 6; // the (+) button to the right of the switch logo
+        static inline constexpr int L3                  = 7; // Left joystick button
+        static inline constexpr int R3                  = 8; // Right joystic button
+        static inline constexpr int L1                  = 9; // Left bumper
+        static inline constexpr int R1                  = 10; // Right bumper
+
+        static inline constexpr int DPAD_UP             = 11; 
+        static inline constexpr int DPAD_DOWN           = 12; 
+        static inline constexpr int DPAD_LEFT           = 13; 
+        static inline constexpr int DPAD_RIGHT          = 14; 
+        static inline constexpr int SQURE_CICLE         = 15; // Weird button to the bottom left of the switch logo
+
+    }
+}
+
+
+// ============================================================
+//  Cyborg Joystick (joy linux)
+// ============================================================
+
+namespace cyborg_index {
+    namespace axes {
+        static inline constexpr int JOYSTICK_X          = 0; // Left is positive
+        static inline constexpr int JOYSTICK_Y          = 1; // up is positive
+        static inline constexpr int THROTTLE            = 2; // up is 1, all the way down is -1
+        static inline constexpr int JOYSTICK_Z          = 3; // CCW is positive
+
+        // Thumb 4way is the dongle thing between buttons 5 and 6
+        static inline constexpr int THUMB_4WAY_X        = 4; // left is positive
+        static inline constexpr int THUMB_4WAY_Y        = 5; // left is positive
+    }
+
+    namespace buttons {
+        static inline constexpr int TRIGGER             = 0;
+        static inline constexpr int BUTTON_2            = 1;
+        static inline constexpr int BUTTON_3            = 2;
+        static inline constexpr int BUTTON_4            = 3;
+        static inline constexpr int BUTTON_5            = 4; // kinda sticky
+        static inline constexpr int BUTTON_6            = 5; // kinda sticky
+        static inline constexpr int F1                  = 6;
+        static inline constexpr int F2                  = 7;
+        static inline constexpr int F3                  = 8;
+        static inline constexpr int F4                  = 9;
+        static inline constexpr int LEFT_UPARROW        = 10;
+        static inline constexpr int RIGHT_UPARROW       = 11;
+    }
+}
+
+
+namespace ArmControllerConfig { // Can make into a class later?
+
+    enum class GameController {
+        PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+        SWITCH_PRO_CONTROLLER,
+        CYBORG_JOYSTICK
+
+        //Also possible here:
+        // AARON_STYLE_SWITCH_PRO
+        // ROWAN_PRECISE_PS4
+        // (custom mappings based on which user likes what)
+    };
+
+    // Arm control input, Modelled off of control base joysticks:
+    /* axes:
+    - 0: left joystick x
+    - 1: left joystick y
+    - 2: left joystick z
+    - 3: right joystick x
+    - 4: right joystick y
+    - 5: right joystick z
+
+    example: For a game controller, the below function will do its best to map the game controller inputs to sub out for the arm joysticks
+
+    Note: the above is based on control base arm joysticks "default", we can create other 
+    */
+
+    float ee_speed_scale = 60;
+    float axis_speed_scale = 10;
+
+    struct ArmControlInput {
+        // Static arrays, not vectors here
+        float fk_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
+        float ik_axes[MAX_AXES] = {}; // All are standardized from -1 to 1. 
+        float end_effector = 0; // Standardized from -1 to 1
+        int home = 0;  // Pulse to home
+        int kinematics_mode_switch = 0; // Pulse to change from IK to FK
+    };
+
+    inline static bool process_joy_input(GameController controller, const sensor_msgs::msg::Joy::SharedPtr joy_msg, ArmControlInput &arm_control_msg) 
+    {
+        switch (controller) {
+        case GameController::PS4_JOY_LINUX:
+            {
+                using namespace ps4_index;
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.fk_axes[AXIS_5_INDEX] = joy_msg->axes[axes::DPAD_Y];
+                arm_control_msg.fk_axes[AXIS_6_INDEX] = joy_msg->axes[axes::DPAD_X];
+
+                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = joy_msg->axes[axes::DPAD_X];
+                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg->axes[axes::DPAD_Y];
+
+                arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
+    
+                arm_control_msg.home = joy_msg->buttons[buttons::SHARE];
+                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::CIRCLE];
+            }
+            break;
+        case GameController::SWITCH_PRO_CONTROLLER:
+            {
+                using namespace switch_index;
+                // TODO
+
+
+            }
+            break;
+        case GameController::CYBORG_JOYSTICK:
+            {
+            using namespace cyborg_index;
+            // TODO
+
+            
+            }
+            break;
+        default:
+            return false; // Return Error
+        }
+        return true; // Return Success
+    }
+
+    // Overload for drive control (later refactor)
+    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, DriveControlInput &input) 
+    // {
+        
+    //     switch (controller)
+    //     {
+    //     case GameController::PS4_JOY_LINUX:
+            
+    //         break;
+    //     case GameController::SWITCH_PRO_CONTROLLER:
+
+    //         break;
+    //     case GameController::CYBORG_JOYSTICK:
+            
+    //         break;
+    //     default:
+    //         return false;
+
+    //     return true;
+    //     }
+    // }
+}
+
+
+
+
+//  Button names (used):
+//    0 = BTN_EAST        1 = BTN_SOUTH
+//    2 = BTN_NORTH       3 = BTN_WEST
+//    12 = up
+//    13 = down
+//    14 = left
+//    15 = right
+//
+//  Axes:
+//    0 = Left stick X    1 = Left stick Y
+//    2 = Right stick X   3 = Right stick Y
+//    4 = ZL analog (rests at 1.0)
+//    5 = ZR analog (rests at 1.0)
+//
+//  NOTE: If your button indices differ, adjust the values below
+//        and rebuild. Verify with: ros2 topic echo /joy
+// ============================================================
+
+#if ACTIVE_CONTROLLER == CONTROLLER_PRO_CONTROLLER
+
+namespace ControllerConfig {
+
+    // --- Face Buttons ---
+    constexpr int BTN_B      = 0;   // East
+    constexpr int BTN_A      = 1;   // South
+    constexpr int BTN_Y      = 2;   // North
+    constexpr int BTN_X      = 3;   // West
+
+    constexpr int BTN_UP     = 12;   // Left shoulder
+    constexpr int BTN_DOWN   = 13;   // Right shoulder
+
+    // --- Axes ---
+    constexpr int AXIS_LEFT_X  = 0;
+    constexpr int AXIS_LEFT_Y  = 1;
+    constexpr int AXIS_RIGHT_X = 2;
+    constexpr int AXIS_RIGHT_Y = 3;
+    // axes[4], axes[5] = ZL/ZR triggers (rest at 1.0, pressed = -1.0) — avoid for motion
+
+    // --- Cartesian Button Mapping (6 buttons → 6 translation directions) ---
+    //  Face buttons control X/Y plane, shoulders control Z
+    //
+    //        Y (+X forward)
+    //   X (+Y)         B (-Y)
+    //        A (-X backward)
+    //
+    //   R shoulder → +Z (up)
+    //   L shoulder → -Z (down)
+    constexpr int BTN_CART_POS_X = BTN_Y;   // North face  → +X (forward)
+    constexpr int BTN_CART_NEG_X = BTN_A;   // South face  → -X (backward)
+    constexpr int BTN_CART_POS_Y = BTN_X;   // West face   → +Y (left)
+    constexpr int BTN_CART_NEG_Y = BTN_B;   // East face   → -Y (right)
+    constexpr int BTN_CART_POS_Z = BTN_UP;   // R shoulder  → +Z (up)
+    constexpr int BTN_CART_NEG_Z = BTN_DOWN;   // L shoulder  → -Z (down)
+
+    // --- Twist Speed ---
+    // command_in_type is "unitless" (-1 to 1), scaled by servo's linear/rotational params
+    // 1.0 → full speed (0.5 m/s per servo config)
+    constexpr double CART_BUTTON_SPEED = 0.5;  // unitless, range [0.0, 1.0]
+    constexpr double ROT_STICK_SPEED   = 0.6;  // unitless, range [0.0, 1.0] for angular
+
+    // --- Deadzone for analog axes (used later for joystick support) ---
+    constexpr double AXIS_DEADZONE = 0.15;
+
+    // --- Frame for Cartesian twist commands ---
+    // "base_link" = world-fixed directions (forward is always forward)
+    // "ee_base_link" = relative to end-effector orientation
+    constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- EE Orientation Stick Mapping ---
+    // Left stick  → pitch (tilt forward/back) and yaw (rotate left/right)
+    // Right stick → roll  (tilt sideways)
+    //
+    // Servo angular.x = roll, angular.y = pitch, angular.z = yaw
+    constexpr int AXIS_ROLL  = AXIS_RIGHT_X;  // right stick X → roll
+    constexpr int AXIS_PITCH = AXIS_LEFT_Y;    // left stick Y  → pitch
+    constexpr int AXIS_YAW   = AXIS_LEFT_X;    // left stick X  → yaw
+    constexpr bool INVERT_ROLL  = false;
+    constexpr bool INVERT_PITCH = false;
+    constexpr bool INVERT_YAW   = true;   // typical: push left = positive yaw
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = 7;  // ZR button — edge-triggered toggle
+    constexpr double GRIPPER_OPEN_VALUE  = 1.0;
+    constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+}
+
+#elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
+
+// ============================================================
+//  Saitek Cyborg USB Stick
+// ============================================================
+//  Axes:
+//    0 = Stick X (left/right)
+//    1 = Stick Y (forward/back)
+//    2 = Throttle slider (rests non-zero — DO NOT USE for motion)
+//    3 = Stick twist/rudder (rotation)
+//    4 = Hat X
+//    5 = Hat Y
+//
+//  Buttons:
+//    0 = Trigger
+// ============================================================
+
+namespace ControllerConfig {
+
+    // --- Axes ---
+    constexpr int AXIS_STICK_X   = 0;
+    constexpr int AXIS_STICK_Y   = 1;
+    constexpr int AXIS_THROTTLE  = 2;  // rests non-zero — skip
+    constexpr int AXIS_TWIST     = 3;  // rudder/twist
+    constexpr int AXIS_HAT_X     = 4;
+    constexpr int AXIS_HAT_Y     = 5;
+
+    // --- Buttons ---
+    constexpr int BTN_TRIGGER    = 0;
+
+    // --- Cartesian Button Mapping ---
+    // Cyborg stick has no natural button-based Cartesian; set to -1 (disabled)
+    constexpr int BTN_CART_POS_X = -1;
+    constexpr int BTN_CART_NEG_X = -1;
+    constexpr int BTN_CART_POS_Y = -1;
+    constexpr int BTN_CART_NEG_Y = -1;
+    constexpr int BTN_CART_POS_Z = -1;
+    constexpr int BTN_CART_NEG_Z = -1;
+
+    constexpr double CART_BUTTON_SPEED = 0.3;
+    constexpr double AXIS_DEADZONE = 0.15;
+    constexpr const char* CART_FRAME_ID = "base_link";
+
+    // --- Gripper ---
+    constexpr int BTN_GRIPPER_TOGGLE = BTN_TRIGGER;  // trigger = gripper toggle
+    constexpr double GRIPPER_OPEN_VALUE  = 1.0;
+    constexpr double GRIPPER_CLOSE_VALUE = 0.0;
+}
+
+#else
+#pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
+#endif

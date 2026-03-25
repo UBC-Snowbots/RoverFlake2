@@ -1,0 +1,15 @@
+float32 curr_voltage_volts
+float32 curr_current_amps
+float32 curr_power_watts
+
+float32 curr_position
+float32 curr_velocity
+float32 curr_torque
+
+float32 des_velocity
+float32 des_position
+
+float32 driver_temp_degreesc
+
+int16 moteus_mode
+int16 moteus_fault

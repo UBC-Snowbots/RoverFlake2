@@ -36,6 +36,17 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
+void MainHMINode::moteusDebugFeedbackCallback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg)
+{
+    // Handle drawss
+    for(int i = 0; i < msg->status.size(); i++){
+        
+        this->axis_torque_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_torque, 1));
+        this->axis_driver_temp_label[i]->set_label(floatToStringTruncate(msg->status[i].driver_temp_degreesc, 1));
+        this->axis_current_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_current_amps, 2));
+
+    }
+}
 //* @brief Switches cards
 //* @param bool next, if true switches to next card, if false switches to previous card
 //* If at end of cards, rollback to first card

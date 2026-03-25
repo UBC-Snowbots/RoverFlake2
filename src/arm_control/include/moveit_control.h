@@ -24,6 +24,13 @@ purpose: to handle moveit control, as well as servo.
 #define CARTESIAN_BASE_FRAME 3
 
 #define PI 3.14159
+
+// Gripper toggle button index
+#define GRIPPER_TOGGLE_BTN 0  // joystick "button 1" is index 0 (zero-indexed)
+
+// Gripper end-effector command values
+#define GRIPPER_OPEN_VALUE  1.0
+#define GRIPPER_CLOSE_VALUE 0.0
 class ArmMoveitControl : public rclcpp::Node {
 public:
     //rclcpp::NodeOptions node_options;
@@ -55,7 +62,7 @@ public:
         // trajectory_subscriber = this->create_subscription<control_msgs::msg::JointTrajectoryControllerState>( //! Do we need this?
         //     "/dev_arm_controller/controller_state", 10, std::bind(&ArmMoveitControl::jointTrajectoryCallback, this, std::placeholders::_1));
          joy_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/jnhdnhdnhdoy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
+            "/joy", 10, std::bind(&ArmMoveitControl::joyCallback, this, std::placeholders::_1));
           servo_output_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
             "/arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
         
@@ -70,7 +77,12 @@ public:
 int count_ = 0;    
 void publishCommands();	
 void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
+void sendGripperCommand(double value);
 int joyControlMode = CARTESIAN_EE_FRAME;
+
+// Gripper state tracking
+bool gripper_open_ = false;
+bool prev_gripper_btn_ = false;
 
     // void test_send(){
     //     send_command(0.5, 1.0, 1.0, 0.5);

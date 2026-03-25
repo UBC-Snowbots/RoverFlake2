@@ -30,11 +30,15 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ArmCommand.msg"
   "msg/ArmSingleJoy.msg"
   "msg/ArmPanel.msg"
+  "msg/DriveFeedback.msg"
   "msg/GenericPanel.msg"
   "msg/NodeHealth.msg"
   "msg/SubSystemHealth.msg"
   "msg/HeartRequest.msg"
   "msg/ScienceModule.msg"
+  "msg/BldcServoConfig.msg"
+  "msg/BldcServoStatus.msg"
+  "msg/MoteusArmStatus.msg"
   
   DEPENDENCIES std_msgs
  )
