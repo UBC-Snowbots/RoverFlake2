@@ -269,7 +269,3 @@ namespace ArmControllerConfig { // Can make into a class later?
     //     }
     // }
 }
-
-#else
-#pragma warning "Warning: No valid ACTIVE_CONTROLLER defined in controller_config.h"
-#endif
