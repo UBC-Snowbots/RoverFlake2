@@ -1,6 +1,30 @@
 #include "joy_arm_control.h"
 #include <cmath>
 
+// Cartesian / IK-mode constants (used by MoveIt Servo twist path)
+namespace ControllerConfig {
+    constexpr const char* CART_FRAME_ID    = "base_link";
+    constexpr double      CART_BUTTON_SPEED = 0.5;
+    constexpr double      ROT_STICK_SPEED  = 1.0;
+    constexpr double      AXIS_DEADZONE    = 0.1;
+
+    constexpr int BTN_CART_POS_X = switch_index::buttons::DPAD_UP;
+    constexpr int BTN_CART_NEG_X = switch_index::buttons::DPAD_DOWN;
+    constexpr int BTN_CART_POS_Y = switch_index::buttons::DPAD_RIGHT;
+    constexpr int BTN_CART_NEG_Y = switch_index::buttons::DPAD_LEFT;
+    constexpr int BTN_CART_POS_Z = switch_index::buttons::Y;
+    constexpr int BTN_CART_NEG_Z = switch_index::buttons::A;
+
+    constexpr int  AXIS_ROLL    = switch_index::axes::RIGHT_JOYSTICK_X;
+    constexpr bool INVERT_ROLL  = false;
+    constexpr int  AXIS_PITCH   = switch_index::axes::RIGHT_JOYSTICK_Y;
+    constexpr bool INVERT_PITCH = false;
+    constexpr int  AXIS_YAW     = switch_index::axes::LEFT_JOYSTICK_X;
+    constexpr bool INVERT_YAW   = false;
+
+    constexpr int BTN_GRIPPER_TOGGLE = switch_index::buttons::R1;
+}
+
 // Constructor
 ArmJoy::ArmJoy() : 
 Node("arm_joy_control") 
@@ -37,13 +61,6 @@ Node("arm_joy_control")
     };
 
     RCLCPP_INFO(this->get_logger(), "=== ArmJoy started ===");
-#if ACTIVE_CONTROLLER == CONTROLLER_PRO_CONTROLLER
-    RCLCPP_INFO(this->get_logger(), "Active controller: Nintendo Switch Pro Controller");
-#elif ACTIVE_CONTROLLER == CONTROLLER_CYBORG_STICK
-    RCLCPP_INFO(this->get_logger(), "Active controller: Saitek Cyborg USB Stick");
-#else
-    RCLCPP_INFO(this->get_logger(), "Active controller: Unknown");
-#endif
     RCLCPP_INFO(this->get_logger(), "Cartesian frame: %s  |  Button speed: %.2f",
         ControllerConfig::CART_FRAME_ID, ControllerConfig::CART_BUTTON_SPEED);
 }

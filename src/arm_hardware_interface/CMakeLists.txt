@@ -33,13 +33,18 @@ add_executable(
     src/moteus_CAN_interface/MoteusInterface.cpp
     src/moteus_CAN_interface/MoteusIO.cpp)
 
+add_executable(moteus_poll src/poll.cpp)
+
 target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1) #??
 
 target_link_libraries(moteus_arm_driver moteus::cpp)
+target_link_libraries(moteus_poll moteus::cpp)
 ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial
                           rover_msgs arm_control)
 ament_target_dependencies(moteus_arm_driver rclcpp sensor_msgs serial
-                          rover_msgs arm_control std_msgs) 
+                          rover_msgs arm_control std_msgs)
+
+                          ament_target_dependencies(moteus_poll rclcpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -58,7 +63,7 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY include/ DESTINATION include/)
 
 install(
-  TARGETS serial_arm_driver moteus_arm_driver ${PROJECT_NAME}
+  TARGETS serial_arm_driver moteus_arm_driver moteus_poll ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib)
