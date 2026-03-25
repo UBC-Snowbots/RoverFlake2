@@ -72,7 +72,7 @@ private:
 
   // Motors cannot be linked to axes with new arm (differential wrist)
   struct MotorTelem {
-    MotorConfig config;
+    MotorConfig config; // Just report back the config
 
     float curr_voltage_V = 0.0f;
     float curr_current_A = 0.0f;
