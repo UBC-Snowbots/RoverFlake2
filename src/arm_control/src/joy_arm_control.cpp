@@ -78,7 +78,7 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
 
     // Handle IK / FK switch
-    if(this->last_control_input.home != control_input.home && control_input.home == 1)
+    if(this->last_control_input.kinematics_mode_switch != control_input.kinematics_mode_switch && control_input.kinematics_mode_switch == 1)
     {
         this->fk = !this->fk; // Flip it
     }
