@@ -8,6 +8,7 @@ jobs:
      - name: enviroment setupg
        run: |
          echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+         export ROVERFLAKE_ROOT="${GITHUB_WORKSPACE}"
          yes | ./setup_scripts/setup_everything_common.sh
      - name: build
        run: |
