@@ -10,7 +10,7 @@ Minimal installation setup for Docker. Ask ChatGPT first if you are having troub
 ### 2.1 Build the image (AMD64 Architecture):
 > docker build -t rover2025:rover
 ### 2.2 Build the image (ARM64 Architecture):
-> docker builx build --platform linux/amd64,linux/arm64 -t roverflake2:dev --push .
+> docker buildx build --platform linux/amd64,linux/arm64 -t roverflake2:dev --push .
 
 ### 3. Start a detached container
 > docker compose --compatibility up rover -d
