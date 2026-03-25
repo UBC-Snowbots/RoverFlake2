@@ -10,7 +10,7 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
   
   switch (type) {
     case HOME_CMD:
-      if (!SIMULATE) { sendHomeCmd(); } 
+      if (!SIMULATE) { sendHomeCmd(); }
       break;
     case COMM_CMD:
       if (!SIMULATE) { sendCommCmd(msg->cmd_value); }
@@ -35,9 +35,7 @@ void ArmCAN::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
           joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
         }
         joint_states_.header.stamp = rclcpp::Clock().now();
-
         joint_state_publisher_->publish(joint_states_); // sim! :)
-
       } else {
         send_position_command(target_positions); // non-sim :(
       }
