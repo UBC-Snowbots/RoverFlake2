@@ -1,0 +1,26 @@
+#pragma once
+
+#include "gui_module.h"
+#include "moteus_data_bus.h"
+
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QPushButton>
+
+class SendCommandModule : public GuiModule {
+public:
+    std::string name() const override { return "Send Command"; }
+    QWidget* createWidget(QWidget* parent) override;
+    void start() override {}
+    void stop() override {}
+
+    void setDataBus(MoteusDataBus* bus) override;
+
+private:
+    MoteusDataBus* bus_ = nullptr;
+    QComboBox* motor_select_ = nullptr;
+    QComboBox* cmd_type_ = nullptr;
+    QDoubleSpinBox* position_spin_ = nullptr;
+    QDoubleSpinBox* velocity_spin_ = nullptr;
+    QDoubleSpinBox* torque_spin_ = nullptr;
+};
