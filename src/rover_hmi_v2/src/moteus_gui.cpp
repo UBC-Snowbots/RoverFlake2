@@ -5,6 +5,7 @@
 #include "plotting_module.h"
 #include "send_command_module.h"
 #include "command_log_module.h"
+#include "motor_config_module.h"
 #include "tiling_container.h"
 
 #include <QApplication>
@@ -44,7 +45,8 @@ int main(int argc, char* argv[]) {
     // -----------------------------------------------------------------------
     std::vector<ModuleEntry> entries;
 
-    entries.push_back({std::make_unique<MotorStatusModule>(), "main"});
+    entries.push_back({std::make_unique<MotorStatusModule>(),  "main"});
+    entries.push_back({std::make_unique<MotorConfigModule>(), "main"});
     entries.push_back({std::make_unique<PlottingModule>(),    "right"});
     entries.push_back({std::make_unique<SendCommandModule>(), "right"});
     entries.push_back({std::make_unique<CommandLogModule>(),  "bottom"});

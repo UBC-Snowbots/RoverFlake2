@@ -8,6 +8,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -22,13 +23,14 @@ add_executable(moteus_gui
     src/plotting_module.cpp
     src/send_command_module.cpp
     src/command_log_module.cpp
+    src/motor_config_module.cpp
     src/tiling_container.cpp
     include/moteus_data_bus.h
     include/plot_widget.h
     include/tiling_container.h
 )
 target_link_libraries(moteus_gui Qt5::Widgets)
-ament_target_dependencies(moteus_gui rclcpp rover_msgs)
+ament_target_dependencies(moteus_gui rclcpp rover_msgs std_msgs)
 
 install(TARGETS moteus_gui DESTINATION lib/${PROJECT_NAME})
 

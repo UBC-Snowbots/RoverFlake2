@@ -10,12 +10,12 @@
 #include "rover_msgs/msg/moteus_arm_status.hpp"
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
+#include "std_msgs/msg/string.hpp"
 
 #include "moteus.h"
+#include "motor_config.h"
 
 namespace mot = mjbots::moteus;
-
-constexpr int NUM_MOTORS = 6;
 
 // Command codes (matching arm_hardware_interface convention)
 constexpr char CMD_ABS_POS = 'P';
@@ -27,6 +27,8 @@ public:
     MoteusDriverNode();
 
 private:
+    void configureMotors();
+    void configureMotor(int motor_id, mot::Controller& controller);
     void poll();
     void commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
@@ -35,9 +37,11 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
 
     rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr feedback_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr config_log_pub_;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_sub_;
 
-    // Pending per-motor commands from the latest /arm/command message
+    std::vector<MotorConfig> configs_;
+
     struct MotorCommand {
         bool active = false;
         bool is_stop = false;

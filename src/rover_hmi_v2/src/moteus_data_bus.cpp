@@ -1,5 +1,4 @@
 #include "moteus_data_bus.h"
-#include <QElapsedTimer>
 #include <cmath>
 
 MoteusDataBus::MoteusDataBus(rclcpp::Node::SharedPtr node, QObject* parent)
@@ -11,6 +10,10 @@ MoteusDataBus::MoteusDataBus(rclcpp::Node::SharedPtr node, QObject* parent)
         "/arm/moteus_feedback", qos,
         std::bind(&MoteusDataBus::onFeedback, this, std::placeholders::_1));
 
+    config_log_sub_ = node_->create_subscription<std_msgs::msg::String>(
+        "/arm/config_log", qos,
+        std::bind(&MoteusDataBus::onConfigLog, this, std::placeholders::_1));
+
     command_pub_ = node_->create_publisher<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos);
 
@@ -18,23 +21,24 @@ MoteusDataBus::MoteusDataBus(rclcpp::Node::SharedPtr node, QObject* parent)
 }
 
 void MoteusDataBus::start() {
-    // Periodically call rclcpp::spin_some so ROS callbacks fire within the Qt event loop
     spin_timer_ = new QTimer(this);
     connect(spin_timer_, &QTimer::timeout, this, &MoteusDataBus::spinOnce);
-    spin_timer_->start(20);  // 50 Hz spin rate
+    spin_timer_->start(20);
 
     logCmd("# connected to /arm/moteus_feedback and /arm/command");
 }
 
 void MoteusDataBus::stop() {
-    if (spin_timer_) {
-        spin_timer_->stop();
-    }
+    if (spin_timer_) spin_timer_->stop();
     logCmd("# disconnected");
 }
 
 void MoteusDataBus::spinOnce() {
     rclcpp::spin_some(node_);
+}
+
+void MoteusDataBus::onConfigLog(const std_msgs::msg::String::SharedPtr msg) {
+    logCmd(QString::fromStdString(msg->data));
 }
 
 void MoteusDataBus::onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg) {
@@ -54,6 +58,26 @@ void MoteusDataBus::onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr
         states[i].timestamp = now;
     }
 
+    // Extract config if present (driver includes it in every message)
+    if (!config_received_ && (int)msg->config.size() >= NUM_MOTORS) {
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            const auto& c = msg->config[i];
+            configs_[i].kp = c.kp;
+            configs_[i].ki = c.ki;
+            configs_[i].kd = c.kd;
+            configs_[i].max_current = c.max_current_amps;
+            configs_[i].max_velocity = c.max_velocity;
+            configs_[i].max_acceleration = c.max_acceleration;
+            configs_[i].position_min = c.min_position;
+            configs_[i].position_max = c.max_position;
+            configs_[i].max_voltage = c.max_voltage_volts;
+            configs_[i].max_power = c.max_power_watts;
+            configs_[i].gear_reduction = c.gear_reduction;
+        }
+        config_received_ = true;
+        emit configUpdated(configs_);
+    }
+
     emit telemetryUpdated(states);
 }
 
@@ -65,8 +89,6 @@ void MoteusDataBus::sendPosition(int motor_id, double position,
                                   double velocity, double max_torque) {
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ABS_POS;
-
-    // Fill arrays with NaN (= don't command) except for the target motor
     msg.positions.resize(NUM_MOTORS, NAN);
     msg.velocities.resize(NUM_MOTORS, NAN);
 
@@ -77,7 +99,6 @@ void MoteusDataBus::sendPosition(int motor_id, double position,
 
     command_pub_->publish(msg);
 
-    // Log tview-style command
     auto fmt = [](double v) -> QString {
         return std::isnan(v) ? "nan" : QString::number(v, 'f', 3);
     };
@@ -88,12 +109,9 @@ void MoteusDataBus::sendPosition(int motor_id, double position,
 void MoteusDataBus::sendStop(int motor_id) {
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ABS_VEL;
-
-    // Velocity of 0 = stop for that motor, NaN = skip others
     msg.velocities.resize(NUM_MOTORS, NAN);
-    if (motor_id >= 1 && motor_id <= NUM_MOTORS) {
+    if (motor_id >= 1 && motor_id <= NUM_MOTORS)
         msg.velocities[motor_id - 1] = 0.0;
-    }
 
     command_pub_->publish(msg);
     logCmd(QString("%1> d stop").arg(motor_id));

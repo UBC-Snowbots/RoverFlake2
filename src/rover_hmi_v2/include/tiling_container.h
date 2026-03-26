@@ -3,18 +3,21 @@
 #include <QWidget>
 #include <QSplitter>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QShortcut>
 #include <QPoint>
+#include <QCheckBox>
+#include <QScrollArea>
 
 #include <vector>
 #include <string>
 #include <functional>
 
-// A single panel in the tiling layout — rounded border, title bar, content area
+// A single panel in the tiling layout
 class TilePanel : public QWidget {
     Q_OBJECT
 public:
@@ -23,6 +26,7 @@ public:
     void setFocused(bool focused);
     bool isFocused() const { return focused_; }
     QWidget* content() const { return content_; }
+    std::string title() const { return title_; }
 
 signals:
     void clicked();
@@ -40,11 +44,34 @@ private:
 };
 
 
-// Drag mode for Alt+Z (move) and Alt+X (resize)
+// Hyprland-style tiling mode
+// Alt+Z hold = move mode (mouse movement swaps windows)
+// Alt+X hold = resize mode (mouse movement resizes)
 enum class DragMode { None, Move, Resize };
 
 
-// Hyprland-style tiling container with keyboard navigation
+// Sidebar for toggling module visibility
+class ModuleSidebar : public QWidget {
+    Q_OBJECT
+public:
+    explicit ModuleSidebar(QWidget* parent = nullptr);
+
+    void addModule(const std::string& name, TilePanel* panel);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
+private:
+    QVBoxLayout* layout_;
+    struct Entry {
+        QCheckBox* check;
+        TilePanel* panel;
+    };
+    std::vector<Entry> entries_;
+};
+
+
+// Hyprland-style tiling container
 class TilingContainer : public QWidget {
     Q_OBJECT
 public:
@@ -61,16 +88,17 @@ public:
     void swapWithFocused(int dx, int dy);
     void resizeFocused(int dx, int dy);
 
+    ModuleSidebar* sidebar() const { return sidebar_; }
+
 protected:
-    void keyPressEvent(QKeyEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
     void setFocusedIndex(int idx);
     int panelAtPos(const QPoint& globalPos);
+    void enterMoveMode();
+    void enterResizeMode();
+    void exitDragMode();
 
     struct PanelInfo {
         TilePanel* panel;
@@ -86,10 +114,9 @@ private:
     QSplitter* right_splitter_ = nullptr;
     QSplitter* bottom_splitter_ = nullptr;
 
-    // Alt+Z / Alt+X drag state
-    bool alt_held_ = false;
+    ModuleSidebar* sidebar_ = nullptr;
+
+    // Hyprland drag state
     DragMode drag_mode_ = DragMode::None;
-    bool dragging_ = false;
-    QPoint drag_start_;
-    int drag_panel_idx_ = -1;
+    QPoint last_mouse_global_;
 };

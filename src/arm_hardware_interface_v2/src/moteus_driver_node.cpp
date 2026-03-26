@@ -3,6 +3,7 @@
 
 MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     transport_ = mot::Controller::MakeSingletonTransport({});
+    configs_ = get_arm_configuration();
 
     for (int id = 1; id <= NUM_MOTORS; id++) {
         mot::Controller::Options opts;
@@ -15,18 +16,70 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     feedback_pub_ = this->create_publisher<rover_msgs::msg::MoteusArmStatus>(
         "/arm/moteus_feedback", qos);
 
+    config_log_pub_ = this->create_publisher<std_msgs::msg::String>(
+        "/arm/config_log", qos);
+
     command_sub_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos,
         std::bind(&MoteusDriverNode::commandCallback, this, std::placeholders::_1));
+
+    // Push configurations to motors at startup
+    configureMotors();
 
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(100),
         std::bind(&MoteusDriverNode::poll, this));
 
     RCLCPP_INFO(this->get_logger(),
-        "Moteus driver started: polling %d motors at 10 Hz, "
-        "publishing /arm/moteus_feedback, subscribing /arm/command",
-        NUM_MOTORS);
+        "Moteus driver started: polling %d motors at 10 Hz", NUM_MOTORS);
+}
+
+void MoteusDriverNode::configureMotors() {
+    static const char* JOINT_NAMES[] = {
+        "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
+    };
+
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        configureMotor(i + 1, *controllers_[i]);
+
+        // Publish config summary to /arm/config_log for the HMI
+        auto& c = configs_[i];
+        std_msgs::msg::String log_msg;
+        log_msg.data = std::string("# Motor ") + std::to_string(i + 1)
+            + " (" + JOINT_NAMES[i] + ") configured:"
+            + " kp=" + c.format(c.kp)
+            + " kd=" + c.format(c.kd)
+            + " max_current=" + c.format(c.max_current_A) + "A"
+            + " pos=[" + c.format(c.position_min) + ", " + c.format(c.position_max) + "]rev"
+            + " max_vel=" + c.format(c.max_velocity) + "rev/s"
+            + " gear=" + c.format(c.gear_reduction);
+        config_log_pub_->publish(log_msg);
+    }
+}
+
+void MoteusDriverNode::configureMotor(int motor_id, mot::Controller& controller) {
+    auto maybe_state = controller.SetQuery();
+    if (!maybe_state) {
+        RCLCPP_WARN(this->get_logger(),
+            "Motor %d NOT CONNECTED. Skipping config.", motor_id);
+
+        std_msgs::msg::String log_msg;
+        log_msg.data = "# Motor " + std::to_string(motor_id) + " NOT CONNECTED — skipped";
+        config_log_pub_->publish(log_msg);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Motor %d detected. Pushing config...", motor_id);
+
+    auto settings = configs_[motor_id - 1].get_configs();
+
+    for (const auto& pair : settings) {
+        std::string cmd = "conf set " + pair.first + " " + pair.second;
+        auto reply = controller.DiagnosticCommand(cmd);
+
+        RCLCPP_INFO(this->get_logger(), "[%d] %s = %s (reply: %s)",
+            motor_id, pair.first.c_str(), pair.second.c_str(), reply.c_str());
+    }
 }
 
 void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
@@ -35,7 +88,6 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     char cmd_type = msg->cmd_type;
 
     if (cmd_type == CMD_STOP) {
-        // Stop all motors
         for (int i = 0; i < NUM_MOTORS; i++) {
             pending_cmds_[i].active = true;
             pending_cmds_[i].is_stop = true;
@@ -45,12 +97,10 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     }
 
     if (cmd_type == CMD_ABS_POS) {
-        // Position command: positions[] and velocities[] arrays
         for (int i = 0; i < NUM_MOTORS; i++) {
             double pos = (i < (int)msg->positions.size()) ? msg->positions[i] : NAN;
             double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
 
-            // NaN position AND NaN velocity = don't command this motor
             if (std::isnan(pos) && std::isnan(vel)) continue;
 
             pending_cmds_[i].active = true;
@@ -63,18 +113,16 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     }
 
     if (cmd_type == CMD_ABS_VEL) {
-        // Velocity command: velocities[] array, NaN = skip
         for (int i = 0; i < NUM_MOTORS; i++) {
             double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
             if (std::isnan(vel)) continue;
 
             pending_cmds_[i].active = true;
-            // Velocity of 0 = stop
             if (vel == 0.0) {
                 pending_cmds_[i].is_stop = true;
             } else {
                 pending_cmds_[i].is_stop = false;
-                pending_cmds_[i].position = NAN;  // no position target
+                pending_cmds_[i].position = NAN;
                 pending_cmds_[i].velocity = vel;
                 pending_cmds_[i].max_torque = NAN;
             }
@@ -86,15 +134,13 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
 }
 
 void MoteusDriverNode::poll() {
-    // Grab pending commands
     std::array<MotorCommand, NUM_MOTORS> cmds{};
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
         cmds = pending_cmds_;
-        pending_cmds_ = {};  // Clear after consuming
+        pending_cmds_ = {};
     }
 
-    // Build CAN frames
     std::vector<mot::CanFdFrame> frames;
     for (int i = 0; i < NUM_MOTORS; i++) {
         if (cmds[i].active && cmds[i].is_stop) {
@@ -111,20 +157,36 @@ void MoteusDriverNode::poll() {
         }
     }
 
-    // Execute CAN cycle
     std::vector<mot::CanFdFrame> replies;
     transport_->BlockingCycle(frames.data(), frames.size(), &replies);
 
-    // Build and publish feedback
     rover_msgs::msg::MoteusArmStatus status_msg;
+    status_msg.status.resize(NUM_MOTORS);
+    status_msg.config.resize(NUM_MOTORS);
+
+    // Fill config from our stored configs
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        auto& c = configs_[i];
+        auto& cfg = status_msg.config[i];
+        cfg.max_acceleration = c.max_acceleration;
+        cfg.max_velocity = c.max_velocity;
+        cfg.max_position = c.position_max;
+        cfg.min_position = c.position_min;
+        cfg.kp = c.kp;
+        cfg.ki = c.ki;
+        cfg.kd = c.kd;
+        cfg.max_current_amps = c.max_current_A;
+        cfg.max_voltage_volts = c.max_voltage;
+        cfg.max_power_watts = c.max_power_W;
+        cfg.gear_reduction = c.gear_reduction;
+    }
 
     for (const auto& frame : replies) {
         int id = frame.source;
         if (id < 1 || id > NUM_MOTORS) continue;
 
         auto r = mot::Query::Parse(frame.data, frame.size);
-
-        rover_msgs::msg::BldcServoStatus s;
+        auto& s = status_msg.status[id - 1];
         s.curr_position = r.position;
         s.curr_velocity = r.velocity;
         s.curr_torque = r.torque;
@@ -132,16 +194,7 @@ void MoteusDriverNode::poll() {
         s.driver_temp_degreesc = r.temperature;
         s.moteus_mode = static_cast<int16_t>(r.mode);
         s.moteus_fault = static_cast<int16_t>(r.fault);
-
-        // Pad status array up to the motor index
-        while ((int)status_msg.status.size() < id)
-            status_msg.status.push_back(rover_msgs::msg::BldcServoStatus());
-        status_msg.status[id - 1] = s;
     }
-
-    // Ensure we always have NUM_MOTORS entries
-    while ((int)status_msg.status.size() < NUM_MOTORS)
-        status_msg.status.push_back(rover_msgs::msg::BldcServoStatus());
 
     feedback_pub_->publish(status_msg);
 }
