@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <string>
+#include <functional>
 
 class MoteusDataBus;
 
@@ -24,4 +25,10 @@ struct GuiModule {
 
     // Override to receive the shared data bus. Called before start().
     virtual void setDataBus(MoteusDataBus*) {}
+
+    // Override to start hidden (toggled off in sidebar by default).
+    virtual bool defaultVisible() const { return true; }
+
+    // Override to receive sidebar toggle events.
+    virtual std::function<void(bool)> toggleCallback() { return nullptr; }
 };

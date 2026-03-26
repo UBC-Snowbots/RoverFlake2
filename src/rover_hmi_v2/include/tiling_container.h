@@ -69,7 +69,8 @@ class ModuleSidebar : public QWidget {
 public:
     explicit ModuleSidebar(QWidget* parent = nullptr);
 
-    void addModule(const std::string& name, TilePanel* panel);
+    void addModule(const std::string& name, TilePanel* panel, bool default_visible = true,
+                    std::function<void(bool)> on_toggle = nullptr);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -91,7 +92,9 @@ public:
     explicit TilingContainer(QWidget* parent = nullptr);
 
     void addPanel(const std::string& title, QWidget* content,
-                  const std::string& layout_hint = "right");
+                  const std::string& layout_hint = "right",
+                  bool default_visible = true,
+                  std::function<void(bool)> on_toggle = nullptr);
 
     void finalize();
 
@@ -119,6 +122,8 @@ private:
         std::string hint;
         int grid_col;
         int grid_row;
+        bool default_visible = true;
+        std::function<void(bool)> on_toggle;
     };
 
     std::vector<PanelInfo> panels_;

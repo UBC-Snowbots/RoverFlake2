@@ -12,6 +12,7 @@ struct MotorConfig {
     float max_velocity = 0.05f;           // rev/s    (servo.default_velocity_limit + servo.max_velocity)
     float position_min = -1.0f;           // rev      (servopos.position_min)
     float position_max = 1.0f;            // rev      (servopos.position_max)
+    float position_warn_rev_padding = 0.02f;  // alert when within this of limits
     float max_current_A = 0.5f;           // A        (servo.max_current_A)
     float kp = 50.0f;                     //          (servo.pid_position.kp)
     float ki = 0.0f;                      //          (servo.pid_position.ki)

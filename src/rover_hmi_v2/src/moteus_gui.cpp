@@ -6,6 +6,7 @@
 #include "send_command_module.h"
 #include "command_log_module.h"
 #include "motor_config_module.h"
+#include "rviz_module.h"
 #include "tiling_container.h"
 
 #include <QApplication>
@@ -50,6 +51,7 @@ int main(int argc, char* argv[]) {
     entries.push_back({std::make_unique<PlottingModule>(),    "right"});
     entries.push_back({std::make_unique<SendCommandModule>(), "right"});
     entries.push_back({std::make_unique<CommandLogModule>(),  "bottom"});
+    entries.push_back({std::make_unique<RvizModule>(),        "main"});
 
     // -----------------------------------------------------------------------
     // Build tiling layout
@@ -59,7 +61,9 @@ int main(int argc, char* argv[]) {
     for (auto& entry : entries) {
         entry.module->setDataBus(bus);
         auto* widget = entry.module->createWidget(tiling);
-        tiling->addPanel(entry.module->name(), widget, entry.layout_hint);
+        tiling->addPanel(entry.module->name(), widget, entry.layout_hint,
+                         entry.module->defaultVisible(),
+                         entry.module->toggleCallback());
     }
 
     tiling->finalize();

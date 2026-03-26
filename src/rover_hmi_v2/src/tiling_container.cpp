@@ -136,9 +136,11 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     layout_->addStretch();
 }
 
-void ModuleSidebar::addModule(const std::string& name, TilePanel* panel) {
+void ModuleSidebar::addModule(const std::string& name, TilePanel* panel, bool default_visible,
+                              std::function<void(bool)> on_toggle) {
     auto* check = new QCheckBox(QString::fromStdString(name));
-    check->setChecked(true);
+    check->setChecked(default_visible);
+    panel->setVisible(default_visible);
     check->setFont(QFont("monospace", theme::FontSize));
     check->setStyleSheet(
         QString("QCheckBox { color: %1; spacing: 8px; }"
@@ -148,8 +150,9 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel) {
         .arg(theme::Text).arg(theme::Green).arg(theme::Border)
         .arg(theme::Bg).arg(theme::BorderDim));
 
-    QObject::connect(check, &QCheckBox::toggled, [panel](bool visible) {
+    QObject::connect(check, &QCheckBox::toggled, [panel, on_toggle](bool visible) {
         panel->setVisible(visible);
+        if (on_toggle) on_toggle(visible);
     });
 
     layout_->insertWidget(layout_->count() - 1, check);
@@ -175,7 +178,9 @@ TilingContainer::TilingContainer(QWidget* parent) : QWidget(parent) {
 }
 
 void TilingContainer::addPanel(const std::string& title, QWidget* content,
-                                const std::string& layout_hint) {
+                                const std::string& layout_hint,
+                                bool default_visible,
+                                std::function<void(bool)> on_toggle) {
     auto* panel = new TilePanel(title, content, this);
 
     connect(panel, &TilePanel::clicked, [this, panel]() {
@@ -197,6 +202,8 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
     info.hint = layout_hint;
     info.grid_col = 0;
     info.grid_row = 0;
+    info.default_visible = default_visible;
+    info.on_toggle = on_toggle;
     panels_.push_back(info);
 }
 
@@ -267,7 +274,7 @@ void TilingContainer::finalize() {
     outer_layout->addWidget(sidebar_);
 
     for (auto& pi : panels_)
-        sidebar_->addModule(pi.panel->title(), pi.panel);
+        sidebar_->addModule(pi.panel->title(), pi.panel, pi.default_visible, pi.on_toggle);
 
     auto* tiling_area = new QWidget();
     auto* tiling_layout = new QVBoxLayout(tiling_area);
