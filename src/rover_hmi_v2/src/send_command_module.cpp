@@ -241,6 +241,88 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
         bus_->sendVelocity(id, 0.0);
     });
 
+    // --- Zero Axes section ---
+    auto* zero_sep = new QWidget();
+    zero_sep->setFixedHeight(1);
+    zero_sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
+    layout->addWidget(zero_sep);
+
+    auto* zero_header = new QHBoxLayout();
+
+    auto* zero_title = new QLabel("Zero Axes");
+    zero_title->setFont(fontBold);
+    zero_title->setStyleSheet(QString("color: %1;").arg(theme::Text));
+    zero_header->addWidget(zero_title);
+
+    zero_header->addStretch();
+
+    // "All / None" toggle — flips all checkboxes at once
+    auto* all_none_btn = new QPushButton("All / None");
+    all_none_btn->setFont(QFont("monospace", theme::FontSizeSm));
+    all_none_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 1px solid %3; padding: 2px 8px; }"
+                "QPushButton:hover { border-color: %4; }")
+        .arg(theme::Bg).arg(theme::TextDim).arg(theme::BorderDim).arg(theme::Border));
+    zero_header->addWidget(all_none_btn);
+
+    layout->addLayout(zero_header);
+
+    // Row of 6 per-axis checkboxes
+    auto* zero_checks_row = new QHBoxLayout();
+    zero_checks_row->setSpacing(6);
+
+    static const char* ZERO_LABELS[] = { "1", "2", "3", "4", "5", "6" };
+    for (int i = 0; i < NUM_ZERO_AXES; i++) {
+        auto* col = new QVBoxLayout();
+        col->setSpacing(2);
+        col->setAlignment(Qt::AlignHCenter);
+
+        auto* name_lbl = new QLabel(ZERO_LABELS[i]);
+        name_lbl->setFont(QFont("monospace", theme::FontSizeSm));
+        name_lbl->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
+        name_lbl->setAlignment(Qt::AlignHCenter);
+        col->addWidget(name_lbl);
+
+        zero_checks_[i] = new QCheckBox();
+        zero_checks_[i]->setChecked(true);
+        zero_checks_[i]->setStyleSheet(
+            QString("QCheckBox::indicator { width: 16px; height: 16px; }"
+                    "QCheckBox::indicator:checked { background: %1; border: 1px solid %2; border-radius: 3px; }"
+                    "QCheckBox::indicator:unchecked { background: %3; border: 1px solid %4; border-radius: 3px; }")
+            .arg(theme::Green).arg(theme::Border).arg(theme::Bg).arg(theme::BorderDim));
+        col->addWidget(zero_checks_[i], 0, Qt::AlignHCenter);
+
+        zero_checks_row->addLayout(col);
+    }
+    zero_checks_row->addStretch();
+    layout->addLayout(zero_checks_row);
+
+    // "Zero" button — sends position=0 to each checked axis
+    auto* zero_btn = new QPushButton("Zero Selected");
+    zero_btn->setFont(fontBold);
+    zero_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 1px solid %3; padding: 6px 14px; }"
+                "QPushButton:hover { border-color: %4; }")
+        .arg(theme::Bg).arg(theme::Yellow).arg(theme::Yellow).arg(theme::Text));
+    layout->addWidget(zero_btn);
+
+    QObject::connect(zero_btn, &QPushButton::clicked, [this]() {
+        if (!bus_) return;
+        for (int i = 0; i < NUM_ZERO_AXES; i++) {
+            if (zero_checks_[i]->isChecked())
+                bus_->sendZero(i + 1);  // "d exact 0" — resets position ref in place
+        }
+    });
+
+    // All/None: if any are unchecked → check all; otherwise uncheck all
+    QObject::connect(all_none_btn, &QPushButton::clicked, [this]() {
+        bool any_unchecked = false;
+        for (int i = 0; i < NUM_ZERO_AXES; i++)
+            if (!zero_checks_[i]->isChecked()) { any_unchecked = true; break; }
+        for (int i = 0; i < NUM_ZERO_AXES; i++)
+            zero_checks_[i]->setChecked(any_unchecked);
+    });
+
     layout->addStretch();
 
     return widget;

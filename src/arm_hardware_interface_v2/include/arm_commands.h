@@ -46,6 +46,13 @@ constexpr char CMD_ABS_POS = 'P';
 //   (motor goes limp, not hold-position), matching the jog-button release behaviour.
 constexpr char CMD_ABS_VEL = 'V';
 
+// Zero (re-home) command — equivalent to "d exact 0" in tview.
+//   Resets the position counter to 0.0 at the current physical position.
+//   The motor does NOT move — only the position reference is updated.
+//   Use this to establish a new zero point after manually positioning the arm.
+//   positions[] used as a flag: any non-NaN entry means "zero that motor".
+constexpr char CMD_ZERO    = 'Z';
+
 
 // -----------------------------------------------------------------------------
 // Internal command state — one slot per motor
@@ -55,7 +62,8 @@ constexpr char CMD_ABS_VEL = 'V';
 // Stored in MoteusDriverNode::pending_cmds_[] and active_cmds_[].
 struct MotorCommand {
     bool   active     = false;  // true → there is something to send this cycle
-    bool   is_stop    = false;  // true → send MakeStop; overrides position/velocity
+    bool   is_stop    = false;  // true → send MakeStop; overrides everything
+    bool   is_zero    = false;  // true → send "d exact 0" (re-home in place); one-shot
     double position   = 0.0;   // output-shaft revolutions  (NaN = no position target)
     double velocity   = 0.0;   // output-shaft rev/s        (NaN = use motion profile)
     double max_torque = NAN;   // N·m output-shaft cap      (NaN = firmware default)

@@ -20,6 +20,7 @@ constexpr int NUM_MOTORS = 6;
 constexpr char CMD_ABS_POS = 'P';
 constexpr char CMD_ABS_VEL = 'V';
 constexpr char CMD_STOP    = 'S';
+constexpr char CMD_ZERO    = 'Z';  // "d exact 0" — resets position reference in place
 
 struct MotorState {
     int id = 0;
@@ -56,6 +57,9 @@ public:
     void sendVelocity(int motor_id, double velocity);
     void sendStop(int motor_id);
     void sendStopAll();
+    // Reset position counter to 0 at current physical position (no movement).
+    // Equivalent to "d exact 0" in tview.
+    void sendZero(int motor_id);
 
     const std::array<MotorConfigInfo, NUM_MOTORS>& configs() const { return configs_; }
 

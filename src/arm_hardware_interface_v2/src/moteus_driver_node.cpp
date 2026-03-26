@@ -162,6 +162,18 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
         return;
     }
 
+    if (cmd_type == CMD_ZERO) {
+        // positions[] used as a flag: non-NaN entry → zero that motor
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            double flag = (i < (int)msg->positions.size()) ? msg->positions[i] : NAN;
+            if (!std::isnan(flag)) {
+                pending_cmds_[i].active  = true;
+                pending_cmds_[i].is_zero = true;
+            }
+        }
+        return;
+    }
+
     RCLCPP_WARN(this->get_logger(), "Unknown cmd_type: '%c' (%d)", cmd_type, (int)cmd_type);
 }
 
@@ -188,7 +200,21 @@ void MoteusDriverNode::poll() {
         pending_cmds_ = {};
     }
 
-    // Step 2 — build frames
+    // Step 2a — "d exact 0" zero commands (diagnostic channel, separate from BlockingCycle)
+    // This resets the position counter to 0 at the current physical position — no movement.
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        auto& cmd = active_cmds_[i];
+        if (cmd.active && cmd.is_zero) {
+            controllers_[i]->DiagnosticCommand("d exact 0");
+            RCLCPP_INFO(this->get_logger(),
+                "Motor %d (%s) zeroed (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
+            publishLog("# Motor " + std::to_string(i + 1)
+                + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+            cmd.active = false;  // one-shot; next cycle falls through to MakeQuery
+        }
+    }
+
+    // Step 2b — build frames
     // (See moteus_protocol.h for what goes in the data field of each type.)
     std::vector<mot::CanFdFrame> frames;
     for (int i = 0; i < NUM_MOTORS; i++) {

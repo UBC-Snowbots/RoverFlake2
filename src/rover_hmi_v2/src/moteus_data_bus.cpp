@@ -136,3 +136,14 @@ void MoteusDataBus::sendStopAll() {
     command_pub_->publish(msg);
     logCmd("A> d stop");
 }
+
+void MoteusDataBus::sendZero(int motor_id) {
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ZERO;
+    // Non-NaN at [motor_id-1] flags that motor for zeroing; all others skipped.
+    msg.positions.resize(NUM_MOTORS, NAN);
+    if (motor_id >= 1 && motor_id <= NUM_MOTORS)
+        msg.positions[motor_id - 1] = 1.0;
+    command_pub_->publish(msg);
+    logCmd(QString("%1> d exact 0").arg(motor_id));
+}

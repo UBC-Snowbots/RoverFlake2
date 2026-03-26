@@ -7,6 +7,9 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <array>
+
+constexpr int NUM_ZERO_AXES = 6;
 
 class JogButton : public QPushButton {
     Q_OBJECT
@@ -40,4 +43,7 @@ private:
     QCheckBox* pos_enable_ = nullptr;
     QCheckBox* vel_enable_ = nullptr;
     QCheckBox* torque_enable_ = nullptr;
+
+    // Per-axis zero checkboxes (index = motor_id - 1)
+    std::array<QCheckBox*, NUM_ZERO_AXES> zero_checks_{};
 };
