@@ -6,12 +6,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rover_msgs REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
 set(CMAKE_AUTOMOC ON)
 
 include_directories(include)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../arm_hardware_interface/moteus moteus_build)
 
 add_executable(moteus_gui
     src/moteus_gui.cpp
@@ -26,7 +27,8 @@ add_executable(moteus_gui
     include/plot_widget.h
     include/tiling_container.h
 )
-target_link_libraries(moteus_gui moteus::cpp Qt5::Widgets)
+target_link_libraries(moteus_gui Qt5::Widgets)
+ament_target_dependencies(moteus_gui rclcpp rover_msgs)
 
 install(TARGETS moteus_gui DESTINATION lib/${PROJECT_NAME})
 

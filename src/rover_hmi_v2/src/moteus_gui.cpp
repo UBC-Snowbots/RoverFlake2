@@ -14,12 +14,18 @@
 #include <memory>
 #include <vector>
 
+#include "rclcpp/rclcpp.hpp"
+
 struct ModuleEntry {
     std::unique_ptr<GuiModule> module;
     std::string layout_hint;
 };
 
 int main(int argc, char* argv[]) {
+    // Init ROS2 first (consumes ROS args like --ros-args)
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<rclcpp::Node>("rover_hmi_v2");
+
     QApplication app(argc, argv);
     theme::applyGlobalStylesheet(app);
 
@@ -27,8 +33,8 @@ int main(int argc, char* argv[]) {
     window.setWindowTitle("Rover HMI v2");
     window.setStyleSheet(QString("background: %1;").arg(theme::Bg));
 
-    // Shared data bus
-    auto* bus = new MoteusDataBus(&window);
+    // Shared data bus — talks to driver via ROS2 topics
+    auto* bus = new MoteusDataBus(node, &window);
 
     // -----------------------------------------------------------------------
     // Register modules here
@@ -70,5 +76,6 @@ int main(int argc, char* argv[]) {
     for (auto& entry : entries)
         entry.module->stop();
 
+    rclcpp::shutdown();
     return ret;
 }

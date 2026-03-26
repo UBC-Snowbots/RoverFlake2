@@ -1,41 +1,81 @@
 #include "moteus_data_bus.h"
+#include <QElapsedTimer>
 #include <cmath>
 
-MoteusDataBus::MoteusDataBus(QObject* parent) : QObject(parent) {}
+MoteusDataBus::MoteusDataBus(rclcpp::Node::SharedPtr node, QObject* parent)
+    : QObject(parent), node_(node) {
+
+    auto qos = rclcpp::QoS(1).reliable().durability_volatile();
+
+    feedback_sub_ = node_->create_subscription<rover_msgs::msg::MoteusArmStatus>(
+        "/arm/moteus_feedback", qos,
+        std::bind(&MoteusDataBus::onFeedback, this, std::placeholders::_1));
+
+    command_pub_ = node_->create_publisher<rover_msgs::msg::ArmCommand>(
+        "/arm/command", qos);
+
+    elapsed_.start();
+}
+
+void MoteusDataBus::start() {
+    // Periodically call rclcpp::spin_some so ROS callbacks fire within the Qt event loop
+    spin_timer_ = new QTimer(this);
+    connect(spin_timer_, &QTimer::timeout, this, &MoteusDataBus::spinOnce);
+    spin_timer_->start(20);  // 50 Hz spin rate
+
+    logCmd("# connected to /arm/moteus_feedback and /arm/command");
+}
+
+void MoteusDataBus::stop() {
+    if (spin_timer_) {
+        spin_timer_->stop();
+    }
+    logCmd("# disconnected");
+}
+
+void MoteusDataBus::spinOnce() {
+    rclcpp::spin_some(node_);
+}
+
+void MoteusDataBus::onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg) {
+    double now = elapsed_.elapsed() / 1000.0;
+    std::array<MotorState, NUM_MOTORS> states{};
+
+    for (int i = 0; i < NUM_MOTORS && i < (int)msg->status.size(); i++) {
+        const auto& s = msg->status[i];
+        states[i].id = i + 1;
+        states[i].mode = s.moteus_mode;
+        states[i].fault = s.moteus_fault;
+        states[i].position = s.curr_position;
+        states[i].velocity = s.curr_velocity;
+        states[i].torque = s.curr_torque;
+        states[i].voltage = s.curr_voltage_volts;
+        states[i].temperature = s.driver_temp_degreesc;
+        states[i].timestamp = now;
+    }
+
+    emit telemetryUpdated(states);
+}
 
 void MoteusDataBus::logCmd(const QString& cmd) {
     emit commandLogged(cmd);
 }
 
-void MoteusDataBus::start() {
-    transport_ = mot::Controller::MakeSingletonTransport({});
-
-    for (int id = 1; id <= NUM_MOTORS; id++) {
-        mot::Controller::Options opts;
-        opts.id = id;
-        controllers_.push_back(std::make_shared<mot::Controller>(opts));
-    }
-
-    elapsed_.start();
-
-    timer_ = new QTimer(this);
-    connect(timer_, &QTimer::timeout, this, &MoteusDataBus::poll);
-    timer_->start(100);
-
-    logCmd("# transport initialized, polling 6 motors at 10 Hz");
-}
-
-void MoteusDataBus::stop() {
-    if (timer_) {
-        timer_->stop();
-    }
-    logCmd("# polling stopped");
-}
-
 void MoteusDataBus::sendPosition(int motor_id, double position,
                                   double velocity, double max_torque) {
-    std::lock_guard<std::mutex> lock(cmd_mutex_);
-    pending_commands_.push_back({motor_id, false, position, velocity, max_torque});
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ABS_POS;
+
+    // Fill arrays with NaN (= don't command) except for the target motor
+    msg.positions.resize(NUM_MOTORS, NAN);
+    msg.velocities.resize(NUM_MOTORS, NAN);
+
+    if (motor_id >= 1 && motor_id <= NUM_MOTORS) {
+        msg.positions[motor_id - 1] = position;
+        msg.velocities[motor_id - 1] = velocity;
+    }
+
+    command_pub_->publish(msg);
 
     // Log tview-style command
     auto fmt = [](double v) -> QString {
@@ -46,74 +86,22 @@ void MoteusDataBus::sendPosition(int motor_id, double position,
 }
 
 void MoteusDataBus::sendStop(int motor_id) {
-    std::lock_guard<std::mutex> lock(cmd_mutex_);
-    pending_commands_.push_back({motor_id, true, 0, 0, 0});
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ABS_VEL;
+
+    // Velocity of 0 = stop for that motor, NaN = skip others
+    msg.velocities.resize(NUM_MOTORS, NAN);
+    if (motor_id >= 1 && motor_id <= NUM_MOTORS) {
+        msg.velocities[motor_id - 1] = 0.0;
+    }
+
+    command_pub_->publish(msg);
     logCmd(QString("%1> d stop").arg(motor_id));
 }
 
 void MoteusDataBus::sendStopAll() {
-    std::lock_guard<std::mutex> lock(cmd_mutex_);
-    for (int id = 1; id <= NUM_MOTORS; id++) {
-        pending_commands_.push_back({id, true, 0, 0, 0});
-    }
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_STOP;
+    command_pub_->publish(msg);
     logCmd("A> d stop");
-}
-
-void MoteusDataBus::poll() {
-    // Grab any pending commands
-    std::vector<PendingCommand> cmds;
-    {
-        std::lock_guard<std::mutex> lock(cmd_mutex_);
-        cmds.swap(pending_commands_);
-    }
-
-    std::vector<mot::CanFdFrame> frames;
-
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        int id = i + 1;
-
-        // Check if there's a command for this motor
-        const PendingCommand* cmd = nullptr;
-        for (const auto& c : cmds) {
-            if (c.motor_id == id) cmd = &c;
-        }
-
-        if (cmd && cmd->is_stop) {
-            frames.push_back(controllers_[i]->MakeStop());
-        } else if (cmd) {
-            mot::PositionMode::Command pos_cmd;
-            pos_cmd.position = cmd->position;       // NAN = hold current
-            pos_cmd.velocity = cmd->velocity;        // NAN = no velocity target
-            if (!std::isnan(cmd->max_torque))
-                pos_cmd.maximum_torque = cmd->max_torque;
-            frames.push_back(controllers_[i]->MakePosition(pos_cmd));
-        } else {
-            frames.push_back(controllers_[i]->MakeQuery());
-        }
-    }
-
-    std::vector<mot::CanFdFrame> replies;
-    transport_->BlockingCycle(frames.data(), frames.size(), &replies);
-
-    double now = elapsed_.elapsed() / 1000.0;
-    std::array<MotorState, NUM_MOTORS> states{};
-
-    for (const auto& frame : replies) {
-        int id = frame.source;
-        if (id < 1 || id > NUM_MOTORS) continue;
-
-        auto r = mot::Query::Parse(frame.data, frame.size);
-        auto& s = states[id - 1];
-        s.id = id;
-        s.mode = static_cast<int>(r.mode);
-        s.fault = static_cast<int>(r.fault);
-        s.position = r.position;
-        s.velocity = r.velocity;
-        s.torque = r.torque;
-        s.voltage = r.voltage;
-        s.temperature = r.temperature;
-        s.timestamp = now;
-    }
-
-    emit telemetryUpdated(states);
 }

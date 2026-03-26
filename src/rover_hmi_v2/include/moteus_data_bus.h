@@ -7,14 +7,17 @@
 
 #include <array>
 #include <memory>
-#include <vector>
-#include <mutex>
 
-#include "moteus.h"
-
-namespace mot = mjbots::moteus;
+#include "rclcpp/rclcpp.hpp"
+#include "rover_msgs/msg/arm_command.hpp"
+#include "rover_msgs/msg/moteus_arm_status.hpp"
 
 constexpr int NUM_MOTORS = 6;
+
+// Command codes (matching driver convention)
+constexpr char CMD_ABS_POS = 'P';
+constexpr char CMD_ABS_VEL = 'V';
+constexpr char CMD_STOP    = 'S';
 
 struct MotorState {
     int id = 0;
@@ -25,33 +28,21 @@ struct MotorState {
     double torque = 0.0;
     double voltage = 0.0;
     double temperature = 0.0;
-    double timestamp = 0.0;  // seconds since start
-};
-
-// Pending command to inject into the next poll cycle
-struct PendingCommand {
-    int motor_id;
-    bool is_stop;
-    double position;
-    double velocity;
-    double max_torque;
+    double timestamp = 0.0;
 };
 
 class MoteusDataBus : public QObject {
     Q_OBJECT
 public:
-    explicit MoteusDataBus(QObject* parent = nullptr);
+    explicit MoteusDataBus(rclcpp::Node::SharedPtr node, QObject* parent = nullptr);
 
     void start();
     void stop();
 
-    // Queue a position command for the next cycle
-    // Use NAN for any field to leave it unspecified (tview: nan)
+    // Queue commands — these publish to /arm/command
     void sendPosition(int motor_id, double position, double velocity = 0.0,
                       double max_torque = NAN);
-    // Queue a stop for the next cycle
     void sendStop(int motor_id);
-    // Queue stop for all motors
     void sendStopAll();
 
 signals:
@@ -59,14 +50,14 @@ signals:
     void commandLogged(const QString& cmd);
 
 private:
-    void poll();
+    void spinOnce();
+    void onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
     void logCmd(const QString& cmd);
 
-    std::shared_ptr<mot::Transport> transport_;
-    std::vector<std::shared_ptr<mot::Controller>> controllers_;
-    QTimer* timer_ = nullptr;
-    QElapsedTimer elapsed_;
+    rclcpp::Node::SharedPtr node_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr feedback_sub_;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr command_pub_;
 
-    std::mutex cmd_mutex_;
-    std::vector<PendingCommand> pending_commands_;
+    QTimer* spin_timer_ = nullptr;
+    QElapsedTimer elapsed_;
 };
