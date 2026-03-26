@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QShortcut>
+#include <QPoint>
 
 #include <vector>
 #include <string>
@@ -25,10 +26,12 @@ public:
 
 signals:
     void clicked();
+    void hovered();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void enterEvent(QEvent* event) override;
 
 private:
     std::string title_;
@@ -37,38 +40,43 @@ private:
 };
 
 
+// Drag mode for Alt+Z (move) and Alt+X (resize)
+enum class DragMode { None, Move, Resize };
+
+
 // Hyprland-style tiling container with keyboard navigation
-// Manages a grid of TilePanels in a nested splitter layout
 class TilingContainer : public QWidget {
     Q_OBJECT
 public:
     explicit TilingContainer(QWidget* parent = nullptr);
 
-    // Add a panel. layout_hint: "left", "right", "bottom"
-    // First panel added becomes the main (left) panel.
     void addPanel(const std::string& title, QWidget* content,
                   const std::string& layout_hint = "right");
 
-    // Call after all panels are added to set up the layout and keybindings
     void finalize();
 
-    // Focus navigation
     void focusNext();
     void focusPrev();
     void focusDirection(int dx, int dy);
     void swapWithFocused(int dx, int dy);
+    void resizeFocused(int dx, int dy);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 private:
     void setFocusedIndex(int idx);
+    int panelAtPos(const QPoint& globalPos);
 
     struct PanelInfo {
         TilePanel* panel;
         std::string hint;
-        int grid_col;  // logical column (0=left, 1=right)
-        int grid_row;  // logical row within column
+        int grid_col;
+        int grid_row;
     };
 
     std::vector<PanelInfo> panels_;
@@ -76,4 +84,12 @@ private:
 
     QSplitter* main_splitter_ = nullptr;
     QSplitter* right_splitter_ = nullptr;
+    QSplitter* bottom_splitter_ = nullptr;
+
+    // Alt+Z / Alt+X drag state
+    bool alt_held_ = false;
+    DragMode drag_mode_ = DragMode::None;
+    bool dragging_ = false;
+    QPoint drag_start_;
+    int drag_panel_idx_ = -1;
 };

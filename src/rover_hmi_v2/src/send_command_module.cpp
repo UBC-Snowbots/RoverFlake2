@@ -6,6 +6,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QFont>
+#include <cmath>
 
 static const char* JOINT_NAMES[] = {
     "1 - Base", "2 - Shoulder", "3 - Elbow",
@@ -31,7 +32,7 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     motor_select_->setFont(font);
     for (int i = 0; i < NUM_MOTORS; i++)
         motor_select_->addItem(JOINT_NAMES[i], i + 1);
-    grid->addWidget(motor_select_, 0, 1);
+    grid->addWidget(motor_select_, 0, 1, 1, 2);
 
     // Command type
     auto* cmd_lbl = new QLabel("Command:");
@@ -41,41 +42,87 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     cmd_type_->setFont(font);
     cmd_type_->addItem("Stop");
     cmd_type_->addItem("Position");
-    grid->addWidget(cmd_type_, 1, 1);
+    grid->addWidget(cmd_type_, 1, 1, 1, 2);
 
-    // Position
+    // Position — checkbox to enable (unchecked = NaN = "current position")
+    pos_enable_ = new QCheckBox();
+    pos_enable_->setChecked(true);
+    pos_enable_->setToolTip("Uncheck for NaN (hold current position)");
+    grid->addWidget(pos_enable_, 2, 0, Qt::AlignRight);
+    auto* pos_row = new QHBoxLayout();
     auto* pos_lbl = new QLabel("Position (rev):");
     pos_lbl->setFont(font);
-    grid->addWidget(pos_lbl, 2, 0);
+    pos_row->addWidget(pos_lbl);
+    grid->addLayout(pos_row, 2, 0);
+    // Move checkbox to leftmost
+    grid->addWidget(pos_enable_, 2, 2, Qt::AlignCenter);
+
     position_spin_ = new QDoubleSpinBox();
     position_spin_->setFont(font);
     position_spin_->setRange(-100.0, 100.0);
     position_spin_->setDecimals(3);
     position_spin_->setSingleStep(0.01);
+    grid->addWidget(pos_lbl, 2, 0);
     grid->addWidget(position_spin_, 2, 1);
+    grid->addWidget(pos_enable_, 2, 2);
+
+    QObject::connect(pos_enable_, &QCheckBox::toggled, [this](bool on) {
+        position_spin_->setEnabled(on);
+        position_spin_->setStyleSheet(on ? "" :
+            QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
+    });
 
     // Velocity
-    auto* vel_lbl = new QLabel("Velocity (rev/s):");
-    vel_lbl->setFont(font);
-    grid->addWidget(vel_lbl, 3, 0);
+    vel_enable_ = new QCheckBox();
+    vel_enable_->setChecked(true);
+    vel_enable_->setToolTip("Uncheck for NaN");
     velocity_spin_ = new QDoubleSpinBox();
     velocity_spin_->setFont(font);
     velocity_spin_->setRange(-50.0, 50.0);
     velocity_spin_->setDecimals(3);
     velocity_spin_->setSingleStep(0.1);
+    auto* vel_lbl = new QLabel("Velocity (rev/s):");
+    vel_lbl->setFont(font);
+    grid->addWidget(vel_lbl, 3, 0);
     grid->addWidget(velocity_spin_, 3, 1);
+    grid->addWidget(vel_enable_, 3, 2);
+
+    QObject::connect(vel_enable_, &QCheckBox::toggled, [this](bool on) {
+        velocity_spin_->setEnabled(on);
+        velocity_spin_->setStyleSheet(on ? "" :
+            QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
+    });
 
     // Max torque
-    auto* torq_lbl = new QLabel("Max Torque (Nm):");
-    torq_lbl->setFont(font);
-    grid->addWidget(torq_lbl, 4, 0);
+    torque_enable_ = new QCheckBox();
+    torque_enable_->setChecked(false);
+    torque_enable_->setToolTip("Uncheck for NaN (no torque limit)");
     torque_spin_ = new QDoubleSpinBox();
     torque_spin_->setFont(font);
     torque_spin_->setRange(0.0, 10.0);
     torque_spin_->setDecimals(2);
     torque_spin_->setSingleStep(0.1);
     torque_spin_->setValue(0.5);
+    torque_spin_->setEnabled(false);
+    torque_spin_->setStyleSheet(
+        QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
+    auto* torq_lbl = new QLabel("Max Torque (Nm):");
+    torq_lbl->setFont(font);
+    grid->addWidget(torq_lbl, 4, 0);
     grid->addWidget(torque_spin_, 4, 1);
+    grid->addWidget(torque_enable_, 4, 2);
+
+    QObject::connect(torque_enable_, &QCheckBox::toggled, [this](bool on) {
+        torque_spin_->setEnabled(on);
+        torque_spin_->setStyleSheet(on ? "" :
+            QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
+    });
+
+    // NaN hint
+    auto* nan_hint = new QLabel("Uncheck = NaN (e.g. d pos nan 0 nan)");
+    nan_hint->setFont(QFont("monospace", theme::FontSizeSm));
+    nan_hint->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
+    grid->addWidget(nan_hint, 5, 0, 1, 3);
 
     layout->addLayout(grid);
 
@@ -87,12 +134,14 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     QObject::connect(send_btn, &QPushButton::clicked, [this]() {
         if (!bus_) return;
         int id = motor_select_->currentData().toInt();
+
         if (cmd_type_->currentText() == "Stop") {
             bus_->sendStop(id);
         } else {
-            bus_->sendPosition(id, position_spin_->value(),
-                               velocity_spin_->value(),
-                               torque_spin_->value());
+            double pos = pos_enable_->isChecked() ? position_spin_->value() : NAN;
+            double vel = vel_enable_->isChecked() ? velocity_spin_->value() : NAN;
+            double torque = torque_enable_->isChecked() ? torque_spin_->value() : NAN;
+            bus_->sendPosition(id, pos, vel, torque);
         }
     });
     btns->addWidget(send_btn);

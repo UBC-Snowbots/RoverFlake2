@@ -4,6 +4,7 @@
 #include "motor_status_module.h"
 #include "plotting_module.h"
 #include "send_command_module.h"
+#include "command_log_module.h"
 #include "tiling_container.h"
 
 #include <QApplication>
@@ -15,7 +16,7 @@
 
 struct ModuleEntry {
     std::unique_ptr<GuiModule> module;
-    std::string layout_hint;  // "main", "right", "bottom"
+    std::string layout_hint;
 };
 
 int main(int argc, char* argv[]) {
@@ -31,12 +32,16 @@ int main(int argc, char* argv[]) {
 
     // -----------------------------------------------------------------------
     // Register modules here
+    //   "main"    = top-left (large)
+    //   "right"   = top-right (stacked vertically)
+    //   "bottom"  = bottom strip
     // -----------------------------------------------------------------------
     std::vector<ModuleEntry> entries;
 
     entries.push_back({std::make_unique<MotorStatusModule>(), "main"});
     entries.push_back({std::make_unique<PlottingModule>(),    "right"});
     entries.push_back({std::make_unique<SendCommandModule>(), "right"});
+    entries.push_back({std::make_unique<CommandLogModule>(),  "bottom"});
 
     // -----------------------------------------------------------------------
     // Build tiling layout
@@ -52,10 +57,7 @@ int main(int argc, char* argv[]) {
     tiling->finalize();
     window.setCentralWidget(tiling);
 
-    // Keybinding hint in title
-    window.setWindowTitle("Rover HMI v2  |  Tab: cycle focus  |  Super+Arrow: navigate  |  Super+Shift+Arrow: swap");
-
-    window.resize(1500, 900);
+    window.resize(1600, 1000);
     window.showMaximized();
 
     for (auto& entry : entries)

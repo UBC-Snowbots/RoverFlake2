@@ -20,6 +20,7 @@ add_executable(moteus_gui
     src/motor_status_module.cpp
     src/plotting_module.cpp
     src/send_command_module.cpp
+    src/command_log_module.cpp
     src/tiling_container.cpp
     include/moteus_data_bus.h
     include/plot_widget.h

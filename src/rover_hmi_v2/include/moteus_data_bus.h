@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QString>
 
 #include <array>
 #include <memory>
@@ -45,8 +46,9 @@ public:
     void stop();
 
     // Queue a position command for the next cycle
+    // Use NAN for any field to leave it unspecified (tview: nan)
     void sendPosition(int motor_id, double position, double velocity = 0.0,
-                      double max_torque = 0.5);
+                      double max_torque = NAN);
     // Queue a stop for the next cycle
     void sendStop(int motor_id);
     // Queue stop for all motors
@@ -54,9 +56,11 @@ public:
 
 signals:
     void telemetryUpdated(const std::array<MotorState, NUM_MOTORS>& states);
+    void commandLogged(const QString& cmd);
 
 private:
     void poll();
+    void logCmd(const QString& cmd);
 
     std::shared_ptr<mot::Transport> transport_;
     std::vector<std::shared_ptr<mot::Controller>> controllers_;

@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
+#include <QCheckBox>
 
 class SendCommandModule : public GuiModule {
 public:
@@ -23,4 +24,7 @@ private:
     QDoubleSpinBox* position_spin_ = nullptr;
     QDoubleSpinBox* velocity_spin_ = nullptr;
     QDoubleSpinBox* torque_spin_ = nullptr;
+    QCheckBox* pos_enable_ = nullptr;
+    QCheckBox* vel_enable_ = nullptr;
+    QCheckBox* torque_enable_ = nullptr;
 };
