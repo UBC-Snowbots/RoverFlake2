@@ -47,7 +47,7 @@ void MoteusPoll::poll() {
         );
     }
 
-    RCLCPP_INFO(this->get_logger(), "---");
+    RCLCPP_INFO(this->get_logger(), "---------------------------------");
 }
 
 int main(int argc, char* argv[]) {
