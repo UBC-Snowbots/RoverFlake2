@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QCursor>
+#include <QScreen>
 #include <algorithm>
 
 static constexpr int RESIZE_STEP = 30;
@@ -29,6 +30,11 @@ void TilePanel::setFocused(bool focused) {
     update();
 }
 
+void TilePanel::setDropTarget(bool target) {
+    drop_target_ = target;
+    update();
+}
+
 void TilePanel::mousePressEvent(QMouseEvent* e) {
     emit clicked();
     e->ignore();
@@ -50,9 +56,21 @@ void TilePanel::paintEvent(QPaintEvent*) {
     path.addRoundedRect(outer, r, r);
     p.fillPath(path, QColor(theme::BgPanel));
 
-    QPen pen(QColor(focused_ ? theme::Border : theme::BorderDim), bw);
-    p.setPen(pen);
-    p.drawRoundedRect(outer, r, r);
+    // Drop target highlight: green glow
+    if (drop_target_) {
+        QPen pen(QColor(theme::Green), 3);
+        p.setPen(pen);
+        p.drawRoundedRect(outer, r, r);
+
+        // Subtle green fill overlay
+        QColor overlay(theme::Green);
+        overlay.setAlpha(20);
+        p.fillPath(path, overlay);
+    } else {
+        QPen pen(QColor(focused_ ? theme::Border : theme::BorderDim), bw);
+        p.setPen(pen);
+        p.drawRoundedRect(outer, r, r);
+    }
 
     QRectF titleRect(bw + 12, bw + 6, width() - 2 * bw - 24, 28);
     QFont font("monospace", theme::FontSizeLg, QFont::Bold);
@@ -60,6 +78,38 @@ void TilePanel::paintEvent(QPaintEvent*) {
     p.setPen(QColor(focused_ ? theme::Text : theme::TextDim));
     p.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter,
                QString::fromStdString(title_));
+}
+
+
+// ---------------------------------------------------------------------------
+// DragOverlay — floating translucent snapshot during Alt+Z drag
+// ---------------------------------------------------------------------------
+
+DragOverlay::DragOverlay(QWidget* parent) : QWidget(parent) {
+    setAttribute(Qt::WA_TransparentForMouseEvents);
+    setAttribute(Qt::WA_NoSystemBackground);
+    setAttribute(Qt::WA_TranslucentBackground);
+    // Stay as a child widget (not a top-level window) so we don't steal
+    // keyboard focus.  raise() is called after show() to paint on top.
+}
+
+void DragOverlay::setSnapshot(const QPixmap& pixmap) {
+    snapshot_ = pixmap;
+    setFixedSize(pixmap.size());
+}
+
+void DragOverlay::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setOpacity(0.7);
+    p.drawPixmap(0, 0, snapshot_);
+
+    // Green border around the floating snapshot
+    QPen pen(QColor(theme::Green), 3);
+    p.setOpacity(1.0);
+    p.setPen(pen);
+    p.drawRoundedRect(QRectF(1, 1, width() - 2, height() - 2),
+                      theme::BorderRadius, theme::BorderRadius);
 }
 
 
@@ -102,7 +152,6 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel) {
         panel->setVisible(visible);
     });
 
-    // Insert before the stretch
     layout_->insertWidget(layout_->count() - 1, check);
     entries_.push_back({check, panel});
 }
@@ -110,8 +159,6 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel) {
 void ModuleSidebar::paintEvent(QPaintEvent*) {
     QPainter p(this);
     p.fillRect(rect(), QColor("#080808"));
-
-    // Right edge line
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(width() - 1, 0, width() - 1, height());
 }
@@ -124,8 +171,6 @@ void ModuleSidebar::paintEvent(QPaintEvent*) {
 TilingContainer::TilingContainer(QWidget* parent) : QWidget(parent) {
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
-
-    // Install global event filter to catch Alt+Z / Alt+X anywhere
     qApp->installEventFilter(this);
 }
 
@@ -139,7 +184,6 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
         }
     });
 
-    // Hyprland follow_mouse=1: hover focuses the window
     connect(panel, &TilePanel::hovered, [this, panel]() {
         if (drag_mode_ == DragMode::None) {
             for (int i = 0; i < (int)panels_.size(); i++) {
@@ -166,6 +210,34 @@ int TilingContainer::panelAtPos(const QPoint& globalPos) {
     return -1;
 }
 
+void TilingContainer::performSwap(int source_idx, int target_idx) {
+    if (source_idx < 0 || target_idx < 0) return;
+    if (source_idx == target_idx) return;
+
+    auto& a = panels_[source_idx];
+    auto& b = panels_[target_idx];
+
+    std::swap(a.grid_col, b.grid_col);
+    std::swap(a.grid_row, b.grid_row);
+
+    auto* panelA = a.panel;
+    auto* panelB = b.panel;
+    auto* parentA = qobject_cast<QSplitter*>(panelA->parentWidget());
+    auto* parentB = qobject_cast<QSplitter*>(panelB->parentWidget());
+
+    if (parentA && parentB) {
+        int idxA = parentA->indexOf(panelA);
+        int idxB = parentB->indexOf(panelB);
+        if (parentA == parentB) {
+            parentA->insertWidget(idxA, panelB);
+            parentA->insertWidget(idxB, panelA);
+        } else {
+            parentA->insertWidget(idxA, panelB);
+            parentB->insertWidget(idxB, panelA);
+        }
+    }
+}
+
 void TilingContainer::finalize() {
     if (panels_.empty()) return;
 
@@ -187,21 +259,16 @@ void TilingContainer::finalize() {
         else bottom_panels.push_back(pi.panel);
     }
 
-    // Main layout: sidebar | tiling area
     auto* outer_layout = new QHBoxLayout(this);
     outer_layout->setContentsMargins(0, 0, 0, 0);
     outer_layout->setSpacing(0);
 
-    // Sidebar (fixed, non-tileable)
     sidebar_ = new ModuleSidebar(this);
     outer_layout->addWidget(sidebar_);
 
-    // Register all panels in sidebar
-    for (auto& pi : panels_) {
+    for (auto& pi : panels_)
         sidebar_->addModule(pi.panel->title(), pi.panel);
-    }
 
-    // Tiling area
     auto* tiling_area = new QWidget();
     auto* tiling_layout = new QVBoxLayout(tiling_area);
     tiling_layout->setContentsMargins(6, 6, 6, 6);
@@ -260,7 +327,7 @@ void TilingContainer::finalize() {
     outer_layout->addWidget(tiling_area, 1);
 
     // -----------------------------------------------------------------------
-    // Keyboard shortcuts (hyprland $mainMod = Alt)
+    // Keyboard shortcuts
     // -----------------------------------------------------------------------
     auto bind = [this](const char* seq, std::function<void()> fn) {
         auto* sc = new QShortcut(QKeySequence(seq), this);
@@ -269,25 +336,21 @@ void TilingContainer::finalize() {
         connect(sc, &QShortcut::activated, fn);
     };
 
-    // Alt+Arrow: focus direction (movefocus)
     bind("Alt+Left",  [this]() { focusDirection(-1, 0); });
     bind("Alt+Right", [this]() { focusDirection(1, 0); });
     bind("Alt+Up",    [this]() { focusDirection(0, -1); });
     bind("Alt+Down",  [this]() { focusDirection(0, 1); });
 
-    // Alt+Shift+Arrow: resize (resizeactive)
     bind("Alt+Shift+Right", [this]() { resizeFocused(1, 0); });
     bind("Alt+Shift+Left",  [this]() { resizeFocused(-1, 0); });
     bind("Alt+Shift+Up",    [this]() { resizeFocused(0, -1); });
     bind("Alt+Shift+Down",  [this]() { resizeFocused(0, 1); });
 
-    // Alt+Shift+Ctrl+Arrow: swap window
     bind("Alt+Shift+Ctrl+Left",  [this]() { swapWithFocused(-1, 0); });
     bind("Alt+Shift+Ctrl+Right", [this]() { swapWithFocused(1, 0); });
     bind("Alt+Shift+Ctrl+Up",    [this]() { swapWithFocused(0, -1); });
     bind("Alt+Shift+Ctrl+Down",  [this]() { swapWithFocused(0, 1); });
 
-    // Alt+J: toggle split orientation
     bind("Alt+J", [this]() {
         auto* panel = panels_[focused_idx_].panel;
         auto* parent = qobject_cast<QSplitter*>(panel->parentWidget());
@@ -297,7 +360,6 @@ void TilingContainer::finalize() {
         }
     });
 
-    // Alt+Tab: cycle focus
     bind("Alt+Tab", [this]() { focusNext(); });
 
     setFocusedIndex(0);
@@ -305,37 +367,31 @@ void TilingContainer::finalize() {
 
 
 // ---------------------------------------------------------------------------
-// Hyprland Alt+Z (move) / Alt+X (resize) — hold key, mouse movement acts
-// ---------------------------------------------------------------------------
-// In hyprland: hold SUPER + press LMB + move mouse = move window
-// Here: hold Alt+Z = enter move mode, mouse movement over another panel swaps
-//        hold Alt+X = enter resize mode, mouse movement adjusts splitter sizes
-// No click needed — just holding the keys and moving the mouse.
+// Event filter — global key/mouse interception for drag modes
 // ---------------------------------------------------------------------------
 
 bool TilingContainer::eventFilter(QObject* /*obj*/, QEvent* event) {
+    // --- Key press: enter drag mode ---
     if (event->type() == QEvent::KeyPress) {
         auto* ke = static_cast<QKeyEvent*>(event);
 
-        // Alt+Z -> move mode
         if (ke->key() == Qt::Key_Z && (ke->modifiers() & Qt::AltModifier)
-            && !ke->isAutoRepeat()) {
+            && !ke->isAutoRepeat() && drag_mode_ == DragMode::None) {
             enterMoveMode();
             return true;
         }
-        // Alt+X -> resize mode
         if (ke->key() == Qt::Key_X && (ke->modifiers() & Qt::AltModifier)
-            && !ke->isAutoRepeat()) {
+            && !ke->isAutoRepeat() && drag_mode_ == DragMode::None) {
             enterResizeMode();
             return true;
         }
     }
 
+    // --- Key release: exit drag mode ---
     if (event->type() == QEvent::KeyRelease) {
         auto* ke = static_cast<QKeyEvent*>(event);
         if (ke->isAutoRepeat()) return false;
 
-        // Releasing Z, X, or Alt exits drag mode
         if (drag_mode_ != DragMode::None &&
             (ke->key() == Qt::Key_Z || ke->key() == Qt::Key_X || ke->key() == Qt::Key_Alt)) {
             exitDragMode();
@@ -343,109 +399,168 @@ bool TilingContainer::eventFilter(QObject* /*obj*/, QEvent* event) {
         }
     }
 
-    // Mouse move during drag mode — no click needed, just mouse movement
+    // --- Mouse move during drag ---
     if (event->type() == QEvent::MouseMove && drag_mode_ != DragMode::None) {
         auto* me = static_cast<QMouseEvent*>(event);
         QPoint globalPos = me->globalPos();
         QPoint delta = globalPos - last_mouse_global_;
 
         if (drag_mode_ == DragMode::Move) {
-            // Check if mouse is now over a different panel -> swap
-            int target = panelAtPos(globalPos);
-            if (target >= 0 && target != focused_idx_) {
-                auto& a = panels_[focused_idx_];
-                auto& b = panels_[target];
+            // Move the floating overlay to follow mouse
+            if (drag_overlay_) {
+                QWidget* topLevel = window();
+                QPoint localPos = topLevel->mapFromGlobal(globalPos - drag_grab_offset_);
+                drag_overlay_->move(localPos);
+                drag_overlay_->raise();
+            }
 
-                std::swap(a.grid_col, b.grid_col);
-                std::swap(a.grid_row, b.grid_row);
+            // Update drop target highlight
+            int newTarget = panelAtPos(globalPos);
+            if (newTarget == drag_source_idx_) newTarget = -1;  // can't drop on self
 
-                auto* panelA = a.panel;
-                auto* panelB = b.panel;
-                auto* parentA = qobject_cast<QSplitter*>(panelA->parentWidget());
-                auto* parentB = qobject_cast<QSplitter*>(panelB->parentWidget());
-
-                if (parentA && parentB) {
-                    int idxA = parentA->indexOf(panelA);
-                    int idxB = parentB->indexOf(panelB);
-                    if (parentA == parentB) {
-                        parentA->insertWidget(idxA, panelB);
-                        parentA->insertWidget(idxB, panelA);
-                    } else {
-                        parentA->insertWidget(idxA, panelB);
-                        parentB->insertWidget(idxB, panelA);
-                    }
-                }
-
-                setFocusedIndex(target);
+            if (newTarget != drag_target_idx_) {
+                // Clear old highlight
+                if (drag_target_idx_ >= 0 && drag_target_idx_ < (int)panels_.size())
+                    panels_[drag_target_idx_].panel->setDropTarget(false);
+                // Set new highlight
+                drag_target_idx_ = newTarget;
+                if (drag_target_idx_ >= 0)
+                    panels_[drag_target_idx_].panel->setDropTarget(true);
             }
         } else if (drag_mode_ == DragMode::Resize) {
-            // Resize focused panel's splitter based on mouse delta
+            // Smart resize based on mouse quadrant
             auto* panel = panels_[focused_idx_].panel;
+            QPoint panelCenter = panel->mapToGlobal(
+                QPoint(panel->width() / 2, panel->height() / 2));
+            bool mouseOnRight = globalPos.x() >= panelCenter.x();
+            bool mouseOnBottom = globalPos.y() >= panelCenter.y();
+
+            // Resize a splitter edge. When fromRightOrBottom=true we move
+            // the right/bottom edge (between idx and idx+1). When false we
+            // move the left/top edge (between idx-1 and idx).
+            //
+            // In both cases, a positive px_delta means the mouse moved
+            // right/down.  For the right/bottom edge that means "grow the
+            // panel".  For the left/top edge the user is pulling outward
+            // in the *negative* direction, so we negate the delta so that
+            // dragging up/left still grows the panel.
+            auto adjustSplitter = [](QSplitter* sp, int widgetIdx,
+                                     int px_delta, bool fromRightOrBottom) {
+                if (!sp) return;
+                QList<int> sizes = sp->sizes();
+                if (fromRightOrBottom) {
+                    if (widgetIdx + 1 < sizes.size()) {
+                        sizes[widgetIdx] += px_delta;
+                        sizes[widgetIdx + 1] -= px_delta;
+                    }
+                } else {
+                    if (widgetIdx > 0) {
+                        sizes[widgetIdx - 1] += px_delta;
+                        sizes[widgetIdx] -= px_delta;
+                    }
+                }
+                sp->setSizes(sizes);
+            };
+
             auto* parent = qobject_cast<QSplitter*>(panel->parentWidget());
             if (parent) {
                 int idx = parent->indexOf(panel);
-                QList<int> sizes = parent->sizes();
 
-                if (parent->orientation() == Qt::Horizontal && std::abs(delta.x()) > 1) {
-                    if (idx < sizes.size()) {
-                        sizes[idx] += delta.x();
-                        if (idx + 1 < sizes.size()) sizes[idx + 1] -= delta.x();
-                        parent->setSizes(sizes);
-                    }
-                }
-                if (parent->orientation() == Qt::Vertical && std::abs(delta.y()) > 1) {
-                    if (idx < sizes.size()) {
-                        sizes[idx] += delta.y();
-                        if (idx + 1 < sizes.size()) sizes[idx + 1] -= delta.y();
-                        parent->setSizes(sizes);
-                    }
-                }
+                if (parent->orientation() == Qt::Horizontal && std::abs(delta.x()) > 1)
+                    adjustSplitter(parent, idx, delta.x(), mouseOnRight);
+                if (parent->orientation() == Qt::Vertical && std::abs(delta.y()) > 1)
+                    adjustSplitter(parent, idx, delta.y(), mouseOnBottom);
 
-                // Also adjust parent splitter for cross-axis
                 auto* gp = qobject_cast<QSplitter*>(parent->parentWidget());
                 if (gp) {
                     int pidx = gp->indexOf(parent);
-                    QList<int> ps = gp->sizes();
-                    if (gp->orientation() == Qt::Horizontal && std::abs(delta.x()) > 1) {
-                        if (pidx < ps.size()) {
-                            ps[pidx] += delta.x();
-                            if (pidx + 1 < ps.size()) ps[pidx + 1] -= delta.x();
-                            gp->setSizes(ps);
-                        }
-                    }
-                    if (gp->orientation() == Qt::Vertical && std::abs(delta.y()) > 1) {
-                        if (pidx < ps.size()) {
-                            ps[pidx] += delta.y();
-                            if (pidx + 1 < ps.size()) ps[pidx + 1] -= delta.y();
-                            gp->setSizes(ps);
-                        }
-                    }
+                    if (gp->orientation() == Qt::Horizontal && std::abs(delta.x()) > 1)
+                        adjustSplitter(gp, pidx, delta.x(), mouseOnRight);
+                    if (gp->orientation() == Qt::Vertical && std::abs(delta.y()) > 1)
+                        adjustSplitter(gp, pidx, delta.y(), mouseOnBottom);
                 }
             }
         }
 
         last_mouse_global_ = globalPos;
-        return true;  // Consume the event during drag
+        return true;
     }
 
-    return false;  // Don't consume other events
+    return false;
 }
 
+
+// ---------------------------------------------------------------------------
+// Drag mode enter/exit
+// ---------------------------------------------------------------------------
+
 void TilingContainer::enterMoveMode() {
-    if (drag_mode_ != DragMode::None) return;
     drag_mode_ = DragMode::Move;
+    drag_source_idx_ = focused_idx_;
+    drag_target_idx_ = -1;
     last_mouse_global_ = QCursor::pos();
-    setCursor(Qt::SizeAllCursor);
+
+    auto* panel = panels_[focused_idx_].panel;
+    QPixmap snapshot = panel->grab();
+
+    QPixmap scaled = snapshot.scaled(
+        snapshot.size() * 0.9, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    // Grab offset in global coords
+    QPoint panelTopLeft = panel->mapToGlobal(QPoint(0, 0));
+    drag_grab_offset_ = last_mouse_global_ - panelTopLeft;
+    drag_grab_offset_ = drag_grab_offset_ * 0.9;
+
+    // Create overlay as a child of the top-level window so it floats
+    // over all panels but doesn't steal keyboard focus
+    QWidget* topLevel = window();
+    drag_overlay_ = new DragOverlay(topLevel);
+    drag_overlay_->setSnapshot(scaled);
+
+    // Position in the top-level window's coordinate space
+    QPoint localPos = topLevel->mapFromGlobal(last_mouse_global_ - drag_grab_offset_);
+    drag_overlay_->move(localPos);
+    drag_overlay_->show();
+    drag_overlay_->raise();
+
+    panel->setEnabled(false);
+    setCursor(Qt::ClosedHandCursor);
 }
 
 void TilingContainer::enterResizeMode() {
-    if (drag_mode_ != DragMode::None) return;
     drag_mode_ = DragMode::Resize;
     last_mouse_global_ = QCursor::pos();
     setCursor(Qt::SizeFDiagCursor);
 }
 
 void TilingContainer::exitDragMode() {
+    if (drag_mode_ == DragMode::Move) {
+        // Perform the swap if we have a valid drop target
+        if (drag_target_idx_ >= 0 && drag_source_idx_ >= 0 &&
+            drag_target_idx_ != drag_source_idx_) {
+            performSwap(drag_source_idx_, drag_target_idx_);
+            setFocusedIndex(drag_target_idx_);
+        }
+
+        // Clear drop target highlight
+        for (auto& pi : panels_)
+            pi.panel->setDropTarget(false);
+
+        // Re-enable the source panel
+        if (drag_source_idx_ >= 0 && drag_source_idx_ < (int)panels_.size())
+            panels_[drag_source_idx_].panel->setEnabled(true);
+
+        // Destroy overlay
+        if (drag_overlay_) {
+            drag_overlay_->hide();
+            drag_overlay_->deleteLater();
+            drag_overlay_ = nullptr;
+        }
+
+        drag_source_idx_ = -1;
+        drag_target_idx_ = -1;
+    }
+
     drag_mode_ = DragMode::None;
     unsetCursor();
 }
@@ -539,26 +654,8 @@ void TilingContainer::swapWithFocused(int dx, int dy) {
         }
     }
 
-    if (target < 0) return;
-
-    std::swap(panels_[focused_idx_].grid_col, panels_[target].grid_col);
-    std::swap(panels_[focused_idx_].grid_row, panels_[target].grid_row);
-
-    auto* panelA = panels_[focused_idx_].panel;
-    auto* panelB = panels_[target].panel;
-    auto* parentA = qobject_cast<QSplitter*>(panelA->parentWidget());
-    auto* parentB = qobject_cast<QSplitter*>(panelB->parentWidget());
-
-    if (parentA && parentB) {
-        int idxA = parentA->indexOf(panelA);
-        int idxB = parentB->indexOf(panelB);
-        if (parentA == parentB) {
-            parentA->insertWidget(idxA, panelB);
-            parentA->insertWidget(idxB, panelA);
-        } else {
-            parentA->insertWidget(idxA, panelB);
-            parentB->insertWidget(idxB, panelA);
-        }
+    if (target >= 0) {
+        performSwap(focused_idx_, target);
     }
 }
 

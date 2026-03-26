@@ -11,7 +11,7 @@
 #include <QShortcut>
 #include <QPoint>
 #include <QCheckBox>
-#include <QScrollArea>
+#include <QPixmap>
 
 #include <vector>
 #include <string>
@@ -24,6 +24,7 @@ public:
     TilePanel(const std::string& title, QWidget* content, QWidget* parent = nullptr);
 
     void setFocused(bool focused);
+    void setDropTarget(bool target);
     bool isFocused() const { return focused_; }
     QWidget* content() const { return content_; }
     std::string title() const { return title_; }
@@ -41,13 +42,25 @@ private:
     std::string title_;
     QWidget* content_;
     bool focused_ = false;
+    bool drop_target_ = false;
 };
 
 
-// Hyprland-style tiling mode
-// Alt+Z hold = move mode (mouse movement swaps windows)
-// Alt+X hold = resize mode (mouse movement resizes)
 enum class DragMode { None, Move, Resize };
+
+
+// Floating overlay that shows a translucent snapshot of the dragged panel
+class DragOverlay : public QWidget {
+public:
+    explicit DragOverlay(QWidget* parent = nullptr);
+    void setSnapshot(const QPixmap& pixmap);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
+private:
+    QPixmap snapshot_;
+};
 
 
 // Sidebar for toggling module visibility
@@ -99,6 +112,7 @@ private:
     void enterMoveMode();
     void enterResizeMode();
     void exitDragMode();
+    void performSwap(int source_idx, int target_idx);
 
     struct PanelInfo {
         TilePanel* panel;
@@ -116,7 +130,13 @@ private:
 
     ModuleSidebar* sidebar_ = nullptr;
 
-    // Hyprland drag state
+    // Drag state
     DragMode drag_mode_ = DragMode::None;
     QPoint last_mouse_global_;
+
+    // Move-mode floating drag state
+    DragOverlay* drag_overlay_ = nullptr;
+    int drag_source_idx_ = -1;
+    int drag_target_idx_ = -1;
+    QPoint drag_grab_offset_;   // offset from panel top-left to mouse at grab time
 };
