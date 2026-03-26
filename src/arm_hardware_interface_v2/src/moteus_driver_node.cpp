@@ -9,9 +9,15 @@ static const std::string URDF_JOINT_NAMES[] = {
 
 // Assumed initial positions (radians) — since we have no homing,
 // we treat these as the zero offset for converting motor revolutions
-// to URDF joint angles:  joint_rad = initial + motor_rev * 2π
+// to URDF joint angles:  joint_rad = initial + dir * motor_rev * gear * 2π
 static const double INITIAL_POSITIONS[] = {
     -1.57, -1.57, 0.9, 0.0, 1.2, 0.0
+};
+
+// Motor-to-URDF direction sign: +1 or -1
+// Flip if positive motor revolutions move the URDF joint the wrong way
+static const double JOINT_DIRECTION[] = {
+    -1.0, -1.0, -1.0, -1.0, -1.0, -1.0
 };
 
 MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
@@ -269,9 +275,12 @@ void MoteusDriverNode::poll() {
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         js.name[i] = URDF_JOINT_NAMES[i];
-        // Convert: motor position (revolutions) -> radians, offset by initial position
-        js.position[i] = INITIAL_POSITIONS[i] + (telem_[i].position * 2.0 * M_PI);
-        js.velocity[i] = telem_[i].velocity * 2.0 * M_PI;
+        // Convert: motor revolutions -> output radians via gear ratio, then offset
+        // gear_reduction = 1/N, so output_rev = motor_rev * gear_reduction
+        double gear = configs_[i].gear_reduction;
+        double dir  = JOINT_DIRECTION[i];
+        js.position[i] = INITIAL_POSITIONS[i] + (dir * telem_[i].position * gear * 2.0 * M_PI);
+        js.velocity[i] = dir * telem_[i].velocity * gear * 2.0 * M_PI;
     }
 
     // Gripper fingers (no motor data, publish as static 0)
