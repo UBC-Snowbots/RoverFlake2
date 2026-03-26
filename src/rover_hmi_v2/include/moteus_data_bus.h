@@ -53,6 +53,7 @@ public:
 
     void sendPosition(int motor_id, double position, double velocity = 0.0,
                       double max_torque = NAN);
+    void sendVelocity(int motor_id, double velocity);
     void sendStop(int motor_id);
     void sendStopAll();
 

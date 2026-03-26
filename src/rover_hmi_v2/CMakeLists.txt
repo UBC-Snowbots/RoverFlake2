@@ -31,6 +31,7 @@ add_executable(moteus_gui
     include/plot_widget.h
     include/tiling_container.h
     include/rviz_module.h
+    include/send_command_module.h
 )
 target_link_libraries(moteus_gui Qt5::Widgets)
 ament_target_dependencies(moteus_gui rclcpp rover_msgs std_msgs ament_index_cpp)

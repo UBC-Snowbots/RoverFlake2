@@ -15,7 +15,7 @@ QWidget* RvizModule::createWidget(QWidget* parent) {
     layout_ = new QVBoxLayout(container_);
     layout_->setContentsMargins(0, 0, 0, 0);
 
-    status_label_ = new QLabel("Enable in sidebar to launch RViz", container_);
+    status_label_ = new QLabel("Toggle in sidebar to launch RViz", container_);
     status_label_->setAlignment(Qt::AlignCenter);
     status_label_->setStyleSheet(
         QString("color: %1; font-size: 14px;").arg(theme::Text));
@@ -157,6 +157,9 @@ void RvizModule::embedWindow() {
 
     embedded_widget_ = QWidget::createWindowContainer(foreign, container_);
     embedded_widget_->setMinimumSize(200, 200);
+    // Don't let the X11 container steal keyboard focus — Alt+Z and other
+    // dashboard shortcuts must still reach Qt's global event filter.
+    embedded_widget_->setFocusPolicy(Qt::NoFocus);
 
     status_label_->hide();
     layout_->addWidget(embedded_widget_);

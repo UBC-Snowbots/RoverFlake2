@@ -106,6 +106,19 @@ void MoteusDataBus::sendPosition(int motor_id, double position,
            .arg(motor_id).arg(fmt(position)).arg(fmt(velocity)).arg(fmt(max_torque)));
 }
 
+void MoteusDataBus::sendVelocity(int motor_id, double velocity) {
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ABS_VEL;
+    msg.velocities.resize(NUM_MOTORS, NAN);
+    if (motor_id >= 1 && motor_id <= NUM_MOTORS)
+        msg.velocities[motor_id - 1] = velocity;
+
+    command_pub_->publish(msg);
+
+    logCmd(QString("%1> d vel %2")
+           .arg(motor_id).arg(QString::number(velocity, 'f', 3)));
+}
+
 void MoteusDataBus::sendStop(int motor_id) {
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ABS_VEL;

@@ -16,6 +16,7 @@ public:
     QWidget* createWidget(QWidget* parent) override;
     void start() override {}
     void stop() override;
+    // Checkbox starts unchecked, but panel stays visible (shows placeholder)
     bool defaultVisible() const override { return false; }
     std::function<void(bool)> toggleCallback() override;
 

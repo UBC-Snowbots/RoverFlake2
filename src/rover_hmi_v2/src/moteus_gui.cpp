@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
     entries.push_back({std::make_unique<MotorConfigModule>(), "main"});
     entries.push_back({std::make_unique<PlottingModule>(),    "right"});
     entries.push_back({std::make_unique<SendCommandModule>(), "right"});
+    entries.push_back({std::make_unique<RvizModule>(),        "right"});
     entries.push_back({std::make_unique<CommandLogModule>(),  "bottom"});
-    entries.push_back({std::make_unique<RvizModule>(),        "main"});
 
     // -----------------------------------------------------------------------
     // Build tiling layout

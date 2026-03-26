@@ -1,5 +1,36 @@
 #pragma once
 
+// =============================================================================
+// Moteus Driver Node  (moteus_driver_node.h)
+// =============================================================================
+//
+// ROS 2 node that runs the CAN-FD communication loop for the arm's moteus
+// motor controllers.
+//
+// Related files — read these to understand the full system:
+//
+//   motor_addressing.h  — which motor ID maps to which physical joint,
+//                         URDF joint names, direction signs, unit conversions
+//
+//   motor_config.h      — per-motor PID gains, current limits, position limits
+//                         (the values pushed to firmware on startup)
+//
+//   moteus_protocol.h   — what goes in each CAN-FD data field, frame types,
+//                         unit conventions, watchdog notes
+//
+//   arm_commands.h      — command codes (P/V/S) and the MotorCommand struct
+//                         that carries commands from the ROS topic to the CAN loop
+//
+//   arm_telemetry.h     — MotorTelem struct: the per-motor state decoded from
+//                         CAN reply frames each poll cycle
+//
+// TOPICS:
+//   Subscribed:  /arm/command         (rover_msgs/ArmCommand)
+//   Published:   /arm/moteus_feedback  (rover_msgs/MoteusArmStatus)
+//                /joint_states         (sensor_msgs/JointState)  → RViz / RSP
+//                /arm/config_log       (std_msgs/String)          → HMI log panel
+// =============================================================================
+
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -14,73 +45,78 @@
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
-#include "moteus.h"
-#include "motor_config.h"
+#include "motor_addressing.h"   // NUM_MOTORS, ARM_JOINTS, unit converters
+#include "motor_config.h"       // MotorConfig, get_arm_configuration()
+#include "arm_commands.h"       // CMD_*, MotorCommand
+#include "arm_telemetry.h"      // MotorTelem
+#include "moteus_protocol.h"    // MoteusProtocol::make*Frame(), parseReply()
 
-namespace mot = mjbots::moteus;
-
-// Command codes (matching arm_hardware_interface convention)
-constexpr char CMD_ABS_POS = 'P';
-constexpr char CMD_ABS_VEL = 'V';
-constexpr char CMD_STOP    = 'S';
-
-static const char* JOINT_NAMES[] = {
-    "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
-};
 
 class MoteusDriverNode : public rclcpp::Node {
 public:
     MoteusDriverNode();
 
 private:
+    // Startup: push configuration to every motor via "conf set" DiagnosticCommand
     void configureMotors();
-    void configureMotor(int motor_id, mot::Controller& controller);
+    void configureMotor(int motor_id, mot::Controller& ctrl);
+
+    // 10 Hz poll: build CAN frames → BlockingCycle → parse replies → publish
     void poll();
+
+    // ROS subscription callback: fills pending_cmds_[] (mutex-protected)
     void commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
-    void checkAlerts();
+
+    // Safety monitoring (called inside poll, only logs on state changes)
     void checkFaults();
+    void checkAlerts();
+
+    // Publish a string to /arm/config_log (shown in the HMI command log panel)
     void publishLog(const std::string& msg);
 
-    std::shared_ptr<mot::Transport> transport_;
-    std::vector<std::shared_ptr<mot::Controller>> controllers_;
-    rclcpp::TimerBase::SharedPtr timer_;
+    // -------------------------------------------------------------------------
+    // CAN transport + per-motor controllers
+    // -------------------------------------------------------------------------
+    std::shared_ptr<mot::Transport>              transport_;
+    std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor_id - 1
 
-    rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr feedback_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr config_log_pub_;
-    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_sub_;
+    // -------------------------------------------------------------------------
+    // ROS interfaces
+    // -------------------------------------------------------------------------
+    rclcpp::TimerBase::SharedPtr                                      timer_;
+    rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr    feedback_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr        joint_state_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr               config_log_pub_;
+    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr      command_sub_;
 
+    // -------------------------------------------------------------------------
+    // Configuration (loaded from motor_config.h at construction)
+    // -------------------------------------------------------------------------
     std::vector<MotorConfig> configs_;
 
-    struct MotorCommand {
-        bool active = false;
-        bool is_stop = false;
-        double position = 0.0;
-        double velocity = 0.0;
-        double max_torque = NAN;
-    };
-
+    // -------------------------------------------------------------------------
+    // Command pipeline (see arm_commands.h for struct definition)
+    //
+    //   pending_cmds_ — written by commandCallback() under cmd_mutex_
+    //                   cleared after each poll merges them into active_cmds_
+    //
+    //   active_cmds_  — re-sent every poll cycle to keep the watchdog alive
+    //                   stays set until a stop or override arrives
+    // -------------------------------------------------------------------------
     std::mutex cmd_mutex_;
     std::array<MotorCommand, NUM_MOTORS> pending_cmds_{};
-    std::array<MotorCommand, NUM_MOTORS> active_cmds_{};  // persists until stop/override
+    std::array<MotorCommand, NUM_MOTORS> active_cmds_{};
 
-    // Per-motor telemetry (updated each poll)
-    struct MotorTelem {
-        float position = 0;
-        float velocity = 0;
-        float torque = 0;
-        float voltage = 0;
-        float temperature = 0;
-        int mode = 0;
-        int fault = 0;
-        bool connected = false;
-    };
+    // -------------------------------------------------------------------------
+    // Telemetry (see arm_telemetry.h for struct definition)
+    // Updated each poll cycle from CAN reply frames.
+    // -------------------------------------------------------------------------
     std::array<MotorTelem, NUM_MOTORS> telem_{};
 
-    // Position limit alert state (prevents log spam)
+    // -------------------------------------------------------------------------
+    // State tracking for edge-triggered logging (prevents log spam)
+    // -------------------------------------------------------------------------
+    std::array<int,  NUM_MOTORS> last_fault_{};
+    std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
-
-    // Fault state tracking (prevents log spam)
-    std::array<int, NUM_MOTORS> last_fault_{};
-    std::array<int, NUM_MOTORS> last_mode_{};
 };

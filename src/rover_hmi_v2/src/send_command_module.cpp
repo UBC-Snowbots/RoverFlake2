@@ -6,7 +6,21 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QFont>
+#include <QMouseEvent>
 #include <cmath>
+
+// JogButton — emits jogPressed on mouse down, jogReleased on mouse up
+JogButton::JogButton(const QString& text, QWidget* parent) : QPushButton(text, parent) {}
+
+void JogButton::mousePressEvent(QMouseEvent* e) {
+    QPushButton::mousePressEvent(e);
+    emit jogPressed();
+}
+
+void JogButton::mouseReleaseEvent(QMouseEvent* e) {
+    QPushButton::mouseReleaseEvent(e);
+    emit jogReleased();
+}
 
 static const char* JOINT_NAMES[] = {
     "1 - Base", "2 - Shoulder", "3 - Elbow",
@@ -159,6 +173,74 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
 
     btns->addStretch();
     layout->addLayout(btns);
+
+    // --- Jog Controls (hold to move, release to stop) ---
+    auto* jog_sep = new QWidget();
+    jog_sep->setFixedHeight(1);
+    jog_sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
+    layout->addWidget(jog_sep);
+
+    auto* jog_title = new QLabel("Jog (hold to move)");
+    jog_title->setFont(fontBold);
+    jog_title->setStyleSheet(QString("color: %1;").arg(theme::Text));
+    layout->addWidget(jog_title);
+
+    auto* jog_row = new QHBoxLayout();
+    jog_row->setSpacing(8);
+
+    auto* jog_speed_lbl = new QLabel("Speed:");
+    jog_speed_lbl->setFont(font);
+    jog_row->addWidget(jog_speed_lbl);
+
+    jog_speed_spin_ = new QDoubleSpinBox();
+    jog_speed_spin_->setFont(font);
+    jog_speed_spin_->setRange(0.001, 10.0);
+    jog_speed_spin_->setDecimals(3);
+    jog_speed_spin_->setSingleStep(0.01);
+    jog_speed_spin_->setValue(0.05);
+    jog_speed_spin_->setSuffix(" rev/s");
+    jog_row->addWidget(jog_speed_spin_);
+
+    auto btnStyle = QString(
+        "QPushButton { background: %1; color: %2; border: 1px solid %3; "
+        "padding: 8px 16px; font-weight: bold; }"
+        "QPushButton:pressed { background: %4; }")
+        .arg(theme::Bg).arg(theme::Text).arg(theme::Border).arg(theme::Green);
+
+    auto* jog_minus = new JogButton("-");
+    jog_minus->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+    jog_minus->setStyleSheet(btnStyle);
+    jog_row->addWidget(jog_minus);
+
+    auto* jog_plus = new JogButton("+");
+    jog_plus->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+    jog_plus->setStyleSheet(btnStyle);
+    jog_row->addWidget(jog_plus);
+
+    layout->addLayout(jog_row);
+
+    // Jog press → send velocity, release → send zero velocity (stop)
+    QObject::connect(jog_plus, &JogButton::jogPressed, [this]() {
+        if (!bus_) return;
+        int id = motor_select_->currentData().toInt();
+        bus_->sendVelocity(id, jog_speed_spin_->value());
+    });
+    QObject::connect(jog_plus, &JogButton::jogReleased, [this]() {
+        if (!bus_) return;
+        int id = motor_select_->currentData().toInt();
+        bus_->sendVelocity(id, 0.0);
+    });
+    QObject::connect(jog_minus, &JogButton::jogPressed, [this]() {
+        if (!bus_) return;
+        int id = motor_select_->currentData().toInt();
+        bus_->sendVelocity(id, -jog_speed_spin_->value());
+    });
+    QObject::connect(jog_minus, &JogButton::jogReleased, [this]() {
+        if (!bus_) return;
+        int id = motor_select_->currentData().toInt();
+        bus_->sendVelocity(id, 0.0);
+    });
+
     layout->addStretch();
 
     return widget;

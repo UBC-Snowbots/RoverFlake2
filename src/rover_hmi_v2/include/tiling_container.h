@@ -1,23 +1,54 @@
 #pragma once
 
 #include <QWidget>
-#include <QSplitter>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QKeyEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QShortcut>
-#include <QPoint>
 #include <QCheckBox>
 #include <QPixmap>
+#include <QKeyEvent>
+#include <QPoint>
+#include <QRect>
 
 #include <vector>
 #include <string>
 #include <functional>
+#include <array>
 
-// A single panel in the tiling layout
+class TilePanel;
+
+// ---------------------------------------------------------------------------
+// Dwindle binary tree node — mirrors Hyprland's SDwindleNodeData
+//   isNode=true  → internal node, children[0/1] are sub-trees
+//   isNode=false → leaf, panel points to the TilePanel widget
+//   splitTop     → true = top/bottom split, false = left/right split
+//   splitRatio   → 0.1..1.9; 1.0 means 50/50
+// ---------------------------------------------------------------------------
+struct DwindleNode {
+    DwindleNode* parent = nullptr;
+    bool isNode = false;
+    std::array<DwindleNode*, 2> children = {nullptr, nullptr};
+    bool splitTop = false;
+    float splitRatio = 1.0f;
+    QRect box;                   // in tiling_area_ local coordinates
+    TilePanel* panel = nullptr;  // non-null only for leaf nodes
+
+    DwindleNode* sibling() const {
+        if (!parent) return nullptr;
+        return parent->children[0] == this ? parent->children[1] : parent->children[0];
+    }
+
+    DwindleNode* leafFor(TilePanel* p);
+    void recalcSizePosRecursive(int gap = 3);
+};
+
+
+// ---------------------------------------------------------------------------
+// TilePanel — a single titled panel in the tiling area
+// ---------------------------------------------------------------------------
 class TilePanel : public QWidget {
     Q_OBJECT
 public:
@@ -34,9 +65,9 @@ signals:
     void hovered();
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void enterEvent(QEvent* event) override;
+    void paintEvent(QPaintEvent*) override;
+    void mousePressEvent(QMouseEvent*) override;
+    void enterEvent(QEvent*) override;
 
 private:
     std::string title_;
@@ -49,55 +80,69 @@ private:
 enum class DragMode { None, Move, Resize };
 
 
-// Floating overlay that shows a translucent snapshot of the dragged panel
+// ---------------------------------------------------------------------------
+// DragOverlay — translucent floating snapshot during Alt+Z drag
+// ---------------------------------------------------------------------------
 class DragOverlay : public QWidget {
 public:
     explicit DragOverlay(QWidget* parent = nullptr);
     void setSnapshot(const QPixmap& pixmap);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
+    void paintEvent(QPaintEvent*) override;
 
 private:
     QPixmap snapshot_;
 };
 
 
-// Sidebar for toggling module visibility
+// ---------------------------------------------------------------------------
+// ModuleSidebar — checkbox list that controls panel visibility
+// ---------------------------------------------------------------------------
 class ModuleSidebar : public QWidget {
     Q_OBJECT
 public:
     explicit ModuleSidebar(QWidget* parent = nullptr);
-
     void addModule(const std::string& name, TilePanel* panel, bool default_visible = true,
-                    std::function<void(bool)> on_toggle = nullptr);
+                   std::function<void(bool)> on_toggle = nullptr);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
+    void paintEvent(QPaintEvent*) override;
 
 private:
     QVBoxLayout* layout_;
-    struct Entry {
-        QCheckBox* check;
-        TilePanel* panel;
-    };
+    struct Entry { QCheckBox* check; TilePanel* panel; };
     std::vector<Entry> entries_;
 };
 
 
-// Hyprland-style tiling container
+// ---------------------------------------------------------------------------
+// TilingContainer — Hyprland-style dwindle layout for dashboard modules
+//
+//   Keyboard shortcuts (when a panel is focused):
+//     Alt+Left/Right/Up/Down        — focus adjacent panel
+//     Alt+Shift+Left/Right/Up/Down  — resize focused panel
+//     Alt+Ctrl+Shift+Arrow          — swap focused panel in direction
+//     Alt+Z (hold) + mouse move     — drag-to-swap mode
+//     Alt+X (hold) + mouse move     — drag-to-resize mode
+//     Alt+Tab                       — cycle focus
+// ---------------------------------------------------------------------------
 class TilingContainer : public QWidget {
     Q_OBJECT
 public:
     explicit TilingContainer(QWidget* parent = nullptr);
+    ~TilingContainer();
 
+    // Register a panel before finalize()
     void addPanel(const std::string& title, QWidget* content,
                   const std::string& layout_hint = "right",
                   bool default_visible = true,
                   std::function<void(bool)> on_toggle = nullptr);
 
+    // Build the initial layout (call after all addPanel calls)
     void finalize();
 
+    // Navigation / manipulation
     void focusNext();
     void focusPrev();
     void focusDirection(int dx, int dy);
@@ -110,38 +155,42 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
-    void setFocusedIndex(int idx);
-    int panelAtPos(const QPoint& globalPos);
+    // Dwindle tree
+    void dwindleAdd(TilePanel* panel);
+    void dwindleRemove(TilePanel* panel);
+    void dwindleSwap(TilePanel* a, TilePanel* b);
+    DwindleNode* getLeafFor(TilePanel* panel);
+    void recalculate();
+
+    // Build a column/row sub-tree from a list of panels
+    DwindleNode* buildColumn(std::vector<TilePanel*>& panels, bool vertical);
+
+    void setFocusedPanel(TilePanel* panel);
     void enterMoveMode();
-    void enterResizeMode();
     void exitDragMode();
-    void performSwap(int source_idx, int target_idx);
 
     struct PanelInfo {
         TilePanel* panel;
         std::string hint;
-        int grid_col;
-        int grid_row;
         bool default_visible = true;
         std::function<void(bool)> on_toggle;
     };
 
     std::vector<PanelInfo> panels_;
-    int focused_idx_ = 0;
+    TilePanel* focused_panel_ = nullptr;
 
-    QSplitter* main_splitter_ = nullptr;
-    QSplitter* right_splitter_ = nullptr;
-    QSplitter* bottom_splitter_ = nullptr;
+    // Dwindle tree data
+    DwindleNode* root_ = nullptr;
+    std::vector<DwindleNode*> all_nodes_;
 
+    QWidget* tiling_area_ = nullptr;
     ModuleSidebar* sidebar_ = nullptr;
 
-    // Drag state
+    // Drag/resize state
     DragMode drag_mode_ = DragMode::None;
     QPoint last_mouse_global_;
-
-    // Move-mode floating drag state
     DragOverlay* drag_overlay_ = nullptr;
-    int drag_source_idx_ = -1;
-    int drag_target_idx_ = -1;
-    QPoint drag_grab_offset_;   // offset from panel top-left to mouse at grab time
+    TilePanel* drag_source_ = nullptr;
+    TilePanel* drag_target_ = nullptr;
+    QPoint drag_grab_offset_;
 };
