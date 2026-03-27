@@ -599,7 +599,6 @@ bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
                         auto* p = cur->parent;
                         if (!p->splitTop) {
                             float rel = (float)delta.x() * 2.0f / std::max(1, p->box.width());
-                            if (p->children[1] == cur) rel = -rel;
                             p->splitRatio = std::clamp(p->splitRatio + rel, 0.1f, 1.9f);
                             recalculate();
                             break;
@@ -611,7 +610,6 @@ bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
                         auto* p = cur->parent;
                         if (p->splitTop) {
                             float rel = (float)delta.y() * 2.0f / std::max(1, p->box.height());
-                            if (p->children[1] == cur) rel = -rel;
                             p->splitRatio = std::clamp(p->splitRatio + rel, 0.1f, 1.9f);
                             recalculate();
                             break;
