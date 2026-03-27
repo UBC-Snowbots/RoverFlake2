@@ -198,7 +198,7 @@ def generate_launch_description():
 	)
     arm_hardware_interface_node = Node(
         package='arm_hardware_interface',
-        executable='arm_serial_driver',  # Replace with the correct executable name if different
+        executable='moteus_driver',
         name='arm_hardware_interface_node',
         #output='log',
 	)
