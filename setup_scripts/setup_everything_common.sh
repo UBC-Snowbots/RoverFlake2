@@ -43,9 +43,9 @@ apt_packages_to_install=(
     "git"
     "btop"
     "tmux"
-    "libgtkmm-3.0-dev"
+    "libgtkmm-3.0-dev" # GUI Package
     "python3-rosdep"
-    "libsfml-dev"
+    "libsfml-dev" # Required for sound
 )
 
 # Loop through the package list and install missing packages
