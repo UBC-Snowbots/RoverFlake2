@@ -6,7 +6,7 @@
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <arm_hardware_interface/ArmSerialProtocol.h>  //? Shouldn't be included here, but leave it for now. armControlParams is meant to be the common header for all arm parameters.
-#include <arm_control/include/armControlParams.h>
+#include <arm_control/armControlParams.h>
 
 // opencv and image processing
 #include <opencv2/opencv.hpp>
