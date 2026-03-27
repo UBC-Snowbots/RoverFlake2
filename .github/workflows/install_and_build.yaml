@@ -14,6 +14,7 @@ jobs:
        run: |
          cd $ROVERFLAKE_ROOT
          echo $ROS_DISTRO
+         echo $ROVERFLAKE_ROOT
          pwd
          ls $ROVERFLAKE_ROOT
          source /opt/ros/humble/setup.bash
