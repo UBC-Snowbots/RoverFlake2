@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
             module->setNode(node);
             auto* widget = module->createWidget(tiling);
             tiling->addPanel(module->name(), widget, module->layoutHint(),
-                             module->defaultVisible(), module->toggleCallback());
+                             module->defaultVisible(), module->toggleCallback(),
+                             module->keybindings());
             modules.push_back(module);
         } catch (const pluginlib::PluginlibException& ex) {
             RCLCPP_WARN(node->get_logger(),

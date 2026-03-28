@@ -9,13 +9,13 @@
 // geometry management.
 //
 // Key classes:
-//   DwindleNode      — one node in the BSP tree (internal split or leaf)
-//   TilePanel        — titled widget wrapper shown at each leaf
-//   DragOverlay      — translucent floating snapshot rendered during drag ops
-//   ModuleSidebar    — checkbox list that hides/shows panels without removing
-//                      them from the tree
-//   TilingContainer  — root widget; owns the tree, the sidebar, and all
-//                      keyboard/mouse interaction
+//   DwindleNode          — one node in the BSP tree (internal split or leaf)
+//   TilePanel            — titled widget wrapper shown at each leaf
+//   DragOverlay          — translucent floating snapshot rendered during drag
+//   KeybindingsOverlay   — Alt+/ keybindings cheatsheet, arrow-key browsable
+//   LayoutManagerOverlay — Alt+P saved-layout manager (save/load/delete)
+//   ModuleSidebar        — checkbox list that hides/shows panels
+//   TilingContainer      — root widget; owns the tree, overlays, and input
 //
 // Lifecycle expected by the host (hmi_host.cpp in this same package):
 //   1. Call addPanel() for each module (pre-finalize registration).
@@ -39,13 +39,27 @@
 #include <QKeyEvent>
 #include <QPoint>
 #include <QRect>
+#include <QJsonObject>
 
 #include <vector>
 #include <string>
 #include <functional>
 #include <array>
 
+// ---------------------------------------------------------------------------
+// Overlay data types
+// ---------------------------------------------------------------------------
+struct KeybindEntry    { QString keys; QString description; };
+struct KeybindCategory { QString name; std::vector<KeybindEntry> entries; };
+
+struct LayoutSnapshot {
+    QString name;
+    QString saved_at;   // ISO date string
+    QString json;       // full serialized layout
+};
+
 class TilePanel;
+class TilingContainer;
 
 // ---------------------------------------------------------------------------
 // Dwindle binary tree node — mirrors Hyprland's SDwindleNodeData
@@ -124,6 +138,54 @@ private:
 
 
 // ---------------------------------------------------------------------------
+// KeybindingsOverlay — Alt+/ cheatsheet, arrow-key / scroll browsable
+// ---------------------------------------------------------------------------
+class KeybindingsOverlay : public QWidget {
+    Q_OBJECT
+public:
+    explicit KeybindingsOverlay(TilingContainer* tc, QWidget* parent = nullptr);
+    void setCategories(std::vector<KeybindCategory> cats);
+
+protected:
+    void paintEvent(QPaintEvent*) override;
+    void keyPressEvent(QKeyEvent*) override;
+    void wheelEvent(QWheelEvent*) override;
+
+private:
+    TilingContainer* tc_;
+    std::vector<KeybindCategory> categories_;
+    int focused_idx_   = 0;
+    int scroll_offset_ = 0;
+
+    int  totalEntries() const;
+    int  yOfEntry(int flat_idx) const;
+    void scrollToFocused(int list_h);
+};
+
+
+// ---------------------------------------------------------------------------
+// LayoutManagerOverlay — Alt+P layout save/load/delete panel
+// ---------------------------------------------------------------------------
+class LayoutManagerOverlay : public QWidget {
+    Q_OBJECT
+public:
+    explicit LayoutManagerOverlay(TilingContainer* tc, QWidget* parent = nullptr);
+    void refresh();   // reload snapshots from persistent storage
+
+protected:
+    void paintEvent(QPaintEvent*) override;
+    void keyPressEvent(QKeyEvent*) override;
+    void wheelEvent(QWheelEvent*) override;
+
+private:
+    TilingContainer* tc_;
+    std::vector<LayoutSnapshot> snapshots_;
+    int focused_idx_   = 0;
+    int scroll_offset_ = 0;
+};
+
+
+// ---------------------------------------------------------------------------
 // ModuleSidebar — checkbox list that controls panel visibility
 // ---------------------------------------------------------------------------
 class ModuleSidebar : public QWidget {
@@ -132,6 +194,8 @@ public:
     explicit ModuleSidebar(QWidget* parent = nullptr);
     void addModule(const std::string& name, TilePanel* panel, bool default_visible = true,
                    std::function<void(bool)> on_toggle = nullptr);
+    void toggleModule(int index);                                       // 0-based, bounds-checked
+    void syncCheckboxes(const std::vector<std::string>& visible_titles); // silent update for layout load
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -146,13 +210,17 @@ private:
 // ---------------------------------------------------------------------------
 // TilingContainer — Hyprland-style dwindle layout for dashboard modules
 //
-//   Keyboard shortcuts (when a panel is focused):
+//   Keyboard shortcuts:
 //     Alt+Left/Right/Up/Down        — focus adjacent panel
 //     Alt+Shift+Left/Right/Up/Down  — resize focused panel
 //     Alt+Ctrl+Shift+Arrow          — swap focused panel in direction
 //     Alt+Z (hold) + mouse move     — drag-to-swap mode
 //     Alt+X (hold) + mouse move     — drag-to-resize mode
 //     Alt+Tab                       — cycle focus
+//     Alt+J                         — toggle split direction of focused node
+//     Alt+1..9                      — toggle module by sidebar index
+//     Alt+/                         — toggle keybindings overlay
+//     Alt+P                         — toggle layout manager overlay
 // ---------------------------------------------------------------------------
 class TilingContainer : public QWidget {
     Q_OBJECT
@@ -164,7 +232,8 @@ public:
     void addPanel(const std::string& title, QWidget* content,
                   const std::string& layout_hint = "right",
                   bool default_visible = true,
-                  std::function<void(bool)> on_toggle = nullptr);
+                  std::function<void(bool)> on_toggle = nullptr,
+                  std::vector<std::pair<std::string,std::string>> module_keybinds = {});
 
     // Build the initial layout (call after all addPanel calls)
     void finalize();
@@ -175,6 +244,17 @@ public:
     void focusDirection(int dx, int dy);
     void swapWithFocused(int dx, int dy);
     void resizeFocused(int dx, int dy);
+
+    // Overlay control (called by overlay classes)
+    void toggleKeybindingsOverlay();
+    void hideKeybindingsOverlay();
+    void toggleLayoutManagerOverlay();
+    void hideLayoutManagerOverlay();
+
+    // Layout persistence (called by LayoutManagerOverlay)
+    void saveCurrentLayout();
+    void loadLayout(int index);
+    void deleteLayout(int index);
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 
@@ -196,11 +276,18 @@ private:
     void enterMoveMode();
     void exitDragMode();
 
+    // Tree serialization helpers (used by layout save/load)
+    QJsonObject serializeTree(DwindleNode* node) const;
+    DwindleNode* deserializeTree(const QJsonObject& obj);
+
+    bool anyOverlayVisible() const;
+
     struct PanelInfo {
         TilePanel* panel;
         std::string hint;
         bool default_visible = true;
         std::function<void(bool)> on_toggle;
+        std::vector<std::pair<std::string,std::string>> module_keybinds;
     };
 
     std::vector<PanelInfo> panels_;
@@ -220,4 +307,9 @@ private:
     TilePanel* drag_source_ = nullptr;
     TilePanel* drag_target_ = nullptr;
     QPoint drag_grab_offset_;
+
+    // Overlays
+    KeybindingsOverlay*  keybindings_overlay_  = nullptr;
+    LayoutManagerOverlay* layout_overlay_       = nullptr;
+    std::vector<KeybindCategory> base_categories_;
 };

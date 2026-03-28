@@ -4,6 +4,10 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QCursor>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QSettings>
+#include <QDateTime>
 #include <algorithm>
 #include <cmath>
 
@@ -201,6 +205,371 @@ void ModuleSidebar::paintEvent(QPaintEvent*) {
     p.drawLine(width() - 1, 0, width() - 1, height());
 }
 
+void ModuleSidebar::toggleModule(int index) {
+    if (index < 0 || index >= (int)entries_.size()) return;
+    entries_[index].check->toggle();
+}
+
+void ModuleSidebar::syncCheckboxes(const std::vector<std::string>& visible_titles) {
+    for (auto& e : entries_) {
+        bool vis = std::find(visible_titles.begin(), visible_titles.end(),
+                             e.panel->title()) != visible_titles.end();
+        e.check->blockSignals(true);
+        e.check->setChecked(vis);
+        e.check->blockSignals(false);
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// KeybindingsOverlay
+// ---------------------------------------------------------------------------
+
+static constexpr int CAT_H = 38;
+static constexpr int ROW_H = 30;
+
+KeybindingsOverlay::KeybindingsOverlay(TilingContainer* tc, QWidget* parent)
+    : QWidget(parent), tc_(tc) {
+    setAttribute(Qt::WA_NoSystemBackground);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setFocusPolicy(Qt::StrongFocus);
+    hide();
+}
+
+void KeybindingsOverlay::setCategories(std::vector<KeybindCategory> cats) {
+    categories_ = std::move(cats);
+    focused_idx_   = 0;
+    scroll_offset_ = 0;
+}
+
+int KeybindingsOverlay::totalEntries() const {
+    int n = 0;
+    for (auto& cat : categories_) n += (int)cat.entries.size();
+    return n;
+}
+
+int KeybindingsOverlay::yOfEntry(int flat_idx) const {
+    int y = 0, cur = 0;
+    for (auto& cat : categories_) {
+        y += CAT_H;
+        for (int e = 0; e < (int)cat.entries.size(); ++e) {
+            if (cur == flat_idx) return y;
+            y += ROW_H;
+            cur++;
+        }
+    }
+    return y;
+}
+
+void KeybindingsOverlay::scrollToFocused(int list_h) {
+    int y = yOfEntry(focused_idx_);
+    if (y - scroll_offset_ < ROW_H)
+        scroll_offset_ = std::max(0, y - ROW_H);
+    else if (y + ROW_H * 2 - scroll_offset_ > list_h)
+        scroll_offset_ = y + ROW_H * 2 - list_h;
+}
+
+void KeybindingsOverlay::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.fillRect(rect(), QColor(0, 0, 0, 210));
+
+    int pw = std::min(680, width()  - 48);
+    int ph = std::min(700, height() - 48);
+    int px = (width()  - pw) / 2;
+    int py = (height() - ph) / 2;
+
+    QPainterPath panelPath;
+    panelPath.addRoundedRect(QRect(px, py, pw, ph), 12, 12);
+    p.fillPath(panelPath, QColor(theme::BgPanel));
+    p.setPen(QPen(QColor(theme::Border), 2));
+    p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
+
+    int margin = 24;
+    QRect titleRect(px + margin, py + margin, pw - 2 * margin, 30);
+    p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+    p.setPen(QColor(theme::Text));
+    p.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, "Keybindings");
+    p.setFont(QFont("monospace", theme::FontSizeSm));
+    p.setPen(QColor(theme::TextDim));
+    p.drawText(titleRect, Qt::AlignRight | Qt::AlignVCenter, "Esc · Alt+/ to close");
+
+    int sepY = py + margin + 34;
+    p.setPen(QPen(QColor(theme::BorderDim), 1));
+    p.drawLine(px + margin, sepY, px + pw - margin, sepY);
+
+    if (categories_.empty()) return;
+
+    int listX = px + margin;
+    int listY = sepY + 12;
+    int listW = pw - 2 * margin;
+    int listH = ph - (listY - py) - margin;
+
+    p.setClipRect(listX, listY, listW, listH);
+    p.translate(0, listY - scroll_offset_);
+
+    int y = 0, flat = 0;
+    for (auto& cat : categories_) {
+        p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+        p.setPen(QColor(theme::TextDim));
+        p.drawText(QRect(listX, y + 8, listW, 22),
+                   Qt::AlignLeft | Qt::AlignVCenter, cat.name.toUpper());
+        p.setPen(QPen(QColor(theme::BorderDim), 1));
+        p.drawLine(listX, y + CAT_H - 2, listX + listW, y + CAT_H - 2);
+        y += CAT_H;
+
+        p.setFont(QFont("monospace", theme::FontSizeSm));
+        for (auto& entry : cat.entries) {
+            bool focused = (flat == focused_idx_);
+            if (focused) {
+                QColor hi(theme::Green); hi.setAlpha(38);
+                p.fillRect(QRect(listX, y, listW, ROW_H), hi);
+            }
+            p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
+            p.drawText(QRect(listX + 8, y, listW * 45 / 100, ROW_H),
+                       Qt::AlignLeft | Qt::AlignVCenter, entry.keys);
+            p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
+            p.drawText(QRect(listX + listW * 45 / 100, y, listW * 55 / 100, ROW_H),
+                       Qt::AlignLeft | Qt::AlignVCenter, entry.description);
+            y += ROW_H;
+            flat++;
+        }
+    }
+
+    p.resetTransform();
+    p.setClipping(false);
+    int totalH = y;
+    if (totalH > listH) {
+        int barH = std::max(20, listH * listH / totalH);
+        int barY = listY + (listH - barH) * scroll_offset_ / std::max(1, totalH - listH);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(theme::BorderDim));
+        p.drawRoundedRect(px + pw - margin + 6, barY, 4, barH, 2, 2);
+    }
+}
+
+void KeybindingsOverlay::keyPressEvent(QKeyEvent* ke) {
+    if (categories_.empty()) return;
+
+    int ph     = std::min(700, height() - 48);
+    int py     = (height() - ph) / 2;
+    int margin = 24;
+    int listY  = py + margin + 34 + 12;
+    int listH  = ph - (listY - py) - margin;
+
+    if (ke->key() == Qt::Key_Up) {
+        focused_idx_ = std::max(0, focused_idx_ - 1);
+        scrollToFocused(listH);
+        update();
+    } else if (ke->key() == Qt::Key_Down) {
+        focused_idx_ = std::min(totalEntries() - 1, focused_idx_ + 1);
+        scrollToFocused(listH);
+        update();
+    } else if (ke->key() == Qt::Key_Escape ||
+               (ke->key() == Qt::Key_Slash && (ke->modifiers() & Qt::AltModifier))) {
+        tc_->hideKeybindingsOverlay();
+    }
+}
+
+void KeybindingsOverlay::wheelEvent(QWheelEvent* we) {
+    int ph     = std::min(700, height() - 48);
+    int py     = (height() - ph) / 2;
+    int margin = 24;
+    int listY  = py + margin + 34 + 12;
+    int listH  = ph - (listY - py) - margin;
+
+    int steps = we->angleDelta().y() / 40;
+    scroll_offset_ = std::max(0, scroll_offset_ - steps * ROW_H);
+
+    int totalH = 0;
+    for (auto& cat : categories_)
+        totalH += CAT_H + (int)cat.entries.size() * ROW_H;
+    scroll_offset_ = std::min(scroll_offset_, std::max(0, totalH - listH));
+    update();
+}
+
+
+// ---------------------------------------------------------------------------
+// LayoutManagerOverlay
+// ---------------------------------------------------------------------------
+
+static constexpr int LAYOUT_ROW_H = 52;
+
+LayoutManagerOverlay::LayoutManagerOverlay(TilingContainer* tc, QWidget* parent)
+    : QWidget(parent), tc_(tc) {
+    setAttribute(Qt::WA_NoSystemBackground);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setFocusPolicy(Qt::StrongFocus);
+    hide();
+}
+
+void LayoutManagerOverlay::refresh() {
+    snapshots_.clear();
+    QSettings s("rover_hmi", "layouts");
+    int count = s.value("count", 0).toInt();
+    for (int i = 0; i < count; ++i) {
+        s.beginGroup(QString("layout_%1").arg(i));
+        if (!s.value("deleted", false).toBool()) {
+            LayoutSnapshot snap;
+            snap.name     = s.value("name").toString();
+            snap.saved_at = s.value("saved_at").toString();
+            snap.json     = s.value("json").toString();
+            snapshots_.push_back(snap);
+        }
+        s.endGroup();
+    }
+    focused_idx_   = std::min(focused_idx_, std::max(0, (int)snapshots_.size() - 1));
+    scroll_offset_ = 0;
+}
+
+void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.fillRect(rect(), QColor(0, 0, 0, 210));
+
+    int pw = std::min(680, width()  - 48);
+    int ph = std::min(700, height() - 48);
+    int px = (width()  - pw) / 2;
+    int py = (height() - ph) / 2;
+
+    QPainterPath panelPath;
+    panelPath.addRoundedRect(QRect(px, py, pw, ph), 12, 12);
+    p.fillPath(panelPath, QColor(theme::BgPanel));
+    p.setPen(QPen(QColor(theme::Border), 2));
+    p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
+
+    int margin = 24;
+    // Title
+    p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+    p.setPen(QColor(theme::Text));
+    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
+               Qt::AlignLeft | Qt::AlignVCenter, "Saved Layouts");
+    p.setFont(QFont("monospace", theme::FontSizeSm));
+    p.setPen(QColor(theme::TextDim));
+    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
+               Qt::AlignRight | Qt::AlignVCenter, "S save  D delete  Enter load  Esc close");
+
+    int sepY = py + margin + 34;
+    p.setPen(QPen(QColor(theme::BorderDim), 1));
+    p.drawLine(px + margin, sepY, px + pw - margin, sepY);
+
+    int listX = px + margin;
+    int listY = sepY + 12;
+    int listW = pw - 2 * margin;
+    int listH = ph - (listY - py) - margin;
+
+    if (snapshots_.empty()) {
+        p.setFont(QFont("monospace", theme::FontSize));
+        p.setPen(QColor(theme::TextDim));
+        p.drawText(QRect(listX, listY, listW, listH),
+                   Qt::AlignCenter, "No saved layouts.\nPress S to save the current layout.");
+        return;
+    }
+
+    p.setClipRect(listX, listY, listW, listH);
+    p.translate(0, listY - scroll_offset_);
+
+    int y = 0;
+    for (int i = 0; i < (int)snapshots_.size(); ++i) {
+        const auto& snap = snapshots_[i];
+        bool focused = (i == focused_idx_);
+
+        if (focused) {
+            QColor hi(theme::Green); hi.setAlpha(38);
+            p.fillRect(QRect(listX, y, listW, LAYOUT_ROW_H), hi);
+        }
+
+        // Name
+        p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+        p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
+        p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+                   Qt::AlignLeft | Qt::AlignVCenter, snap.name);
+
+        // Date (right-aligned on name row)
+        p.setFont(QFont("monospace", theme::FontSizeSm));
+        p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
+        p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+                   Qt::AlignRight | Qt::AlignVCenter, snap.saved_at);
+
+        // Separator
+        p.setPen(QPen(QColor(theme::BorderDim), 1));
+        p.drawLine(listX, y + LAYOUT_ROW_H - 1, listX + listW, y + LAYOUT_ROW_H - 1);
+
+        y += LAYOUT_ROW_H;
+    }
+
+    p.resetTransform();
+    p.setClipping(false);
+    int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
+    if (totalH > listH) {
+        int barH = std::max(20, listH * listH / totalH);
+        int barY = listY + (listH - barH) * scroll_offset_ / std::max(1, totalH - listH);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(theme::BorderDim));
+        p.drawRoundedRect(px + pw - margin + 6, barY, 4, barH, 2, 2);
+    }
+}
+
+void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
+    int ph     = std::min(700, height() - 48);
+    int py     = (height() - ph) / 2;
+    int margin = 24;
+    int listY  = py + margin + 34 + 12;
+    int listH  = ph - (listY - py) - margin;
+
+    auto clampScroll = [&]() {
+        int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
+        int maxScroll = std::max(0, totalH - listH);
+        // Keep focused row visible
+        int rowY = focused_idx_ * LAYOUT_ROW_H;
+        if (rowY - scroll_offset_ < 0)
+            scroll_offset_ = rowY;
+        else if (rowY + LAYOUT_ROW_H - scroll_offset_ > listH)
+            scroll_offset_ = rowY + LAYOUT_ROW_H - listH;
+        scroll_offset_ = std::clamp(scroll_offset_, 0, maxScroll);
+    };
+
+    if (ke->key() == Qt::Key_Up) {
+        focused_idx_ = std::max(0, focused_idx_ - 1);
+        clampScroll();
+        update();
+    } else if (ke->key() == Qt::Key_Down) {
+        focused_idx_ = std::min((int)snapshots_.size() - 1, focused_idx_ + 1);
+        clampScroll();
+        update();
+    } else if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+        if (!snapshots_.empty()) tc_->loadLayout(focused_idx_);
+    } else if (ke->key() == Qt::Key_S) {
+        tc_->saveCurrentLayout();
+        refresh();
+        focused_idx_ = std::max(0, (int)snapshots_.size() - 1);
+        update();
+    } else if (ke->key() == Qt::Key_D) {
+        if (!snapshots_.empty()) {
+            tc_->deleteLayout(focused_idx_);
+            refresh();
+            focused_idx_ = std::min(focused_idx_, std::max(0, (int)snapshots_.size() - 1));
+            update();
+        }
+    } else if (ke->key() == Qt::Key_Escape) {
+        tc_->hideLayoutManagerOverlay();
+    }
+}
+
+void LayoutManagerOverlay::wheelEvent(QWheelEvent* we) {
+    int ph     = std::min(700, height() - 48);
+    int py     = (height() - ph) / 2;
+    int margin = 24;
+    int listY  = py + margin + 34 + 12;
+    int listH  = ph - (listY - py) - margin;
+
+    int steps = we->angleDelta().y() / 40;
+    scroll_offset_ -= steps * LAYOUT_ROW_H;
+    int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
+    scroll_offset_ = std::clamp(scroll_offset_, 0, std::max(0, totalH - listH));
+    update();
+}
+
 
 // ---------------------------------------------------------------------------
 // TilingContainer
@@ -219,7 +588,8 @@ TilingContainer::~TilingContainer() {
 void TilingContainer::addPanel(const std::string& title, QWidget* content,
                                 const std::string& layout_hint,
                                 bool default_visible,
-                                std::function<void(bool)> on_toggle) {
+                                std::function<void(bool)> on_toggle,
+                                std::vector<std::pair<std::string,std::string>> module_keybinds) {
     auto* panel = new TilePanel(title, content, this);
 
     connect(panel, &TilePanel::clicked, [this, panel]() { setFocusedPanel(panel); });
@@ -227,7 +597,7 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
         if (drag_mode_ == DragMode::None) setFocusedPanel(panel);
     });
 
-    panels_.push_back({panel, layout_hint, default_visible, on_toggle});
+    panels_.push_back({panel, layout_hint, default_visible, on_toggle, std::move(module_keybinds)});
 }
 
 // Build a vertical (vertical=true) or horizontal column of panels
@@ -353,6 +723,31 @@ void TilingContainer::finalize() {
     tiling_area_->installEventFilter(this);
 
     // -----------------------------------------------------------------------
+    // Overlays
+    // -----------------------------------------------------------------------
+    keybindings_overlay_ = new KeybindingsOverlay(this, window());
+    layout_overlay_      = new LayoutManagerOverlay(this, window());
+
+    base_categories_ = {
+        { "Focus",   { {"Alt + Arrow",          "Focus adjacent panel"  },
+                       {"Alt + Tab",            "Cycle focus"           } }},
+        { "Layout",  { {"Alt + J",              "Toggle split direction" },
+                       {"Alt+Shift+Arrow",      "Resize panel (hold)"   },
+                       {"Alt + X + drag",       "Free resize"           },
+                       {"Alt+Ctrl+Shift+Arrow", "Swap panel"            },
+                       {"Alt + Z + drag",       "Drag to swap"          } }},
+        { "Modules", { {"Alt + 1 … 9",          "Toggle module"         },
+                       {"Sidebar checkbox",     "Toggle visibility"     } }},
+        { "Layouts", { {"Alt + P",              "Open layout manager"   },
+                       {"S",                   "Save current layout"   },
+                       {"D",                   "Delete selected"       },
+                       {"Enter",               "Load selected"         } }},
+        { "Help",    { {"Alt + /",              "Toggle this overlay"   },
+                       {"Escape",              "Dismiss overlay"       } }},
+    };
+    keybindings_overlay_->setCategories(base_categories_);
+
+    // -----------------------------------------------------------------------
     // Keyboard shortcuts
     // -----------------------------------------------------------------------
     auto bind = [this](const char* seq, std::function<void()> fn, bool repeat = false) {
@@ -362,22 +757,45 @@ void TilingContainer::finalize() {
         connect(sc, &QShortcut::activated, fn);
     };
 
-    bind("Alt+Left",  [this]() { focusDirection(-1, 0); });
-    bind("Alt+Right", [this]() { focusDirection(1, 0); });
-    bind("Alt+Up",    [this]() { focusDirection(0, -1); });
-    bind("Alt+Down",  [this]() { focusDirection(0, 1); });
+    bind("Alt+Left",  [this]() { if (anyOverlayVisible()) return; focusDirection(-1, 0); });
+    bind("Alt+Right", [this]() { if (anyOverlayVisible()) return; focusDirection(1, 0); });
+    bind("Alt+Up",    [this]() { if (anyOverlayVisible()) return; focusDirection(0, -1); });
+    bind("Alt+Down",  [this]() { if (anyOverlayVisible()) return; focusDirection(0, 1); });
 
-    bind("Alt+Shift+Right", [this]() { resizeFocused(1, 0); },  true);
-    bind("Alt+Shift+Left",  [this]() { resizeFocused(-1, 0); }, true);
-    bind("Alt+Shift+Up",    [this]() { resizeFocused(0, -1); }, true);
-    bind("Alt+Shift+Down",  [this]() { resizeFocused(0, 1); },  true);
+    bind("Alt+Shift+Right", [this]() { if (anyOverlayVisible()) return; resizeFocused(1, 0); },  true);
+    bind("Alt+Shift+Left",  [this]() { if (anyOverlayVisible()) return; resizeFocused(-1, 0); }, true);
+    bind("Alt+Shift+Up",    [this]() { if (anyOverlayVisible()) return; resizeFocused(0, -1); }, true);
+    bind("Alt+Shift+Down",  [this]() { if (anyOverlayVisible()) return; resizeFocused(0, 1); },  true);
 
-    bind("Alt+Ctrl+Shift+Left",  [this]() { swapWithFocused(-1, 0); });
-    bind("Alt+Ctrl+Shift+Right", [this]() { swapWithFocused(1, 0); });
-    bind("Alt+Ctrl+Shift+Up",    [this]() { swapWithFocused(0, -1); });
-    bind("Alt+Ctrl+Shift+Down",  [this]() { swapWithFocused(0, 1); });
+    bind("Alt+Ctrl+Shift+Left",  [this]() { if (anyOverlayVisible()) return; swapWithFocused(-1, 0); });
+    bind("Alt+Ctrl+Shift+Right", [this]() { if (anyOverlayVisible()) return; swapWithFocused(1, 0); });
+    bind("Alt+Ctrl+Shift+Up",    [this]() { if (anyOverlayVisible()) return; swapWithFocused(0, -1); });
+    bind("Alt+Ctrl+Shift+Down",  [this]() { if (anyOverlayVisible()) return; swapWithFocused(0, 1); });
 
-    bind("Alt+Tab", [this]() { focusNext(); });
+    bind("Alt+Tab", [this]() { if (anyOverlayVisible()) return; focusNext(); });
+
+    bind("Alt+J", [this]() {
+        if (anyOverlayVisible()) return;
+        if (!focused_panel_) return;
+        auto* leaf = getLeafFor(focused_panel_);
+        if (leaf && leaf->parent) {
+            leaf->parent->splitTop = !leaf->parent->splitTop;
+            recalculate();
+        }
+    });
+
+    bind("Alt+/", [this]() { toggleKeybindingsOverlay(); });
+    bind("Alt+P", [this]() { toggleLayoutManagerOverlay(); });
+
+    for (int i = 0; i < 9; ++i) {
+        auto* sc = new QShortcut(QKeySequence(QString("Alt+%1").arg(i + 1)), this);
+        sc->setContext(Qt::ApplicationShortcut);
+        int idx = i;
+        connect(sc, &QShortcut::activated, [this, idx]() {
+            if (anyOverlayVisible()) return;
+            sidebar_->toggleModule(idx);
+        });
+    }
 
     // Focus first visible panel
     for (auto& pi : panels_) {
@@ -505,15 +923,21 @@ void TilingContainer::recalculate() {
 // ---------------------------------------------------------------------------
 
 bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
-    // Recalculate on tiling area resize
+    // Recalculate on tiling area resize; keep overlay geometries in sync
     if (obj == tiling_area_ && event->type() == QEvent::Resize) {
         recalculate();
+        if (keybindings_overlay_ && keybindings_overlay_->isVisible())
+            keybindings_overlay_->setGeometry(tiling_area_->geometry());
+        if (layout_overlay_ && layout_overlay_->isVisible())
+            layout_overlay_->setGeometry(tiling_area_->geometry());
         return false;
     }
 
-    // Enter drag/resize mode
+    // Enter drag/resize mode — blocked while any overlay is open
     if (event->type() == QEvent::KeyPress) {
         auto* ke = static_cast<QKeyEvent*>(event);
+
+        if (anyOverlayVisible()) return false;
 
         if (ke->key() == Qt::Key_Z && (ke->modifiers() & Qt::AltModifier)
             && !ke->isAutoRepeat() && drag_mode_ == DragMode::None) {
@@ -689,6 +1113,217 @@ void TilingContainer::exitDragMode() {
 
     drag_mode_ = DragMode::None;
     unsetCursor();
+}
+
+
+// ---------------------------------------------------------------------------
+// Overlay helpers
+// ---------------------------------------------------------------------------
+
+bool TilingContainer::anyOverlayVisible() const {
+    return (keybindings_overlay_ && keybindings_overlay_->isVisible()) ||
+           (layout_overlay_      && layout_overlay_->isVisible());
+}
+
+void TilingContainer::toggleKeybindingsOverlay() {
+    if (drag_mode_ != DragMode::None) return;
+    if (keybindings_overlay_->isVisible()) {
+        hideKeybindingsOverlay();
+        return;
+    }
+    // Build categories: focused module's keybinds first, then global
+    std::vector<KeybindCategory> cats;
+    if (focused_panel_) {
+        for (auto& pi : panels_) {
+            if (pi.panel == focused_panel_ && !pi.module_keybinds.empty()) {
+                KeybindCategory modCat;
+                modCat.name = QString::fromStdString(focused_panel_->title());
+                for (auto& [k, d] : pi.module_keybinds)
+                    modCat.entries.push_back({QString::fromStdString(k),
+                                              QString::fromStdString(d)});
+                cats.push_back(std::move(modCat));
+                break;
+            }
+        }
+    }
+    cats.insert(cats.end(), base_categories_.begin(), base_categories_.end());
+    keybindings_overlay_->setCategories(std::move(cats));
+
+    keybindings_overlay_->setGeometry(tiling_area_->geometry());
+    keybindings_overlay_->raise();
+    keybindings_overlay_->QWidget::show();
+    keybindings_overlay_->setFocus();
+}
+
+void TilingContainer::hideKeybindingsOverlay() {
+    keybindings_overlay_->hide();
+}
+
+void TilingContainer::toggleLayoutManagerOverlay() {
+    if (drag_mode_ != DragMode::None) return;
+    if (layout_overlay_->isVisible()) {
+        hideLayoutManagerOverlay();
+        return;
+    }
+    layout_overlay_->refresh();
+    layout_overlay_->setGeometry(tiling_area_->geometry());
+    layout_overlay_->raise();
+    layout_overlay_->QWidget::show();
+    layout_overlay_->setFocus();
+}
+
+void TilingContainer::hideLayoutManagerOverlay() {
+    layout_overlay_->hide();
+}
+
+
+// ---------------------------------------------------------------------------
+// Layout persistence
+// ---------------------------------------------------------------------------
+
+QJsonObject TilingContainer::serializeTree(DwindleNode* node) const {
+    QJsonObject obj;
+    obj["isNode"] = node->isNode;
+    if (node->isNode) {
+        obj["splitTop"]   = node->splitTop;
+        obj["splitRatio"] = (double)node->splitRatio;
+        QJsonArray children;
+        if (node->children[0]) children.append(serializeTree(node->children[0]));
+        if (node->children[1]) children.append(serializeTree(node->children[1]));
+        obj["children"] = children;
+    } else {
+        obj["panel"] = node->panel ? QString::fromStdString(node->panel->title()) : "";
+    }
+    return obj;
+}
+
+DwindleNode* TilingContainer::deserializeTree(const QJsonObject& obj) {
+    auto* node = new DwindleNode();
+    all_nodes_.push_back(node);
+    node->isNode = obj["isNode"].toBool();
+    if (node->isNode) {
+        node->splitTop   = obj["splitTop"].toBool();
+        node->splitRatio = (float)obj["splitRatio"].toDouble(1.0);
+        auto children    = obj["children"].toArray();
+        if (children.size() >= 2) {
+            node->children[0] = deserializeTree(children[0].toObject());
+            node->children[1] = deserializeTree(children[1].toObject());
+            node->children[0]->parent = node;
+            node->children[1]->parent = node;
+        }
+    } else {
+        QString title = obj["panel"].toString();
+        for (auto& pi : panels_) {
+            if (QString::fromStdString(pi.panel->title()) == title) {
+                node->panel = pi.panel;
+                break;
+            }
+        }
+    }
+    return node;
+}
+
+void TilingContainer::saveCurrentLayout() {
+    QJsonObject layout;
+    QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
+    layout["name"]     = ts;
+    layout["saved_at"] = ts;
+
+    if (root_) layout["tree"] = serializeTree(root_);
+
+    QJsonArray hidden;
+    for (auto& pi : panels_)
+        if (!pi.panel->isVisible())
+            hidden.append(QString::fromStdString(pi.panel->title()));
+    layout["hidden"] = hidden;
+
+    QSettings s("rover_hmi", "layouts");
+    int count = s.value("count", 0).toInt();
+    s.beginGroup(QString("layout_%1").arg(count));
+    s.setValue("name",     ts);
+    s.setValue("saved_at", ts);
+    s.setValue("json",     QString(QJsonDocument(layout).toJson(QJsonDocument::Compact)));
+    s.setValue("deleted",  false);
+    s.endGroup();
+    s.setValue("count", count + 1);
+}
+
+void TilingContainer::loadLayout(int index) {
+    // index is into the non-deleted snapshot list — resolve to settings key
+    QSettings s("rover_hmi", "layouts");
+    int count = s.value("count", 0).toInt();
+    int found = 0;
+    int settingsIdx = -1;
+    for (int i = 0; i < count; ++i) {
+        s.beginGroup(QString("layout_%1").arg(i));
+        bool deleted = s.value("deleted", false).toBool();
+        s.endGroup();
+        if (!deleted) {
+            if (found == index) { settingsIdx = i; break; }
+            found++;
+        }
+    }
+    if (settingsIdx < 0) return;
+
+    s.beginGroup(QString("layout_%1").arg(settingsIdx));
+    QString json = s.value("json").toString();
+    s.endGroup();
+
+    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+    if (doc.isNull()) return;
+    QJsonObject layout = doc.object();
+
+    // Collect hidden panel titles
+    QSet<QString> hidden_set;
+    for (auto h : layout["hidden"].toArray())
+        hidden_set.insert(h.toString());
+
+    // Clear tree
+    for (auto* n : all_nodes_) delete n;
+    all_nodes_.clear();
+    root_         = nullptr;
+    focused_panel_ = nullptr;
+
+    // Set panel visibility
+    std::vector<std::string> visible_titles;
+    for (auto& pi : panels_) {
+        bool vis = !hidden_set.contains(QString::fromStdString(pi.panel->title()));
+        pi.panel->setVisible(vis);
+        if (vis) visible_titles.push_back(pi.panel->title());
+    }
+    sidebar_->syncCheckboxes(visible_titles);
+
+    // Reconstruct tree
+    if (layout.contains("tree") && !layout["tree"].toObject().isEmpty())
+        root_ = deserializeTree(layout["tree"].toObject());
+
+    recalculate();
+
+    // Focus first visible panel
+    for (auto& pi : panels_) {
+        if (pi.panel->isVisible()) { setFocusedPanel(pi.panel); break; }
+    }
+
+    hideLayoutManagerOverlay();
+}
+
+void TilingContainer::deleteLayout(int index) {
+    QSettings s("rover_hmi", "layouts");
+    int count = s.value("count", 0).toInt();
+    int found = 0;
+    for (int i = 0; i < count; ++i) {
+        s.beginGroup(QString("layout_%1").arg(i));
+        bool deleted = s.value("deleted", false).toBool();
+        if (!deleted) {
+            if (found == index) {
+                s.setValue("deleted", true);
+                s.endGroup();
+                return;
+            }
+            found++;
+        }
+        s.endGroup();
+    }
 }
 
 

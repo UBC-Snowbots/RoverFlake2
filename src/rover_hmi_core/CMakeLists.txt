@@ -4,7 +4,7 @@ project(rover_hmi_core)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(pluginlib REQUIRED)
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -17,7 +17,7 @@ add_library(rover_hmi_core SHARED
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
 )
-target_link_libraries(rover_hmi_core Qt5::Widgets)
+target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
 ament_target_dependencies(rover_hmi_core rclcpp pluginlib)
 
 target_include_directories(rover_hmi_core PUBLIC

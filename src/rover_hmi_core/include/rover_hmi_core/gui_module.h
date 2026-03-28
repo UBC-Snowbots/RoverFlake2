@@ -60,6 +60,10 @@ public:
 
     // Override to receive sidebar toggle events.
     virtual std::function<void(bool)> toggleCallback() { return nullptr; }
+
+    // Override to expose module-specific keybindings shown in the Alt+/ overlay.
+    // Each pair is { keys, description }, e.g. { "Alt+R", "Reset motors" }.
+    virtual std::vector<std::pair<std::string,std::string>> keybindings() const { return {}; }
 };
 
 }  // namespace rover_hmi_core
