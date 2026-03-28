@@ -18,7 +18,7 @@ set(CMAKE_AUTOMOC ON)
 
 include_directories(include)
 
-add_subdirectory(moteus)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
 
 # CAN-FD driver executable
 add_executable(moteus_driver src/moteus_driver_node.cpp)
