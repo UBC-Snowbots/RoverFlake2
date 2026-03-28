@@ -2,19 +2,22 @@
 // Motor command panel — send position/stop commands, hold-to-jog, and
 // multi-axis zero.
 //
+// Lives in arm_hardware_interface because commands are published to
+// /arm/command, which is subscribed by moteus_driver_node in this same package.
+//
 // JogButton implements a hold-to-move pattern: jogPressed fires when the mouse
 // button goes down and triggers a continuous velocity command; jogReleased fires
 // on mouse-up and sends velocity 0 to stop the motor. Standard QPushButton
 // clicked() is not used because it only fires on release.
 //
-// Commands are published to /arm/hmi_log as formatted strings (via log_pub_)
-// so CommandLogModule can display them without any direct coupling between
-// modules.
+// Commands are also published to /arm/hmi_log as formatted strings so
+// CommandLogModule can display them without any direct coupling between modules.
 
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
-#include "arm_types.h"
+#include "motor_addressing.h"
+#include "arm_commands.h"
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -28,7 +31,7 @@
 #include "rover_msgs/msg/arm_command.hpp"
 #include "std_msgs/msg/string.hpp"
 
-constexpr int NUM_ZERO_AXES = 6;
+constexpr int NUM_ZERO_AXES = NUM_MOTORS;
 
 class JogButton : public QPushButton {
     Q_OBJECT

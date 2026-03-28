@@ -9,10 +9,6 @@
 
 #include <pluginlib/class_list_macros.hpp>
 
-static const char* JOINT_NAMES[] = {
-    "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
-};
-
 static const char* FIELD_HEADERS[] = {
     "Kp", "Kd", "Max I (A)", "Max Vel (rev/s)",
     "Pos Min (rev)", "Pos Max (rev)", "Max V (V)", "Gear Ratio"
@@ -46,7 +42,7 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     }
 
     for (int r = 0; r < NUM_MOTORS; r++) {
-        auto* jname = new QLabel(JOINT_NAMES[r]);
+        auto* jname = new QLabel(ARM_JOINTS[r].hardware_name);
         jname->setFont(monoBold);
         jname->setStyleSheet(
             QString("background: %1; color: %2; padding: 8px;")

@@ -29,11 +29,6 @@ void JogButton::mouseReleaseEvent(QMouseEvent* e) {
     emit jogReleased();
 }
 
-static const char* JOINT_NAMES[] = {
-    "1 - Base", "2 - Shoulder", "3 - Elbow",
-    "4 - Wrist Pitch", "5 - Wrist Roll", "6 - End Effector"
-};
-
 QWidget* SendCommandModule::createWidget(QWidget* parent) {
     auto* widget = new QWidget(parent);
     auto* layout = new QVBoxLayout(widget);
@@ -50,8 +45,10 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     grid->addWidget(motor_lbl, 0, 0);
     motor_select_ = new QComboBox();
     motor_select_->setFont(font);
-    for (int i = 0; i < NUM_MOTORS; i++)
-        motor_select_->addItem(JOINT_NAMES[i], i + 1);
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        QString label = QString("%1 - %2").arg(i + 1).arg(ARM_JOINTS[i].hardware_name);
+        motor_select_->addItem(label, i + 1);
+    }
     grid->addWidget(motor_select_, 0, 1, 1, 2);
 
     auto* cmd_lbl = new QLabel("Command:");
@@ -244,13 +241,12 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     auto* zero_checks_row = new QHBoxLayout();
     zero_checks_row->setSpacing(6);
 
-    static const char* ZERO_LABELS[] = { "1", "2", "3", "4", "5", "6" };
     for (int i = 0; i < NUM_ZERO_AXES; i++) {
         auto* col = new QVBoxLayout();
         col->setSpacing(2);
         col->setAlignment(Qt::AlignHCenter);
 
-        auto* name_lbl = new QLabel(ZERO_LABELS[i]);
+        auto* name_lbl = new QLabel(QString::number(i + 1));
         name_lbl->setFont(QFont("monospace", theme::FontSizeSm));
         name_lbl->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
         name_lbl->setAlignment(Qt::AlignHCenter);

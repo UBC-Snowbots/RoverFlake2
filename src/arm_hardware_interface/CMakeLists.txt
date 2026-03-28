@@ -25,15 +25,24 @@ add_executable(moteus_driver src/moteus_driver_node.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
 ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs)
 
-# HMI plugin — separate shared library, does not link the CAN library
+# HMI plugins — separate shared library, does not link the CAN library
 add_library(arm_hardware_interface_hmi SHARED
     src/motor_status_module.cpp
+    src/plotting_module.cpp
+    src/motor_config_module.cpp
+    src/send_command_module.cpp
+    src/command_log_module.cpp
+    include/motor_status_module.h
+    include/plotting_module.h
+    include/motor_config_module.h
+    include/send_command_module.h
+    include/command_log_module.h
 )
 target_link_libraries(arm_hardware_interface_hmi
     Qt5::Widgets
     rover_hmi_core::rover_hmi_core
 )
-ament_target_dependencies(arm_hardware_interface_hmi rclcpp rover_msgs pluginlib)
+ament_target_dependencies(arm_hardware_interface_hmi rclcpp rover_msgs std_msgs pluginlib)
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 if(BUILD_TESTING)
