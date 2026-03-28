@@ -2,8 +2,8 @@
 // gui_module.h — shared plugin interface for all HMI modules
 //
 // This header lives in rover_hmi_core so that any package in the workspace can
-// depend on it without pulling in rover_hmi_arm.  pluginlib uses GuiModule as
-// the base class for runtime module discovery: the host (moteus_gui.cpp) calls
+// depend on it.  pluginlib uses GuiModule as the base class for runtime module
+// discovery: the host (hmi_host.cpp, also in rover_hmi_core) calls
 // ClassLoader<GuiModule> and receives concrete subclasses from any package that
 // has registered them via a plugins.xml descriptor.
 //
@@ -11,7 +11,7 @@
 //   1. Subclass GuiModule and implement the pure virtual methods below.
 //   2. Register the class in your package's plugins.xml.
 //   3. Add pluginlib_export_plugin_description_file() to your CMakeLists.txt.
-//   No changes to rover_hmi_arm are required — the host discovers it
+//   No changes to rover_hmi_core are required — the host discovers it
 //   automatically at startup.
 // =============================================================================
 
@@ -28,7 +28,7 @@ namespace rover_hmi_core {
 
 // Base class for all HMI modules.
 // Subclass this, implement the pure virtual methods, register via pluginlib.
-// The HMI host discovers and loads modules at runtime — no changes to rover_hmi_arm needed.
+// The HMI host (rover_hmi executable) discovers and loads modules at runtime — no changes to this package needed.
 class GuiModule {
 public:
     virtual ~GuiModule() = default;
