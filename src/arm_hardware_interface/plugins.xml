@@ -1,0 +1,7 @@
+<library path="arm_hardware_interface_hmi">
+  <class name="arm_hardware_interface/MotorStatusModule"
+         type="MotorStatusModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>6-joint motor telemetry table (live CAN-FD feedback)</description>
+  </class>
+</library>

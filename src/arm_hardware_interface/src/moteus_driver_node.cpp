@@ -33,11 +33,11 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     configureMotors();
 
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100),
+        std::chrono::milliseconds(10),
         std::bind(&MoteusDriverNode::poll, this));
 
     RCLCPP_INFO(this->get_logger(),
-        "Moteus driver started: polling %d motors at 10 Hz", NUM_MOTORS);
+        "Moteus driver started: polling %d motors at 100 Hz", NUM_MOTORS);
 }
 
 

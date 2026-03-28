@@ -10,14 +10,31 @@ find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rover_hmi_core REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+
+set(CMAKE_AUTOMOC ON)
 
 include_directories(include)
 
 add_subdirectory(moteus)
 
+# CAN-FD driver executable
 add_executable(moteus_driver src/moteus_driver_node.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
 ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs)
+
+# HMI plugin — separate shared library, does not link the CAN library
+add_library(arm_hardware_interface_hmi SHARED
+    src/motor_status_module.cpp
+)
+target_link_libraries(arm_hardware_interface_hmi
+    Qt5::Widgets
+    rover_hmi_core::rover_hmi_core
+)
+ament_target_dependencies(arm_hardware_interface_hmi rclcpp rover_msgs pluginlib)
+pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -29,9 +46,13 @@ endif()
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY include/ DESTINATION include/)
 
-install(
-  TARGETS moteus_driver
-  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS moteus_driver
+    DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS arm_hardware_interface_hmi
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin)
 
 ament_export_include_directories(include)
 
