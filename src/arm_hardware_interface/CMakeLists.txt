@@ -13,7 +13,7 @@ find_package(sensor_msgs REQUIRED)
 
 include_directories(include)
 
-add_subdirectory(moteus)
+add_subdirectory(../external_pkgs/moteus moteus_build)
 
 add_executable(moteus_driver src/moteus_driver_node.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
