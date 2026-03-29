@@ -19,6 +19,8 @@ jobs:
          ls $ROVERFLAKE_ROOT
          source /opt/ros/humble/setup.bash
          echo $ROS_DISTRO
+         colcon build --symlink-install --packages-select rover_msgs
+         source install/setup.bash
          colcon build --symlink-install --packages-skip sweeppy  
      - name: Notify Discord (success)
        if: ${{ success() }}
