@@ -27,6 +27,7 @@ class RvizModule : public QObject, public rover_hmi_core::GuiModule {
 public:
     std::string name() const override { return "RViz Simulation"; }
     std::string layoutHint() const override { return "right"; }
+    std::string sectionName() const override { return "Arm"; }
     QWidget* createWidget(QWidget* parent) override;
     void start() override {}
     void stop() override;

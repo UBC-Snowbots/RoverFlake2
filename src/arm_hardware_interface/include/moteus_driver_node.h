@@ -42,6 +42,7 @@
 #include "rover_msgs/msg/moteus_arm_status.hpp"
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
+#include "rover_msgs/msg/moteus_config_update.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
@@ -67,6 +68,14 @@ private:
     // ROS subscription callback: fills pending_cmds_[] (mutex-protected)
     void commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
+    // ROS subscription callback: applies a single register update to one motor
+    // via DiagnosticCommand("conf set ...") and updates configs_[] in memory.
+    void configUpdateCallback(const rover_msgs::msg::MoteusConfigUpdate::SharedPtr msg);
+
+    // Apply a (register, value) pair to the in-memory MotorConfig for motor idx.
+    // Keeps configs_[] consistent so subsequent feedback messages reflect edits.
+    void applyConfigToMemory(int idx, const std::string& reg, float val);
+
     // Safety monitoring (called inside poll, only logs on state changes)
     void checkFaults();
     void checkAlerts();
@@ -84,10 +93,11 @@ private:
     // ROS interfaces
     // -------------------------------------------------------------------------
     rclcpp::TimerBase::SharedPtr                                      timer_;
-    rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr    feedback_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr        joint_state_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr               config_log_pub_;
-    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr      command_sub_;
+    rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr         feedback_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr             joint_state_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                    config_log_pub_;
+    rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr   config_update_sub_;
 
     // -------------------------------------------------------------------------
     // Configuration (loaded from motor_config.h at construction)

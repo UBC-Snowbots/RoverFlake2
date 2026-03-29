@@ -39,7 +39,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BldcServoConfig.msg"
   "msg/BldcServoStatus.msg"
   "msg/MoteusArmStatus.msg"
-  
+  "msg/MoteusConfigUpdate.msg"
+
   DEPENDENCIES std_msgs
  )
 

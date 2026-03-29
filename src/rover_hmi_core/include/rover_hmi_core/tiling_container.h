@@ -186,24 +186,52 @@ private:
 
 
 // ---------------------------------------------------------------------------
-// ModuleSidebar — checkbox list that controls panel visibility
+// ModuleSidebar — section-grouped checkbox list that controls panel visibility
+//
+//   Modules are organised into named sections (e.g. "Arm", "Science").
+//   Alt+1..9 applies only to modules in the *active* section.
+//   Alt+[ / Alt+] cycle through sections.
 // ---------------------------------------------------------------------------
 class ModuleSidebar : public QWidget {
     Q_OBJECT
 public:
     explicit ModuleSidebar(QWidget* parent = nullptr);
-    void addModule(const std::string& name, TilePanel* panel, bool default_visible = true,
+
+    // Add a new section heading.  Call before addModule() for that section.
+    void addSection(const std::string& name);
+
+    // Add a module to the most-recently-added section.
+    void addModule(const std::string& name, TilePanel* panel,
+                   bool default_visible = true,
                    std::function<void(bool)> on_toggle = nullptr);
-    void toggleModule(int index);                                       // 0-based, bounds-checked
-    void syncCheckboxes(const std::vector<std::string>& visible_titles); // silent update for layout load
+
+    // Toggle the Nth module (0-based) within the currently active section.
+    void toggleModule(int index);
+
+    // Cycle the active section forward (+1) or backward (-1).
+    void switchSection(int delta);
+
+    // Silent checkbox update used when loading a saved layout.
+    void syncCheckboxes(const std::vector<std::string>& visible_titles);
 
 protected:
     void paintEvent(QPaintEvent*) override;
 
 private:
+    void setActiveSection(int idx);
+    void refreshIndexLabels();
+
     QVBoxLayout* layout_;
-    struct Entry { QCheckBox* check; TilePanel* panel; };
-    std::vector<Entry> entries_;
+    QLabel*      section_indicator_ = nullptr;  // shows "▸ SECTION" in header
+
+    struct Entry { QCheckBox* check; TilePanel* panel; QLabel* idx_lbl; };
+    struct Section {
+        std::string name;
+        QLabel*           header = nullptr;
+        std::vector<Entry> entries;
+    };
+    std::vector<Section> sections_;
+    int active_section_ = 0;
 };
 
 
@@ -233,7 +261,8 @@ public:
                   const std::string& layout_hint = "right",
                   bool default_visible = true,
                   std::function<void(bool)> on_toggle = nullptr,
-                  std::vector<std::pair<std::string,std::string>> module_keybinds = {});
+                  std::vector<std::pair<std::string,std::string>> module_keybinds = {},
+                  const std::string& section = "General");
 
     // Build the initial layout (call after all addPanel calls)
     void finalize();
@@ -285,6 +314,7 @@ private:
     struct PanelInfo {
         TilePanel* panel;
         std::string hint;
+        std::string section;
         bool default_visible = true;
         std::function<void(bool)> on_toggle;
         std::vector<std::pair<std::string,std::string>> module_keybinds;

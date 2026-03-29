@@ -27,6 +27,7 @@ class PlottingModule : public rover_hmi_core::GuiModule {
 public:
     std::string name() const override { return "Plots"; }
     std::string layoutHint() const override { return "right"; }
+    std::string sectionName() const override { return "Arm"; }
     QWidget* createWidget(QWidget* parent) override;
     void setNode(rclcpp::Node::SharedPtr node) override;
     void start() override {}

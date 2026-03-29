@@ -64,6 +64,11 @@ public:
     // Override to expose module-specific keybindings shown in the Alt+/ overlay.
     // Each pair is { keys, description }, e.g. { "Alt+R", "Reset motors" }.
     virtual std::vector<std::pair<std::string,std::string>> keybindings() const { return {}; }
+
+    // Section this module belongs to in the sidebar.
+    // Modules sharing a section name are grouped together.
+    // Alt+1..9 applies only to modules in the currently active section.
+    virtual std::string sectionName() const { return "General"; }
 };
 
 }  // namespace rover_hmi_core

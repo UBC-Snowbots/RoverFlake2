@@ -20,6 +20,7 @@ class CommandLogModule : public rover_hmi_core::GuiModule {
 public:
     std::string name() const override { return "Command Log"; }
     std::string layoutHint() const override { return "bottom"; }
+    std::string sectionName() const override { return "Arm"; }
     QWidget* createWidget(QWidget* parent) override;
     void setNode(rclcpp::Node::SharedPtr node) override;
     void start() override {}

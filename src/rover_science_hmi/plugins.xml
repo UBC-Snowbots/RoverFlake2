@@ -1,0 +1,7 @@
+<library path="rover_science_hmi">
+  <class name="rover_science_hmi/ScienceModule"
+         type="ScienceModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science subsystem control: sequences, valves, pump, carousel, dispensing, OSF, and utilities</description>
+  </class>
+</library>

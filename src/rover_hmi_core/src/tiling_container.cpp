@@ -159,13 +159,19 @@ void DragOverlay::paintEvent(QPaintEvent*) {
 ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     setFixedWidth(SIDEBAR_WIDTH);
     layout_ = new QVBoxLayout(this);
-    layout_->setContentsMargins(12, 16, 12, 16);
-    layout_->setSpacing(6);
+    layout_->setContentsMargins(10, 12, 10, 12);
+    layout_->setSpacing(4);
 
     auto* title = new QLabel("Modules");
     title->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
     title->setStyleSheet(QString("color: %1;").arg(theme::Text));
     layout_->addWidget(title);
+
+    section_indicator_ = new QLabel("");
+    section_indicator_->setFont(QFont("monospace", theme::FontSizeSm));
+    section_indicator_->setStyleSheet(
+        QString("color: %1; padding-bottom: 4px;").arg(theme::Cyan));
+    layout_->addWidget(section_indicator_);
 
     auto* sep = new QWidget();
     sep->setFixedHeight(1);
@@ -175,27 +181,134 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     layout_->addStretch();
 }
 
-void ModuleSidebar::addModule(const std::string& name, TilePanel* panel, bool default_visible,
-                              std::function<void(bool)> on_toggle) {
+void ModuleSidebar::addSection(const std::string& name) {
+    // Section separator + header
+    if (!sections_.empty()) {
+        auto* line = new QWidget();
+        line->setFixedHeight(1);
+        line->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
+        layout_->insertWidget(layout_->count() - 1, line);
+    }
+
+    auto* hdr = new QLabel(QString::fromStdString(name).toUpper());
+    hdr->setFont(QFont("monospace", theme::FontSizeSm, QFont::Bold));
+    hdr->setStyleSheet(
+        QString("color: %1; padding: 6px 2px 2px 2px; letter-spacing: 1px;")
+        .arg(theme::BorderDim));  // dim initially; setActiveSection brightens it
+    layout_->insertWidget(layout_->count() - 1, hdr);
+
+    sections_.push_back({ name, hdr, {} });
+}
+
+void ModuleSidebar::addModule(const std::string& name, TilePanel* panel,
+                               bool default_visible,
+                               std::function<void(bool)> on_toggle) {
+    if (sections_.empty()) addSection("General");
+    auto& sec = sections_.back();
+
+    // Index label — shows "[N]" when this section is active
+    auto* idx_lbl = new QLabel("");
+    idx_lbl->setFont(QFont("monospace", theme::FontSizeSm));
+    idx_lbl->setStyleSheet(QString("color: %1; min-width: 22px;").arg(theme::TextDim));
+    idx_lbl->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
     auto* check = new QCheckBox(QString::fromStdString(name));
     check->setChecked(default_visible);
     panel->setVisible(default_visible);
     check->setFont(QFont("monospace", theme::FontSize));
     check->setStyleSheet(
-        QString("QCheckBox { color: %1; spacing: 8px; }"
-                "QCheckBox::indicator { width: 16px; height: 16px; }"
+        QString("QCheckBox { color: %1; spacing: 6px; }"
+                "QCheckBox::indicator { width: 14px; height: 14px; }"
                 "QCheckBox::indicator:checked { background: %2; border: 1px solid %3; border-radius: 3px; }"
                 "QCheckBox::indicator:unchecked { background: %4; border: 1px solid %5; border-radius: 3px; }")
         .arg(theme::Text).arg(theme::Green).arg(theme::Border)
         .arg(theme::Bg).arg(theme::BorderDim));
 
     QObject::connect(check, &QCheckBox::toggled, [on_toggle](bool visible) {
-        if (on_toggle)
-            on_toggle(visible);
+        if (on_toggle) on_toggle(visible);
     });
 
-    layout_->insertWidget(layout_->count() - 1, check);
-    entries_.push_back({check, panel});
+    // Row: [idx_lbl] [check]
+    auto* row = new QHBoxLayout();
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(4);
+    row->addWidget(idx_lbl);
+    row->addWidget(check, 1);
+
+    auto* row_w = new QWidget();
+    row_w->setLayout(row);
+    layout_->insertWidget(layout_->count() - 1, row_w);
+
+    sec.entries.push_back({ check, panel, idx_lbl });
+
+    // Refresh labels for the active section after adding
+    if ((int)(sections_.size() - 1) == active_section_)
+        refreshIndexLabels();
+}
+
+void ModuleSidebar::setActiveSection(int idx) {
+    if (idx < 0 || idx >= (int)sections_.size()) return;
+
+    // Dim the old header
+    if (active_section_ < (int)sections_.size())
+        sections_[active_section_].header->setStyleSheet(
+            QString("color: %1; padding: 6px 2px 2px 2px; letter-spacing: 1px;")
+            .arg(theme::BorderDim));
+
+    active_section_ = idx;
+
+    // Brighten the new header
+    sections_[active_section_].header->setStyleSheet(
+        QString("color: %1; padding: 6px 2px 2px 2px; letter-spacing: 1px; font-weight: bold;")
+        .arg(theme::Cyan));
+
+    section_indicator_->setText(
+        QString("▸ %1  (Alt+[/])").arg(
+            QString::fromStdString(sections_[active_section_].name).toUpper()));
+
+    refreshIndexLabels();
+}
+
+void ModuleSidebar::refreshIndexLabels() {
+    for (int s = 0; s < (int)sections_.size(); s++) {
+        bool is_active = (s == active_section_);
+        auto& sec = sections_[s];
+        for (int i = 0; i < (int)sec.entries.size(); i++) {
+            auto& e = sec.entries[i];
+            if (is_active && i < 9) {
+                e.idx_lbl->setText(QString("[%1]").arg(i + 1));
+                e.idx_lbl->setStyleSheet(
+                    QString("color: %1; min-width: 22px;").arg(theme::TextDim));
+            } else {
+                e.idx_lbl->setText("");
+            }
+        }
+    }
+}
+
+void ModuleSidebar::switchSection(int delta) {
+    if (sections_.empty()) return;
+    int n = (int)sections_.size();
+    setActiveSection((active_section_ + delta % n + n) % n);
+}
+
+void ModuleSidebar::toggleModule(int index) {
+    if (active_section_ < 0 || active_section_ >= (int)sections_.size()) return;
+    auto& entries = sections_[active_section_].entries;
+    if (index < 0 || index >= (int)entries.size()) return;
+    entries[index].check->toggle();
+}
+
+void ModuleSidebar::syncCheckboxes(const std::vector<std::string>& visible_titles) {
+    for (auto& sec : sections_) {
+        for (auto& e : sec.entries) {
+            bool vis = std::find(visible_titles.begin(), visible_titles.end(),
+                                 e.panel->title()) != visible_titles.end();
+            e.check->blockSignals(true);
+            e.check->setChecked(vis);
+            e.check->blockSignals(false);
+        }
+    }
 }
 
 void ModuleSidebar::paintEvent(QPaintEvent*) {
@@ -203,21 +316,6 @@ void ModuleSidebar::paintEvent(QPaintEvent*) {
     p.fillRect(rect(), QColor("#080808"));
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(width() - 1, 0, width() - 1, height());
-}
-
-void ModuleSidebar::toggleModule(int index) {
-    if (index < 0 || index >= (int)entries_.size()) return;
-    entries_[index].check->toggle();
-}
-
-void ModuleSidebar::syncCheckboxes(const std::vector<std::string>& visible_titles) {
-    for (auto& e : entries_) {
-        bool vis = std::find(visible_titles.begin(), visible_titles.end(),
-                             e.panel->title()) != visible_titles.end();
-        e.check->blockSignals(true);
-        e.check->setChecked(vis);
-        e.check->blockSignals(false);
-    }
 }
 
 
@@ -589,7 +687,8 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
                                 const std::string& layout_hint,
                                 bool default_visible,
                                 std::function<void(bool)> on_toggle,
-                                std::vector<std::pair<std::string,std::string>> module_keybinds) {
+                                std::vector<std::pair<std::string,std::string>> module_keybinds,
+                                const std::string& section) {
     auto* panel = new TilePanel(title, content, this);
 
     connect(panel, &TilePanel::clicked, [this, panel]() { setFocusedPanel(panel); });
@@ -597,7 +696,7 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
         if (drag_mode_ == DragMode::None) setFocusedPanel(panel);
     });
 
-    panels_.push_back({panel, layout_hint, default_visible, on_toggle, std::move(module_keybinds)});
+    panels_.push_back({panel, layout_hint, section, default_visible, on_toggle, std::move(module_keybinds)});
 }
 
 // Build a vertical (vertical=true) or horizontal column of panels
@@ -643,26 +742,40 @@ void TilingContainer::finalize() {
     tiling_area_ = new QWidget(this);
     outer_layout->addWidget(tiling_area_, 1);
 
-    // Wire up sidebar toggles: each calls dwindleAdd/Remove + any module callback
+    // Wire up sidebar toggles: grouped by section
+    // Collect unique sections in insertion order
+    std::vector<std::string> section_order;
     for (auto& pi : panels_) {
-        pi.panel->setParent(tiling_area_);
+        const std::string& sec = pi.section.empty() ? "General" : pi.section;
+        if (std::find(section_order.begin(), section_order.end(), sec) == section_order.end())
+            section_order.push_back(sec);
+    }
 
-        auto* self = this;
-        auto* panel = pi.panel;
-        auto module_toggle = pi.on_toggle;
+    for (const auto& sec_name : section_order) {
+        sidebar_->addSection(sec_name);
+        for (auto& pi : panels_) {
+            const std::string& sec = pi.section.empty() ? "General" : pi.section;
+            if (sec != sec_name) continue;
 
-        std::function<void(bool)> vis_cb = [self, panel, module_toggle](bool visible) {
-            if (module_toggle) module_toggle(visible);
-            if (visible) {
-                panel->setVisible(true);
-                self->dwindleAdd(panel);
-            } else {
-                self->dwindleRemove(panel);
-                panel->setVisible(false);
-            }
-        };
+            pi.panel->setParent(tiling_area_);
 
-        sidebar_->addModule(pi.panel->title(), pi.panel, pi.default_visible, vis_cb);
+            auto* self = this;
+            auto* panel = pi.panel;
+            auto module_toggle = pi.on_toggle;
+
+            std::function<void(bool)> vis_cb = [self, panel, module_toggle](bool visible) {
+                if (module_toggle) module_toggle(visible);
+                if (visible) {
+                    panel->setVisible(true);
+                    self->dwindleAdd(panel);
+                } else {
+                    self->dwindleRemove(panel);
+                    panel->setVisible(false);
+                }
+            };
+
+            sidebar_->addModule(pi.panel->title(), pi.panel, pi.default_visible, vis_cb);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -736,8 +849,10 @@ void TilingContainer::finalize() {
                        {"Alt + X + drag",       "Free resize"           },
                        {"Alt+Ctrl+Shift+Arrow", "Swap panel"            },
                        {"Alt + Z + drag",       "Drag to swap"          } }},
-        { "Modules", { {"Alt + 1 … 9",          "Toggle module"         },
-                       {"Sidebar checkbox",     "Toggle visibility"     } }},
+        { "Modules", { {"Alt + 1 … 9",          "Toggle module (active section)" },
+                       {"Alt + [",             "Previous section"               },
+                       {"Alt + ]",             "Next section"                   },
+                       {"Sidebar checkbox",    "Toggle visibility"              } }},
         { "Layouts", { {"Alt + P",              "Open layout manager"   },
                        {"S",                   "Save current layout"   },
                        {"D",                   "Delete selected"       },
@@ -786,6 +901,9 @@ void TilingContainer::finalize() {
 
     bind("Alt+/", [this]() { toggleKeybindingsOverlay(); });
     bind("Alt+P", [this]() { toggleLayoutManagerOverlay(); });
+
+    bind("Alt+[", [this]() { if (anyOverlayVisible()) return; sidebar_->switchSection(-1); });
+    bind("Alt+]", [this]() { if (anyOverlayVisible()) return; sidebar_->switchSection(1); });
 
     for (int i = 0; i < 9; ++i) {
         auto* sc = new QShortcut(QKeySequence(QString("Alt+%1").arg(i + 1)), this);

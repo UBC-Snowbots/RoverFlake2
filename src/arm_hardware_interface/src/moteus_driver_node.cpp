@@ -17,6 +17,10 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     for (int id = 1; id <= NUM_MOTORS; id++) {
         mot::Controller::Options opts;
         opts.id = id;
+        // Request q_current and power in every reply frame so the HMI can
+        // display phase current and instantaneous power draw per motor.
+        opts.query_format.q_current = mot::kFloat;
+        opts.query_format.power     = mot::kFloat;
         controllers_.push_back(std::make_shared<mot::Controller>(opts));
     }
 
@@ -29,6 +33,10 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     command_sub_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos,
         std::bind(&MoteusDriverNode::commandCallback, this, std::placeholders::_1));
+
+    config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
+        "/arm/config_update", qos,
+        std::bind(&MoteusDriverNode::configUpdateCallback, this, std::placeholders::_1));
 
     configureMotors();
 
@@ -265,6 +273,8 @@ void MoteusDriverNode::poll() {
         t.torque      = r.torque;
         t.voltage     = r.voltage;
         t.temperature = r.temperature;
+        t.q_current   = std::isnan(r.q_current) ? 0.0f : static_cast<float>(r.q_current);
+        t.power       = std::isnan(r.power)     ? 0.0f : static_cast<float>(r.power);
         t.mode        = static_cast<int>(r.mode);
         t.fault       = static_cast<int>(r.fault);
         t.connected   = true;
@@ -292,17 +302,23 @@ void MoteusDriverNode::poll() {
         cfg.max_current_amps  = c.max_current_A;
         cfg.max_voltage_volts = c.max_voltage;
         cfg.max_power_watts   = c.max_power_W;
+        cfg.cmd_timeout_s     = c.def_timeout;
         cfg.gear_reduction    = c.gear_reduction;
 
         auto& t = telem_[i];
         auto& s = status_msg.status[i];
-        s.curr_position      = t.position;
-        s.curr_velocity      = t.velocity;
-        s.curr_torque        = t.torque;
-        s.curr_voltage_volts = t.voltage;
+        s.curr_position        = t.position;
+        s.curr_velocity        = t.velocity;
+        s.curr_torque          = t.torque;
+        s.curr_voltage_volts   = t.voltage;
+        s.curr_current_amps    = t.q_current;
+        s.curr_power_watts     = t.power;
         s.driver_temp_degreesc = t.temperature;
-        s.moteus_mode        = static_cast<int16_t>(t.mode);
-        s.moteus_fault       = static_cast<int16_t>(t.fault);
+        s.moteus_mode          = static_cast<int16_t>(t.mode);
+        s.moteus_fault         = static_cast<int16_t>(t.fault);
+        // Desired setpoints from the last command sent to this motor
+        s.des_position = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].position : NAN);
+        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);
     }
     feedback_pub_->publish(status_msg);
 
@@ -399,6 +415,69 @@ void MoteusDriverNode::checkAlerts() {
             position_alert_raised_[i] = false;
         }
     }
+}
+
+
+// ---------------------------------------------------------------------------
+// Real-time config update — HMI publishes to /arm/config_update
+//
+// Applies a single "conf set <register> <value>" to the requested motor and
+// updates the in-memory MotorConfig so subsequent feedback messages reflect
+// the change.  The moteus firmware applies the value immediately (RAM only —
+// not persisted to flash unless you separately run "conf write").
+// ---------------------------------------------------------------------------
+
+void MoteusDriverNode::configUpdateCallback(
+        const rover_msgs::msg::MoteusConfigUpdate::SharedPtr msg)
+{
+    int idx = msg->motor_id;
+    if (idx < 0 || idx >= NUM_MOTORS) {
+        RCLCPP_WARN(this->get_logger(),
+            "configUpdate: motor_id %d out of range (0..%d)", idx, NUM_MOTORS - 1);
+        return;
+    }
+    if (msg->register_name.empty() || std::isnan(msg->value)) return;
+
+    const std::string val_str = std::to_string(msg->value);
+    const std::string cmd = "conf set " + msg->register_name + " " + val_str;
+
+    RCLCPP_INFO(this->get_logger(),
+        "configUpdate motor %d (%s): %s = %s",
+        idx + 1, ARM_JOINTS[idx].hardware_name,
+        msg->register_name.c_str(), val_str.c_str());
+    publishLog("# conf motor " + std::to_string(idx + 1)
+        + " (" + ARM_JOINTS[idx].hardware_name + "): "
+        + msg->register_name + " = " + val_str);
+
+    controllers_[idx]->DiagnosticCommand(cmd);
+
+    // For max_velocity, the moteus firmware has two registers that must both
+    // be updated to cap velocity consistently during motion profile planning.
+    if (msg->register_name == "servo.max_velocity") {
+        controllers_[idx]->DiagnosticCommand(
+            "conf set servo.default_velocity_limit " + val_str);
+    } else if (msg->register_name == "servo.default_velocity_limit") {
+        controllers_[idx]->DiagnosticCommand(
+            "conf set servo.max_velocity " + val_str);
+    }
+
+    applyConfigToMemory(idx, msg->register_name, msg->value);
+}
+
+void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, float val) {
+    auto& c = configs_[idx];
+    if      (reg == "servo.pid_position.kp")        c.kp              = val;
+    else if (reg == "servo.pid_position.ki")        c.ki              = val;
+    else if (reg == "servo.pid_position.kd")        c.kd              = val;
+    else if (reg == "servo.max_current_A")          c.max_current_A   = val;
+    else if (reg == "servo.max_velocity"
+          || reg == "servo.default_velocity_limit") c.max_velocity    = val;
+    else if (reg == "servo.default_accel_limit")    c.max_acceleration = val;
+    else if (reg == "servopos.position_min")        c.position_min    = val;
+    else if (reg == "servopos.position_max")        c.position_max    = val;
+    else if (reg == "servo.max_voltage")            c.max_voltage     = val;
+    else if (reg == "servo.max_power_W")            c.max_power_W     = val;
+    else if (reg == "servo.default_timeout_s")      c.def_timeout     = val;
 }
 
 
