@@ -14,7 +14,10 @@ jobs:
       - name: Setup Everything
         run: |
           ./setup_scripts/setup_everything_common.sh
-
+      - name: Debug info
+        run: |
+          colcon version-check
+          cmake --version
       - name: Build
         run: |
           source /opt/ros/humble/setup.bash
