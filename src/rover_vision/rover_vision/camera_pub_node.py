@@ -96,7 +96,7 @@ class CameraPublisher(Node):
     def detect_available_cameras(self) -> List[str]:
         """Detect standard USB cameras, excluding RealSense devices"""
         available_cameras = []
-        max_tested = 10
+        max_tested = 12
         
         for i in range(max_tested):
             cap = cv2.VideoCapture(f'/dev/video{i}')

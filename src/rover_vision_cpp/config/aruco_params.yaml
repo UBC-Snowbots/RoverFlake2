@@ -1,0 +1,5 @@
+marker_qr_detection:
+  ros__parameters:
+    camera_topic: "/camera/color/image_raw"
+    draw_markers: true
+    camera: 1
