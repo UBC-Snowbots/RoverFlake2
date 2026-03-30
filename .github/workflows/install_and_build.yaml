@@ -21,7 +21,7 @@ jobs:
       - name: Build
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --symlink-install --packages-skip sweeppy
+          colcon build --symlink-install --packages-skip sweeppy --parallel-workers 1
           source install/setup.bash
 
       - name: Notify Discord (success)
