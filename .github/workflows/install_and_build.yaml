@@ -8,9 +8,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Environment setup
+      - name: Github setup
         run: |
           echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Setup Everything
+        run: |
           ./setup_scripts/setup_everything_common.sh
 
       - name: Build
