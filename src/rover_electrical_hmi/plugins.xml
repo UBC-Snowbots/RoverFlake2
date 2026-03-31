@@ -1,0 +1,32 @@
+<library path="rover_electrical_hmi">
+  <class name="rover_electrical_hmi/PowerSummaryModule"
+         type="PowerSummaryModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Live battery and module power summary with CSV recording</description>
+  </class>
+  <class name="rover_electrical_hmi/DrivetrainStopModule"
+         type="DrivetrainStopModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Remote stop and release control for the drivetrain</description>
+  </class>
+  <class name="rover_electrical_hmi/WheelTelemetryModule"
+         type="WheelTelemetryModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-wheel speed, torque, temperature, and power telemetry table</description>
+  </class>
+  <class name="rover_electrical_hmi/LightingModule"
+         type="LightingModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+  </class>
+  <class name="rover_electrical_hmi/VawTreeModule"
+         type="VawTreeModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Voltage, amperage, and wattage tree view of power and drivetrain systems</description>
+  </class>
+  <class name="rover_electrical_hmi/PowerTimelineModule"
+         type="PowerTimelineModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Rolling power timeline canvas for battery and total power/current series</description>
+  </class>
+</library>

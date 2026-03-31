@@ -4,4 +4,14 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Science subsystem control: sequences, valves, pump, carousel, dispensing, OSF, and utilities</description>
   </class>
+  <class name="rover_science_hmi/SciencePipelineModule"
+         type="SciencePipelineModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science pipeline timeline: 4-step workflow tracker from drilling to analysis</description>
+  </class>
+  <class name="rover_science_hmi/ScienceAnalysisModule"
+         type="ScienceAnalysisModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
+  </class>
 </library>

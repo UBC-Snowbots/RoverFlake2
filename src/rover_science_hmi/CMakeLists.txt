@@ -19,6 +19,10 @@ include_directories(include)
 add_library(rover_science_hmi SHARED
     src/science_module.cpp
     include/science_module.h
+    src/science_pipeline_module.cpp
+    include/science_pipeline_module.h
+    src/science_analysis_module.cpp
+    include/science_analysis_module.h
 )
 target_link_libraries(rover_science_hmi
     Qt5::Widgets
