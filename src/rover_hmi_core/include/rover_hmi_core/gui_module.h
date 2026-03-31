@@ -28,7 +28,7 @@ namespace rover_hmi_core {
 
 // Base class for all HMI modules.
 // Subclass this, implement the pure virtual methods, register via pluginlib.
-// The HMI host discovers and loads modules at runtime — no changes to rover_hmi_arm needed.
+// The HMI host (rover_hmi executable) discovers and loads modules at runtime — no changes to this package needed.
 class GuiModule {
 public:
     virtual ~GuiModule() = default;
