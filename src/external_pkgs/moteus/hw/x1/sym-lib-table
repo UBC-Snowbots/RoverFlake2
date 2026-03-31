@@ -1,4 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "moteus")(type "KiCad")(uri "${KIPRJMOD}/moteus.kicad_sym")(options "")(descr ""))
-)

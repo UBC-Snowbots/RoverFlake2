@@ -9,4 +9,4 @@
 	url = https://github.com/catchorg/Catch2.git
 [submodule "src/external_pkgs/moteus"]
 	path = src/external_pkgs/moteus
-	url = https://github.com/mjbots/moteus.git
+	url = git@github.com:mjbots/moteus.git
