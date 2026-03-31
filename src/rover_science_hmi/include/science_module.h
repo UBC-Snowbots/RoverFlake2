@@ -50,6 +50,7 @@ private:
     QPushButton* ag_btn_         = nullptr;
     QPushButton* light1_btn_     = nullptr;
     QPushButton* light2_btn_     = nullptr;
+    QPushButton* light3_btn_     = nullptr;
 
     std::array<QPushButton*, 4> seq_btns_{};  // Rinse, Agitator, Process, Purge
     QLabel*      seq_status_lbl_ = nullptr;

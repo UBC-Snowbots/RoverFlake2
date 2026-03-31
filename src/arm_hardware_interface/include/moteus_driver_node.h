@@ -31,9 +31,11 @@
 //                /arm/config_log       (std_msgs/String)          → HMI log panel
 // =============================================================================
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <vector>
 #include <array>
 
@@ -43,6 +45,8 @@
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
+#include "rover_msgs/msg/moteus_calibration_request.hpp"
+#include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
@@ -76,6 +80,19 @@ private:
     // Keeps configs_[] consistent so subsequent feedback messages reflect edits.
     void applyConfigToMemory(int idx, const std::string& reg, float val);
 
+    // Calibration: receives a MoteusCalibrationRequest and spawns a background thread.
+    void calibrationCallback(const rover_msgs::msg::MoteusCalibrationRequest::SharedPtr msg);
+
+    // Runs in background thread.  Pauses poll, releases CAN, runs moteus_tool,
+    // sets hall sensor type, saves config, re-initialises transport + controllers.
+    void runCalibration(int motor_can_id);
+
+    // Re-create transport_ and controllers_ (called after moteus_tool exits).
+    void reInitTransport();
+
+    // Publish a calibration status update.
+    void publishCalibStatus(int motor_id, int state, const std::string& message);
+
     // Safety monitoring (called inside poll, only logs on state changes)
     void checkFaults();
     void checkAlerts();
@@ -97,7 +114,9 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr             joint_state_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                    config_log_pub_;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
-    rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr   config_update_sub_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
+    rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
 
     // -------------------------------------------------------------------------
     // Configuration (loaded from motor_config.h at construction)
@@ -122,6 +141,13 @@ private:
     // Updated each poll cycle from CAN reply frames.
     // -------------------------------------------------------------------------
     std::array<MotorTelem, NUM_MOTORS> telem_{};
+
+    // -------------------------------------------------------------------------
+    // Calibration state
+    // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
+    // -------------------------------------------------------------------------
+    std::atomic<bool> calibrating_{false};
+    std::mutex        calib_mutex_;   // prevents concurrent calibrations
 
     // -------------------------------------------------------------------------
     // State tracking for edge-triggered logging (prevents log spam)

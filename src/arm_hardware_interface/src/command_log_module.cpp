@@ -33,7 +33,8 @@ QWidget* CommandLogModule::createWidget(QWidget* parent) {
 }
 
 void CommandLogModule::setNode(rclcpp::Node::SharedPtr node) {
-    auto qos = rclcpp::QoS(10).reliable().durability_volatile();
+    // Depth 500 so burst output during calibration (many lines quickly) isn't dropped.
+    auto qos = rclcpp::QoS(500).reliable().durability_volatile();
 
     // Commands sent by HMI modules (published to /arm/hmi_log as formatted strings)
     hmi_log_sub_ = node->create_subscription<std_msgs::msg::String>(
