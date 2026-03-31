@@ -10,3 +10,6 @@
 [submodule "src/arm_hardware_interface/moteus"]
 	path = src/arm_hardware_interface/moteus
 	url = https://github.com/mjbots/moteus.git
+[submodule "src/external_pkgs/moteus"]
+	path = src/external_pkgs/moteus
+	url = git@github.com:mjbots/moteus.git
