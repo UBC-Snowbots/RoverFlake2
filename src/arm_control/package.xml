@@ -39,7 +39,8 @@
   <exec_depend>tf2_ros</exec_depend>
 
   <depend>rover_utils</depend> 
-  <depend>moteus_msgs</depend> 
+  <depend>moteus_msgs</depend>
+  <depend>arm_hardware_interface</depend>
 
 
   <test_depend>ament_cmake_gtest</test_depend>
