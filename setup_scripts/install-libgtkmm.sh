@@ -1,2 +1,2 @@
 echo installing gtk
-sudo apt install libgtkmm-3.0-dev
+sudo apt install -y libgtkmm-3.0-dev
