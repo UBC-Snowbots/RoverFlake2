@@ -452,7 +452,7 @@ void KeybindingsOverlay::keyPressEvent(QKeyEvent* ke) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     if (ke->key() == Qt::Key_Up) {
@@ -473,7 +473,7 @@ void KeybindingsOverlay::wheelEvent(QWheelEvent* we) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     int steps = we->angleDelta().y() / 40;
@@ -544,19 +544,20 @@ void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
     p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
 
     int margin = 24;
-    // Title
+    // Title row
     p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
     p.setPen(QColor(theme::Text));
-    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
+    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 24),
                Qt::AlignLeft | Qt::AlignVCenter, "Saved Layouts");
+    // Hint row (separate line so it never overlaps the title)
     p.setFont(QFont("monospace", theme::FontSizeSm));
     p.setPen(QColor(theme::TextDim));
-    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
+    p.drawText(QRect(px + margin, py + margin + 26, pw - 2 * margin, 18),
                Qt::AlignRight | Qt::AlignVCenter,
                renaming_ ? "Enter confirm  Esc cancel"
                          : "S save  R rename  D delete  Enter load  Esc close");
 
-    int sepY = py + margin + 34;
+    int sepY = py + margin + 52;
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(px + margin, sepY, px + pw - margin, sepY);
 
@@ -640,7 +641,7 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     auto clampScroll = [&]() {
@@ -716,7 +717,7 @@ void LayoutManagerOverlay::wheelEvent(QWheelEvent* we) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     int steps = we->angleDelta().y() / 40;
@@ -1408,11 +1409,11 @@ void TilingContainer::saveCurrentLayout() {
 
     if (root_) layout["tree"] = serializeTree(root_);
 
-    QJsonArray hidden;
+    QJsonArray visible;
     for (auto& pi : panels_)
-        if (!pi.panel->isVisible())
-            hidden.append(QString::fromStdString(pi.panel->title()));
-    layout["hidden"] = hidden;
+        if (pi.panel->isVisible())
+            visible.append(QString::fromStdString(pi.panel->title()));
+    layout["visible"] = visible;
 
     QSettings s("rover_hmi", "layouts");
     int count = s.value("count", 0).toInt();
@@ -1450,10 +1451,19 @@ void TilingContainer::loadLayout(int index) {
     if (doc.isNull()) return;
     QJsonObject layout = doc.object();
 
-    // Collect hidden panel titles
-    QSet<QString> hidden_set;
-    for (auto h : layout["hidden"].toArray())
-        hidden_set.insert(h.toString());
+    // Build visible set — prefer new "visible" key, fall back to inverting legacy "hidden" key
+    QSet<QString> visible_set;
+    if (layout.contains("visible")) {
+        for (auto v : layout["visible"].toArray())
+            visible_set.insert(v.toString());
+    } else {
+        QSet<QString> hidden_set;
+        for (auto h : layout["hidden"].toArray())
+            hidden_set.insert(h.toString());
+        for (auto& pi : panels_)
+            if (!hidden_set.contains(QString::fromStdString(pi.panel->title())))
+                visible_set.insert(QString::fromStdString(pi.panel->title()));
+    }
 
     // Clear tree
     for (auto* n : all_nodes_) delete n;
@@ -1461,10 +1471,10 @@ void TilingContainer::loadLayout(int index) {
     root_         = nullptr;
     focused_panel_ = nullptr;
 
-    // Set panel visibility
+    // Set panel visibility — only show panels explicitly in the saved visible set
     std::vector<std::string> visible_titles;
     for (auto& pi : panels_) {
-        bool vis = !hidden_set.contains(QString::fromStdString(pi.panel->title()));
+        bool vis = visible_set.contains(QString::fromStdString(pi.panel->title()));
         pi.panel->setVisible(vis);
         if (vis) visible_titles.push_back(pi.panel->title());
     }
