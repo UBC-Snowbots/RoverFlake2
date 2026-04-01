@@ -44,6 +44,13 @@
     <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
   </class>
 
+  <!-- Drive -->
+  <class name="rover_hmi_core/DriveModule"
+         type="DriveModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
+  </class>
+
   <!-- Electrical -->
   <class name="rover_hmi_core/PowerSummaryModule"
          type="PowerSummaryModule"

@@ -3,13 +3,21 @@
 <package format="3">
   <name>rover_hmi_core</name>
   <version>0.0.0</version>
-  <description>Shared base interface and UI utilities for Rover HMI modules</description>
+  <description>Shared base interface, UI utilities, and all HMI plugin modules for the Rover</description>
   <maintainer email="rhimaaron@gmail.com">aaron</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
+  <depend>rover_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <build_depend>qt5-qmake</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
