@@ -12,6 +12,20 @@
 
 #include <pluginlib/class_list_macros.hpp>
 
+// JogButton — defined here so Q_OBJECT is in the .cpp (avoids AUTOMOC
+// header-scanning issues with private include directories).
+class JogButton : public QPushButton {
+    Q_OBJECT
+public:
+    JogButton(const QString& text, QWidget* parent = nullptr);
+signals:
+    void jogPressed();
+    void jogReleased();
+protected:
+    void mousePressEvent(QMouseEvent* e) override;
+    void mouseReleaseEvent(QMouseEvent* e) override;
+};
+
 // JogButton overrides the mouse press/release events to emit dedicated signals.
 // The standard clicked() signal only fires on release, which makes it
 // unsuitable for jog control. Instead:
@@ -370,3 +384,4 @@ void SendCommandModule::sendZero(int motor_id) {
 }
 
 PLUGINLIB_EXPORT_CLASS(SendCommandModule, rover_hmi_core::GuiModule)
+#include "send_command_module.moc"

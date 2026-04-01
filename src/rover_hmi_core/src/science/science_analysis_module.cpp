@@ -721,3 +721,4 @@ void ScienceAnalysisModule::appendNpkRecord(float n, float p, float k)
 // ─────────────────────────────────────────────────────────────────────────────
 
 PLUGINLIB_EXPORT_CLASS(ScienceAnalysisModule, rover_hmi_core::GuiModule)
+

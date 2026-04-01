@@ -22,11 +22,48 @@
 #include <QColor>
 #include <cmath>
 #include <algorithm>
+#include <deque>
+#include <vector>
 
 #include <pluginlib/class_list_macros.hpp>
 
 // ===========================================================================
-// TimelineCanvas
+// TimelineCanvas — defined here so Q_OBJECT is in the .cpp (avoids AUTOMOC
+// header-scanning issues with private include directories).
+// ===========================================================================
+class TimelineCanvas : public QWidget {
+    Q_OBJECT
+public:
+    static constexpr int MAX_SAMPLES = 120;
+
+    struct Series {
+        QString label;
+        QString color;
+        std::deque<float> samples;
+        float y_min;
+        float y_max;
+        bool  visible = true;
+    };
+
+    explicit TimelineCanvas(QWidget* parent = nullptr);
+
+    void pushSample(int series_idx, float value);
+    void setSeriesVisible(int idx, bool v);
+    bool seriesVisible(int idx) const;
+    int  numSeries() const { return static_cast<int>(series_.size()); }
+    QString seriesLabel(int idx) const;
+    QString seriesColor(int idx) const;
+    float   seriesLatest(int idx) const;
+
+protected:
+    void paintEvent(QPaintEvent* ev) override;
+
+private:
+    std::vector<Series> series_;
+};
+
+// ===========================================================================
+// TimelineCanvas implementation
 // ===========================================================================
 
 TimelineCanvas::TimelineCanvas(QWidget* parent)
@@ -273,3 +310,4 @@ void PowerTimelineModule::onPowerStatus(const rover_msgs::msg::PowerStatus::Shar
 }
 
 PLUGINLIB_EXPORT_CLASS(PowerTimelineModule, rover_hmi_core::GuiModule)
+#include "power_timeline_module.moc"
