@@ -35,6 +35,13 @@ struct MotorTelem {
 
     float voltage     = 0;  // CAN bus supply voltage in volts.
 
+    float q_current   = 0;  // Phase (Q-axis) current in amps — the torque-producing
+                            //   component of motor current.  Requires the query format
+                            //   to request kQCurrent (kFloat resolution).
+
+    float power       = 0;  // Instantaneous electrical power draw in watts.
+                            //   Requires the query format to request kPower (kFloat).
+
     float temperature = 0;  // Driver board temperature in °C.
                             //   (Not motor winding temp — the driver's own FET temp.)
 
