@@ -33,7 +33,7 @@ echo This script will NOT install discord. run install-discord.sh if you want di
 sleep 1.0
 echo starting with ros2...
 
-sudo apt update
+sudo apt update -y
 cd $ROVERFLAKE_ROOT/setup_scripts/
 bash install_dependencies.sh
 bash install-ros2-humble.sh # also runs apt update, if ros2 is not installed
@@ -43,9 +43,10 @@ apt_packages_to_install=(
     "git"
     "btop"
     "tmux"
-    "libgtkmm-3.0-dev"
+    "libgtkmm-3.0-dev" # GUI Package
     "python3-rosdep"
     "libsfml-dev"
+    "rviz_common"
 )
 
 # Loop through the package list and install missing packages

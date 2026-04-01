@@ -27,7 +27,6 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_srvs
   tf2_eigen
   trajectory_msgs
-  rover_msgs
   moteus_msgs
   arm_hardware_interface
 )
@@ -73,13 +72,13 @@ ament_target_dependencies(${PROJECT_NAME}_lib sensor_msgs ${THIS_PACKAGE_INCLUDE
 
 # For armControlParams, we add it as a regular .h file here because its in the same package. For any other package, we would just put arm_control in ament_target_dependencies
 add_executable(joy_arm_control src/joy_arm_control.cpp include/joy_arm_control.h)
-ament_target_dependencies(joy_arm_control rclcpp rover_msgs sensor_msgs moveit_servo  ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_target_dependencies(joy_arm_control  ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(moveit_control src/moveit_control.cpp include/moveit_control.h include/armControlParams.h)
-ament_target_dependencies(moveit_control rclcpp rover_msgs sensor_msgs control_msgs moveit_servo trajectory_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_target_dependencies(moveit_control control_msgs trajectory_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(sim_helper src/sim_helper_node.cpp include/armControlParams.h)
-ament_target_dependencies(sim_helper rclcpp rover_msgs sensor_msgs std_msgs rover_utils ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_target_dependencies(sim_helper std_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(cbs_arm_interface src/cbs_interface.cpp include/armControlParams.h include/cbs_interface.h)
-ament_target_dependencies(cbs_arm_interface rclcpp rover_msgs sensor_msgs std_msgs rover_utils ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_target_dependencies(cbs_arm_interface std_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 install(
   DIRECTORY include/
