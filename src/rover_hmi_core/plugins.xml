@@ -1,0 +1,79 @@
+<library path="rover_hmi_modules">
+
+  <!-- Arm -->
+  <class name="rover_hmi_core/MotorStatusModule"
+         type="MotorStatusModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>6-joint motor telemetry table (live CAN-FD feedback)</description>
+  </class>
+  <class name="rover_hmi_core/PlottingModule"
+         type="PlottingModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Real-time position and velocity plots for all arm joints</description>
+  </class>
+  <class name="rover_hmi_core/MotorConfigModule"
+         type="MotorConfigModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-motor PID gains and limits from firmware config</description>
+  </class>
+  <class name="rover_hmi_core/SendCommandModule"
+         type="SendCommandModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Motor command and jog controls</description>
+  </class>
+  <class name="rover_hmi_core/CommandLogModule"
+         type="CommandLogModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Log of sent commands and driver messages</description>
+  </class>
+
+  <!-- Science -->
+  <class name="rover_hmi_core/ScienceModule"
+         type="ScienceModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science subsystem control: sequences, valves, pump, carousel, dispensing, OSF, and utilities</description>
+  </class>
+  <class name="rover_hmi_core/SciencePipelineModule"
+         type="SciencePipelineModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science pipeline timeline: 4-step workflow tracker from drilling to analysis</description>
+  </class>
+  <class name="rover_hmi_core/ScienceAnalysisModule"
+         type="ScienceAnalysisModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
+  </class>
+
+  <!-- Electrical -->
+  <class name="rover_hmi_core/PowerSummaryModule"
+         type="PowerSummaryModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Live battery and module power summary with CSV recording</description>
+  </class>
+  <class name="rover_hmi_core/DrivetrainStopModule"
+         type="DrivetrainStopModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Remote stop and release control for the drivetrain</description>
+  </class>
+  <class name="rover_hmi_core/WheelTelemetryModule"
+         type="WheelTelemetryModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-wheel speed, torque, temperature, and power telemetry table</description>
+  </class>
+  <class name="rover_hmi_core/LightingModule"
+         type="LightingModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+  </class>
+  <class name="rover_hmi_core/VawTreeModule"
+         type="VawTreeModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Voltage, amperage, and wattage tree view of power and drivetrain systems</description>
+  </class>
+  <class name="rover_hmi_core/PowerTimelineModule"
+         type="PowerTimelineModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Rolling power timeline canvas for battery and total power/current series</description>
+  </class>
+
+</library>
