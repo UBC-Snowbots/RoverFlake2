@@ -5,65 +5,64 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(serial REQUIRED)
 find_package(rover_msgs REQUIRED)
-find_package(arm_control REQUIRED)
 find_package(std_msgs REQUIRED)
-# uncomment the following section in order to fill in further dependencies
-# manually. find_package(<dependency> REQUIRED)
-include_directories(include ${arm_control_INCLUDE_DIRS})
+find_package(sensor_msgs REQUIRED)
+find_package(rover_hmi_core REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
-add_subdirectory(moteus)
-add_library(${PROJECT_NAME} src/armprotocol.cpp
-                            include/arm_hardware_interface/ArmSerialProtocol.h)
+set(CMAKE_AUTOMOC ON)
 
-# For old and new arm
-add_executable(
-  serial_arm_driver src/ArmSerialInterface.cpp include/ArmSerialInterface.h
-                    include/arm_hardware_interface/ArmSerialProtocol.h)
-add_executable(
-  moteus_arm_driver
-    src/moteus_CAN_interface/MoteusMain.cpp
-    src/moteus_CAN_interface/MoteusNode.cpp
-    src/moteus_CAN_interface/CommandCallback.cpp
-    src/moteus_CAN_interface/MoteusInterface.cpp
-    src/moteus_CAN_interface/MoteusIO.cpp)
+include_directories(include)
 
-target_compile_definitions(moteus_arm_driver PRIVATE BUILDING_NEW_DRIVER=1) #??
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
 
-target_link_libraries(moteus_arm_driver moteus::cpp)
-ament_target_dependencies(serial_arm_driver rclcpp sensor_msgs serial
-                          rover_msgs arm_control)
-ament_target_dependencies(moteus_arm_driver rclcpp sensor_msgs serial
-                          rover_msgs arm_control std_msgs) 
+# CAN-FD driver executable
+add_executable(moteus_driver src/moteus_driver_node.cpp)
+target_link_libraries(moteus_driver moteus::cpp)
+ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs)
+
+# HMI plugins — separate shared library, does not link the CAN library
+add_library(arm_hardware_interface_hmi SHARED
+    src/motor_status_module.cpp
+    src/plotting_module.cpp
+    src/motor_config_module.cpp
+    src/send_command_module.cpp
+    src/command_log_module.cpp
+    include/motor_status_module.h
+    include/plotting_module.h
+    include/motor_config_module.h
+    include/send_command_module.h
+    include/command_log_module.h
+)
+target_link_libraries(arm_hardware_interface_hmi
+    Qt5::Widgets
+    rover_hmi_core::rover_hmi_core
+)
+ament_target_dependencies(arm_hardware_interface_hmi rclcpp rover_msgs std_msgs pluginlib)
+pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights comment the
-  # line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo) comment the line
-  # when this package is in a git repo and when a copyright and license is added
-  # to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 
-# Install headers for other packages (for arm serial protocol)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY include/ DESTINATION include/)
 
-install(
-  TARGETS serial_arm_driver moteus_arm_driver ${PROJECT_NAME}
-  DESTINATION lib/${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+install(TARGETS moteus_driver
+    DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS arm_hardware_interface_hmi
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin)
 
 ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
 
 ament_package()

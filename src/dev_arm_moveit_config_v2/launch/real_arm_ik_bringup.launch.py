@@ -116,8 +116,8 @@ def generate_launch_description():
     # Real arm hardware interface — publishes /joint_states, listens on /arm/command
     arm_hardware_interface_node = Node(
         package="arm_hardware_interface",
-        executable="arm_serial_driver",
-        name="arm_serial_driver",
+        executable="moteus_driver",
+        name="moteus_driver",
         output="screen",
     )
 

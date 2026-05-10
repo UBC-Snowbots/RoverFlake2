@@ -3,7 +3,7 @@
 <package format="3">
   <name>arm_hardware_interface</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Moteus CAN-FD arm driver — polls motors, publishes feedback, accepts commands</description>
   <maintainer email="zawadzkirowan@gmail.com">rowan</maintainer>
   <license>TODO: License declaration</license>
 
@@ -12,14 +12,12 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
   <depend>rover_msgs</depend>
-  <depend>arm_control</depend>
   <depend>std_msgs</depend>
-<!-- Rosdep fails with the following: -->
-  <depend>serial</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rover_hmi_core</depend>
+  <depend>pluginlib</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

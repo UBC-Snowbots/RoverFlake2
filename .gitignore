@@ -56,6 +56,9 @@ qtcreator-*
 # Glade temp file
 #*.glade*
 
+#other hmi things
+src/rover_hmi_v2
+
 # Catkin custom files
 CATKIN_IGNORE
 install/
