@@ -24,6 +24,12 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setNormalizePID(motors[i], 1);
         handlePhidgetError(ret, "normalizing PID controller", i);
 
+        ret = PhidgetMotorPositionController_setRescaleFactor(motors[i], MOTOR_RESCALE_FACTOR);
+        handlePhidgetError(ret, "setting motor rescale factor", i);
+
+        ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
+        handlePhidgetError(ret, "setting motor max velocity", i);
+
         // Setup motor position settings so wheels are stopped by default
         double position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
@@ -36,12 +42,6 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
         PhidgetMotorPositionController_setEngaged(motors[i], 1);
         handlePhidgetError(ret, "engaging motor", i);
-
-        ret = PhidgetMotorPositionController_setRescaleFactor(motors[i], MOTOR_RESCALE_FACTOR);
-        handlePhidgetError(ret, "setting motor rescale factor", i);
-
-        ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
-        handlePhidgetError(ret, "setting motor max velocity", i);
     }
 
     auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
@@ -120,7 +120,11 @@ void MotorControlNode::motorControlLoop() {
         double current_position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &current_position);
 
-        target_positions[i] = current_position + (velocities[i] * MOTOR_CONTROL_LOOP_FREQUENCY_MS);
+        double dv = target_velocities[i] - applied_velocities[i];
+        dv = std::clamp(dv, -MAX_DV, MAX_DV);
+        applied_velocities[i] = applied_velocities[i] + dv;
+
+        target_positions[i] = current_position + (applied_velocities[i] * MOTOR_CONTROL_LOOKAHEAD_TIME_S);
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
         handlePhidgetError(ret, "setting motor position", i);
     }
@@ -136,7 +140,7 @@ void MotorControlNode::setVelocity(const std::vector<int>& selected_motors, floa
     }
 
     for (int i : selected_motors) {
-        velocities[i] = velocity_rads;
+        target_velocities[i] = velocity_rads;
     }
 }
 
@@ -155,7 +159,7 @@ void MotorControlNode::publishDriveFeedback() {
             handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
         }
-        message.velocities[i] = velocities[i];
+        message.velocities[i] = actual_velocities[i];
     }
     drive_feedback_pub_->publish(message);
 }

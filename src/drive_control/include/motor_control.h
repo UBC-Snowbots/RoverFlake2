@@ -14,25 +14,27 @@
 #define MOTOR_NUM_POLES 4
 #define MOTOR_NUM_PHASES 3
 
+#define NUM_MOTORS 6
 /**
  * Converts commutations into radians
  * Allows communication with the position controller in radians rather than commutations
  */
 #define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
-
-#define MAX_VELOCITY_MS 5
-#define MIN_VELOCITY_MS 0.05
 #define WHEEL_RADIUS_METERS 0.1
+
+#define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the motor control loop
+#define MOTOR_CONTROL_LOOKAHEAD_TIME_S 0.1
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
+#define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
 
 /**
  * Max velocity of the motors in radians per second
  */
+#define MAX_VELOCITY_MS 5
+#define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_RADS MAX_VELOCITY_MS / WHEEL_RADIUS_METERS
-
-#define NUM_MOTORS 6
-#define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the motor control loop
-#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
-#define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
+#define MAX_ACCEL_RADS 10
+#define MAX_DV MAX_ACCEL_RADS * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0)
 
 class MotorControlNode : public rclcpp::Node {
 public:
@@ -74,7 +76,11 @@ private:
     // Motor-related variables
     PhidgetMotorPositionControllerHandle motors[NUM_MOTORS]; // Array of motors
     double target_positions[NUM_MOTORS] = {0.0}; // Array of target motor position, used as input to the Position Controllers
-    double velocities[NUM_MOTORS] = {0.0}; // Array of the current motor velocities, tracked for drive/feedback odometry
+
+    // Arrays for storing velocity values at different points in the command flow
+    double target_velocities[NUM_MOTORS] = {0.0}; // Clamped velocity commands from the wheel speed node
+    double applied_velocities[NUM_MOTORS] = {0.0}; // Target velocity to provide to the motor, with acceleration limiting applied
+    double actual_velocities[NUM_MOTORS] = {0.0}; // Array of the current motor velocities, tracked for drive/feedback odometry
 
     const char* errorString;  // Error string for logging
     char errorDetail[100];  // Detailed error message
