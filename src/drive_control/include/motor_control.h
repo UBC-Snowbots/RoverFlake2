@@ -9,37 +9,45 @@
 #include <vector>
 #include <algorithm>  // For std::clamp
 
-// Motor and wheel specs for calulcating rescale factors
+/**
+ * Motor and wheel specs for calculating rescale factors
+ */
+#define NUM_MOTORS 6
 #define MOTOR_GEAR_RATIO 23
 #define MOTOR_NUM_POLES 4
 #define MOTOR_NUM_PHASES 3
+#define WHEEL_RADIUS_METERS 0.1
 
-#define NUM_MOTORS 6
 /**
  * Converts commutations into radians
  * Allows communication with the position controller in radians rather than commutations
  */
 #define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
-#define WHEEL_RADIUS_METERS 0.1
-
-#define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the motor control loop
-#define MOTOR_CONTROL_LOOKAHEAD_TIME_S 0.1
-#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
-#define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors (in ms)
 
 /**
- * Max velocity of the motors in radians per second
+ * Time-related constants for loops
+ */
+#define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the main motor control loop
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
+#define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors
+
+/**
+ * Velocity limits
  */
 #define MAX_VELOCITY_MS 5
 #define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_RADS MAX_VELOCITY_MS / WHEEL_RADIUS_METERS
+
+/**
+ * Acceleration limits
+ */
 #define MAX_ACCEL_RADS 10
 #define MAX_DV MAX_ACCEL_RADS * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0)
 
 class MotorControlNode : public rclcpp::Node {
 public:
-    MotorControlNode();  // Constructor
-    ~MotorControlNode(); // Destructor
+    MotorControlNode();
+    ~MotorControlNode();
 
 private:
     // Publisher for drive feedback (velocity and position of each motor)
@@ -54,6 +62,8 @@ private:
     
     // Loop to interact with motors
     void motorControlLoop();
+
+    // Function to record velocity commands for use in the Motor Control Loop
     void setVelocity(const std::vector<int>& selected_motors, float velocity);
 
     // Callback functions for left and right wheel velocity subscriptions
@@ -62,6 +72,7 @@ private:
 
     // Function to publish the velocity, target velocity and position of each motor
     void publishDriveFeedback();
+
     void resetFailsafe();
 
     // Timer to check motor state (velocities and positions) periodically
@@ -75,16 +86,22 @@ private:
 
     // Motor-related variables
     PhidgetMotorPositionControllerHandle motors[NUM_MOTORS]; // Array of motors
-    double target_positions[NUM_MOTORS] = {0.0}; // Array of target motor position, used as input to the Position Controllers
+    double target_positions[NUM_MOTORS] = {0.0}; // Array of target motor positions, used as input to the Position Controllers
 
-    // Arrays for storing velocity values at different points in the command flow
-    double target_velocities[NUM_MOTORS] = {0.0}; // Clamped velocity commands from the wheel speed node
-    double applied_velocities[NUM_MOTORS] = {0.0}; // Target velocity to provide to the motor, with acceleration limiting applied
-    double actual_velocities[NUM_MOTORS] = {0.0}; // Array of the current motor velocities, tracked for drive/feedback odometry
-
-    const char* errorString;  // Error string for logging
-    char errorDetail[100];  // Detailed error message
-    size_t errorDetailLen = 100;  // Length of the error detail buffer
+    /**
+     * Arrays for storing velocity values
+     * target_velocities: The most recent velocity command received from the controller, clamped to the max velocity
+     * applied_velocities: The velocity actually applied to the motor, clamped to the max acceleration in the control loop
+     * 
+     * The reason for distinction between the 2 arrays is because the velocity limit is applied when the command is received, independent of control loop timing
+     * There is no reason to store a velocity command that exceeds the max, so the limit is applied in the setVelocity function so that the clamping is not repeated
+     * each time the control loop runs
+     * 
+     * The acceleration is different each control loop, so it must be applied in the control loop
+     * It is saved in applied_velocities for use in the odometry feedback
+     */
+    double target_velocities[NUM_MOTORS] = {0.0};
+    double applied_velocities[NUM_MOTORS] = {0.0};
 };
 
 #endif // MOTOR_CONTROL_NODE_H

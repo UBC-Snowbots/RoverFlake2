@@ -33,14 +33,17 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         // Setup motor position settings so wheels are stopped by default
         double position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
-        handlePhidgetError(ret, "getting initial motor position", i);
-
-        target_positions[i] = position;
+        if (ret != EPHIDGET_OK) {
+            target_positions[i] = position;
+        }
+        else {
+            handlePhidgetError(ret, "getting initial motor position", i);
+        }
 
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], position);
         handlePhidgetError(ret, "setting initial motor target position", i);
 
-        PhidgetMotorPositionController_setEngaged(motors[i], 1);
+        ret = PhidgetMotorPositionController_setEngaged(motors[i], 1);
         handlePhidgetError(ret, "engaging motor", i);
     }
 
@@ -119,12 +122,16 @@ void MotorControlNode::motorControlLoop() {
     for (int i = 0; i < NUM_MOTORS; i++) {
         double current_position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &current_position);
+        if (ret != EPHIDGET_OK) {
+            handlePhidgetError(ret, "getting motor position", i);
+            continue;
+        }
 
         double dv = target_velocities[i] - applied_velocities[i];
         dv = std::clamp(dv, -MAX_DV, MAX_DV);
         applied_velocities[i] = applied_velocities[i] + dv;
 
-        target_positions[i] = current_position + (applied_velocities[i] * MOTOR_CONTROL_LOOKAHEAD_TIME_S);
+        target_positions[i] = current_position + (applied_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000));
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
         handlePhidgetError(ret, "setting motor position", i);
     }
@@ -159,7 +166,8 @@ void MotorControlNode::publishDriveFeedback() {
             handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
         }
-        message.velocities[i] = actual_velocities[i];
+        
+        message.velocities[i] = applied_velocities[i];
     }
     drive_feedback_pub_->publish(message);
 }
