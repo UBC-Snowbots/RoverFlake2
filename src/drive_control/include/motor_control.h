@@ -73,8 +73,6 @@ private:
     // Function to publish the velocity, target velocity and position of each motor
     void publishDriveFeedback();
 
-    void resetFailsafe();
-
     // Timer to check motor state (velocities and positions) periodically
     rclcpp::TimerBase::SharedPtr feedback_timer_;
 

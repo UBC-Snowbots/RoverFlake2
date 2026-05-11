@@ -38,6 +38,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         }
         else {
             handlePhidgetError(ret, "getting initial motor position", i);
+            target_positions[i] = 0;
         }
 
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], position);
@@ -64,12 +65,6 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         PhidgetReturnCode ret = PhidgetMotorPositionController_enableFailsafe(motors[i], MOTOR_FAILSAFE_INTERVAL_MS);
         handlePhidgetError(ret, "enable failsafe", i);
     }
-
-    // Initialize timer to reset the failsafe
-    failsafe_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 5),
-        std::bind(&MotorControlNode::resetFailsafe, this)
-    );
 
     // Initialize timer for the motor control loop
     motor_control_timer_ = this->create_wall_timer(
@@ -131,9 +126,13 @@ void MotorControlNode::motorControlLoop() {
         dv = std::clamp(dv, -MAX_DV, MAX_DV);
         applied_velocities[i] = applied_velocities[i] + dv;
 
-        target_positions[i] = current_position + (applied_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000));
+        target_positions[i] = current_position + (applied_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
         handlePhidgetError(ret, "setting motor position", i);
+
+        // Reset the failsafe
+        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
+        handlePhidgetError(ret, "failsafe", i);
     }
 }
 
@@ -170,13 +169,6 @@ void MotorControlNode::publishDriveFeedback() {
         message.velocities[i] = applied_velocities[i];
     }
     drive_feedback_pub_->publish(message);
-}
-
-void MotorControlNode::resetFailsafe() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
-        handlePhidgetError(ret, "failsafe", i);
-    }
 }
 
 int main(int argc, char **argv) {
