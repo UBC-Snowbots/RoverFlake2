@@ -54,7 +54,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         qos
     );
 
-    // Setup a timer to check position, velocity and target velocity of each motor
+    // Initialize timer for publishing odometry
     feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&MotorControlNode::publishDriveFeedback, this)
@@ -66,7 +66,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         handlePhidgetError(ret, "enable failsafe", i);
     }
 
-    // Initialize timer for the motor control loop
+    // Initialize timer for motor control loop
     motor_control_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(MOTOR_CONTROL_LOOP_FREQUENCY_MS), 
             std::bind(&MotorControlNode::motorControlLoop, this)
