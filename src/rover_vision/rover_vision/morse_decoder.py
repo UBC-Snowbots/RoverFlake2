@@ -28,6 +28,13 @@ MORSE_DASH = 3
 MORSE_LETTER_SPACE = 3
 MORSE_WORD_SPACE = 7
 
+# Tolerance thresholds to read messages correctly even if the camera is out of sync with the LED
+MORSE_DOT_DASH_TOLERANCE = 1
+MORSE_LETTER_WORD_TOLERANCE = 2
+
+MORSE_DOT_DASH_THRESHOLD = MORSE_DOT + MORSE_DOT_DASH_TOLERANCE
+MORSE_LETTER_WORD_THRESHOLD = MORSE_LETTER_SPACE + MORSE_LETTER_WORD_TOLERANCE
+
 # Frame processing constants
 PIXEL_BRIGHTNESS_THRESHOLD = 240
 PIXEL_MAX_BRIGHTNESS = 255
@@ -76,12 +83,12 @@ class MorseDecoderNode(Node):
 
     def process_char(self, state, duration):
         if state == LED_State.ON:
-            if duration == MORSE_DOT:
+            if duration < MORSE_DOT_DASH_THRESHOLD:
                 self.morse_msg += "."
             else:
                 self.morse_msg += "-"
         else:
-            if duration == MORSE_LETTER_SPACE:
+            if duration < MORSE_LETTER_WORD_THRESHOLD:
                 if self.morse_msg:
                     letter = MORSE_CODE[self.morse_msg]
                     self.msg += letter
