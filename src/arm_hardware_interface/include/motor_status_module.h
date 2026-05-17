@@ -13,7 +13,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
-#include "motor_addressing.h"  // NUM_MOTORS
+// #include "motor_addressing.h"  // NUM_MOTORS
 
 #include <QLabel>
 #include <QScrollArea>

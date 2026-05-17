@@ -13,7 +13,7 @@
 
 #include <rover_hmi_core/gui_module.h>
 #include <rover_hmi_core/plot_widget.h>
-#include "motor_addressing.h"
+// #include "motor_addressing.h"
 
 #include <QCheckBox>
 #include <QPushButton>

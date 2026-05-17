@@ -27,7 +27,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
-#include "motor_addressing.h"
+// #include "motor_addressing.h"
 
 #include <QLineEdit>
 #include <QLabel>

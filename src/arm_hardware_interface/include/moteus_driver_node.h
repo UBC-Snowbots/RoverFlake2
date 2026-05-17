@@ -50,7 +50,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
-#include <rover_hmi_core/arm/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
+// #include <rover_hmi_core/arm/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
 #include <rover_hmi_core/arm/motor_config.h>       // MotorConfig, get_arm_configuration()
 #include <rover_hmi_core/arm/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_hmi_core/arm/arm_telemetry.h>      // MotorTelem
