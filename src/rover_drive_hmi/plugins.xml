@@ -1,0 +1,7 @@
+<library path="rover_drive_hmi">
+  <class name="rover_drive_hmi/DriveModule"
+         type="DriveModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
+  </class>
+</library>
