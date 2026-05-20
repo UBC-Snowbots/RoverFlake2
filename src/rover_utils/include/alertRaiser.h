@@ -4,9 +4,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rover_msgs/msg/active_alert.hpp>
 #include <rover_msgs/msg/ack_alert.hpp>
-#include <rover_utils/config/topicNames.h>
-#include <rover_utils/include/time_utils.h>
-#include <rover_utils/include/fancyOutput.h>
+// #include <rover_utils/config/topicNames.h> //TODO fix cmake, maybe make this a proper library
+// #include <rover_utils/include/time_utils.h>
+// #include <rover_utils/include/fancyOutput.h>
+#include "fancyOutput.h"
+#include "../config/topicNames.h"
+#include "time_utils.h"
 #include <chrono>
 
 #define MANAGE_ALERTS_CYCLE_PERIOD_S 2.0

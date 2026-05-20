@@ -9,13 +9,13 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
-find_package(rover_utils REQUIRED)
+# find_package(rover_utils REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 add_executable(alert_example_node src/alert_example/alert_example.cpp src/alert_example/alert_example.h)
-ament_target_dependencies(alert_example_node rclcpp rover_msgs rover_utils)
+ament_target_dependencies(alert_example_node rclcpp rover_msgs)
 
 include_directories(include)
 include_directories(config)
