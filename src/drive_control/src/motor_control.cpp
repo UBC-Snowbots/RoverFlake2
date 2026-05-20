@@ -29,6 +29,9 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         qos
     );
 
+    wheel_states_pub_ = this->create_publisher<rover_msgs::msg::WheelStates>(
+        "/drivetrain/wheel_states", rclcpp::QoS(10).reliable());
+
     // Setup a timer to check position, velocity and target velocity of each motor
     feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
@@ -122,6 +125,20 @@ void MotorControlNode::publishDriveFeedback() {
     }
 
     drive_feedback_pub_->publish(message);
+    publishWheelStates();
+}
+
+void MotorControlNode::publishWheelStates() {
+    rover_msgs::msg::WheelStates msg;
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    for (int w = 0; w < NUM_WHEELS; w++) {
+        msg.speed_rpm[w]     = nan;
+        msg.torque_nm[w]     = nan;
+        msg.temperature_c[w] = nan;
+        msg.power_w[w]       = nan;
+        msg.enabled[w]       = false;
+    }
+    wheel_states_pub_->publish(msg);
 }
 
 void MotorControlNode::resetFailsafe() {
