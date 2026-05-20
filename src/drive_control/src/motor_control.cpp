@@ -58,6 +58,18 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     wheel_states_pub_ = this->create_publisher<rover_msgs::msg::WheelStates>(
         "/drivetrain/wheel_states", rclcpp::QoS(10).reliable());
 
+    auto stop_qos = rclcpp::QoS(10).reliable().transient_local();
+    stop_status_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+        "/drivetrain/remote_stop_status", stop_qos);
+
+    stop_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+        "/drivetrain/remote_stop", rclcpp::QoS(10).reliable(),
+        std::bind(&MotorControlNode::onRemoteStop, this, std::placeholders::_1));
+
+    stop_heartbeat_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(STATUS_HEARTBEAT_INTERVAL_MS),
+        std::bind(&MotorControlNode::publishStopStatus, this));
+
     // Initialize timer for publishing odometry
     feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
@@ -82,6 +94,8 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
     right_wheel_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
         "right_wheel_speeds", rclcpp::QoS(10), std::bind(&MotorControlNode::rightWheelCallback, this, std::placeholders::_1));
+
+    publishStopStatus();
 }
 
 MotorControlNode::~MotorControlNode() {
@@ -141,6 +155,7 @@ void MotorControlNode::motorControlLoop() {
 }
 
 void MotorControlNode::setVelocity(const std::vector<int>& selected_motors, float velocity) {
+    if (remote_stop_.load()) return;
     double velocity_rads;
     if (std::abs(velocity) < MIN_VELOCITY_MS) {
         velocity_rads = 0.0;
@@ -198,10 +213,44 @@ void MotorControlNode::publishWheelStates() {
         msg.torque_nm[w]     = ws.valid ? torque : nan;
         msg.power_w[w]       = ws.valid ? (torque * std::abs(v_rad)) : nan;
         msg.temperature_c[w] = ws.valid ? (ws.overheat ? 90.0f : 25.0f) : nan;
-        msg.enabled[w]       = ws.valid;
+        msg.enabled[w]       = ws.valid && !remote_stop_.load();
     }
 
     wheel_states_pub_->publish(msg);
+}
+
+void MotorControlNode::onRemoteStop(const std_msgs::msg::Bool::SharedPtr msg) {
+    bool requested = msg->data;
+    bool prev = remote_stop_.exchange(requested);
+
+    if (requested && !prev) {
+        // false → true: zero velocity intent, disengage so motors coast.
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            if (!motors[i]) continue;
+            target_velocities[i] = 0.0;
+            applied_velocities[i] = 0.0;
+            PhidgetMotorPositionController_setEngaged(motors[i], 0);
+        }
+        RCLCPP_WARN(this->get_logger(), "Drivetrain remote-stop ENGAGED");
+    } else if (!requested && prev) {
+        // true → false: re-engage. target/applied velocities stay at 0 from
+        // the stop transition — operator must move the joystick to re-issue
+        // intent.
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            if (!motors[i]) continue;
+            PhidgetMotorPositionController_setEngaged(motors[i], 1);
+        }
+        RCLCPP_INFO(this->get_logger(), "Drivetrain remote-stop RELEASED");
+    }
+
+    publishStopStatus();
+}
+
+void MotorControlNode::publishStopStatus() {
+    if (!stop_status_pub_) return;
+    std_msgs::msg::Bool msg;
+    msg.data = remote_stop_.load();
+    stop_status_pub_->publish(msg);
 }
 
 int main(int argc, char **argv) {
