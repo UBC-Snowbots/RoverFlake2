@@ -8,7 +8,7 @@
 MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     RCLCPP_INFO(this->get_logger(), "Motor Control Node Initiated");
 
-    // Initialize Phidget Motors and Velocity Controllers
+    // Initialize Phidget Motors Position Controllers
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
@@ -30,7 +30,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
         handlePhidgetError(ret, "setting motor max velocity", i);
 
-        // Setup motor position settings so wheels are stopped by default
+        // Initialize motor position so wheels are stationary on startup
         double position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
         if (ret == EPHIDGET_OK) {
