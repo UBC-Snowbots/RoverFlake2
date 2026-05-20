@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wire DriveModule, DrivetrainStopModule, and WheelTelemetryModule HMI panels to the existing Phidget BLDC drivetrain so they emit and consume real data.
+**Goal:** Wire DriveModule, DrivetrainStopModule, and WheelTelemetryModule HMI panels to the post-merge Phidget position-controller drivetrain so they emit and consume real data.
 
 **Architecture:** Extend `motor_control_node` inside `src/drive_control/` with three new behaviors — an e-stop subscriber/status publisher pair, a `/drivetrain/wheel_states` publisher driven off the existing 10 Hz feedback timer, and a per-wheel state cache. No new packages, no new nodes, no new launch files. `DriveModule` already publishes `/cmd_vel`, which the existing `wheel_speed_node → motor_control_node` chain already consumes — that path is unchanged.
 
 **Tech Stack:** ROS 2 (rclcpp), C++17, Phidget22 SDK, `rover_msgs::WheelStates`, `std_msgs::Bool`, colcon build system.
 
-**Note on testing:** The spec explicitly defers automated unit tests — this is pure ROS plumbing against physical hardware (Phidget BLDC) for a placeholder telemetry pass that will be rewritten when richer sensors land. Each task is verified by building, then either bench-testing with `ros2 topic` CLI tools or driving real motors. Frequent commits remain.
+**Note on testing:** The spec explicitly defers automated unit tests — this is pure ROS plumbing against physical hardware (Phidget motor position controllers) for a placeholder telemetry pass that will be rewritten when richer sensors land. Each task is verified by building, then either bench-testing with `ros2 topic` CLI tools or driving real motors. Frequent commits remain.
 
 **Spec:** `docs/superpowers/specs/2026-05-19-drive-hmi-hardware-hookup-design.md`
 
@@ -19,7 +19,7 @@
 | File | Action | Purpose |
 |---|---|---|
 | `src/drive_control/include/motor_control.h` | Modify | Add includes, constants (`WHEEL_TO_PORT`, `TORQUE_PROXY_SCALE`, `STATUS_HEARTBEAT_INTERVAL_MS`), `WheelState` struct, new pub/sub/timer member declarations, new method declarations. |
-| `src/drive_control/src/motor_control.cpp` | Modify | Implement: WheelStates publisher (stub → real fields across tasks), e-stop sub/pub/heartbeat, `runMotors()` gate, commanded-velocity caching. |
+| `src/drive_control/src/motor_control.cpp` | Modify | Implement: WheelStates publisher (stub → real fields across tasks), e-stop sub/pub/heartbeat, `setVelocity()` gate. |
 | `src/drive_control/CMakeLists.txt` | Modify | Add `std_msgs` to `motor_control_node`'s `ament_target_dependencies` (currently only `rclcpp geometry_msgs sensor_msgs rover_msgs`; std_msgs is `find_package`'d at the top but not linked into this target). |
 
 Total expected diff: ~120 lines across the three files.
@@ -220,9 +220,11 @@ tasks fill them in from Phidget reads."
 
 ---
 
-## Task 2: Real `speed_rpm` and `enabled` from Phidget reads
+## Task 2: Real `speed_rpm` and `enabled` from position controller
 
-Replace the NaN stubs for `speed_rpm` and `enabled` with derived values from Phidget position deltas and the engaged flag.
+Replace the NaN stubs for `speed_rpm` and `enabled` with values derived from the `applied_velocities[]` array (already maintained at ~20 Hz by `motorControlLoop()`) and `Phidget_getAttached`.
+
+**Why this works without position deltas:** the post-merge motor_control node uses `PhidgetMotorPositionController_*` and explicitly tracks `applied_velocities[i]` (rad/s, post-acceleration-clamp). That's a real, signed velocity — no need to differentiate position. Conversion to rpm is `applied_velocities[port] * 60 / (2π)`.
 
 **Files:**
 - Modify: `src/drive_control/src/motor_control.cpp`
@@ -235,45 +237,35 @@ Edit `src/drive_control/src/motor_control.cpp`. Replace the stub `publishWheelSt
 void MotorControlNode::publishWheelStates() {
     rover_msgs::msg::WheelStates msg;
     const float nan = std::numeric_limits<float>::quiet_NaN();
-    auto now = this->get_clock()->now();
 
     for (int w = 0; w < NUM_WHEELS; w++) {
         int port = WHEEL_TO_PORT[w];
         WheelState& ws = wheel_state_[w];
 
-        double pos = 0.0;
-        PhidgetReturnCode pos_ret = PhidgetBLDCMotor_getPosition(motors[port], &pos);
-        bool pos_ok = (pos_ret == EPHIDGET_OK);
+        int attached_int = 0;
+        PhidgetReturnCode att_ret = Phidget_getAttached(
+            (PhidgetHandle)motors[port], &attached_int);
+        ws.engaged = (att_ret == EPHIDGET_OK) && (attached_int != 0);
+        ws.valid = ws.engaged;
 
-        int engaged_int = 0;
-        PhidgetReturnCode eng_ret = PhidgetBLDCMotor_getEngaged(motors[port], &engaged_int);
-        ws.engaged = (eng_ret == EPHIDGET_OK) && (engaged_int != 0);
+        float v_rad = static_cast<float>(applied_velocities[port]);
+        float rpm = v_rad * 60.0f / (2.0f * static_cast<float>(M_PI));
 
-        ws.valid = pos_ok;
-
-        float speed_rpm = 0.0f;
-        if (pos_ok && ws.has_prev) {
-            double dt = (now - ws.prev_time).seconds();
-            if (dt > 1e-6) {
-                speed_rpm = static_cast<float>((pos - ws.prev_pos) / dt * 60.0);
-            }
-        }
-        if (pos_ok) {
-            ws.prev_pos = pos;
-            ws.prev_time = now;
-            ws.has_prev = true;
-        }
-
-        msg.speed_rpm[w]     = pos_ok ? speed_rpm : nan;
+        msg.speed_rpm[w]     = ws.valid ? rpm : nan;
         msg.torque_nm[w]     = nan;
         msg.temperature_c[w] = nan;
         msg.power_w[w]       = nan;
-        msg.enabled[w]       = ws.valid && ws.engaged;
+        msg.enabled[w]       = ws.valid;
     }
 
     wheel_states_pub_->publish(msg);
 }
 ```
+
+Notes:
+- `applied_velocities` is a member of `MotorControlNode` (already declared in the header).
+- `M_PI` comes from `<cmath>` which is transitively included by the existing headers; if a build error reports it missing, add `#include <cmath>` at the top of `motor_control.cpp`.
+- `WheelState` still has unused fields (`prev_pos`, `prev_time`, `has_prev`, `commanded_vel`) — leave them; a follow-up cleanup task can prune them once Tasks 3 and 4 are done.
 
 - [ ] **Step 2: Build**
 
@@ -283,88 +275,45 @@ docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.
 
 Expected: build succeeds.
 
-- [ ] **Step 3: Bench-verify shape unchanged with reads attempted**
+- [ ] **Step 3: Bench-verify shape unchanged**
 
-Run the node in terminal 1:
-
-```bash
-source install/setup.bash
-ros2 run drive_control motor_control_node
-```
-
-Terminal 2:
+Run the node bench-only:
 
 ```bash
-ros2 topic echo /drivetrain/wheel_states --once
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && source /RoverFlake2/install/setup.bash && ros2 run drive_control motor_control_node 2>&1"
 ```
 
-Expected on bench (no Phidget): `speed_rpm` all `.nan`, `enabled` all `false`, torque/temp/power still `.nan`. The Phidget read failures show up in terminal 1 as logged errors but the node continues and the topic still publishes at 10 Hz.
+In another shell:
 
-Stop the node.
+```bash
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && source /RoverFlake2/install/setup.bash && ros2 topic echo /drivetrain/wheel_states --once 2>&1"
+```
+
+Expected on bench (no Phidget): `enabled` all `false`, `speed_rpm` all `.nan`. If running interactively is impractical, skip and trust the build.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add src/drive_control/src/motor_control.cpp
-git commit -m "feat(drive_control): derive speed_rpm and enabled from Phidget reads
+git commit -m "feat(drive_control): derive speed_rpm and enabled from applied_velocities
 
-speed_rpm is computed from position deltas (rev/sec * 60). enabled
-reflects PhidgetBLDCMotor_getEngaged AND a successful position read.
-Torque/temp/power remain NaN — filled in next task."
+speed_rpm = applied_velocities[port] * 60 / (2π). enabled reflects
+Phidget_getAttached. Torque/temp/power remain NaN — filled in next
+task."
 ```
 
 ---
 
 ## Task 3: Torque/power placeholder + temperature sentinel
 
-Cache the commanded velocity per wheel inside `runMotors()`, then use it to populate `torque_nm`, `power_w`, and the `temperature_c` sentinel.
+Fill `torque_nm`, `power_w`, and `temperature_c` using the `applied_velocities[]` value already available from Task 2. No `runMotors()` changes — that function no longer exists; the post-merge code uses `setVelocity()` + `motorControlLoop()` which maintains `applied_velocities[]` for us.
 
 **Files:**
 - Modify: `src/drive_control/src/motor_control.cpp`
 
-- [ ] **Step 1: Cache commanded velocity inside `runMotors()`**
+- [ ] **Step 1: Fill torque/power/temperature in `publishWheelStates()`**
 
-Edit `src/drive_control/src/motor_control.cpp`. Find `runMotors()`:
-
-```cpp
-void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float velocity) {
-    PhidgetLog_enable(PHIDGET_LOG_INFO, "phidgetlog.log");
-    velocity = std::clamp(velocity, -1.0f, 1.0f);
-
-    for (int motor_index : selected_motors) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_setTargetVelocity(motors[motor_index], velocity);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "set target velocity", motor_index);
-        }
-    }
-}
-```
-
-Replace with:
-
-```cpp
-void MotorControlNode::runMotors(const std::vector<int>& selected_motors, float velocity) {
-    PhidgetLog_enable(PHIDGET_LOG_INFO, "phidgetlog.log");
-    velocity = std::clamp(velocity, -1.0f, 1.0f);
-
-    for (int motor_index : selected_motors) {
-        PhidgetReturnCode ret = PhidgetBLDCMotor_setTargetVelocity(motors[motor_index], velocity);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "set target velocity", motor_index);
-        }
-        for (int w = 0; w < NUM_WHEELS; w++) {
-            if (WHEEL_TO_PORT[w] == motor_index) {
-                wheel_state_[w].commanded_vel = velocity;
-                break;
-            }
-        }
-    }
-}
-```
-
-- [ ] **Step 2: Fill torque/power/temperature in `publishWheelStates()`**
-
-In `publishWheelStates()`, find the three NaN assignments:
+In `publishWheelStates()`, find the three NaN assignments inserted by Task 2:
 
 ```cpp
         msg.torque_nm[w]     = nan;
@@ -375,27 +324,26 @@ In `publishWheelStates()`, find the three NaN assignments:
 Replace with:
 
 ```cpp
-        float cmd_v = static_cast<float>(ws.commanded_vel);
-        float torque = cmd_v * TORQUE_PROXY_SCALE;
-        msg.torque_nm[w]     = pos_ok ? torque : nan;
-        msg.power_w[w]       = pos_ok ? (torque * std::abs(cmd_v)) : nan;
-        msg.temperature_c[w] = pos_ok ? (ws.overheat ? 90.0f : 25.0f) : nan;
+        float torque = v_rad * TORQUE_PROXY_SCALE;
+        msg.torque_nm[w]     = ws.valid ? torque : nan;
+        msg.power_w[w]       = ws.valid ? (torque * std::abs(v_rad)) : nan;
+        msg.temperature_c[w] = ws.valid ? (ws.overheat ? 90.0f : 25.0f) : nan;
 ```
 
-The `ws.overheat` field stays `false` for now — the Phidget overheat API call will be identified at first on-rover bring-up (Task 6, Step 4) and wired in as a follow-up. Until then `temperature_c` reports `25.0` whenever the position read succeeded, which the HMI renders green.
+`v_rad` is the local `float` already computed at the top of the per-wheel loop in Task 2. `ws.overheat` stays `false` for now — the Phidget overheat API call is identified at first on-rover bring-up (Task 6 Step 4); until then `temperature_c` reports `25.0` whenever the channel is attached, which the HMI renders green.
 
-- [ ] **Step 3: Add `<cmath>` include if not already present**
+- [ ] **Step 2: Add `<cmath>` include if not already present**
 
-At the top of `src/drive_control/src/motor_control.cpp`, ensure both includes are present (the existing file already has `<algorithm>` for `std::clamp`; we need `<cmath>` for `std::abs` on floats):
+At the top of `src/drive_control/src/motor_control.cpp`, ensure both includes are present:
 
 ```cpp
 #include <algorithm>
 #include <cmath>
 ```
 
-If `<cmath>` is missing, add it.
+If `<cmath>` is missing, add it (`std::abs` on `float` needs it).
 
-- [ ] **Step 4: Build**
+- [ ] **Step 3: Build**
 
 ```bash
 docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && cd /RoverFlake2 && colcon build --packages-select drive_control --symlink-install 2>&1"
@@ -403,36 +351,27 @@ docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.
 
 Expected: build succeeds.
 
-- [ ] **Step 5: Bench-verify (no Phidget hardware)**
+- [ ] **Step 4: Bench-verify**
 
-Run the node, then in another terminal:
+Optional — run the node and `ros2 topic echo /drivetrain/wheel_states --once`. On bench (no Phidget), `enabled` is false so all fields are NaN. Real values appear on-rover.
 
-```bash
-source install/setup.bash
-ros2 topic echo /drivetrain/wheel_states --once
-```
-
-Expected: still all NaN on bench because position reads all fail without hardware. We'll verify real values on rover in Task 6.
-
-Stop the node.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/drive_control/src/motor_control.cpp
 git commit -m "feat(drive_control): fill torque/power/temperature placeholders
 
-torque_nm = commanded_vel * TORQUE_PROXY_SCALE.
-power_w = torque * |commanded_vel|.
-temperature_c = sentinel (25C when valid, 90C when overheat flag set).
-Overheat flag stays false until Phidget API call is identified on bring-up."
+torque_nm = applied_velocity * TORQUE_PROXY_SCALE (rad/s proxy).
+power_w   = torque * |applied_velocity|.
+temperature_c = 25C sentinel (90C when overheat flag set; flag stays
+false until Phidget API call is identified on bring-up)."
 ```
 
 ---
 
-## Task 4: E-stop subscriber, status publisher, heartbeat, runMotors gate
+## Task 4: E-stop subscriber, status publisher, heartbeat, setVelocity gate
 
-Add the bidirectional e-stop path and the 1 Hz status heartbeat. Gate `runMotors()` so commands are silently dropped while stopped.
+Add the bidirectional e-stop path and 1 Hz status heartbeat. Gate `setVelocity()` so commands are silently dropped while stopped. The post-merge code has real `PhidgetMotorPositionController_setEngaged` — we use it for true H-bridge disable on stop.
 
 **Files:**
 - Modify: `src/drive_control/src/motor_control.cpp`
@@ -455,7 +394,7 @@ stop_heartbeat_timer_ = this->create_wall_timer(
     std::bind(&MotorControlNode::publishStopStatus, this));
 ```
 
-Then, at the very end of the constructor (after the `failsafe_timer_` creation), publish an initial status so any HMI that connects sees the durable latched value:
+Then, at the very end of the constructor (after the `motor_control_timer_` creation), publish an initial status so any HMI that connects sees the durable latched value:
 
 ```cpp
 publishStopStatus();
@@ -471,20 +410,21 @@ void MotorControlNode::onRemoteStop(const std_msgs::msg::Bool::SharedPtr msg) {
     bool prev = remote_stop_.exchange(requested);
 
     if (requested && !prev) {
-        // false → true: stop everything and coast.
+        // false → true: zero velocity intent, disengage so motors coast.
         for (int i = 0; i < NUM_MOTORS; i++) {
             if (!motors[i]) continue;
-            PhidgetBLDCMotor_setTargetVelocity(motors[i], 0.0);
-            PhidgetBLDCMotor_setEngaged(motors[i], 0);
+            target_velocities[i] = 0.0;
+            applied_velocities[i] = 0.0;
+            PhidgetMotorPositionController_setEngaged(motors[i], 0);
         }
-        for (int w = 0; w < NUM_WHEELS; w++) wheel_state_[w].commanded_vel = 0.0;
         RCLCPP_WARN(this->get_logger(), "Drivetrain remote-stop ENGAGED");
     } else if (!requested && prev) {
-        // true → false: re-engage; do NOT auto-clear commanded_vel, operator
-        // must re-issue intent.
+        // true → false: re-engage. target/applied velocities stay at 0 from
+        // the stop transition — operator must move the joystick to re-issue
+        // intent.
         for (int i = 0; i < NUM_MOTORS; i++) {
             if (!motors[i]) continue;
-            PhidgetBLDCMotor_setEngaged(motors[i], 1);
+            PhidgetMotorPositionController_setEngaged(motors[i], 1);
         }
         RCLCPP_INFO(this->get_logger(), "Drivetrain remote-stop RELEASED");
     }
@@ -500,26 +440,28 @@ void MotorControlNode::publishStopStatus() {
 }
 ```
 
-- [ ] **Step 3: Gate `runMotors()` on `remote_stop_`**
+- [ ] **Step 3: Gate `setVelocity()` on `remote_stop_`**
 
-At the very top of `runMotors()`, before `PhidgetLog_enable`, insert:
+Find `setVelocity()` in `motor_control.cpp`. At the very top of the function body, before `double velocity_rads;`, insert:
 
 ```cpp
     if (remote_stop_.load()) return;
 ```
+
+This silently drops incoming velocity requests while stopped — the joystick can move but nothing reaches the motors.
 
 - [ ] **Step 4: Reflect `remote_stop_` in `WheelStates.enabled`**
 
 In `publishWheelStates()`, change the `enabled` assignment from:
 
 ```cpp
-        msg.enabled[w]       = ws.valid && ws.engaged;
+        msg.enabled[w]       = ws.valid;
 ```
 
 to:
 
 ```cpp
-        msg.enabled[w]       = ws.valid && ws.engaged && !remote_stop_.load();
+        msg.enabled[w]       = ws.valid && !remote_stop_.load();
 ```
 
 - [ ] **Step 5: Build**
@@ -703,7 +645,7 @@ Click `RELEASE`. Verify wheels do **not** automatically start moving — you mus
 
 While the rover is running, deliberately stall or load a motor to trigger overheating, or simply wait through a long drive until a controller warms up.
 
-If the temp cell on that row stays at `25.0` (green) even when the controller is physically hot, the overheat flag isn't being read. Check the Phidget22 docs for the BLDC channel — likely candidates:
+If the temp cell on that row stays at `25.0` (green) even when the controller is physically hot, the overheat flag isn't being read. Check the Phidget22 docs for the MotorPositionController channel — likely candidates:
 
 - An `Error` event with `EEPHIDGET_OVERTEMP` (`0x0E` or similar). Subscribed via `Phidget_setOnErrorHandler`.
 - A `PhidgetTemperatureSensor` channel on the same hub port.
@@ -739,8 +681,8 @@ No regression in any pre-existing capability is the bar. Nothing to commit if al
   - torque/power/temp placeholders → Task 3
   - enabled = engaged AND valid AND !stopped → Task 2 + Task 4
   - E-stop sub/pub + heartbeat + transient_local → Task 4
-  - runMotors() gate → Task 4
-  - setEngaged(false) on stop, setEngaged(true) on release → Task 4
+  - setVelocity() gate → Task 4
+  - PhidgetMotorPositionController_setEngaged(0) on stop, setEngaged(1) on release → Task 4
   - No auto-clear commanded_vel on release → Task 4 (explicit comment)
   - Bench verification matching spec Section 5 → Task 5
   - On-rover verification matching spec Section 5 → Task 6
