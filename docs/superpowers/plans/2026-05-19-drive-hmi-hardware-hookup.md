@@ -149,7 +149,7 @@ void MotorControlNode::publishWheelStates() {
 Run (from the host shell):
 
 ```bash
-docker compose exec rover_dev bash -c "cd /workspaces/RoverFlake2 && colcon build --packages-select drive_control --symlink-install"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && cd /RoverFlake2 && colcon build --packages-select drive_control --symlink-install 2>&1"
 ```
 
 Expected: build succeeds. If you see `undefined reference to std_msgs::msg::Bool` it means Step 2 wasn't applied — the new bool subscription declaration in the header needs std_msgs even though we haven't used it in the .cpp yet (the rclcpp template instantiation pulls it).
@@ -278,7 +278,7 @@ void MotorControlNode::publishWheelStates() {
 - [ ] **Step 2: Build**
 
 ```bash
-docker compose exec rover_dev bash -c "cd /workspaces/RoverFlake2 && colcon build --packages-select drive_control --symlink-install"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && cd /RoverFlake2 && colcon build --packages-select drive_control --symlink-install 2>&1"
 ```
 
 Expected: build succeeds.
@@ -398,7 +398,7 @@ If `<cmath>` is missing, add it.
 - [ ] **Step 4: Build**
 
 ```bash
-docker compose exec rover_dev bash -c "cd /workspaces/RoverFlake2 && colcon build --packages-select drive_control --symlink-install"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && cd /RoverFlake2 && colcon build --packages-select drive_control --symlink-install 2>&1"
 ```
 
 Expected: build succeeds.
@@ -525,7 +525,7 @@ to:
 - [ ] **Step 5: Build**
 
 ```bash
-docker compose exec rover_dev bash -c "cd /workspaces/RoverFlake2 && colcon build --packages-select drive_control --symlink-install"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && cd /RoverFlake2 && colcon build --packages-select drive_control --symlink-install 2>&1"
 ```
 
 Expected: build succeeds.
@@ -587,7 +587,7 @@ No code changes — this task confirms the HMI panels light up correctly with no
 - [ ] **Step 1: Launch motor_control_node in a docker shell**
 
 ```bash
-docker compose exec rover_dev bash -c "source install/setup.bash && ros2 run drive_control motor_control_node"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && source /RoverFlake2/install/setup.bash && ros2 run drive_control motor_control_node 2>&1"
 ```
 
 Leave it running. Wait until Phidget attachment timeout logs settle.
@@ -595,7 +595,7 @@ Leave it running. Wait until Phidget attachment timeout logs settle.
 - [ ] **Step 2: Launch the HMI in a separate docker shell**
 
 ```bash
-docker compose exec rover_dev bash -c "source install/setup.bash && ros2 run rover_hmi_core rover_hmi"
+docker compose --compatibility exec rover bash -c "source /opt/ros/humble/setup.bash && source /RoverFlake2/install/setup.bash && ros2 run rover_hmi_core rover_hmi 2>&1"
 ```
 
 - [ ] **Step 3: Verify WheelTelemetryModule**
