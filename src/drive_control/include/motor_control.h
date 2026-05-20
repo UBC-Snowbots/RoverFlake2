@@ -6,13 +6,13 @@
 #include "rover_msgs/msg/drive_feedback.hpp"
 #include "rover_msgs/msg/wheel_states.hpp"
 #include "std_msgs/msg/bool.hpp"
-#include <atomic>
-#include <array>
-#include <limits>
 #include "phidget22.h"
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
 #include <algorithm>  // For std::clamp
+#include <atomic>
+#include <array>
+#include <limits>
 
 #define NUM_MOTORS 6
 #define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
@@ -20,6 +20,9 @@
 
 #define NUM_WHEELS 6
 #define STATUS_HEARTBEAT_INTERVAL_MS 1000
+
+static_assert(NUM_WHEELS == NUM_MOTORS,
+    "wheel count and motor count must match — fix WHEEL_TO_PORT before changing");
 
 // Wheel index → Phidget hub port. WheelStates message documents wheel order as
 // FL(0), FR(1), ML(2), MR(3), RL(4), RR(5). The existing motor_control treats
