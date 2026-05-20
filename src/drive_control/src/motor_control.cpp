@@ -178,13 +178,27 @@ void MotorControlNode::publishDriveFeedback() {
 void MotorControlNode::publishWheelStates() {
     rover_msgs::msg::WheelStates msg;
     const float nan = std::numeric_limits<float>::quiet_NaN();
+
     for (int w = 0; w < NUM_WHEELS; w++) {
-        msg.speed_rpm[w]     = nan;
+        int port = WHEEL_TO_PORT[w];
+        WheelState& ws = wheel_state_[w];
+
+        int attached_int = 0;
+        PhidgetReturnCode att_ret = Phidget_getAttached(
+            (PhidgetHandle)motors[port], &attached_int);
+        ws.engaged = (att_ret == EPHIDGET_OK) && (attached_int != 0);
+        ws.valid = ws.engaged;
+
+        float v_rad = static_cast<float>(applied_velocities[port]);
+        float rpm = v_rad * 60.0f / (2.0f * static_cast<float>(M_PI));
+
+        msg.speed_rpm[w]     = ws.valid ? rpm : nan;
         msg.torque_nm[w]     = nan;
         msg.temperature_c[w] = nan;
         msg.power_w[w]       = nan;
-        msg.enabled[w]       = false;
+        msg.enabled[w]       = ws.valid;
     }
+
     wheel_states_pub_->publish(msg);
 }
 
