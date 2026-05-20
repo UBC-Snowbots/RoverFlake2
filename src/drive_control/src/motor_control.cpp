@@ -33,7 +33,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         // Setup motor position settings so wheels are stopped by default
         double position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
-        if (ret != EPHIDGET_OK) {
+        if (ret == EPHIDGET_OK) {
             target_positions[i] = position;
         }
         else {
