@@ -1,5 +1,6 @@
 #include "motor_control.h"  // Include the header file for motor control functionalities
 #include <algorithm>          // For std::clamp
+#include <cmath>              // For std::abs (float)
 
 /**
  * @brief Construct a new MotorControlNode object
@@ -193,9 +194,10 @@ void MotorControlNode::publishWheelStates() {
         float rpm = v_rad * 60.0f / (2.0f * static_cast<float>(M_PI));
 
         msg.speed_rpm[w]     = ws.valid ? rpm : nan;
-        msg.torque_nm[w]     = nan;
-        msg.temperature_c[w] = nan;
-        msg.power_w[w]       = nan;
+        float torque = v_rad * TORQUE_PROXY_SCALE;
+        msg.torque_nm[w]     = ws.valid ? torque : nan;
+        msg.power_w[w]       = ws.valid ? (torque * std::abs(v_rad)) : nan;
+        msg.temperature_c[w] = ws.valid ? (ws.overheat ? 90.0f : 25.0f) : nan;
         msg.enabled[w]       = ws.valid;
     }
 
