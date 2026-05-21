@@ -8,6 +8,7 @@ find_package(rover_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -54,6 +55,8 @@ add_library(rover_hmi_modules SHARED
     src/electrical/power_timeline_module.cpp
     # Drive
     src/drive/drive_module.cpp
+    # MoveIt
+    src/moveit/rviz_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
@@ -62,13 +65,14 @@ target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/science
     include/rover_hmi_core/electrical
     include/rover_hmi_core/drive
+    include/rover_hmi_core/moveit
 )
 
 target_link_libraries(rover_hmi_modules
     rover_hmi_core
     Qt5::Widgets
 )
-ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib)
+ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp)
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 # ---------------------------------------------------------------------------

@@ -83,4 +83,11 @@
     <description>Rolling power timeline canvas for battery and total power/current series</description>
   </class>
 
+  <!-- MoveIt -->
+  <class name="rover_hmi_core/RvizModule"
+         type="RvizModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Embedded RViz 3D robot visualization</description>
+  </class>
+
 </library>
