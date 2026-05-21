@@ -14,6 +14,8 @@ import pyrealsense2 as rs
 import numpy as np
 from typing import List, Dict, Tuple, Optional
 
+# Changing something small to see if precommit works on main
+
 class CameraPublisher(Node):
     def __init__(self):
         super().__init__('camera_pub_node')
