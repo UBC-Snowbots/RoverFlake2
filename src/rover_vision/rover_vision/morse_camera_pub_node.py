@@ -9,7 +9,7 @@ import time
 """
 The existing CameraPublisher node is too slow to achieve 30+ FPS, which is required for the Morse Code task
 This node provides a faster implementation, based on the original CameraPublisher. Speedup is achieved in 2 ways:
-    1. Remove RealSense support
+    1. Remove RealSense support and support for multiple camera
     2. Rather than transmit full camera data, the node calculates the on/off state of the Morse LED, and transmits a simple flag
 """
 class MorseSignalPublisher(Node):
