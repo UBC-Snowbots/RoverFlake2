@@ -30,6 +30,9 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
         handlePhidgetError(ret, "setting motor max velocity", i);
 
+        ret = PhidgetMotorPositionController_setAcceleration(motors[i], MAX_ACCEL_RADS);
+        handlePhidgetError(ret, "setting motor max acceleration", i);
+
         // Initialize motor position so wheels are stationary on startup
         double position;
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
@@ -58,6 +61,12 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&MotorControlNode::publishDriveFeedback, this)
+    );
+
+    // Initialize timer to reset the failsafe
+    failsafe_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 2),
+        std::bind(&MotorControlNode::resetFailsafe, this)
     );
 
     // Enable failsafe for all motors
@@ -115,24 +124,15 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
 void MotorControlNode::motorControlLoop() {
     PhidgetReturnCode ret;
     for (int i = 0; i < NUM_MOTORS; i++) {
-        double current_position;
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &current_position);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "getting motor position", i);
-            continue;
-        }
+        // double dv = target_velocities[i] - applied_velocities[i];
+        // dv = std::clamp(dv, -MAX_DV, MAX_DV);
+        // applied_velocities[i] = applied_velocities[i] + dv;
 
-        double dv = target_velocities[i] - applied_velocities[i];
-        dv = std::clamp(dv, -MAX_DV, MAX_DV);
-        applied_velocities[i] = applied_velocities[i] + dv;
-
-        target_positions[i] = current_position + (applied_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
+        target_positions[i] += (target_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
         ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
-        handlePhidgetError(ret, "setting motor position", i);
-
-        // Reset the failsafe
-        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
-        handlePhidgetError(ret, "failsafe", i);
+        if (ret != EPHIDGET_OK) {
+            handlePhidgetError(ret, "setting motor position", i);
+        }
     }
 }
 
@@ -154,21 +154,37 @@ void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
     message.valid_data.resize(NUM_MOTORS, true);
-    message.velocities.resize(NUM_MOTORS);
-    message.positions.resize(NUM_MOTORS);
+    message.target_velocities.resize(NUM_MOTORS);
+    message.actual_velocities.resize(NUM_MOTORS);
+    message.target_positions.resize(NUM_MOTORS);
+    message.actual_positions.resize(NUM_MOTORS);
 
+    double position;
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &message.positions[i]);
+        message.target_velocities[i] = target_velocities[i] * WHEEL_RADIUS_METERS;
+
+        // Use previous and current position to measure average actual velocity
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
         if (ret != EPHIDGET_OK) {
             handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
         }
-        
-        message.velocities[i] = applied_velocities[i];
+        message.actual_velocities[i] = ((position - current_positions[i]) / (DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS / 1000.0)) * WHEEL_RADIUS_METERS;
+        current_positions[i] = position;
+
+        message.target_positions[i] = target_positions[i];
+        message.actual_positions[i] = position;
     }
     drive_feedback_pub_->publish(message);
+}
+
+void MotorControlNode::resetFailsafe() {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
+        handlePhidgetError(ret, "failsafe", i);
+    }
 }
 
 int main(int argc, char **argv) {

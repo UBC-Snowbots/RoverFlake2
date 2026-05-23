@@ -18,15 +18,6 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     // Extract the linear and angular velocity from the incoming message
     double linear = msg->linear.x;
     double angular = msg->angular.z;
-    
-    // // Calculate a factor to adjust wheel speed based on the wheel radius and angular velocities
-    // double wheel_speed_factor = (360.0 / WHEEL_RADIUS_METERS) * (M_PI / 2.0) * 0.0001;  // Placeholder for speed scaling
-
-    double wheel_speed_factor =  0.1;  // Placeholder for speed scaling
-
-    // Apply the speed factor to both linear and angular velocities
-    linear *= wheel_speed_factor;
-    angular *= wheel_speed_factor;
 
     // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
     std::vector<double> left_wheel_commands = {
