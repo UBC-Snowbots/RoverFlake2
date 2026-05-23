@@ -34,17 +34,16 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         handlePhidgetError(ret, "setting motor max acceleration", i);
 
         // Initialize motor position so wheels are stationary on startup
-        double position;
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &current_positions[i]);
         if (ret == EPHIDGET_OK) {
-            target_positions[i] = position;
+            target_positions[i] = current_positions[i];
         }
         else {
             handlePhidgetError(ret, "getting initial motor position", i);
             target_positions[i] = 0;
         }
 
-        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], position);
+        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], current_positions[i]);
         handlePhidgetError(ret, "setting initial motor target position", i);
 
         ret = PhidgetMotorPositionController_setEngaged(motors[i], 1);
@@ -61,12 +60,6 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&MotorControlNode::publishDriveFeedback, this)
-    );
-
-    // Initialize timer to reset the failsafe
-    failsafe_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(MOTOR_FAILSAFE_INTERVAL_MS / 2),
-        std::bind(&MotorControlNode::resetFailsafe, this)
     );
 
     // Enable failsafe for all motors
@@ -122,17 +115,9 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
 }
 
 void MotorControlNode::motorControlLoop() {
-    PhidgetReturnCode ret;
     for (int i = 0; i < NUM_MOTORS; i++) {
-        // double dv = target_velocities[i] - applied_velocities[i];
-        // dv = std::clamp(dv, -MAX_DV, MAX_DV);
-        // applied_velocities[i] = applied_velocities[i] + dv;
-
         target_positions[i] += (target_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
-        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "setting motor position", i);
-        }
+        PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
     }
 }
 
@@ -150,6 +135,11 @@ void MotorControlNode::setVelocity(const std::vector<int>& selected_motors, floa
     }
 }
 
+/**
+ * TODO: Actual velocity is reporting values much lower than the target_velocity (and seemingly much slower than the wheels are spinning)
+ * Try using a Phidget DataInterval callback function to calculate actual velocity to eliminate timing conflicts with the motor control loop
+ * See `PhidgetMotorPositionController_setDataInterval()` here: https://www.phidgets.com/?prodid=1391#Tab_API
+ */
 void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
@@ -168,8 +158,8 @@ void MotorControlNode::publishDriveFeedback() {
         // Use previous and current position to measure average actual velocity
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
         if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
+            position = current_positions[i];
         }
         message.actual_velocities[i] = ((position - current_positions[i]) / (DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS / 1000.0)) * WHEEL_RADIUS_METERS;
         current_positions[i] = position;
@@ -178,13 +168,6 @@ void MotorControlNode::publishDriveFeedback() {
         message.actual_positions[i] = position;
     }
     drive_feedback_pub_->publish(message);
-}
-
-void MotorControlNode::resetFailsafe() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
-        handlePhidgetError(ret, "failsafe", i);
-    }
 }
 
 int main(int argc, char **argv) {

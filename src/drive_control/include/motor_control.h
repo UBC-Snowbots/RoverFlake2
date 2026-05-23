@@ -34,7 +34,7 @@
 /**
  * Velocity limits
  */
-#define MAX_VELOCITY_MS 5.0
+#define MAX_VELOCITY_MS 3.5
 #define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_RADS (MAX_VELOCITY_MS / WHEEL_RADIUS_METERS)
 
@@ -77,9 +77,6 @@ private:
 
     // Timer to check motor state (velocities and positions) periodically
     rclcpp::TimerBase::SharedPtr feedback_timer_;
-
-    // Timer to reset the motor failsafe
-    rclcpp::TimerBase::SharedPtr failsafe_timer_;
 
     // Timer for the main motor control loop
     rclcpp::TimerBase::SharedPtr motor_control_timer_;
