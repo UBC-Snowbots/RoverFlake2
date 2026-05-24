@@ -5,6 +5,7 @@
 // If file is not in this directory, use <>
 // If file path is reative to this directory, use "". 
 #include <rover_utils/include/roverCommon.h> // roverCommon.h will get you set up with basic ros2 includes as well as our utility libraries. Some parts of the repo
+#include <rover_utils/include/alertRaiser.h> // Some rover utils still need to be explicitly included, as they have more dependencies than the simple utils
 #include "sample_node_defines.h"
 // Other ros2 includes seperated by a line
 #include <sensor_msgs/msg/joy.hpp> 

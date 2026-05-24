@@ -43,6 +43,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MoteusCalibrationRequest.msg"
   "msg/MoteusCalibrationStatus.msg"
 
+  "msg/AckAlert.msg"
+  "msg/ActiveAlert.msg"
+  
   DEPENDENCIES std_msgs
  )
 
