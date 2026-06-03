@@ -92,20 +92,31 @@ def generate_launch_description():
             ('in/image_raw', '/vehicle_1/main_feed/image_raw'),
             ('out/ffmpeg', '/vehicle_1/main_feed/image_raw/h265'),
         ],
-        parameters=[
-            {'ffmpeg_image_transport.encoding': 'libx264',  # Use H.265 encoding with NVENC (if available)
-             'ffmpeg_image_transport.profile': 'high',
-             'ffmpeg_image_transport.preset': 'ultrafast',            # Low latency preset
-             'ffmpeg_image_transport.tune': 'zerolatency',         # Main profile for compatibility
-             'ffmpeg_image_transport.gop_size': 30,            # GOP size (group of pictures)
-            #  'ffmpeg_image_transport.bit_rate': 8242880,   # Target bitrate
-              'ffmpeg_image_transport.delay' : "20ms",
-              'ffmpeg_image_transport.frame_rate': 30,
-              'ffmpeg_image_transport.qmax' : 80,
-            #  'ffmpeg_image_transport.pixel_format': "yuv420p",
-              'ffmpeg_image_transport.crf': 28
-             }       
-        ],
+        parameters=[{
+            'out.ffmpeg.encoder': 'libx264',
+            'out.ffmpeg.bit_rate': 500000, #8242880,
+            'out.ffmpeg.gop_size': 30,
+            'out.ffmpeg.frame_rate' : 30,
+            'out.ffmpeg.qmax': 80,
+            'out.ffmpeg.max_b_frames': 0,   # 0 = no B-frames, lowest latency
+            'out.ffmpeg.encoder_av_options': 'preset:ultrafast,tune:zerolatency,profile:high,crf:28',
+        }],
+        # parameters=[
+        #     {'ffmpeg_image_transport.encoding': 'libx264',  # Use H.265 encoding with NVENC (if available)
+        #      'ffmpeg_image_transport.profile': 'high',
+        #      'ffmpeg_image_transport.preset': 'ultrafast',            # Low latency preset
+        #      'ffmpeg_image_transport.tune': 'zerolatency',         # Main profile for compatibility
+        #      'ffmpeg_image_transport.gop_size': 30,            # GOP size (group of pictures)
+        #      'ffmpeg_image_transport.bit_rate': 8242880,   # Target bitrate
+        #       'ffmpeg_image_transport.delay' : "20ms",
+        #       'ffmpeg_image_transport.frame_rate': 30,
+        #       'ffmpeg_image_transport.qmax' : 80,
+        #     #  'ffmpeg_image_transport.pixel_format': "yuv420p",
+        #       'ffmpeg_image_transport.crf': 28,
+        #       'out.ffmpeg.bit_rate' : 8242880
+        #       'out.ffmpeg.encoder' : 'libx264'
+        #      }       
+        # ],
         arguments=['raw', 'in:=/vehicle_1/main_feed/image_raw', 'ffmpeg', 'out:=/vehicle_1/main_feed/image_raw/h265']
     )
     rear_ffmpeg_republisher_node = Node(
@@ -116,19 +127,28 @@ def generate_launch_description():
             ('in/image_raw', '/vehicle_1/rear_feed/image_raw'),
             ('out/ffmpeg', '/vehicle_1/rear_feed/image_raw/h265'),
         ],
-        parameters=[
-            {'ffmpeg_image_transport.encoding': 'libx264',  # Use H.265 encoding with NVENC (if available)
-             'ffmpeg_image_transport.profile': 'baseline',
-             'ffmpeg_image_transport.preset': 'ultrafast',            # Low latency preset
-             'ffmpeg_image_transport.tune': 'zerolatency',         # Main profile for compatibility
-             'ffmpeg_image_transport.gop_size': 10,            # GOP size (group of pictures)
-             'ffmpeg_image_transport.bit_rate': 2242880,   # Target bitrate
-             'ffmpeg_image_transport.frame_rate' : 15,
-             'ffmpeg_image_transport.delay': "4",
-             'ffmpeg_image_transport.qmax': 80,
-             'ffmpeg_image_transport.crf': 28
-             }       
-        ],
+        parameters=[{
+            'out.ffmpeg.encoder': 'libx264',
+            'out.ffmpeg.bit_rate': 500000, #8242880
+            'out.ffmpeg.gop_size': 10,
+            'out.ffmpeg.frame_rate' : 15,
+            'out.ffmpeg.qmax': 80,
+            'out.ffmpeg.max_b_frames': 0,   # 0 = no B-frames, lowest latency
+            'out.ffmpeg.encoder_av_options': 'preset:ultrafast,tune:zerolatency,profile:high,crf:28',
+        }],
+        # parameters=[
+        #     {'ffmpeg_image_transport.encoding': 'libx264',  # Use H.265 encoding with NVENC (if available)
+        #      'ffmpeg_image_transport.profile': 'baseline',
+        #      'ffmpeg_image_transport.preset': 'ultrafast',            # Low latency preset
+        #      'ffmpeg_image_transport.tune': 'zerolatency',         # Main profile for compatibility
+        #      'ffmpeg_image_transport.gop_size': 10,            # GOP size (group of pictures)
+        #      'ffmpeg_image_transport.bit_rate': 2242880,   # Target bitrate
+        #      'ffmpeg_image_transport.frame_rate' : 15,
+        #      'ffmpeg_image_transport.delay': "4",
+        #      'ffmpeg_image_transport.qmax': 80,
+        #      'ffmpeg_image_transport.crf': 28
+        #      }       
+        # ],
         arguments=['raw', 'in:=/vehicle_1/rear_feed/image_raw', 'ffmpeg', 'out:=/vehicle_1/rear_feed/image_raw/h265']
     )
 
