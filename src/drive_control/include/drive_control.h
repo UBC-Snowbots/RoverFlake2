@@ -13,17 +13,18 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
+#define MAX_LINEAR_SPEED_MPS 3.5
+#define MAX_ANGULAR_SPEED_MPS 1.75
+
 /**
  * @brief DriveControlNode handles joystick input and publishes velocity commands.
  */
 class DriveControlNode : public rclcpp::Node {
 public:
-    DriveControlNode();  // Constructor
+    DriveControlNode();
 
 private:
     void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);  // Callback function for joystick input
-
-    static constexpr double MAX_LINEAR_SPEED = 1.0;  // Maximum linear speed (m/s)
 
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input

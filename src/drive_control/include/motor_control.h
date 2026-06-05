@@ -35,7 +35,7 @@
 /**
  * Velocity limits
  */
-#define MAX_VELOCITY_MS 3.5
+#define MAX_VELOCITY_MS 5.0
 #define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_RADS (MAX_VELOCITY_MS / WHEEL_RADIUS_METERS)
 
