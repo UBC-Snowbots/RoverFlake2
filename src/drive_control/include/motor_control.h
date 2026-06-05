@@ -23,26 +23,27 @@
  * Allows communication with the position controller in radians rather than commutations
  */
 #define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
+#define ODOMETRY_RESCALE_FACTOR 2.333333
 
 /**
  * Time-related constants for loops
  */
 #define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the main motor control loop
-#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 100 // Publish frequency for drive_feedback_pub_
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 1000 // Publish frequency for drive_feedback_pub_
 #define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors
 
 /**
  * Velocity limits
  */
-#define MAX_VELOCITY_MS 5
+#define MAX_VELOCITY_MS 5.0
 #define MIN_VELOCITY_MS 0.05
-#define MAX_VELOCITY_RADS MAX_VELOCITY_MS / WHEEL_RADIUS_METERS
+#define MAX_VELOCITY_RADS (MAX_VELOCITY_MS / WHEEL_RADIUS_METERS)
 
 /**
  * Acceleration limits
  */
-#define MAX_ACCEL_RADS 10
-#define MAX_DV MAX_ACCEL_RADS * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0)
+#define MAX_ACCEL_RADS 50.0
+#define MAX_DV (MAX_ACCEL_RADS * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0))
 
 class MotorControlNode : public rclcpp::Node {
 public:
@@ -62,44 +63,29 @@ private:
     
     // Loop to interact with motors
     void motorControlLoop();
-
-    // Function to record velocity commands for use in the Motor Control Loop
+    
+    // Function to record target_velocity for use in the Motor Control Loop
     void setVelocity(const std::vector<int>& selected_motors, float velocity);
-
+    
     // Callback functions for left and right wheel velocity subscriptions
     void leftWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
     void rightWheelCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
-
-    // Function to publish the velocity, target velocity and position of each motor
+    
+    // Function to publish the target/actual position and velocity of each motor for odometry
     void publishDriveFeedback();
-
-    // Timer to check motor state (velocities and positions) periodically
+    
+    // Timer to publish odometry (velocities and positions) periodically
     rclcpp::TimerBase::SharedPtr feedback_timer_;
-
-    // Timer to reset the motor failsafe
-    rclcpp::TimerBase::SharedPtr failsafe_timer_;
 
     // Timer for the main motor control loop
     rclcpp::TimerBase::SharedPtr motor_control_timer_;
 
     // Motor-related variables
     PhidgetMotorPositionControllerHandle motors[NUM_MOTORS]; // Array of motors
-    double target_positions[NUM_MOTORS] = {0.0}; // Array of target motor positions, used as input to the Position Controllers
+    double target_positions[NUM_MOTORS] = {0.0}; // Array of incremental target motor positions, used as input to the Position Controllers
+    double current_positions[NUM_MOTORS] = {0.0}; // Array of actual motor positions from the Phidget API, used for odometry
 
-    /**
-     * Arrays for storing velocity values
-     * target_velocities: The most recent velocity command received from the controller, clamped to the max velocity
-     * applied_velocities: The velocity actually applied to the motor, clamped to the max acceleration in the control loop
-     * 
-     * The reason for distinction between the 2 arrays is because the velocity limit is applied when the command is received, independent of control loop timing
-     * There is no reason to store a velocity command that exceeds the max, so the limit is applied in the setVelocity function so that the clamping is not repeated
-     * each time the control loop runs
-     * 
-     * The acceleration is different each control loop, so it must be applied in the control loop
-     * It is saved in applied_velocities for use in the odometry feedback
-     */
-    double target_velocities[NUM_MOTORS] = {0.0};
-    double applied_velocities[NUM_MOTORS] = {0.0};
+    double target_velocities[NUM_MOTORS] = {0.0}; // The most recent velocity command, clamped to the max velocity
 };
 
 #endif // MOTOR_CONTROL_NODE_H

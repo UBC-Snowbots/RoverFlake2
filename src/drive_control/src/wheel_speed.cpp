@@ -23,6 +23,20 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     wheel_velocities = preventPivotDeadzone(wheel_velocities);
 
     // Publish the separate left and right wheel velocity messages
+    // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
+    std::vector<double> left_wheel_commands = {
+        -linear + angular,   // Left Front Wheel
+        -linear + angular,   // Left Mid Wheel
+        -linear + angular    // Left Rear Wheel
+    };
+    
+    std::vector<double> right_wheel_commands = {
+        linear + angular,  // Right Front Wheel
+        linear + angular,  // Right Mid Wheel
+        linear + angular   // Right Rear Wheel
+    };
+
+    // Publish the separate left and right wheel speed messages
     std_msgs::msg::Float64MultiArray left_msg;
     left_msg.data = wheel_velocities.left_wheel_velocities;
     left_wheel_pub_->publish(left_msg);

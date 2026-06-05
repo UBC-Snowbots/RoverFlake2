@@ -8,7 +8,7 @@
 MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     RCLCPP_INFO(this->get_logger(), "Motor Control Node Initiated");
 
-    // Initialize Phidget Motors and Velocity Controllers
+    // Initialize Phidget Motors Position Controllers
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
@@ -30,18 +30,20 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setVelocityLimit(motors[i], MAX_VELOCITY_RADS);
         handlePhidgetError(ret, "setting motor max velocity", i);
 
-        // Setup motor position settings so wheels are stopped by default
-        double position;
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
+        ret = PhidgetMotorPositionController_setAcceleration(motors[i], MAX_ACCEL_RADS);
+        handlePhidgetError(ret, "setting motor max acceleration", i);
+
+        // Initialize motor position so wheels are stationary on startup
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &current_positions[i]);
         if (ret == EPHIDGET_OK) {
-            target_positions[i] = position;
+            target_positions[i] = current_positions[i];
         }
         else {
             handlePhidgetError(ret, "getting initial motor position", i);
             target_positions[i] = 0;
         }
 
-        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], position);
+        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], current_positions[i]);
         handlePhidgetError(ret, "setting initial motor target position", i);
 
         ret = PhidgetMotorPositionController_setEngaged(motors[i], 1);
@@ -113,26 +115,9 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
 }
 
 void MotorControlNode::motorControlLoop() {
-    PhidgetReturnCode ret;
     for (int i = 0; i < NUM_MOTORS; i++) {
-        double current_position;
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &current_position);
-        if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "getting motor position", i);
-            continue;
-        }
-
-        double dv = target_velocities[i] - applied_velocities[i];
-        dv = std::clamp(dv, -MAX_DV, MAX_DV);
-        applied_velocities[i] = applied_velocities[i] + dv;
-
-        target_positions[i] = current_position + (applied_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
-        ret = PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
-        handlePhidgetError(ret, "setting motor position", i);
-
-        // Reset the failsafe
-        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
-        handlePhidgetError(ret, "failsafe", i);
+        target_positions[i] += (target_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
+        PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
     }
 }
 
@@ -154,19 +139,27 @@ void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
     message.valid_data.resize(NUM_MOTORS, true);
-    message.velocities.resize(NUM_MOTORS);
-    message.positions.resize(NUM_MOTORS);
+    message.target_velocities.resize(NUM_MOTORS);
+    message.actual_velocities.resize(NUM_MOTORS);
+    message.target_positions.resize(NUM_MOTORS);
+    message.actual_positions.resize(NUM_MOTORS);
 
+    double position;
     for (int i = 0; i < NUM_MOTORS; i++) {
         PhidgetReturnCode ret;
 
-        ret = PhidgetMotorPositionController_getPosition(motors[i], &message.positions[i]);
+        message.target_velocities[i] = target_velocities[i] * WHEEL_RADIUS_METERS;
+
+        ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
         if (ret != EPHIDGET_OK) {
-            handlePhidgetError(ret, "getting motor position", i);
             message.valid_data[i] = false;
+            position = current_positions[i];
         }
-        
-        message.velocities[i] = applied_velocities[i];
+        message.actual_velocities[i] = ((position - current_positions[i]) / (DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS / 1000.0)) * WHEEL_RADIUS_METERS * ODOMETRY_RESCALE_FACTOR;
+        current_positions[i] = position;
+
+        message.target_positions[i] = target_positions[i];
+        message.actual_positions[i] = position;
     }
     drive_feedback_pub_->publish(message);
 }

@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(joy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_utils REQUIRED)
+find_package(rover_msgs REQUIRED)
 
 
 
@@ -21,7 +22,7 @@ include_directories(include/)
 #add_executable adds a 'target' for CMake to go in and do it's magic
 #The target's name here is 'sample_node', and while the naming doesn't need to match the source files, its good practice to keep them the same as this is what you use with ros2 run
 add_executable(sample_node src/sample_node.cpp include/sample_node.h include/sample_node_defines.h)
-ament_target_dependencies(sample_node rclcpp joy rover_utils)
+ament_target_dependencies(sample_node rclcpp joy rover_utils rover_msgs)
 
 # add_executable(test_example test/unit_test_example.cpp) # add a test, its just another executable
 # target_link_libraries(test_example PRIVATE Catch2::Catch2WithMain)
