@@ -23,12 +23,13 @@
  * Allows communication with the position controller in radians rather than commutations
  */
 #define MOTOR_RESCALE_FACTOR (2.0 * M_PI) / (MOTOR_GEAR_RATIO * MOTOR_NUM_POLES * MOTOR_NUM_PHASES)
+#define ODOMETRY_RESCALE_FACTOR 2.333333
 
 /**
  * Time-related constants for loops
  */
 #define MOTOR_CONTROL_LOOP_FREQUENCY_MS 50 // Frequency for the main motor control loop
-#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 200 // Publish frequency for drive_feedback_pub_
+#define DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS 1000 // Publish frequency for drive_feedback_pub_
 #define MOTOR_FAILSAFE_INTERVAL_MS 500 // Interval for the Phidget failsafe to shut down the motors
 
 /**
@@ -41,7 +42,7 @@
 /**
  * Acceleration limits
  */
-#define MAX_ACCEL_RADS 25.0
+#define MAX_ACCEL_RADS 50.0
 #define MAX_DV (MAX_ACCEL_RADS * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0))
 
 class MotorControlNode : public rclcpp::Node {
@@ -73,9 +74,7 @@ private:
     // Function to publish the target/actual position and velocity of each motor for odometry
     void publishDriveFeedback();
     
-    void resetFailsafe();
-
-    // Timer to check motor state (velocities and positions) periodically
+    // Timer to publish odometry (velocities and positions) periodically
     rclcpp::TimerBase::SharedPtr feedback_timer_;
 
     // Timer for the main motor control loop

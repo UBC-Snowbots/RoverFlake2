@@ -135,11 +135,6 @@ void MotorControlNode::setVelocity(const std::vector<int>& selected_motors, floa
     }
 }
 
-/**
- * TODO: Actual velocity is reporting values much lower than the target_velocity (and seemingly much slower than the wheels are spinning)
- * Try using a Phidget DataInterval callback function to calculate actual velocity to eliminate timing conflicts with the motor control loop
- * See `PhidgetMotorPositionController_setDataInterval()` here: https://www.phidgets.com/?prodid=1391#Tab_API
- */
 void MotorControlNode::publishDriveFeedback() {
     rover_msgs::msg::DriveFeedback message;
 
@@ -155,13 +150,12 @@ void MotorControlNode::publishDriveFeedback() {
 
         message.target_velocities[i] = target_velocities[i] * WHEEL_RADIUS_METERS;
 
-        // Use previous and current position to measure average actual velocity
         ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
         if (ret != EPHIDGET_OK) {
             message.valid_data[i] = false;
             position = current_positions[i];
         }
-        message.actual_velocities[i] = ((position - current_positions[i]) / (DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS / 1000.0)) * WHEEL_RADIUS_METERS;
+        message.actual_velocities[i] = ((position - current_positions[i]) / (DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS / 1000.0)) * WHEEL_RADIUS_METERS * ODOMETRY_RESCALE_FACTOR;
         current_positions[i] = position;
 
         message.target_positions[i] = target_positions[i];
