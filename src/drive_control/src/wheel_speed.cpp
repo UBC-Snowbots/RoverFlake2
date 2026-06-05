@@ -22,7 +22,6 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     WheelVelocities wheel_velocities = tankDrive(linear, angular);
     wheel_velocities = preventPivotDeadzone(wheel_velocities);
 
-    // Publish the separate left and right wheel velocity messages
     // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
     std::vector<double> left_wheel_commands = {
         -linear + angular,   // Left Front Wheel
@@ -68,15 +67,15 @@ WheelVelocities WheelSpeedNode::preventPivotDeadzone(WheelVelocities current_whe
         double left_vel = current_wheel_velocities.left_wheel_velocities[i];
         double right_vel = current_wheel_velocities.right_wheel_velocities[i];
 
-        if (std::abs(left_vel) < MOTOR_STOP_THRESHOLD && std::abs(right_vel) > MOTOR_START_THRESHOLD) {
-            final_wheel_velocities.left_wheel_velocities[i] = right_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        if (std::abs(left_vel) < PIVOT_DEADZONE_THRESHOLD && std::abs(right_vel) > PIVOT_DEADZONE_THRESHOLD) {
+            final_wheel_velocities.left_wheel_velocities[i] = right_vel > 0 ? PIVOT_DEADZONE_THRESHOLD : -PIVOT_DEADZONE_THRESHOLD;
         }
         else {
             final_wheel_velocities.left_wheel_velocities[i] = left_vel;
         }
 
-        if (std::abs(right_vel) < MOTOR_STOP_THRESHOLD && std::abs(left_vel) > MOTOR_START_THRESHOLD) {
-            final_wheel_velocities.right_wheel_velocities[i] = left_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        if (std::abs(right_vel) < PIVOT_DEADZONE_THRESHOLD && std::abs(left_vel) > PIVOT_DEADZONE_THRESHOLD) {
+            final_wheel_velocities.right_wheel_velocities[i] = left_vel > 0 ? PIVOT_DEADZONE_THRESHOLD : -PIVOT_DEADZONE_THRESHOLD;
         }
         else {
             final_wheel_velocities.right_wheel_velocities[i] = right_vel;

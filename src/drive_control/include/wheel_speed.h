@@ -7,7 +7,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include <vector>
-#include "rclcpp/qos.hpp"  // Include QoS header
+#include "rclcpp/qos.hpp"
 
 struct WheelVelocities {
   std::vector<double> left_wheel_velocities;
@@ -20,8 +20,7 @@ struct WheelVelocities {
 #define DRIVE_WIDTH_METERS 0.9
 #define DRIVE_LENGTH_METERS 0.4
 
-#define MOTOR_START_THRESHOLD 0.1
-#define MOTOR_STOP_THRESHOLD 0.05
+#define PIVOT_DEADZONE_THRESHOLD 0.5
 
 class WheelSpeedNode : public rclcpp::Node {
 public:
@@ -37,7 +36,6 @@ private:
      * When the rover is turning using tank steering, there is a dead zone for each side of the drive train when linear = -angular
      * With only half the wheels spinning, it is easy for the rover to get stuck
      * To prevent this, this function will set the non-moving side to a small velocity in the opposite direction to the turning side
-     * 
      */
     WheelVelocities preventPivotDeadzone(WheelVelocities current_wheel_velocities);
 
