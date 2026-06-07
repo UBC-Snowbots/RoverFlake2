@@ -170,7 +170,8 @@ class LayoutManagerOverlay : public QWidget {
     Q_OBJECT
 public:
     explicit LayoutManagerOverlay(TilingContainer* tc, QWidget* parent = nullptr);
-    void refresh();   // reload snapshots from persistent storage
+    void refresh();        // reload snapshots from persistent storage
+    void cancelRename();   // exit rename mode without saving
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -182,6 +183,9 @@ private:
     std::vector<LayoutSnapshot> snapshots_;
     int focused_idx_   = 0;
     int scroll_offset_ = 0;
+
+    bool    renaming_    = false;
+    QString rename_buf_;
 };
 
 
@@ -284,6 +288,7 @@ public:
     void saveCurrentLayout();
     void loadLayout(int index);
     void deleteLayout(int index);
+    void renameLayout(int index, const QString& name);
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 

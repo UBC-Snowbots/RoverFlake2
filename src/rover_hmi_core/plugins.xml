@@ -1,27 +1,30 @@
-<library path="arm_hardware_interface_hmi">
-  <class name="arm_hardware_interface/MotorStatusModule"
+<library path="rover_hmi_modules">
+
+  <!-- Arm -->
+  <class name="rover_hmi_core/MotorStatusModule"
          type="MotorStatusModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>6-joint motor telemetry table (live CAN-FD feedback)</description>
   </class>
-  <class name="arm_hardware_interface/PlottingModule"
+  <class name="rover_hmi_core/PlottingModule"
          type="PlottingModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Real-time position and velocity plots for all arm joints</description>
   </class>
-  <class name="arm_hardware_interface/MotorConfigModule"
+  <class name="rover_hmi_core/MotorConfigModule"
          type="MotorConfigModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Per-motor PID gains and limits from firmware config</description>
   </class>
-  <class name="arm_hardware_interface/SendCommandModule"
+  <class name="rover_hmi_core/SendCommandModule"
          type="SendCommandModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Motor command and jog controls</description>
   </class>
-  <class name="arm_hardware_interface/CommandLogModule"
+  <class name="rover_hmi_core/CommandLogModule"
          type="CommandLogModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Log of sent commands and driver messages</description>
   </class>
+
 </library>
