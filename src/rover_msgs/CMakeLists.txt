@@ -45,7 +45,12 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
   "msg/AckAlert.msg"
   "msg/ActiveAlert.msg"
-  
+
+  "msg/WheelStates.msg"
+  "msg/LightControl.msg"
+  "msg/LightStatus.msg"
+  "msg/PowerStatus.msg"
+
   DEPENDENCIES std_msgs
  )
 
