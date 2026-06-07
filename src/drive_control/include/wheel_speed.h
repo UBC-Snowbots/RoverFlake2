@@ -3,7 +3,6 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "rover_msgs/msg/drive_feedback.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include <vector>
@@ -21,7 +20,7 @@ struct WheelVelocities {
 #define DRIVE_LENGTH_METERS 0.4
 
 #define MOTOR_START_THRESHOLD 0.1
-#define MOTOR_STOP_THRESHOLD 0.02
+#define MOTOR_STOP_THRESHOLD 0.05
 
 class WheelSpeedNode : public rclcpp::Node {
 public:
@@ -30,18 +29,14 @@ public:
 
 private:
     void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
-    void driveFeedbackCallback(const rover_msgs::msg::DriveFeedback::SharedPtr msg);
 
     WheelVelocities tankDrive(double linear, double angular);
-    WheelVelocities applyHysteresis(WheelVelocities current, WheelVelocities target);
+    WheelVelocities preventPivotDeadzone(WheelVelocities wheel_velocities);
     WheelVelocities ackermann(double linear, double angular);
 
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
-    rclcpp::Subscription<rover_msgs::msg::DriveFeedback>::SharedPtr drive_feedback_sub_;
-
-    WheelVelocities current_wheel_velocities;
 };
 
 #endif // WHEEL_SPEED_NODE_H

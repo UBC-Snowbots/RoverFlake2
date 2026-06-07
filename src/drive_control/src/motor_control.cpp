@@ -149,7 +149,7 @@ void MotorControlNode::motorControlLoop() {
         handlePhidgetError(ret, "setting motor position", i);
 
         // Reset the failsafe
-        PhidgetReturnCode ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
+        ret = PhidgetMotorPositionController_resetFailsafe(motors[i]);
         handlePhidgetError(ret, "failsafe", i);
     }
 }

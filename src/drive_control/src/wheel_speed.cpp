@@ -1,4 +1,5 @@
 # include "wheel_speed.h"
+#include <cmath>  // For std::abs
 
 // Constructor definition for WheelSpeed class
 WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the node with the name "wheel_speed"
@@ -11,10 +12,6 @@ WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the
     // Create a subscription to receive Twist messages (which contain velocity commands) from the "/cmd_vel" topic
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&WheelSpeedNode::cmdVelCallback, this, std::placeholders::_1));
-
-    // Create a subscription to the drive/feedback topic to keep track of wheel speed history for Schmitt trigger
-    drive_feedback_sub_ = this->create_subscription<rover_msgs::msg::DriveFeedback>(
-        "drive/feedback", 10, std::bind(&WheelSpeedNode::driveFeedbackCallback, this, std::placeholders::_1));
 }
 
 // Callback function that processes velocity commands received in the form of Twist messages
@@ -24,7 +21,7 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     double angular = msg->angular.z;
 
     WheelVelocities wheel_velocities = tankDrive(linear, angular);
-    wheel_velocities = applyHysteresis(current_wheel_velocities, wheel_velocities);
+    wheel_velocities = preventPivotDeadzone(wheel_velocities);
 
     // Publish the separate left and right wheel velocity messages
     std_msgs::msg::Float64MultiArray left_msg;
@@ -34,13 +31,6 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     std_msgs::msg::Float64MultiArray right_msg;
     right_msg.data = wheel_velocities.right_wheel_velocities;
     right_wheel_pub_->publish(right_msg);
-}
-
-void WheelSpeedNode::driveFeedbackCallback(const rover_msgs::msg::DriveFeedback::SharedPtr msg) {
-    for (int i = 0; i < NUM_MOTORS / 2; i++) {
-        current_wheel_velocities.left_wheel_velocities[i] = msg->velocities[i];
-        current_wheel_velocities.right_wheel_velocities[i] = msg->velocities[NUM_MOTORS / 2 + i];
-    }
 }
 
 WheelVelocities WheelSpeedNode::tankDrive(double linear, double angular) {
@@ -56,29 +46,28 @@ WheelVelocities WheelSpeedNode::tankDrive(double linear, double angular) {
     return wheel_velocities;
 }
 
-WheelVelocities WheelSpeedNode::applyHysteresis(WheelVelocities current, WheelVelocities target) {
+// Prevents the rover from stalling mid-pivot: if one side is commanded near
+// zero while the other side is clearly moving, nudge the stationary side a
+// little in the opposite direction so the pivot actually rotates instead of
+// dropping into the motor deadzone. Pure function of the current command.
+WheelVelocities WheelSpeedNode::preventPivotDeadzone(WheelVelocities wheel_velocities) {
     WheelVelocities final_wheel_velocities;
     final_wheel_velocities.left_wheel_velocities.resize(NUM_MOTORS / 2);
     final_wheel_velocities.right_wheel_velocities.resize(NUM_MOTORS / 2);
 
-    auto applyHysteresisHelper = [&](double current, double target) {
-        double abs_current = std::abs(current);
-        double abs_target = std::abs(target);
-
-        if (abs_target < MOTOR_STOP_THRESHOLD) return 0.0;
-        else if (abs_target < MOTOR_START_THRESHOLD) {
-            if (abs_current > MOTOR_STOP_THRESHOLD) {
-                // Keep moving in same direction at MOTOR_START_THRESHOLD
-                return (target > 0) ? MOTOR_START_THRESHOLD : -MOTOR_START_THRESHOLD;
-            }
-            else return 0.0; // Keep not moving
-        }
-        else return target;
-    };
-
     for (int i = 0; i < NUM_MOTORS / 2; i++) {
-        final_wheel_velocities.left_wheel_velocities[i] = applyHysteresisHelper(current.left_wheel_velocities[i], target.left_wheel_velocities[i]);
-        final_wheel_velocities.right_wheel_velocities[i] = applyHysteresisHelper(current.right_wheel_velocities[i], target.right_wheel_velocities[i]);
+        double left_vel  = wheel_velocities.left_wheel_velocities[i];
+        double right_vel = wheel_velocities.right_wheel_velocities[i];
+
+        if (std::abs(left_vel) < MOTOR_STOP_THRESHOLD && std::abs(right_vel) > MOTOR_START_THRESHOLD)
+            final_wheel_velocities.left_wheel_velocities[i] = right_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        else
+            final_wheel_velocities.left_wheel_velocities[i] = left_vel;
+
+        if (std::abs(right_vel) < MOTOR_STOP_THRESHOLD && std::abs(left_vel) > MOTOR_START_THRESHOLD)
+            final_wheel_velocities.right_wheel_velocities[i] = left_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        else
+            final_wheel_velocities.right_wheel_velocities[i] = right_vel;
     }
 
     return final_wheel_velocities;
