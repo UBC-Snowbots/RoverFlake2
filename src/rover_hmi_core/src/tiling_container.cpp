@@ -452,7 +452,7 @@ void KeybindingsOverlay::keyPressEvent(QKeyEvent* ke) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     if (ke->key() == Qt::Key_Up) {
@@ -473,7 +473,7 @@ void KeybindingsOverlay::wheelEvent(QWheelEvent* we) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     int steps = we->angleDelta().y() / 40;
@@ -499,6 +499,13 @@ LayoutManagerOverlay::LayoutManagerOverlay(TilingContainer* tc, QWidget* parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setFocusPolicy(Qt::StrongFocus);
     hide();
+}
+
+void LayoutManagerOverlay::cancelRename() {
+    if (renaming_) {
+        renaming_ = false;
+        update();
+    }
 }
 
 void LayoutManagerOverlay::refresh() {
@@ -537,17 +544,20 @@ void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
     p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
 
     int margin = 24;
-    // Title
+    // Title row
     p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
     p.setPen(QColor(theme::Text));
-    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
+    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 24),
                Qt::AlignLeft | Qt::AlignVCenter, "Saved Layouts");
+    // Hint row (separate line so it never overlaps the title)
     p.setFont(QFont("monospace", theme::FontSizeSm));
     p.setPen(QColor(theme::TextDim));
-    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 30),
-               Qt::AlignRight | Qt::AlignVCenter, "S save  D delete  Enter load  Esc close");
+    p.drawText(QRect(px + margin, py + margin + 26, pw - 2 * margin, 18),
+               Qt::AlignRight | Qt::AlignVCenter,
+               renaming_ ? "Enter confirm  Esc cancel"
+                         : "S save  R rename  D delete  Enter load  Esc close");
 
-    int sepY = py + margin + 34;
+    int sepY = py + margin + 52;
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(px + margin, sepY, px + pw - margin, sepY);
 
@@ -577,17 +587,36 @@ void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
             p.fillRect(QRect(listX, y, listW, LAYOUT_ROW_H), hi);
         }
 
-        // Name
-        p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-        p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
-        p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
-                   Qt::AlignLeft | Qt::AlignVCenter, snap.name);
+        // Name (or inline rename field if renaming this row)
+        if (focused && renaming_) {
+            // Draw a text-input box
+            QRect editRect(listX + 8, y + 6, listW - 16, 24);
+            p.setPen(QPen(QColor(theme::Cyan), 1));
+            p.setBrush(QColor(theme::Bg));
+            p.drawRoundedRect(editRect.adjusted(-2, -2, 2, 2), 3, 3);
 
-        // Date (right-aligned on name row)
-        p.setFont(QFont("monospace", theme::FontSizeSm));
-        p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
-        p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
-                   Qt::AlignRight | Qt::AlignVCenter, snap.saved_at);
+            p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+            p.setPen(QColor(theme::Cyan));
+            p.drawText(editRect, Qt::AlignLeft | Qt::AlignVCenter, rename_buf_);
+
+            // Blinking cursor (always show — no timer needed)
+            QFontMetrics fm(p.font());
+            int cx = editRect.x() + fm.horizontalAdvance(rename_buf_);
+            p.drawLine(cx, editRect.top() + 3, cx, editRect.bottom() - 3);
+        } else {
+            p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+            p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
+            p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+                       Qt::AlignLeft | Qt::AlignVCenter, snap.name);
+        }
+
+        // Date (right-aligned on name row, hidden while renaming this row)
+        if (!(focused && renaming_)) {
+            p.setFont(QFont("monospace", theme::FontSizeSm));
+            p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
+            p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+                       Qt::AlignRight | Qt::AlignVCenter, snap.saved_at);
+        }
 
         // Separator
         p.setPen(QPen(QColor(theme::BorderDim), 1));
@@ -612,7 +641,7 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     auto clampScroll = [&]() {
@@ -627,6 +656,30 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
         scroll_offset_ = std::clamp(scroll_offset_, 0, maxScroll);
     };
 
+    // ── Rename mode ──────────────────────────────────────────────────────────
+    if (renaming_) {
+        if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+            QString name = rename_buf_.trimmed();
+            if (!name.isEmpty() && focused_idx_ < (int)snapshots_.size())
+                tc_->renameLayout(focused_idx_, name);
+            renaming_ = false;
+            refresh();
+            update();
+        } else if (ke->key() == Qt::Key_Escape) {
+            renaming_ = false;
+            update();
+        } else if (ke->key() == Qt::Key_Backspace) {
+            if (!rename_buf_.isEmpty())
+                rename_buf_.chop(1);
+            update();
+        } else if (!ke->text().isEmpty() && ke->text()[0].isPrint()) {
+            rename_buf_ += ke->text();
+            update();
+        }
+        return;
+    }
+
+    // ── Normal mode ──────────────────────────────────────────────────────────
     if (ke->key() == Qt::Key_Up) {
         focused_idx_ = std::max(0, focused_idx_ - 1);
         clampScroll();
@@ -642,6 +695,12 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
         refresh();
         focused_idx_ = std::max(0, (int)snapshots_.size() - 1);
         update();
+    } else if (ke->key() == Qt::Key_R) {
+        if (!snapshots_.empty()) {
+            rename_buf_ = snapshots_[focused_idx_].name;
+            renaming_   = true;
+            update();
+        }
     } else if (ke->key() == Qt::Key_D) {
         if (!snapshots_.empty()) {
             tc_->deleteLayout(focused_idx_);
@@ -658,7 +717,7 @@ void LayoutManagerOverlay::wheelEvent(QWheelEvent* we) {
     int ph     = std::min(700, height() - 48);
     int py     = (height() - ph) / 2;
     int margin = 24;
-    int listY  = py + margin + 34 + 12;
+    int listY  = py + margin + 52 + 12;
     int listH  = ph - (listY - py) - margin;
 
     int steps = we->angleDelta().y() / 40;
@@ -1291,6 +1350,7 @@ void TilingContainer::toggleLayoutManagerOverlay() {
 }
 
 void TilingContainer::hideLayoutManagerOverlay() {
+    layout_overlay_->cancelRename();
     layout_overlay_->hide();
 }
 
@@ -1349,11 +1409,11 @@ void TilingContainer::saveCurrentLayout() {
 
     if (root_) layout["tree"] = serializeTree(root_);
 
-    QJsonArray hidden;
+    QJsonArray visible;
     for (auto& pi : panels_)
-        if (!pi.panel->isVisible())
-            hidden.append(QString::fromStdString(pi.panel->title()));
-    layout["hidden"] = hidden;
+        if (pi.panel->isVisible())
+            visible.append(QString::fromStdString(pi.panel->title()));
+    layout["visible"] = visible;
 
     QSettings s("rover_hmi", "layouts");
     int count = s.value("count", 0).toInt();
@@ -1391,10 +1451,19 @@ void TilingContainer::loadLayout(int index) {
     if (doc.isNull()) return;
     QJsonObject layout = doc.object();
 
-    // Collect hidden panel titles
-    QSet<QString> hidden_set;
-    for (auto h : layout["hidden"].toArray())
-        hidden_set.insert(h.toString());
+    // Build visible set — prefer new "visible" key, fall back to inverting legacy "hidden" key
+    QSet<QString> visible_set;
+    if (layout.contains("visible")) {
+        for (auto v : layout["visible"].toArray())
+            visible_set.insert(v.toString());
+    } else {
+        QSet<QString> hidden_set;
+        for (auto h : layout["hidden"].toArray())
+            hidden_set.insert(h.toString());
+        for (auto& pi : panels_)
+            if (!hidden_set.contains(QString::fromStdString(pi.panel->title())))
+                visible_set.insert(QString::fromStdString(pi.panel->title()));
+    }
 
     // Clear tree
     for (auto* n : all_nodes_) delete n;
@@ -1402,10 +1471,10 @@ void TilingContainer::loadLayout(int index) {
     root_         = nullptr;
     focused_panel_ = nullptr;
 
-    // Set panel visibility
+    // Set panel visibility — only show panels explicitly in the saved visible set
     std::vector<std::string> visible_titles;
     for (auto& pi : panels_) {
-        bool vis = !hidden_set.contains(QString::fromStdString(pi.panel->title()));
+        bool vis = visible_set.contains(QString::fromStdString(pi.panel->title()));
         pi.panel->setVisible(vis);
         if (vis) visible_titles.push_back(pi.panel->title());
     }
@@ -1435,6 +1504,33 @@ void TilingContainer::deleteLayout(int index) {
         if (!deleted) {
             if (found == index) {
                 s.setValue("deleted", true);
+                s.endGroup();
+                return;
+            }
+            found++;
+        }
+        s.endGroup();
+    }
+}
+
+void TilingContainer::renameLayout(int index, const QString& name) {
+    QSettings s("rover_hmi", "layouts");
+    int count = s.value("count", 0).toInt();
+    int found = 0;
+    for (int i = 0; i < count; ++i) {
+        s.beginGroup(QString("layout_%1").arg(i));
+        bool deleted = s.value("deleted", false).toBool();
+        if (!deleted) {
+            if (found == index) {
+                // Update name in both the display key and inside the JSON blob
+                QString json = s.value("json").toString();
+                QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+                if (!doc.isNull()) {
+                    QJsonObject obj = doc.object();
+                    obj["name"] = name;
+                    s.setValue("json", QString(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+                }
+                s.setValue("name", name);
                 s.endGroup();
                 return;
             }
