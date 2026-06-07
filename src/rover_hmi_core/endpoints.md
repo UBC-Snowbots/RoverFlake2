@@ -325,64 +325,21 @@ entry_points={
     ],
 },
 ```
-
-### 5.4 Bring-up order
-
-1. **Build** — `colcon build --packages-select science_aggregator rover_msgs`.
-2. **Stub-publish** — `ros2 run science_aggregator aggregator_node` with all reads at NaN. Confirm `ros2 topic echo /science/sensor_data` shows the right shape at 10 Hz.
-3. **Open the HMI** — every science panel should populate with `--` for NaN fields. The pipeline timeline should advance through its 4-step workflow if you click. The analysis panel should show `--` everywhere.
-4. **Wire one sensor at a time.** Pick the easiest (often gas, since `send_data_node.py` already opens its serial port — port that logic into `read_gas()`). Watch the corresponding HMI field come alive.
-5. **Test commands** — click a valve in the science panel and verify `/science/command` flows into `on_command` with the right field set:
-   ```
-   ros2 topic echo /science/command
-   ```
-6. **Wire commands to the board** — replace the `RCLCPP_INFO` line with the actual serial send to the Arduino / STM32.
-
-### 5.5 Common pitfalls
-
-- **Wrong array sizes.** `spectro_absorbance` is fixed-size 6. Python's ROS bindings will silently truncate or zero-pad — always confirm `len(msg.spectro_absorbance) == 6`.
-- **Missing fields** (Python). A `ScienceSensorData()` initializes everything to 0, not NaN. If you skip assignment, the HMI shows 0 (not `--`). Always explicitly set `float('nan')` for fields you don't have yet.
-- **Two publishers, same topic.** If `send_data_node.py` keeps running alongside `aggregator_node`, both publish on the bus — but `send_data_node` publishes a `String` on `gas_sensor_data`, not `/science/sensor_data`, so they don't collide. Still, you probably want to retire `send_data_node` once `aggregator_node` reads the gas sensor itself.
-- **Latency.** The HMI host spins ROS at 50 Hz. Anything slower than 10 Hz on `/science/sensor_data` produces visible lag on the analysis chart. Keep the timer at 0.1 s.
-
----
-
-## 6. Integration guide — other unwired panels
-
-Same pattern as science. Each takes a small driver node.
-
-### 6.1 Power (`PowerSummaryModule`, `PowerTimelineModule`, `VawTreeModule`)
-
-Need: a node that publishes `rover_msgs/PowerStatus` on `/power/status` at 10 Hz. Source data typically comes from INA226/INA228 current sensors over I²C or from a custom power-distribution PCB over UART/CAN.
-
-Subscribe also to `/power/module_enable` and forward the `*_enabled` booleans to whatever relay GPIO controls the per-subsystem power switches.
-
-Minimal node structure mirrors `science_aggregator` — single file, one timer, latest-known values.
-
-### 6.2 Lighting (`LightingModule`)
-
-Need: a node that subscribes to `/lighting/control` (zone/enabled/brightness) and publishes `/lighting/status` reflecting the actual state of the LED driver. WS2812B/NeoPixel chains over UART from a microcontroller is the usual pattern.
-
-The HMI's lighting panel sends one `LightControl` message per click — you don't need to keep state on the HMI side, only on the board.
-
 ---
 
 ## 7. Quick reference — bring everything up
 
 ```bash
-# Arm (already wired)
+# Arm
 ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py
 
-# Drive (already wired)
+# Drive
 ros2 launch drive_control drive_the_rover.launch.py
 
-# HMI (always last so all topics exist)
+# Hmi
 ros2 run rover_hmi_core rover_hmi
 
-# When you add new driver nodes:
 ros2 run science_aggregator aggregator_node      # once written
 ros2 run power_driver power_node                 # once written
 ros2 run lighting_driver lighting_node           # once written
 ```
-
-For end-to-end testing without hardware, `ros2 topic pub --once <topic> <type> '{ ... }'` is your friend — every panel reacts to a manually-published message exactly the same way it would to a real driver.
