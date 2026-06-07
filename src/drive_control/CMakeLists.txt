@@ -37,6 +37,7 @@ ament_target_dependencies(motor_control_node
   geometry_msgs
   sensor_msgs
   rover_msgs
+  std_msgs
 )
 
 # Link dependencies for wheel_speed_node
@@ -45,6 +46,7 @@ ament_target_dependencies(wheel_speed_node
   geometry_msgs
   sensor_msgs
   std_msgs  # Added std_msgs
+  rover_msgs
 )
 
 # Ensure linking with Phidget22 (if not found automatically)

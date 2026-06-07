@@ -1,4 +1,5 @@
 # include "wheel_speed.h"
+#include <cmath>  // For std::abs
 
 // Constructor definition for WheelSpeed class
 WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the node with the name "wheel_speed"
@@ -10,7 +11,7 @@ WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the
     
     // Create a subscription to receive Twist messages (which contain velocity commands) from the "/cmd_vel" topic
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-        "/cmd_vel", 10, std::bind(&WheelSpeedNode::cmdVelCallback, this, std::placeholders::_1));  // Call cmdVelCallback when a new message is received
+        "/cmd_vel", 10, std::bind(&WheelSpeedNode::cmdVelCallback, this, std::placeholders::_1));
 }
 
 // Callback function that processes velocity commands received in the form of Twist messages
@@ -18,37 +19,71 @@ void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr m
     // Extract the linear and angular velocity from the incoming message
     double linear = msg->linear.x;
     double angular = msg->angular.z;
-    
-    // // Calculate a factor to adjust wheel speed based on the wheel radius and angular velocities
-    // double wheel_speed_factor = (360.0 / WHEEL_RADIUS_METERS) * (M_PI / 2.0) * 0.0001;  // Placeholder for speed scaling
 
-    double wheel_speed_factor =  0.1;  // Placeholder for speed scaling
+    WheelVelocities wheel_velocities = tankDrive(linear, angular);
+    wheel_velocities = preventPivotDeadzone(wheel_velocities);
 
-    // Apply the speed factor to both linear and angular velocities
-    linear *= wheel_speed_factor;
-    angular *= wheel_speed_factor;
-
-    // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
-    std::vector<double> left_wheel_commands = {
-        -linear + angular,   // Left Front Wheel
-        -linear + angular,   // Left Mid Wheel
-        -linear + angular    // Left Rear Wheel
-    };
-    
-    std::vector<double> right_wheel_commands = {
-        linear + angular,  // Right Front Wheel
-        linear + angular,  // Right Mid Wheel
-        linear + angular   // Right Rear Wheel
-    };
-
-    // Publish the separate left and right wheel speed messages
+    // Publish the separate left and right wheel velocity messages
     std_msgs::msg::Float64MultiArray left_msg;
-    left_msg.data = left_wheel_commands;  // Set left wheel commands data
-    left_wheel_pub_->publish(left_msg);   // Publish to "/left_wheel_speeds"
+    left_msg.data = wheel_velocities.left_wheel_velocities;
+    left_wheel_pub_->publish(left_msg);
 
     std_msgs::msg::Float64MultiArray right_msg;
-    right_msg.data = right_wheel_commands;  // Set right wheel commands data
-    right_wheel_pub_->publish(right_msg);   // Publish to "/right_wheel_speeds"
+    right_msg.data = wheel_velocities.right_wheel_velocities;
+    right_wheel_pub_->publish(right_msg);
+}
+
+WheelVelocities WheelSpeedNode::tankDrive(double linear, double angular) {
+    WheelVelocities wheel_velocities;
+
+    double l = -linear + angular;
+    double r = linear + angular;
+
+    wheel_velocities.left_wheel_velocities = { l, l, l };
+
+    wheel_velocities.right_wheel_velocities = { r, r, r };
+
+    return wheel_velocities;
+}
+
+// Prevents the rover from stalling mid-pivot: if one side is commanded near
+// zero while the other side is clearly moving, nudge the stationary side a
+// little in the opposite direction so the pivot actually rotates instead of
+// dropping into the motor deadzone. Pure function of the current command.
+WheelVelocities WheelSpeedNode::preventPivotDeadzone(WheelVelocities wheel_velocities) {
+    WheelVelocities final_wheel_velocities;
+    final_wheel_velocities.left_wheel_velocities.resize(NUM_MOTORS / 2);
+    final_wheel_velocities.right_wheel_velocities.resize(NUM_MOTORS / 2);
+
+    for (int i = 0; i < NUM_MOTORS / 2; i++) {
+        double left_vel  = wheel_velocities.left_wheel_velocities[i];
+        double right_vel = wheel_velocities.right_wheel_velocities[i];
+
+        if (std::abs(left_vel) < MOTOR_STOP_THRESHOLD && std::abs(right_vel) > MOTOR_START_THRESHOLD)
+            final_wheel_velocities.left_wheel_velocities[i] = right_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        else
+            final_wheel_velocities.left_wheel_velocities[i] = left_vel;
+
+        if (std::abs(right_vel) < MOTOR_STOP_THRESHOLD && std::abs(left_vel) > MOTOR_START_THRESHOLD)
+            final_wheel_velocities.right_wheel_velocities[i] = left_vel > 0 ? -MOTOR_STOP_THRESHOLD : MOTOR_STOP_THRESHOLD;
+        else
+            final_wheel_velocities.right_wheel_velocities[i] = right_vel;
+    }
+
+    return final_wheel_velocities;
+}
+
+WheelVelocities WheelSpeedNode::ackermann(double linear, double angular) {
+    WheelVelocities wheel_velocities;
+
+    double l = -linear + angular;
+    double r = linear + angular;
+
+    wheel_velocities.left_wheel_velocities = { l, l, l };
+
+    wheel_velocities.right_wheel_velocities = { r, r, r };
+
+    return wheel_velocities;
 }
 
 // Main function to initialize the ROS2 node and start processing
