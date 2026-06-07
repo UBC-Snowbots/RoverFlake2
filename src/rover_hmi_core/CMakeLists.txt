@@ -4,13 +4,20 @@ project(rover_hmi_core)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(rover_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
 
 include_directories(include)
 
-# Shared library: GuiModule interface, TilingContainer layout engine, PlotWidget
+# ---------------------------------------------------------------------------
+# Core library: GuiModule interface, TilingContainer layout engine, PlotWidget
+# ---------------------------------------------------------------------------
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
@@ -25,21 +32,51 @@ target_include_directories(rover_hmi_core PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+# ---------------------------------------------------------------------------
+# HMI plugin modules: arm / science / electrical
+# ---------------------------------------------------------------------------
+add_library(rover_hmi_modules SHARED
+    # Drive
+    src/drive/drive_module.cpp
+)
+
+# Each subdirectory's headers are findable with bare names inside their own CPP files
+target_include_directories(rover_hmi_modules PRIVATE
+    include/rover_hmi_core/drive
+)
+
+target_link_libraries(rover_hmi_modules
+    rover_hmi_core
+    Qt5::Widgets
+)
+ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp)
+pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
+
+# ---------------------------------------------------------------------------
+# Generic HMI host executable
+# ---------------------------------------------------------------------------
+add_executable(rover_hmi src/hmi_host.cpp)
+target_link_libraries(rover_hmi rover_hmi_core Qt5::Widgets)
+ament_target_dependencies(rover_hmi rclcpp pluginlib)
+
+# ---------------------------------------------------------------------------
+# Install
+# ---------------------------------------------------------------------------
 install(TARGETS rover_hmi_core
     EXPORT rover_hmi_coreTargets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
+install(TARGETS rover_hmi_modules
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
 install(DIRECTORY include/ DESTINATION include)
+install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(rclcpp pluginlib Qt5Widgets)
-
-# Generic HMI host executable — discovers and tiles all registered GuiModules
-add_executable(rover_hmi src/hmi_host.cpp)
-target_link_libraries(rover_hmi rover_hmi_core Qt5::Widgets)
-ament_target_dependencies(rover_hmi rclcpp pluginlib)
-install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

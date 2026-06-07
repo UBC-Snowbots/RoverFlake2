@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
                 "Failed to load HMI plugin '%s': %s", class_name.c_str(), ex.what());
         }
     }
+    RCLCPP_INFO(node->get_logger(), "Loaded %zu HMI modules", modules.size());
 
     // finalize() builds the initial dwindle tree from the accumulated panels
     // and must be called before the window is shown.
