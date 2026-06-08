@@ -1,18 +1,21 @@
 help() {
-    echo "Usage: ./sync_onboard_computer.sh [network | usb /path/to/usb] "
+    echo "Usage:"
+    echo "./sync_onboard_computer.sh usb /path/to/usb"
+    echo "./sync_onboard_computer.sh network user@destination-ip"
     exit 1
 }
 
-if [ -z "$1" ]; then
+if [ -z "$1" ] || [ -z "$2" ]; then
     help
 fi
 
 TARGET="$1"
 if [ "$TARGET" == "usb" ]; then
-    if [ -z "$2" ]; then
-        help
-    fi
     USB_PATH="$2"
+elif [ "$TARGET" == "network" ]; then
+    REMOTE_TARGET="$2"
+else
+    help
 fi
 
 PWD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,15 +35,19 @@ if [ "$TARGET" == "usb" ]; then
         echo "Invalid USB path: $USB_PATH"
     fi
 
-    DST="$USB_PATH/Test_Onboard_Sync"
+    DST="$USB_PATH/roverflake"
     echo "Transferring files to $DST..."
     mkdir -p "$DST"
 
-    rsync -rcLptvz --modify-window=1 --stats ../install "$DST/"
+    rsync -rcLptz --modify-window=1 --stats ../install "$DST/"
 
     echo "Transfer complete!"
 elif [ "$TARGET" == "network" ]; then
-    echo "Network function not implemented yet, please use USB mode"
+    REMOTE_DST="/home/roverflake/"
+
+    echo "Transferring files to $REMOTE_TARGET..."
+    rsync -azc --delete --stats ../install "$REMOTE_TARGET:$REMOTE_DST"
+    echo "Transfer complete!"
 else
     help
 fi
