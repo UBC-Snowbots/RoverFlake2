@@ -1,5 +1,10 @@
 <library path="rover_hmi_modules">
 
+  <!-- MoveIt -->
+  <class name="rover_hmi_core/RvizModule"
+         type="RvizModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Embedded RViz 3D robot visualization</description>
   <!-- Science -->
   <class name="rover_hmi_core/ScienceModule"
          type="ScienceModule"
