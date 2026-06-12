@@ -43,11 +43,14 @@ add_library(rover_hmi_modules SHARED
     src/electrical/lighting_module.cpp
     src/electrical/vaw_tree_module.cpp
     src/electrical/power_timeline_module.cpp
+    # Drive
+    src/drive/drive_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/electrical
+    include/rover_hmi_core/drive
 )
 
 target_link_libraries(rover_hmi_modules
