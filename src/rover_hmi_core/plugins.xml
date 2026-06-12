@@ -25,6 +25,21 @@
          type="CommandLogModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Log of sent commands and driver messages</description>
+  <!-- Science -->
+  <class name="rover_hmi_core/ScienceModule"
+         type="ScienceModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science subsystem control: sequences, valves, pump, carousel, dispensing, OSF, and utilities</description>
+  </class>
+  <class name="rover_hmi_core/SciencePipelineModule"
+         type="SciencePipelineModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science pipeline timeline: 4-step workflow tracker from drilling to analysis</description>
+  </class>
+  <class name="rover_hmi_core/ScienceAnalysisModule"
+         type="ScienceAnalysisModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
          type="DriveModule"

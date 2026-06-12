@@ -42,6 +42,10 @@ add_library(rover_hmi_modules SHARED
     src/arm/plotting_module.cpp
     src/arm/send_command_module.cpp
     src/arm/command_log_module.cpp
+    # Science
+    src/science/science_module.cpp
+    src/science/science_pipeline_module.cpp
+    src/science/science_analysis_module.cpp
     # Drive
     src/drive/drive_module.cpp
 )
@@ -49,6 +53,7 @@ add_library(rover_hmi_modules SHARED
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/arm
+    include/rover_hmi_core/science
     include/rover_hmi_core/drive
 )
 
