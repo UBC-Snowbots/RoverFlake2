@@ -36,6 +36,13 @@ target_include_directories(rover_hmi_core PUBLIC
 # HMI plugin modules: arm / science / electrical
 # ---------------------------------------------------------------------------
 add_library(rover_hmi_modules SHARED
+    # Electrical
+    src/electrical/power_summary_module.cpp
+    src/electrical/drivetrain_stop_module.cpp
+    src/electrical/wheel_telemetry_module.cpp
+    src/electrical/lighting_module.cpp
+    src/electrical/vaw_tree_module.cpp
+    src/electrical/power_timeline_module.cpp
     # Arm
     src/arm/motor_status_module.cpp
     src/arm/motor_config_module.cpp
@@ -57,6 +64,7 @@ add_library(rover_hmi_modules SHARED
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
+    include/rover_hmi_core/electrical
     include/rover_hmi_core/arm
     include/rover_hmi_core/moveit
     include/rover_hmi_core/science
