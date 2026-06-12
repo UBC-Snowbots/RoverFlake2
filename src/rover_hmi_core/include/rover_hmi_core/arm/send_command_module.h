@@ -33,17 +33,9 @@
 
 constexpr int NUM_ZERO_AXES = NUM_MOTORS;
 
-class JogButton : public QPushButton {
-    Q_OBJECT
-public:
-    JogButton(const QString& text, QWidget* parent = nullptr);
-signals:
-    void jogPressed();
-    void jogReleased();
-protected:
-    void mousePressEvent(QMouseEvent* e) override;
-    void mouseReleaseEvent(QMouseEvent* e) override;
-};
+// JogButton defined in send_command_module.cpp (Q_OBJECT in .cpp avoids
+// AUTOMOC header-scanning issues with private include directories).
+class JogButton;
 
 class SendCommandModule : public rover_hmi_core::GuiModule {
 public:
