@@ -40,11 +40,14 @@ add_library(rover_hmi_modules SHARED
     src/science/science_module.cpp
     src/science/science_pipeline_module.cpp
     src/science/science_analysis_module.cpp
+    # Drive
+    src/drive/drive_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/science
+    include/rover_hmi_core/drive
 )
 
 target_link_libraries(rover_hmi_modules
