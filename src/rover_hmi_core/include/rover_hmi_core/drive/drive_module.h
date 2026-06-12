@@ -12,39 +12,9 @@
 #include "geometry_msgs/msg/twist.hpp"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VirtualJoystick
-// A click-and-drag joystick widget.  The user can click inside the circle and
-// drag to set the output direction, or use WASD/arrow keys.  The knob snaps
-// back to center when released.
-// ─────────────────────────────────────────────────────────────────────────────
-class VirtualJoystick : public QWidget {
-    Q_OBJECT
-public:
-    explicit VirtualJoystick(QWidget* parent = nullptr);
-
-    // Normalised axis values in [-1, 1]
-    float axisX() const { return axis_x_; }
-    float axisY() const { return axis_y_; }  // positive = forward
-
-    void setAxisFromKey(int dx, int dy);  // incremental nudge via keyboard
-    void resetAxes();
-
-signals:
-    void axisChanged(float x, float y);
-
-protected:
-    void paintEvent(QPaintEvent*) override;
-    void mousePressEvent(QMouseEvent*) override;
-    void mouseMoveEvent(QMouseEvent*) override;
-    void mouseReleaseEvent(QMouseEvent*) override;
-
-private:
-    void updateFromPos(const QPointF& pos);
-
-    float axis_x_ = 0.0f;
-    float axis_y_ = 0.0f;
-    bool  pressed_ = false;
-};
+// VirtualJoystick defined in drive_module.cpp (Q_OBJECT in .cpp avoids
+// AUTOMOC header-scanning issues with private include directories).
+class VirtualJoystick;
 
 
 // ─────────────────────────────────────────────────────────────────────────────
