@@ -1,7 +1,0 @@
-<library path="dev_arm_moveit_config_v3_hmi">
-  <class name="dev_arm_moveit_config_v3/RvizModule"
-         type="RvizModule"
-         base_class_type="rover_hmi_core::GuiModule">
-    <description>Embedded RViz 3D robot visualization</description>
-  </class>
-</library>

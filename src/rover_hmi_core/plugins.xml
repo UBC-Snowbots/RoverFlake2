@@ -25,6 +25,11 @@
          type="CommandLogModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Log of sent commands and driver messages</description>
+  <!-- MoveIt -->
+  <class name="rover_hmi_core/RvizModule"
+         type="RvizModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Embedded RViz 3D robot visualization</description>
   <!-- Science -->
   <class name="rover_hmi_core/ScienceModule"
          type="ScienceModule"
