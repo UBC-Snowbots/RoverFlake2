@@ -41,11 +41,14 @@ add_library(rover_hmi_modules SHARED
     # the inline-Q_OBJECT-in-.cpp pattern and don't need this).
     src/moveit/rviz_module.cpp
     include/rover_hmi_core/moveit/rviz_module.h
+    # Drive
+    src/drive/drive_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/moveit
+    include/rover_hmi_core/drive
 )
 
 target_link_libraries(rover_hmi_modules
