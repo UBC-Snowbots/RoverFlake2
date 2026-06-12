@@ -1,22 +1,15 @@
 help() {
     echo "Usage:"
-    echo "./sync_onboard_computer.sh usb /path/to/usb"
-    echo "./sync_onboard_computer.sh network user@destination-ip"
+    echo "./sync_onboard_computer.sh user@destination-ip"
+    echo "For USB connections, find the destination ip using `ip route | grep usb`"
     exit 1
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
     help
 fi
 
-TARGET="$1"
-if [ "$TARGET" == "usb" ]; then
-    USB_PATH="$2"
-elif [ "$TARGET" == "network" ]; then
-    REMOTE_TARGET="$2"
-else
-    help
-fi
+REMOTE_TARGET="$1"
 
 PWD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROVERFLAKE_ROOT="$(cd "$PWD/.." && pwd)"
@@ -30,24 +23,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ "$TARGET" == "usb" ]; then
-    if [ ! -d "$USB_PATH" ]; then
-        echo "Invalid USB path: $USB_PATH"
-    fi
+REMOTE_DST="/home/roverflake/"
 
-    DST="$USB_PATH/roverflake"
-    echo "Transferring files to $DST..."
-    mkdir -p "$DST"
-
-    rsync -rcLptz --modify-window=1 --stats ../install "$DST/"
-
-    echo "Transfer complete!"
-elif [ "$TARGET" == "network" ]; then
-    REMOTE_DST="/home/roverflake/"
-
-    echo "Transferring files to $REMOTE_TARGET..."
-    rsync -azc --delete --stats ../install "$REMOTE_TARGET:$REMOTE_DST"
-    echo "Transfer complete!"
-else
-    help
-fi
+echo "Transferring files to $REMOTE_TARGET..."
+rsync -azc --delete --stats ../install "$REMOTE_TARGET:$REMOTE_DST"
+echo "Transfer complete!"
