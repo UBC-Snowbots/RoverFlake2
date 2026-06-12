@@ -43,6 +43,15 @@ add_library(rover_hmi_modules SHARED
     src/electrical/lighting_module.cpp
     src/electrical/vaw_tree_module.cpp
     src/electrical/power_timeline_module.cpp
+    # MoveIt — header listed explicitly so AUTOMOC scans it (RvizModule
+    # is the only module that places Q_OBJECT in its header; the rest use
+    # the inline-Q_OBJECT-in-.cpp pattern and don't need this).
+    src/moveit/rviz_module.cpp
+    include/rover_hmi_core/moveit/rviz_module.h
+    # Science
+    src/science/science_module.cpp
+    src/science/science_pipeline_module.cpp
+    src/science/science_analysis_module.cpp
     # Drive
     src/drive/drive_module.cpp
 )
@@ -50,6 +59,8 @@ add_library(rover_hmi_modules SHARED
 # Each subdirectory's headers are findable with bare names inside their own CPP files
 target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/electrical
+    include/rover_hmi_core/moveit
+    include/rover_hmi_core/science
     include/rover_hmi_core/drive
 )
 

@@ -50,6 +50,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LightControl.msg"
   "msg/LightStatus.msg"
   "msg/PowerStatus.msg"
+  "msg/ScienceSensorData.msg"
 
   DEPENDENCIES std_msgs
  )
