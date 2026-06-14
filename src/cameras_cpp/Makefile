@@ -19,14 +19,14 @@ else
   LDLIBS   := -lcamera -lcamera-base
 endif
 
-.PHONY: all list-cameras clean
+.PHONY: build run clean
 
-all: $(TARGET)
+build: $(TARGET)
 
 $(TARGET): $(SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS) $(LDLIBS)
 
-list-cameras: $(TARGET)
+run: $(TARGET)
 	./$(TARGET)
 
 clean:
