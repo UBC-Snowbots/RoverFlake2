@@ -13,8 +13,8 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
-#define MAX_LINEAR_SPEED_MPS 3.5
-#define MAX_ANGULAR_SPEED_MPS 1.75
+#define MAX_LINEAR_SPEED_MPS 2.0
+#define MAX_ANGULAR_SPEED_MPS 2.0
 
 /**
  * @brief DriveControlNode handles joystick input and publishes velocity commands.
