@@ -8,8 +8,8 @@
 #include <gpiod.h>
 
 #define GPIO_CHIP_NAME "gpiochip4"
-#define DIR_LINE_GPIO_PIN 1 // TODO: update these to whatever we plug them into
-#define STEP_LINE_GPIO_PIN 2
+#define DIR_LINE_GPIO_PIN 23
+#define STEP_LINE_GPIO_PIN 24
 #define STEPPER_CLOCKWISE_DIRECTION 1 // TODO: might be 0 depending on motor orientation, so I put it here until I can check
 #define STEPPER_PULSE_DELAY_MS 5000 // TODO: starting with something really long so nothing scary happens when I try it for the first time
 
