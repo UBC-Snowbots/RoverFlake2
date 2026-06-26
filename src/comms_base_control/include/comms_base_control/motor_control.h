@@ -1,7 +1,8 @@
 #ifndef DRIVE_CONTROL_H
 #define DRIVE_CONTROL_H
 
-#include "rclcpp/rclcpp.h"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/int16.hpp"
 
 // This node requires the `libgpiod` package to be installed on the host device
 // `sudo apt install libgpiod-dev`

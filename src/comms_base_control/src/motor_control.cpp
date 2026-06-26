@@ -7,10 +7,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         RCLCPP_ERROR(this->get_logger(), "Failed to open GPIO chip");
         return;
     }
-    dir_line = gpio_chip_get_line(chip, DIR_LINE_GPIO_PIN);
+    dir_line = gpiod_chip_get_line(chip, DIR_LINE_GPIO_PIN);
     gpiod_line_request_output(dir_line, "stepper_dir", 0);
 
-    step_line = gpio_chip_get_line(chip, STEP_LINE_GPIO_PIN);
+    step_line = gpiod_chip_get_line(chip, STEP_LINE_GPIO_PIN);
     gpiod_line_request_output(step_line, "stepper_line", 0);
 
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Int16>(
@@ -33,16 +33,16 @@ MotorControlNode::~MotorControlNode() {
  * 
  * This function decodes the command and transmits it to the death ray via the GPIO pins
  */
-MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::SharedPtr msg) {
+void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::SharedPtr msg) {
     // Message received from topic will encode the direction in the sign and the num steps in the magnitude
     int stepper_cmd = msg->data;
 
     // Drive the dir_line using the sign of the command
     if (stepper_cmd > 0) {
-        gpio_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+        gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
     }
     else if (stepper_cmd < 0) {
-        gpio_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+        gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
     }
 
     int steps = std::abs(stepper_cmd);
@@ -50,8 +50,16 @@ MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::SharedPtr 
     // Drive the step_line using the magnitude of the command
     for (int i = 0; i < steps; i++) {
         gpiod_line_set_value(step_line, 1);
-        std::this_thread::sleep_for(pulse_delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
         gpiod_line_set_value(step_line, 0);
-        std::this_thread::sleep_for(pulse_delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
     }
+}
+
+int main(int argc, char* argv[]) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<MotorControlNode>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    return 0;
 }
