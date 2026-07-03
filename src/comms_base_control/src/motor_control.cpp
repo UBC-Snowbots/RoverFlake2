@@ -2,7 +2,7 @@
 
 MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     // Initialize connections to the GPIO pins via libgpiod
-    chip = gpiod_chip_open_by_name("gpiochip4");
+    chip = gpiod_chip_open(GPIO_CHIP_NAME);
     if (!chip) {
         RCLCPP_ERROR(this->get_logger(), "Failed to open GPIO chip");
         return;

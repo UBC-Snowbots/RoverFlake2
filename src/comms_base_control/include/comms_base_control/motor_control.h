@@ -8,7 +8,7 @@
 // `sudo apt install libgpiod-dev`
 #include <gpiod.h>
 
-#define GPIO_CHIP_NAME "gpiochip4"
+#define GPIO_CHIP_NAME "/dev/gpiochip0"
 #define DIR_LINE_GPIO_PIN 23
 #define STEP_LINE_GPIO_PIN 24
 #define STEPPER_CLOCKWISE_DIRECTION 1 // TODO: might be 0 depending on motor orientation, so I put it here until I can check
