@@ -1,6 +1,8 @@
 #include "motor_control.h"
 
 MotorControlNode::MotorControlNode() : Node("motor_control_node") {
+    RCLCPP_INFO(this->get_logger(), "Attempting to open GPIO chip: %s", GPIO_CHIP_NAME);
+
     // Initialize connections to the GPIO pins via libgpiod
     chip = gpiod_chip_open(GPIO_CHIP_NAME);
     if (!chip) {
@@ -32,22 +34,19 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         RCLCPP_INFO(this->get_logger(), "Successfully requested EN line on pin %d", EN_LINE_GPIO_PIN);
         
         gpiod_line_set_value(en_line, 1);
-        RCLCPP_INFO(this->get_logger(), "Stepper driver ENABLED (Active-High). Coils energized.");
+        RCLCPP_INFO(this->get_logger(), "Stepper driver enabled");
     }
 
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Int16>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
-    RCLCPP_INFO(this->get_logger(), "Subscribed to topic: 'death_ray_commands'");
     RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
 }
 
 MotorControlNode::~MotorControlNode() {
-    RCLCPP_INFO(this->get_logger(), "Shutting down MotorControlNode, releasing GPIO lines...");
     if (en_line) {
         gpiod_line_set_value(en_line, 0);
         gpiod_line_release(en_line);
-        RCLCPP_INFO(this->get_logger(), "Stepper driver disabled safely.");
     }
     if (dir_line) gpiod_line_release(dir_line);
     if (step_line) gpiod_line_release(step_line);
