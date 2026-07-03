@@ -11,6 +11,7 @@
 #define GPIO_CHIP_NAME "/dev/gpiochip0"
 #define DIR_LINE_GPIO_PIN 23
 #define STEP_LINE_GPIO_PIN 24
+#define EN_LINE_GPIO_PIN 25
 #define STEPPER_CLOCKWISE_DIRECTION 1 // TODO: might be 0 depending on motor orientation, so I put it here until I can check
 #define STEPPER_PULSE_DELAY_MS 5000 // TODO: starting with something really long so nothing scary happens when I try it for the first time
 
@@ -31,6 +32,7 @@ private:
     gpiod_chip* chip;
     gpiod_line* dir_line;
     gpiod_line* step_line;
+    gpiod_line* en_line;
 };
 
 #endif
