@@ -24,6 +24,17 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         RCLCPP_INFO(this->get_logger(), "Successfully requested STEP line on pin %d", STEP_LINE_GPIO_PIN);
     }
 
+    en_line = gpiod_chip_get_line(chip, EN_LINE_GPIO_PIN);
+    if (!en_line) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to get EN line on pin %d", EN_LINE_GPIO_PIN);
+    } else {
+        gpiod_line_request_output(en_line, "stepper_enable", 0);
+        RCLCPP_INFO(this->get_logger(), "Successfully requested EN line on pin %d", EN_LINE_GPIO_PIN);
+        
+        gpiod_line_set_value(en_line, 1);
+        RCLCPP_INFO(this->get_logger(), "Stepper driver ENABLED (Active-High). Coils energized.");
+    }
+
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Int16>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
@@ -33,6 +44,11 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
 
 MotorControlNode::~MotorControlNode() {
     RCLCPP_INFO(this->get_logger(), "Shutting down MotorControlNode, releasing GPIO lines...");
+    if (en_line) {
+        gpiod_line_set_value(en_line, 0);
+        gpiod_line_release(en_line);
+        RCLCPP_INFO(this->get_logger(), "Stepper driver disabled safely.");
+    }
     if (dir_line) gpiod_line_release(dir_line);
     if (step_line) gpiod_line_release(step_line);
     if (chip) gpiod_chip_close(chip);
