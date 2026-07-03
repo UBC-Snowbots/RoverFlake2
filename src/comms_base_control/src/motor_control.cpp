@@ -4,23 +4,38 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     // Initialize connections to the GPIO pins via libgpiod
     chip = gpiod_chip_open(GPIO_CHIP_NAME);
     if (!chip) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to open GPIO chip");
+        RCLCPP_ERROR(this->get_logger(), "Failed to open GPIO chip: %s", GPIO_CHIP_NAME);
         return;
     }
+
     dir_line = gpiod_chip_get_line(chip, DIR_LINE_GPIO_PIN);
-    gpiod_line_request_output(dir_line, "stepper_dir", 0);
+    if (!dir_line) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to get DIR line on pin %d", DIR_LINE_GPIO_PIN);
+    } else {
+        gpiod_line_request_output(dir_line, "stepper_dir", 0);
+        RCLCPP_INFO(this->get_logger(), "Successfully requested DIR line on pin %d", DIR_LINE_GPIO_PIN);
+    }
 
     step_line = gpiod_chip_get_line(chip, STEP_LINE_GPIO_PIN);
-    gpiod_line_request_output(step_line, "stepper_line", 0);
+    if (!step_line) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to get STEP line on pin %d", STEP_LINE_GPIO_PIN);
+    } else {
+        gpiod_line_request_output(step_line, "stepper_line", 0);
+        RCLCPP_INFO(this->get_logger(), "Successfully requested STEP line on pin %d", STEP_LINE_GPIO_PIN);
+    }
 
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Int16>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
+
+    RCLCPP_INFO(this->get_logger(), "Subscribed to topic: 'death_ray_commands'");
+    RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
 }
 
 MotorControlNode::~MotorControlNode() {
-    gpiod_line_release(dir_line);
-    gpiod_line_release(step_line);
-    gpiod_chip_close(chip);
+    RCLCPP_INFO(this->get_logger(), "Shutting down MotorControlNode, releasing GPIO lines...");
+    if (dir_line) gpiod_line_release(dir_line);
+    if (step_line) gpiod_line_release(step_line);
+    if (chip) gpiod_chip_close(chip);
 }
 
 /**
@@ -37,15 +52,23 @@ void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::Share
     // Message received from topic will encode the direction in the sign and the num steps in the magnitude
     int stepper_cmd = msg->data;
 
+    RCLCPP_INFO(this->get_logger(), "Received command: %d", stepper_cmd);
+
     // Drive the dir_line using the sign of the command
     if (stepper_cmd > 0) {
+        RCLCPP_INFO(this->get_logger(), "Setting direction: CLOCKWISE (%d)", STEPPER_CLOCKWISE_DIRECTION);
         gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
     }
     else if (stepper_cmd < 0) {
+        RCLCPP_INFO(this->get_logger(), "Setting direction: COUNTER-CLOCKWISE (%d)", !STEPPER_CLOCKWISE_DIRECTION);
         gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+    }
+    else {
+        RCLCPP_WARN(this->get_logger(), "Received 0 steps connection command. Standing still.");
     }
 
     int steps = std::abs(stepper_cmd);
+    RCLCPP_INFO(this->get_logger(), "Executing %d steps...", steps);
 
     // Drive the step_line using the magnitude of the command
     for (int i = 0; i < steps; i++) {
@@ -54,6 +77,8 @@ void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::Share
         gpiod_line_set_value(step_line, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
     }
+
+    RCLCPP_INFO(this->get_logger(), "Finished executing %d steps.", steps);
 }
 
 int main(int argc, char* argv[]) {
