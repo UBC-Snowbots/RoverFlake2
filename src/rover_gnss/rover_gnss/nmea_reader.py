@@ -114,7 +114,7 @@ class NMEAReader(Node):
                     if line[3:6] == 'EBP':
                         self.log('d', line)
                         try:
-                            natsavfixbase = self.parseNMEA(line)
+                            natsavfixbase = self.parseBase(line)
                             if type(natsavfixbase) is not NavSatFix:
                                 self.log('w', "[NMEA/Reader] Couldn't parse message!")
                             else:
@@ -146,7 +146,37 @@ class NMEAReader(Node):
                 navsat_fix.altitude = 0.0
             
             return navsat_fix
+        
+    
+    # Parse base station NMEA data
+    def parseBase(self, line):
+        parts = line.split('*')[0].split(',')
+        if len(parts) < 6:
+            self.log('e', "[NMEA/Parser] ERROR: Received an incomplete EBP message, this shouldn't happen")
+            return None
+        
+        base_lat = parts[1]      # 4807.038 (DDMM.mmmm format)
+        base_lat_dir = parts[2]  # N
+        base_lon = parts[3]      # 01131.000 (DDDMM.mmmm format)
+        base_lon_dir = parts[4]  # E
+        base_alt = parts[5]      # 545.440 (Metres)
 
+        navsat_fix = NavSatFix()
+        navsat_fix.latitude = self.convertToDecimalDegrees(base_lat, base_lat_dir)
+        navsat_fix.longitude = self.convertToDecimalDegrees(base_lon, base_lon_dir)
+        navsat_fix.altitude = float(base_alt)
+        return navsat_fix
+    
+    def convertToDecimalDegrees(self, value, direction):
+        degrees = int(value[:-7])
+        minutes = float(value[-7:])
+        decimal_degrees = degrees + (minutes / 60)
+
+        # Adjust for direction
+        if direction in ['S', 'W']:
+            decimal_degrees *= -1
+
+        return decimal_degrees
 
     # Publish NMEA data
     def publishPosition(self, navfixobj, publisher: Publisher):
