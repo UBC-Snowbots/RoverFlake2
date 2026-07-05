@@ -152,6 +152,9 @@ class NMEAReader(Node):
         if len(parts) < 6:
             self.log('e', "[NMEA/Parser] ERROR: Received an incomplete EBP message, this shouldn't happen")
             return None
+        if not self.checkNmeaChecksum(line):
+            self.log('e', "[NMEA/Parser] ERROR: Received an EBP message with an invalid checksum")
+            return None
         
         base_lat = parts[1]      # 4807.038 (DDMM.mmmm format)
         base_lat_dir = parts[2]  # N
@@ -183,6 +186,22 @@ class NMEAReader(Node):
             decimal_degrees *= -1
 
         return decimal_degrees
+    
+    def checkNmeaChecksum(self, sentence: str) -> bool:
+        sentence = sentence.strip()
+        if not sentence.startswith('$') or '*' not in sentence:
+            return False
+            
+        try:
+            payload, provided_checksum = sentence.split('$')[1].split('*')
+        except ValueError:
+            return False
+            
+        calculated_checksum = 0
+        for char in payload:
+            calculated_checksum ^= ord(char)
+            
+        return f"{calculated_checksum:02X}" == provided_checksum.upper()
 
     # Publish NMEA data
     def publishPosition(self, navfixobj, publisher: Publisher):
