@@ -160,6 +160,8 @@ class NMEAReader(Node):
         base_lon = parts[3]      # 01131.000 (DDDMM.mmmm format)
         base_lon_dir = parts[4]  # E
         base_alt = parts[5]      # 545.440 (Metres)
+        if type(base_alt) != float:
+            base_alt = 0.0
 
         navsat_fix = NavSatFix()
         navsat_fix.latitude = self.convertToDecimalDegrees(base_lat, base_lat_dir)
@@ -168,6 +170,10 @@ class NMEAReader(Node):
         return navsat_fix
     
     def convertToDecimalDegrees(self, value, direction):
+        if len(value) < 7:
+            self.log('e', "[NMEA/Parser] ERROR: Received an invalid coordinate value, this shouldn't happen")
+            return None
+        
         degrees = int(value[:-7])
         minutes = float(value[-7:])
         decimal_degrees = degrees + (minutes / 60)
