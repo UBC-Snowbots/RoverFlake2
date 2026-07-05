@@ -67,4 +67,5 @@ private:
     float max_linear_  = 0.5f;   // m/s
     float max_angular_ = 1.0f;   // rad/s
     bool  enabled_     = false;
+    bool  was_moving_  = false;  // last tick published a non-zero Twist
 };

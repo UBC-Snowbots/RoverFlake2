@@ -273,7 +273,17 @@ void DriveModule::onPublishTimer() {
     if (!enabled_ || !pub_ || !joystick_) return;
     float x = joystick_->axisX();
     float y = joystick_->axisY();
-    if (std::abs(x) < 0.02f && std::abs(y) < 0.02f) return;  // dead-zone: no-op
+    if (std::abs(x) < 0.02f && std::abs(y) < 0.02f) {
+        // Dead-zone: publish one zero Twist on entry — otherwise the last
+        // non-zero command stays live on the wire after joystick release and
+        // the rover only stops if the consumer happens to run a watchdog.
+        if (was_moving_) {
+            was_moving_ = false;
+            publishTwist(0.0f, 0.0f);
+        }
+        return;
+    }
+    was_moving_ = true;
     publishTwist(y * max_linear_, -x * max_angular_);
 }
 
