@@ -7,7 +7,6 @@ from rclpy.node import Node, Publisher
 from sensor_msgs.msg import NavSatFix
 from os.path import expanduser
 
-
 DEVICE = '/dev/ttyACM0'
 BAUD_RATE = 38400
 REACH_LOG = f"{expanduser('~')}/reach_log.txt"
@@ -39,7 +38,7 @@ class NMEAReader(Node):
         serialdevice = SerialDevice(DEVICE, BAUD_RATE)
         try:
             self.openSerial(serialdevice)        
-            self.timer = self.create_timer(0.5, self.readSerial)
+            self.readSerial()
         except serial.SerialException as e:
             self.log('e', f"[NMEA/Serial] Couldn't open serial: {e}")
             exit(1)
@@ -48,11 +47,6 @@ class NMEAReader(Node):
         if self.debug:
             self.f = open(REACH_LOG, 'a+')
             self.f.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
-
-    # Timer callback for ROS2
-    def timer_callback(self):
-        msg = NavSatFix()
-        msg.latitude = 0
 
     # log function to combine log and print into one cuz clean code
     # types:
