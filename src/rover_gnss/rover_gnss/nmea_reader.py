@@ -34,6 +34,11 @@ class NMEAReader(Node):
         self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)  
         self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)    
 
+        # logging Reach output for debugging
+        if self.debug:
+            self.f = open(REACH_LOG, 'a+')
+            self.f.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
+
         # Serial part
         serialdevice = SerialDevice(DEVICE, BAUD_RATE)
         try:
@@ -42,11 +47,6 @@ class NMEAReader(Node):
         except serial.SerialException as e:
             self.log('e', f"[NMEA/Serial] Couldn't open serial: {e}")
             exit(1)
-
-        # logging Reach output for debugging
-        if self.debug:
-            self.f = open(REACH_LOG, 'a+')
-            self.f.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
 
     # log function to combine log and print into one cuz clean code
     # types:
