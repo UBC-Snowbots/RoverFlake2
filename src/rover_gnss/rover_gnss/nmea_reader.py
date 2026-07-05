@@ -79,8 +79,6 @@ class NMEAReader(Node):
     def openSerial(self, SerialDevice):
         try:
             self.ser = serial.Serial(SerialDevice.device, SerialDevice.baud_rate, timeout=SerialDevice.timeout)
-            self.ser.flushInput()
-            self.ser.flushOutput()
             self.ser.reset_input_buffer()
             self.ser.reset_output_buffer()
             return None
@@ -91,7 +89,7 @@ class NMEAReader(Node):
     # Continuously read the serial port and parse NMEA data
     def readSerial(self):
         scanning = True # jsut here in case we decide to code like humans and not monkeys
-        if self.ser.isOpen():
+        if self.ser.is_open:
             self.log('i', "[NMEA/Serial] Serial open, trying read")
             while scanning and rclpy.ok():
                 try:
@@ -151,15 +149,13 @@ class NMEAReader(Node):
     def closeSerial(self, ser=None):
         if ser is None:
             ser = self.ser
-        if not ser.isOpen():
+        if not ser.is_open:
             self.log('w', "[NMEA/Serial] Serial port is already closed")
         else:
-            ser.flushInput()
-            ser.flushOutput()
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             ser.close()
-            if ser.isOpen():
+            if ser.is_open:
                 self.log('w', "[NMEA] Serial port is still open for some reason")
             else:
                 self.log('i', "[NMEA] Serial port closed successfully")
@@ -167,7 +163,6 @@ class NMEAReader(Node):
         sys.exit(0) 
 
 def main():
-    print("oh shit we're going??")
     rclpy.init()
     reader = NMEAReader(debug=True, altitude=True)
     rclpy.spin(reader)
