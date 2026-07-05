@@ -580,13 +580,16 @@ void MoteusDriverNode::runCalibration(int motor_can_id) {
     std::this_thread::sleep_for(100ms);  // small grace period for OS to release the port
 
     // ── Step 4: run moteus_tool, stream output line-by-line to command log ────
+    // Calibration parameters are per-motor, from motor_config.yaml (currently
+    // identical placeholders for every motor — real values TBD).
+    const auto& cal = configs_[motor_can_id - 1];
     std::string cmd =
         "python3 -u -m moteus.moteus_tool"
         " -t " + std::to_string(motor_can_id) +
         " --calibrate"
-        " --cal-motor-poles 16"
-        " --cal-force-kv 265"
-        " --cal-hal"
+        " --cal-motor-poles " + std::to_string(cal.cal_motor_poles) +
+        " --cal-force-kv " + cal.format(cal.cal_force_kv) +
+        (cal.cal_use_hall ? " --cal-hal" : "") +
         " 2>&1";  // merge stderr so we see errors too
 
     publishCalibStatus(motor_can_id, 1,

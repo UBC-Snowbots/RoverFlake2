@@ -16,6 +16,11 @@
 #   max_current_a    — motor/driver thermal and hardware limits
 #   position_min/max — software travel limits protecting the arm geometry
 #   max_velocity     — speed cap for safety
+#
+# ⚠ CALIBRATION: every motor needs its OWN measured calibration values, but
+# the `calibration:` blocks below are still identical placeholders (the values
+# historically hardcoded in moteus_driver_node). The HMI's Calibrate buttons
+# are disabled until the real per-motor values are filled in (Aaron).
 # =============================================================================
 
 motors:
@@ -33,6 +38,10 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.0052631579  # 1/190
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true
 
   motor_2:  # Shoulder
     kp: 2100.0
@@ -48,6 +57,10 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.00625  # 1/160
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true
 
   motor_3:  # Elbow
     kp: 4000.0
@@ -63,6 +76,10 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.0083333333  # 1/120
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true
 
   motor_4:  # Wrist Pitch
     kp: 50.0
@@ -78,6 +95,10 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.0052631579  # 1/190
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true
 
   motor_5:  # Wrist Roll
     kp: 600.0
@@ -93,6 +114,10 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.0151515152  # 1/66
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true
 
   motor_6:  # End Effector
     kp: 600.0
@@ -108,3 +133,7 @@ motors:
     max_power_w: 200.0
     timeout_s: .nan
     gear_reduction: 0.0151515152  # 1/66
+    calibration:  # placeholders — real per-motor values TBD (see header)
+      motor_poles: 16
+      force_kv: 265.0
+      use_hall: true

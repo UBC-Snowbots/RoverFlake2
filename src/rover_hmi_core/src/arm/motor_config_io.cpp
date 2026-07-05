@@ -107,6 +107,16 @@ std::vector<MotorConfig> get_arm_configuration() {
         a.max_power_W               = fieldOr(m, "max_power_w", a.max_power_W);
         a.def_timeout               = fieldOr(m, "timeout_s", a.def_timeout);
         a.gear_reduction            = fieldOr(m, "gear_reduction", a.gear_reduction);
+
+        if (const YAML::Node cal = m["calibration"]) {
+            a.cal_motor_poles = static_cast<int>(fieldOr(cal, "motor_poles",
+                                                         (float)a.cal_motor_poles));
+            a.cal_force_kv    = fieldOr(cal, "force_kv", a.cal_force_kv);
+            if (cal["use_hall"]) {
+                try { a.cal_use_hall = cal["use_hall"].as<bool>(); }
+                catch (const std::exception&) {}
+            }
+        }
     }
     return axes;
 }

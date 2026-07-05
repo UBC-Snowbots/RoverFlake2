@@ -97,6 +97,14 @@ static const char* YAML_KEYS[] = {
     nullptr,
 };
 
+// The per-motor calibration blocks in motor_config.yaml are still identical
+// placeholders — running calibration would apply the same (possibly wrong)
+// values to every motor. Flip to true once the real per-motor values land.
+static constexpr bool CALIBRATION_UI_ENABLED = false;
+static const char* CALIBRATION_DISABLED_NOTE =
+    "Disabled: per-motor calibration values in motor_config.yaml are still\n"
+    "identical placeholders — fill in real values per motor first.";
+
 static const int PRECISION[] = { 0, 3, 0, 1, 4, 3, 3, 3, 1, 1, 3, 0 };
 
 static const char* JOINT_NAMES[] = {
@@ -299,12 +307,13 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
         auto* cal_btn = new QPushButton("Calibrate");
         cal_btn->setFont(monoBold);
         cal_btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        cal_btn->setToolTip(
-            QString("Run Hall calibration for %1\n"
-                    "  python3 -m moteus.moteus_tool -t %2\n"
-                    "    --calibrate --cal-motor-poles 16 --cal-force-kv 265 --cal-hal\n"
-                    "then sets motor_position.sources.0.type = type.hall:4")
-            .arg(JOINT_NAMES[r]).arg(r + 1));
+        cal_btn->setEnabled(CALIBRATION_UI_ENABLED);
+        cal_btn->setToolTip(CALIBRATION_UI_ENABLED
+            ? QString("Run Hall calibration for %1 with the calibration values\n"
+                      "from motor_config.yaml, then set\n"
+                      "motor_position.sources.0.type = type.hall:4")
+              .arg(JOINT_NAMES[r])
+            : QString(CALIBRATION_DISABLED_NOTE));
         cal_btn->setStyleSheet(
             QString("QPushButton { background: %1; color: %2;"
                     "  border: 1px solid %3; border-radius: 4px; padding: 5px 10px; }"
@@ -328,9 +337,11 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     calib_all_btn_->setFont(monoBold);
     calib_all_btn_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     bold_ws.push_back(calib_all_btn_);
-    calib_all_btn_->setToolTip(
-        "Calibrate all 6 motors one by one (motor 1 → 6).\n"
-        "Each takes ~30 s.  The arm driver will pause during calibration.");
+    calib_all_btn_->setEnabled(CALIBRATION_UI_ENABLED);
+    calib_all_btn_->setToolTip(CALIBRATION_UI_ENABLED
+        ? "Calibrate all 6 motors one by one (motor 1 → 6).\n"
+          "Each takes ~30 s.  The arm driver will pause during calibration."
+        : CALIBRATION_DISABLED_NOTE);
     calib_all_btn_->setStyleSheet(
         QString("QPushButton { background: #1a1400; color: %1;"
                 "  border: 1px solid %1; border-radius: 4px; padding: 6px 14px; }"
@@ -559,6 +570,7 @@ void MotorConfigModule::resetMotorToDefaults(int motor_idx) {
 // ---------------------------------------------------------------------------
 
 void MotorConfigModule::requestCalibration(int motor_id) {
+    if (!CALIBRATION_UI_ENABLED) return;  // buttons are disabled; belt-and-braces
     if (!calib_pub_) return;
 
     rover_msgs::msg::MoteusCalibrationRequest msg;
@@ -602,7 +614,7 @@ void MotorConfigModule::onCalibStatus(
                       const char* fg, bool enabled) {
         if (!btn) return;
         btn->setText(text);
-        btn->setEnabled(enabled);
+        btn->setEnabled(enabled && CALIBRATION_UI_ENABLED);
         btn->setStyleSheet(
             QString("QPushButton { background: %1; color: %2;"
                     "  border: 1px solid %3; border-radius: 4px; padding: 5px 10px; }"

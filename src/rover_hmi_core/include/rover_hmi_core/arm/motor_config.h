@@ -66,6 +66,14 @@ struct MotorConfig {
     // Stored here so the HMI can display it in the Motor Config panel.
     float gear_reduction = 1.0f;
 
+    // Hall calibration parameters passed to moteus_tool by runCalibration().
+    // ⚠ Each motor needs its OWN measured values; the yaml currently carries
+    // identical placeholders for all motors (real values TBD), which is why
+    // the HMI's Calibrate buttons are disabled.
+    int   cal_motor_poles = 16;
+    float cal_force_kv    = 265.0f;
+    bool  cal_use_hall    = true;
+
     // -------------------------------------------------------------------------
     // Helpers used by configureMotor()
     // -------------------------------------------------------------------------
