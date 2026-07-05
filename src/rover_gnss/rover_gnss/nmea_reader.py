@@ -5,7 +5,6 @@ import pynmea2
 import rclpy
 from rclpy.node import Node, Publisher
 from sensor_msgs.msg import NavSatFix
-from std_msgs.msg import String
 from os.path import expanduser
 
 
@@ -22,15 +21,13 @@ class SerialDevice:
 
 # Class to read NMEA data   
 class NMEAReader(Node):
-    def __init__(self, debug=False, altitude=False):
+    def __init__(self, debug=False):
 
         # control flags
         self.debug = debug
-        self.altitude = altitude
 
         # print flag status
-        print("\033[33m", f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}", "\033[0m") if self.debug else print("\033[31m", "[WARN] Debug is disabled", "\033[0m")
-        print("\033[32m", "[WARN] Altitude publishing is enabled", "\033[0m") if self.altitude else print("\033[31m", "[WARN] Altitude publishing is disabled", "\033[0m")
+        self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
 
         # ROS2 part
         super().__init__('nmea_reader')
@@ -191,8 +188,7 @@ class NMEAReader(Node):
         if type(navfixobj) is not NavSatFix:
             self.log('w', "[NMEA/Publisher] WARN: Received a non-NavSatFix message, this shouldn't happen")
         else:
-            # i am honestly and truly not sorry for this long ass line, fuck you
-            print(time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()), f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}", f" Alt: {navfixobj.altitude}" if self.altitude else '')
+            self.log('i', time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}" + (f" Alt: {navfixobj.altitude}" if self.altitude else ''))
             publisher.publish(navfixobj)
         return None
 
@@ -214,7 +210,7 @@ class NMEAReader(Node):
 
 def main():
     rclpy.init()
-    reader = NMEAReader(debug=True, altitude=True)
+    reader = NMEAReader(debug=True)
     rclpy.spin(reader)
     reader.closeSerial()
     rclpy.shutdown()
