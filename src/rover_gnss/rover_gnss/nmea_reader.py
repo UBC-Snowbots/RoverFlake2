@@ -189,7 +189,7 @@ class NMEAReader(Node):
         if type(navfixobj) is not NavSatFix:
             self.log('w', "[NMEA/Publisher] WARN: Received a non-NavSatFix message, this shouldn't happen")
         else:
-            self.log('i', time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}" + (f" Alt: {navfixobj.altitude}" if self.altitude else ''))
+            self.log('i', time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}" + (f" Alt: {navfixobj.altitude}"))
             publisher.publish(navfixobj)
         return None
 
