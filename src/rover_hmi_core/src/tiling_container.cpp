@@ -179,6 +179,13 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     layout_->addWidget(sep);
 
     layout_->addStretch();
+
+    // Pinned below the stretch so it always sits at the sidebar's bottom.
+    // Sections/modules insert at count()-2, i.e. above the stretch.
+    auto* help_hint = new QLabel("Alt + /  —  keybindings");
+    help_hint->setFont(QFont("monospace", theme::FontSizeSm));
+    help_hint->setStyleSheet(QString("color: %1; padding-top: 6px;").arg(theme::TextDim));
+    layout_->addWidget(help_hint);
 }
 
 void ModuleSidebar::addSection(const std::string& name) {
@@ -187,7 +194,7 @@ void ModuleSidebar::addSection(const std::string& name) {
         auto* line = new QWidget();
         line->setFixedHeight(1);
         line->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
-        layout_->insertWidget(layout_->count() - 1, line);
+        layout_->insertWidget(layout_->count() - 2, line);
     }
 
     auto* hdr = new QLabel(QString::fromStdString(name).toUpper());
@@ -195,7 +202,7 @@ void ModuleSidebar::addSection(const std::string& name) {
     hdr->setStyleSheet(
         QString("color: %1; padding: 6px 2px 2px 2px; letter-spacing: 1px;")
         .arg(theme::BorderDim));  // dim initially; setActiveSection brightens it
-    layout_->insertWidget(layout_->count() - 1, hdr);
+    layout_->insertWidget(layout_->count() - 2, hdr);
 
     sections_.push_back({ name, hdr, {} });
 }
@@ -237,7 +244,7 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel,
 
     auto* row_w = new QWidget();
     row_w->setLayout(row);
-    layout_->insertWidget(layout_->count() - 1, row_w);
+    layout_->insertWidget(layout_->count() - 2, row_w);
 
     sec.entries.push_back({ check, panel, idx_lbl });
 
