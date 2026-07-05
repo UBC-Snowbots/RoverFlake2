@@ -26,11 +26,12 @@ class NMEAReader(Node):
         # control flags
         self.debug = debug
 
-        # print flag status
-        self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
-
         # ROS2 part
         super().__init__('nmea_reader')
+
+        # log whether debug is enabled or not
+        self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
+
         self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)  
         self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)    
 
