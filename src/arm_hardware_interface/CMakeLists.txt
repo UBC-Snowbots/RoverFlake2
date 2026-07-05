@@ -29,6 +29,7 @@ if(BUILD_TESTING)
 endif()
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include/)
 
 install(TARGETS moteus_driver

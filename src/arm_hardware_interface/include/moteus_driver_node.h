@@ -13,7 +13,8 @@
 //                         URDF joint names, direction signs, unit conversions
 //
 //   motor_config.h      — per-motor PID gains, current limits, position limits
-//                         (the values pushed to firmware on startup)
+//                         (values loaded from this package's
+//                         config/motor_config.yaml, pushed to firmware on startup)
 //
 //   moteus_protocol.h   — what goes in each CAN-FD data field, frame types,
 //                         unit conventions, watchdog notes

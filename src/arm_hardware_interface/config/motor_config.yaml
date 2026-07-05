@@ -1,0 +1,110 @@
+# =============================================================================
+# Per-motor moteus servo parameters — THE single source of truth.
+#
+# Loaded by:
+#   - moteus_driver_node at startup (pushed to firmware via "conf set")
+#   - the HMI "Motor Params" panel, which also WRITES edits back to this file
+#     (through the package share directory; with --symlink-install that write
+#     lands directly here, in the repository)
+#
+# Units: position/velocity in OUTPUT-SHAFT revolutions (firmware applies the
+# gear ratio). timeout_s: .nan means use the firmware default (~0.1 s).
+# gear_reduction is informational only — firmware holds the real value.
+#
+# WHEN TO CHANGE:
+#   kp/kd            — arm oscillates (lower kp / raise kd) or feels sluggish
+#   max_current_a    — motor/driver thermal and hardware limits
+#   position_min/max — software travel limits protecting the arm geometry
+#   max_velocity     — speed cap for safety
+# =============================================================================
+
+motors:
+  motor_1:  # Base
+    kp: 180.0
+    ki: 0.0
+    kd: 40.0
+    max_current_a: 1.0
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: -0.3
+    position_max: 0.3
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.0052631579  # 1/190
+
+  motor_2:  # Shoulder
+    kp: 2100.0
+    ki: 0.0
+    kd: 100.0
+    max_current_a: 8.0
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: -0.47
+    position_max: -0.05
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.00625  # 1/160
+
+  motor_3:  # Elbow
+    kp: 4000.0
+    ki: 0.0
+    kd: 750.0
+    max_current_a: 5.5
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: 0.01
+    position_max: 0.4
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.0083333333  # 1/120
+
+  motor_4:  # Wrist Pitch
+    kp: 50.0
+    ki: 0.0
+    kd: 0.0
+    max_current_a: 0.5
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: -1.0
+    position_max: 1.0
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.0052631579  # 1/190
+
+  motor_5:  # Wrist Roll
+    kp: 600.0
+    ki: 0.0
+    kd: 100.0
+    max_current_a: 2.5
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: -999.01  # continuous rotation
+    position_max: 999.4
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.0151515152  # 1/66
+
+  motor_6:  # End Effector
+    kp: 600.0
+    ki: 0.0
+    kd: 100.0
+    max_current_a: 2.5
+    max_velocity: 0.05
+    max_acceleration: 3.0
+    position_min: -999.01  # continuous rotation
+    position_max: 999.4
+    position_warn_rev_padding: 0.02
+    max_voltage: 26.0
+    max_power_w: 200.0
+    timeout_s: .nan
+    gear_reduction: 0.0151515152  # 1/66

@@ -3,27 +3,23 @@
 // Edit flow:
 //   Click cell → cyan border.  Type value.  Enter (or blur) →
 //     1. Published to /arm/config_update  (driver applies to RAM immediately)
-//     2. Saved to QSettings               (survives HMI and driver restarts)
-//     3. Status bar shows what was sent.
-//
-// Load flow (start()):
-//   For every (motor, register) that has been saved, publish a
-//   MoteusConfigUpdate.  This re-applies user customisations on top of the
-//   driver's motor_config.h defaults each time the HMI starts.
+//     2. Written to arm_hardware_interface/config/motor_config.yaml — the
+//        repo-tracked file the driver also loads at startup, so the edit
+//        survives HMI and driver restarts AND shows up in git diff.
+//     3. Status bar shows what was sent (or that the file write failed).
 //
 // Reset flow (↺ button):
-//   Clears all QSettings for that motor and publishes motor_config.h defaults
-//   for every register.  Does NOT save the defaults (so the slot stays clean).
+//   Writes the compiled-in fallback defaults for that motor back into
+//   motor_config.yaml and publishes them so the driver applies immediately.
 
 #include "motor_config_module.h"
-#include "motor_config.h"           // get_arm_configuration(), MotorConfig
+#include "motor_config.h"           // get_arm_configuration(), yaml accessors
 #include <rover_hmi_core/catppuccin.h>
 
 #include <QApplication>
 #include <QGridLayout>
 #include <QScrollArea>
 #include <QFont>
-#include <QSettings>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -92,16 +88,20 @@ static const char* REGISTERS[] = {
 };
 static constexpr int NUM_COLS = 12;
 
+// motor_config.yaml key for each column (parallel to REGISTERS).
+static const char* YAML_KEYS[] = {
+    "kp", "ki", "kd",
+    "max_current_a", "max_velocity", "max_acceleration",
+    "position_min", "position_max",
+    "max_voltage", "max_power_w", "timeout_s",
+    nullptr,
+};
+
 static const int PRECISION[] = { 0, 3, 0, 1, 4, 3, 3, 3, 1, 1, 3, 0 };
 
 static const char* JOINT_NAMES[] = {
     "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
 };
-
-// QSettings group/key helpers
-static QString settingsKey(int motor_idx, const char* reg) {
-    return QString("motor_params/motor_%1/%2").arg(motor_idx).arg(reg);
-}
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -122,7 +122,7 @@ static QString activeStyle() {
 }
 
 static QString savedStyle() {
-    // Cells with a user QSettings override: cyan text on black — no blue background
+    // Cells edited this session (saved to motor_config.yaml): cyan on black
     return QString(
         "QLineEdit { background: %1; color: %2;"
         "  border: 1px solid %3; padding: 5px 8px; }")
@@ -191,7 +191,7 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     // No header labels for Reset / Calibrate columns — the buttons are self-explanatory.
 
     // ── Motor rows ────────────────────────────────────────────────────────────
-    QSettings settings("RoverTeam", "RoverHMI");
+    // Values come from motor_config.yaml (the repo file the driver also loads).
     auto arm_defaults = get_arm_configuration();
 
     for (int r = 0; r < NUM_MOTORS; r++) {
@@ -235,17 +235,10 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
                     ? QString("1/%1").arg(qRound(1.0f / def.gear_reduction))
                     : "--");
             } else {
-                // Populate from QSettings override if present, otherwise use default
-                bool has_override = settings.contains(settingsKey(r, REGISTERS[c]));
-                float display_val = has_override
-                    ? settings.value(settingsKey(r, REGISTERS[c])).toFloat()
-                    : motor_defaults[c];
-
+                float display_val = motor_defaults[c];
                 edit->setText(std::isnan(display_val) ? "nan"
                     : QString::number(display_val, 'f', PRECISION[c]));
-                edit->setStyleSheet(has_override
-                    ? savedStyle()
-                    : roStyle(theme::Bg, theme::Text));
+                edit->setStyleSheet(roStyle(theme::Bg, theme::Text));
 
                 // Focus visual feedback.
                 // Guard old_w != nullptr: Qt auto-focuses the first widget on startup
@@ -283,7 +276,9 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
         auto* rst_btn = new QPushButton("↺");
         rst_btn->setFont(monoBold);
         rst_btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        rst_btn->setToolTip(QString("Reset %1 to motor_config.h defaults").arg(JOINT_NAMES[r]));
+        rst_btn->setToolTip(
+            QString("Reset %1 to built-in defaults (writes motor_config.yaml)")
+            .arg(JOINT_NAMES[r]));
         rst_btn->setStyleSheet(
             QString("QPushButton { background: %1; color: %2;"
                     "  border: 1px solid %3; border-radius: 4px; padding: 5px 10px; }"
@@ -350,8 +345,8 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
 
     // Status bar
     status_ = new QLabel(
-        "Click any cell to edit  ·  Enter to apply + save  ·  ↺ to reset row to defaults"
-        "  ·  cyan = user override active");
+        "Click any cell to edit  ·  Enter to apply + write motor_config.yaml"
+        "  ·  ↺ to reset row to defaults  ·  cyan = edited this session");
     status_->setFont(mono);
     status_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     status_->setStyleSheet(
@@ -405,32 +400,21 @@ void MotorConfigModule::setNode(rclcpp::Node::SharedPtr node) {
 }
 
 // ---------------------------------------------------------------------------
-// start()  — re-apply saved overrides after the window is shown
+// start()  — warn if edits won't reach the repository
 // ---------------------------------------------------------------------------
+// The driver reads motor_config.yaml itself at startup, so there is nothing to
+// re-apply here; edits published while both run keep them in sync live.
 
 void MotorConfigModule::start() {
-    if (!pub_) return;
-
-    QSettings settings("RoverTeam", "RoverHMI");
-    int n_applied = 0;
-
-    for (int r = 0; r < NUM_MOTORS; r++) {
-        for (int c = 0; c < NUM_EDITABLE; c++) {
-            if (REGISTERS[c] == nullptr) continue;
-            QString key = settingsKey(r, REGISTERS[c]);
-            if (!settings.contains(key)) continue;
-
-            float val = settings.value(key).toFloat();
-            publishRaw(r, REGISTERS[c], val);
-            ++n_applied;
-        }
-    }
-
-    if (status_ && n_applied > 0) {
+    if (!status_) return;
+    if (!motor_config_yaml_in_repo()) {
         status_->setText(
-            QString("Restored %1 saved override%2 from previous session  ·  "
-                    "cyan tint = user override active")
-            .arg(n_applied).arg(n_applied == 1 ? "" : "s"));
+            QString("⚠ %1 is not a symlink into the repo — edits will NOT be "
+                    "git-tracked (rebuild with --symlink-install)")
+            .arg(QString::fromStdString(motor_config_yaml_path())));
+        status_->setStyleSheet(
+            QString("background: %1; color: %2; padding: 4px 6px;")
+            .arg(theme::Bg).arg(theme::Yellow));
     }
 }
 
@@ -441,8 +425,6 @@ void MotorConfigModule::start() {
 void MotorConfigModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg) {
     if (!edits_[0][0]) return;
     if ((int)msg->config.size() < NUM_MOTORS) return;
-
-    QSettings settings("RoverTeam", "RoverHMI");
 
     for (int r = 0; r < NUM_MOTORS; r++) {
         if (r >= (int)msg->config.size()) break;
@@ -473,21 +455,13 @@ void MotorConfigModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
                 float v = vals[col];
                 edit->setText(std::isnan(v) ? "nan"
                     : QString::number(v, 'f', PRECISION[col]));
-
-                // Keep the saved-override tint correct
-                if (REGISTERS[col]) {
-                    bool saved = settings.contains(settingsKey(r, REGISTERS[col]));
-                    if (!edit->hasFocus())
-                        edit->setStyleSheet(saved ? savedStyle()
-                                                  : roStyle(theme::Bg, theme::Text));
-                }
             }
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// publishUpdate  — send update AND save to QSettings
+// publishUpdate  — send update AND write it to motor_config.yaml
 // ---------------------------------------------------------------------------
 
 void MotorConfigModule::publishUpdate(int motor_idx, int col, float value) {
@@ -495,25 +469,32 @@ void MotorConfigModule::publishUpdate(int motor_idx, int col, float value) {
 
     publishRaw(motor_idx, REGISTERS[col], value);
 
-    // Persist
-    QSettings settings("RoverTeam", "RoverHMI");
-    settings.setValue(settingsKey(motor_idx, REGISTERS[col]), value);
+    // Persist to the repo-tracked yaml (also read by the driver at startup)
+    bool saved = save_motor_config_value(motor_idx, YAML_KEYS[col], value);
 
     // Update cell tint
     if (edits_[motor_idx][col])
         edits_[motor_idx][col]->setStyleSheet(savedStyle());
 
     if (status_) {
-        status_->setText(
-            QString("Saved + applied:  motor %1  %2 = %3")
-            .arg(motor_idx + 1)
-            .arg(REGISTERS[col])
-            .arg(value, 0, 'f', PRECISION[col]));
+        if (saved) {
+            status_->setText(
+                QString("Applied + written to motor_config.yaml:  motor %1  %2 = %3")
+                .arg(motor_idx + 1)
+                .arg(REGISTERS[col])
+                .arg(value, 0, 'f', PRECISION[col]));
+        } else {
+            status_->setText(
+                QString("⚠ Applied to driver but FAILED to write %1 (motor %2  %3)")
+                .arg(QString::fromStdString(motor_config_yaml_path()))
+                .arg(motor_idx + 1)
+                .arg(REGISTERS[col]));
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
-// publishRaw  — send update WITHOUT saving to QSettings
+// publishRaw  — send update WITHOUT touching motor_config.yaml
 // ---------------------------------------------------------------------------
 
 void MotorConfigModule::publishRaw(int motor_idx, const char* reg, float value) {
@@ -526,43 +507,49 @@ void MotorConfigModule::publishRaw(int motor_idx, const char* reg, float value) 
 }
 
 // ---------------------------------------------------------------------------
-// resetMotorToDefaults  — clear saves and re-publish motor_config.h values
+// resetMotorToDefaults  — write built-in defaults to motor_config.yaml and
+// publish them so the driver applies immediately
 // ---------------------------------------------------------------------------
 
 void MotorConfigModule::resetMotorToDefaults(int motor_idx) {
-    auto defaults = get_arm_configuration();
+    auto defaults = fallback_arm_configuration();
     if (motor_idx < 0 || motor_idx >= (int)defaults.size()) return;
     const auto& def = defaults[motor_idx];
 
-    // Clear all saved overrides for this motor
-    QSettings settings("RoverTeam", "RoverHMI");
-    settings.beginGroup(QString("motor_params/motor_%1").arg(motor_idx));
-    settings.remove("");  // removes every key under this group
-    settings.endGroup();
+    const float def_vals[NUM_COLS] = {
+        def.kp, def.ki, def.kd,
+        def.max_current_A,
+        def.max_velocity,
+        def.max_acceleration,
+        def.position_min,
+        def.position_max,
+        def.max_voltage,
+        def.max_power_W,
+        def.def_timeout,
+        def.gear_reduction,  // col 11 — display only, never written
+    };
 
-    // Publish defaults (not saved — QSettings slot is now empty)
-    publishRaw(motor_idx, "servo.pid_position.kp",        def.kp);
-    publishRaw(motor_idx, "servo.pid_position.ki",        def.ki);
-    publishRaw(motor_idx, "servo.pid_position.kd",        def.kd);
-    publishRaw(motor_idx, "servo.max_current_A",          def.max_current_A);
-    publishRaw(motor_idx, "servo.max_velocity",           def.max_velocity);
-    publishRaw(motor_idx, "servo.default_accel_limit",    def.max_acceleration);
-    publishRaw(motor_idx, "servopos.position_min",        def.position_min);
-    publishRaw(motor_idx, "servopos.position_max",        def.position_max);
-    publishRaw(motor_idx, "servo.max_voltage",            def.max_voltage);
-    publishRaw(motor_idx, "servo.max_power_W",            def.max_power_W);
-    publishRaw(motor_idx, "servo.default_timeout_s",      def.def_timeout);
+    bool all_saved = true;
+    for (int col = 0; col < NUM_COLS; col++) {
+        if (REGISTERS[col] == nullptr) continue;
+        publishRaw(motor_idx, REGISTERS[col], def_vals[col]);
+        if (!save_motor_config_value(motor_idx, YAML_KEYS[col], def_vals[col]))
+            all_saved = false;
+    }
 
-    // Revert cell tint to default (no override)
+    // Revert cell tint
     for (int col = 0; col < NUM_EDITABLE; col++) {
         if (edits_[motor_idx][col] && !edits_[motor_idx][col]->hasFocus())
             edits_[motor_idx][col]->setStyleSheet(roStyle(theme::Bg, theme::Text));
     }
 
     if (status_) {
-        status_->setText(
-            QString("Motor %1 (%2) reset to defaults — saved overrides cleared")
-            .arg(motor_idx + 1).arg(JOINT_NAMES[motor_idx]));
+        status_->setText(all_saved
+            ? QString("Motor %1 (%2) reset to built-in defaults — written to motor_config.yaml")
+              .arg(motor_idx + 1).arg(JOINT_NAMES[motor_idx])
+            : QString("⚠ Motor %1 reset published, but writing %2 failed")
+              .arg(motor_idx + 1)
+              .arg(QString::fromStdString(motor_config_yaml_path())));
     }
 }
 

@@ -9,6 +9,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -21,11 +22,14 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
+    src/arm/motor_config_io.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
 )
-target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
-ament_target_dependencies(rover_hmi_core rclcpp pluginlib)
+# yaml-cpp is PRIVATE: only motor_config_io.cpp touches it, so downstream
+# packages linking rover_hmi_core don't need to find_package it.
+target_link_libraries(rover_hmi_core PUBLIC Qt5::Core Qt5::Widgets PRIVATE yaml-cpp)
+ament_target_dependencies(rover_hmi_core PUBLIC rclcpp pluginlib ament_index_cpp)
 
 target_include_directories(rover_hmi_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

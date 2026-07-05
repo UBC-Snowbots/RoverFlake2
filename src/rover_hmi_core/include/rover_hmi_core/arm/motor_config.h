@@ -14,11 +14,14 @@
 // Defines the per-motor servo parameters pushed to each moteus controller at
 // startup via DiagnosticCommand ("conf set <register> <value>").
 //
-// WHEN TO CHANGE THESE:
-//   - PID gains (kp/kd): if the arm oscillates or feels sluggish
-//   - Current limits: protect motors from overheating / hardware limits
-//   - Position limits: software travel limits to protect the arm geometry
-//   - Velocity limits: cap maximum speed for safety
+// THE VALUES LIVE IN THE REPOSITORY, not in this header:
+//     arm_hardware_interface/config/motor_config.yaml
+// get_arm_configuration() loads that file, resolved through the package share
+// directory — with --symlink-install the share path is a symlink back into
+// src/, so edits made in the HMI's Motor Params panel are written straight to
+// the repo file and the driver picks them up on its next startup.
+// fallback_arm_configuration() holds compiled-in values used only when the
+// YAML cannot be found (and by the HMI's per-row ↺ reset).
 //
 // HOW THEY ARE APPLIED:
 //   1. On node startup, configureMotors() calls configureMotor() for each axis.
@@ -92,11 +95,12 @@ struct MotorConfig {
 
 
 // =============================================================================
-// Per-axis configuration values — edit this function to tune the arm.
+// Compiled-in fallback — used when motor_config.yaml cannot be loaded and by
+// the HMI's ↺ reset. To TUNE the arm edit motor_config.yaml, not this.
 // Each index corresponds to ARM_JOINTS[i] in motor_addressing.h.
 // =============================================================================
 
-inline std::vector<MotorConfig> get_arm_configuration() {
+inline std::vector<MotorConfig> fallback_arm_configuration() {
     std::vector<MotorConfig> axes(NUM_MOTORS);
 
     // --- PID gains (hand-tuned per axis) ---
@@ -134,3 +138,26 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
     return axes;
 }
+
+
+// =============================================================================
+// YAML-backed accessors — implemented in motor_config_io.cpp (librover_hmi_core)
+// =============================================================================
+
+// Resolved path of arm_hardware_interface/config/motor_config.yaml in the
+// package share directory ("" if the package is not in the ament index).
+std::string motor_config_yaml_path();
+
+// True when the share-dir file is a symlink (i.e. --symlink-install), so
+// writes actually land in the repository. The HMI warns when this is false.
+bool motor_config_yaml_in_repo();
+
+// Per-axis configuration loaded from motor_config.yaml. Falls back to
+// fallback_arm_configuration() (with a stderr warning) if the file is missing
+// or unreadable; individual missing keys fall back per-field.
+std::vector<MotorConfig> get_arm_configuration();
+
+// Rewrite a single "<key>: <value>" line inside the motor_<idx+1> block of
+// motor_config.yaml, preserving comments and layout. Returns false if the
+// file or the key line cannot be found (caller should surface the failure).
+bool save_motor_config_value(int motor_idx, const std::string& key, float value);
