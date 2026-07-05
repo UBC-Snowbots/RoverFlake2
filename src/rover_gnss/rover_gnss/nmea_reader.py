@@ -3,7 +3,7 @@ import time
 import sys
 import pynmea2
 import rclpy
-from rclpy.node import Node
+from rclpy.node import Node, Publisher
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 from os.path import expanduser
@@ -34,7 +34,8 @@ class NMEAReader(Node):
 
         # ROS2 part
         super().__init__('nmea_reader')
-        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)        
+        self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)  
+        self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)    
 
         # Serial part
         serialdevice = SerialDevice(DEVICE, BAUD_RATE)
@@ -76,7 +77,7 @@ class NMEAReader(Node):
             
 
     # Take the serial device and try to open the port, kill self otherwise 
-    def openSerial(self, SerialDevice):
+    def openSerial(self, SerialDevice: SerialDevice):
         try:
             self.ser = serial.Serial(SerialDevice.device, SerialDevice.baud_rate, timeout=SerialDevice.timeout)
             self.ser.reset_input_buffer()
@@ -106,7 +107,18 @@ class NMEAReader(Node):
                             if type(natsavfix) is not NavSatFix:
                                 self.log('w', "[NMEA/Reader] Couldn't parse message!")
                             else:
-                                self.publishPosition(natsavfix)
+                                self.publishPosition(natsavfix, self.publisher)
+                        except pynmea2.ParseError as e:
+                            self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")
+
+                    if line[3:6] == 'EBP':
+                        self.log('d', line)
+                        try:
+                            natsavfixbase = self.parseNMEA(line)
+                            if type(natsavfixbase) is not NavSatFix:
+                                self.log('w', "[NMEA/Reader] Couldn't parse message!")
+                            else:
+                                self.publishPosition(natsavfixbase, self.base_publisher)
                         except pynmea2.ParseError as e:
                             self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")
                     
@@ -137,13 +149,13 @@ class NMEAReader(Node):
 
 
     # Publish NMEA data
-    def publishPosition(self, navfixobj):
+    def publishPosition(self, navfixobj, publisher: Publisher):
         if type(navfixobj) is not NavSatFix:
             self.log('w', "[NMEA/Publisher] WARN: Received a non-NavSatFix message, this shouldn't happen")
         else:
             # i am honestly and truly not sorry for this long ass line, fuck you
             print(time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()), f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}", f" Alt: {navfixobj.altitude}" if self.altitude else '')
-            self.publisher.publish(navfixobj)
+            publisher.publish(navfixobj)
         return None
 
     def closeSerial(self, ser=None):
