@@ -71,4 +71,4 @@ log/
 **/TODO.md
 
 .vscode/settings.json
-
+.venv
