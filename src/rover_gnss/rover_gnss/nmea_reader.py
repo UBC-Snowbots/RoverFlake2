@@ -164,8 +164,14 @@ class NMEAReader(Node):
             base_alt = 0.0
 
         navsat_fix = NavSatFix()
-        navsat_fix.latitude = self.convertToDecimalDegrees(base_lat, base_lat_dir)
-        navsat_fix.longitude = self.convertToDecimalDegrees(base_lon, base_lon_dir)
+        latitude = self.convertToDecimalDegrees(base_lat, base_lat_dir)
+        longitude = self.convertToDecimalDegrees(base_lon, base_lon_dir)
+        if latitude is None or longitude is None:
+            self.log('e', "[NMEA/Parser] ERROR: Failed to convert base station coordinates to decimal degrees")
+            return None
+        
+        navsat_fix.latitude = latitude
+        navsat_fix.longitude = longitude
         navsat_fix.altitude = float(base_alt)
         return navsat_fix
     
