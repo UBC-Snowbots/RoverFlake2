@@ -220,6 +220,12 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override;
+    // Right-edge drag resizes the sidebar width (long module names can wrap
+    // instead of clipping at a fixed 180 px).
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
+    void leaveEvent(QEvent*) override;
 
 private:
     void setActiveSection(int idx);
@@ -227,6 +233,7 @@ private:
 
     QVBoxLayout* layout_;
     QLabel*      section_indicator_ = nullptr;  // shows "▸ SECTION" in header
+    bool         resizing_edge_ = false;        // width drag in progress
 
     struct Entry { QCheckBox* check; TilePanel* panel; QLabel* idx_lbl; };
     struct Section {

@@ -11,9 +11,28 @@
 #include <algorithm>
 #include <cmath>
 
-static constexpr int SIDEBAR_WIDTH = 180;
+static constexpr int SIDEBAR_WIDTH     = 180;  // initial; user can drag the right edge
+static constexpr int SIDEBAR_MIN_WIDTH = 140;
+static constexpr int SIDEBAR_MAX_WIDTH = 420;
+static constexpr int SIDEBAR_GRIP_PX   = 8;   // grab zone along the right edge
 static constexpr int PANEL_GAP = 3;
 static constexpr float RESIZE_RATIO_STEP = 0.08f;
+
+// Lets the wrapping name label toggle its checkbox — QCheckBox cannot
+// word-wrap its own text, so module names live in a separate QLabel.
+class ToggleOnClick : public QObject {
+public:
+    ToggleOnClick(QCheckBox* box, QObject* parent) : QObject(parent), box_(box) {}
+    bool eventFilter(QObject*, QEvent* ev) override {
+        if (ev->type() == QEvent::MouseButtonRelease) {
+            box_->toggle();
+            return true;
+        }
+        return false;
+    }
+private:
+    QCheckBox* box_;
+};
 
 
 // ---------------------------------------------------------------------------
@@ -158,6 +177,7 @@ void DragOverlay::paintEvent(QPaintEvent*) {
 
 ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     setFixedWidth(SIDEBAR_WIDTH);
+    setMouseTracking(true);  // hover cursor feedback on the resize edge
     layout_ = new QVBoxLayout(this);
     layout_->setContentsMargins(10, 12, 10, 12);
     layout_->setSpacing(4);
@@ -182,9 +202,17 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
 
     // Pinned below the stretch so it always sits at the sidebar's bottom.
     // Sections/modules insert at count()-2, i.e. above the stretch.
-    auto* help_hint = new QLabel("Alt + /  —  keybindings");
+    // The shortcut reads as one token ("Alt+/"), separated from its meaning
+    // by color rather than punctuation.
+    auto* help_hint = new QLabel();
     help_hint->setFont(QFont("monospace", theme::FontSizeSm));
-    help_hint->setStyleSheet(QString("color: %1; padding-top: 6px;").arg(theme::TextDim));
+    help_hint->setTextFormat(Qt::RichText);
+    help_hint->setWordWrap(true);
+    help_hint->setText(
+        QString("<span style='color:%1;'>Alt+/</span>"
+                "&nbsp;&nbsp;<span style='color:%2;'>keybindings</span>")
+        .arg(theme::Text).arg(theme::TextDim));
+    help_hint->setStyleSheet("padding-top: 6px;");
     layout_->addWidget(help_hint);
 }
 
@@ -199,6 +227,7 @@ void ModuleSidebar::addSection(const std::string& name) {
 
     auto* hdr = new QLabel(QString::fromStdString(name).toUpper());
     hdr->setFont(QFont("monospace", theme::FontSizeSm, QFont::Bold));
+    hdr->setWordWrap(true);
     hdr->setStyleSheet(
         QString("color: %1; padding: 6px 2px 2px 2px; letter-spacing: 1px;")
         .arg(theme::BorderDim));  // dim initially; setActiveSection brightens it
@@ -219,28 +248,36 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel,
     idx_lbl->setStyleSheet(QString("color: %1; min-width: 22px;").arg(theme::TextDim));
     idx_lbl->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-    auto* check = new QCheckBox(QString::fromStdString(name));
+    // Indicator-only checkbox; the name lives in a separate QLabel because
+    // QCheckBox cannot word-wrap and long names clipped at the sidebar edge.
+    auto* check = new QCheckBox();
     check->setChecked(default_visible);
     panel->setVisible(default_visible);
-    check->setFont(QFont("monospace", theme::FontSize));
     check->setStyleSheet(
-        QString("QCheckBox { color: %1; spacing: 6px; }"
-                "QCheckBox::indicator { width: 14px; height: 14px; }"
-                "QCheckBox::indicator:checked { background: %2; border: 1px solid %3; border-radius: 3px; }"
-                "QCheckBox::indicator:unchecked { background: %4; border: 1px solid %5; border-radius: 3px; }")
-        .arg(theme::Text).arg(theme::Green).arg(theme::Border)
+        QString("QCheckBox::indicator { width: 14px; height: 14px; }"
+                "QCheckBox::indicator:checked { background: %1; border: 1px solid %2; border-radius: 3px; }"
+                "QCheckBox::indicator:unchecked { background: %3; border: 1px solid %4; border-radius: 3px; }")
+        .arg(theme::Green).arg(theme::Border)
         .arg(theme::Bg).arg(theme::BorderDim));
 
     QObject::connect(check, &QCheckBox::toggled, [on_toggle](bool visible) {
         if (on_toggle) on_toggle(visible);
     });
 
-    // Row: [idx_lbl] [check]
+    auto* name_lbl = new QLabel(QString::fromStdString(name));
+    name_lbl->setFont(QFont("monospace", theme::FontSize));
+    name_lbl->setWordWrap(true);
+    name_lbl->setStyleSheet(QString("color: %1;").arg(theme::Text));
+    name_lbl->setCursor(Qt::PointingHandCursor);
+    name_lbl->installEventFilter(new ToggleOnClick(check, name_lbl));
+
+    // Row: [idx_lbl] [check] [name]
     auto* row = new QHBoxLayout();
     row->setContentsMargins(0, 0, 0, 0);
-    row->setSpacing(4);
+    row->setSpacing(6);
     row->addWidget(idx_lbl);
-    row->addWidget(check, 1);
+    row->addWidget(check);
+    row->addWidget(name_lbl, 1);
 
     auto* row_w = new QWidget();
     row_w->setLayout(row);
@@ -323,6 +360,43 @@ void ModuleSidebar::paintEvent(QPaintEvent*) {
     p.fillRect(rect(), QColor("#080808"));
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(width() - 1, 0, width() - 1, height());
+    // Drag-handle affordance on the resizable right edge
+    p.setPen(QPen(QColor(theme::Border), 2));
+    p.drawLine(width() - 3, height() / 2 - 12, width() - 3, height() / 2 + 12);
+}
+
+// ---------------------------------------------------------------------------
+// Right-edge width drag — the layout honours setFixedWidth, so dragging just
+// updates it (clamped) and the tiling area reflows automatically.
+// ---------------------------------------------------------------------------
+
+void ModuleSidebar::mousePressEvent(QMouseEvent* e) {
+    if (e->pos().x() >= width() - SIDEBAR_GRIP_PX) {
+        resizing_edge_ = true;
+        e->accept();
+        return;
+    }
+    QWidget::mousePressEvent(e);
+}
+
+void ModuleSidebar::mouseMoveEvent(QMouseEvent* e) {
+    if (resizing_edge_) {
+        setFixedWidth(std::clamp(e->pos().x(), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+        return;
+    }
+    setCursor(e->pos().x() >= width() - SIDEBAR_GRIP_PX ? Qt::SizeHorCursor
+                                                        : Qt::ArrowCursor);
+    QWidget::mouseMoveEvent(e);
+}
+
+void ModuleSidebar::mouseReleaseEvent(QMouseEvent* e) {
+    resizing_edge_ = false;
+    QWidget::mouseReleaseEvent(e);
+}
+
+void ModuleSidebar::leaveEvent(QEvent* e) {
+    if (!resizing_edge_) setCursor(Qt::ArrowCursor);
+    QWidget::leaveEvent(e);
 }
 
 
