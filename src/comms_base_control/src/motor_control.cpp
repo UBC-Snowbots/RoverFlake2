@@ -26,64 +26,45 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         RCLCPP_INFO(this->get_logger(), "Successfully requested STEP line on pin %d", STEP_LINE_GPIO_PIN);
     }
 
-    en_line = gpiod_chip_get_line(chip, EN_LINE_GPIO_PIN);
-    if (!en_line) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to get EN line on pin %d", EN_LINE_GPIO_PIN);
-    } else {
-        gpiod_line_request_output(en_line, "stepper_enable", 1);
-        RCLCPP_INFO(this->get_logger(), "Successfully requested EN line on pin %d", EN_LINE_GPIO_PIN);
-        
-        gpiod_line_set_value(en_line, 0);
-        RCLCPP_INFO(this->get_logger(), "Stepper driver enabled");
-    }
-
-    death_ray_sub_ = this->create_subscription<std_msgs::msg::Int16>(
+    death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
 }
 
 MotorControlNode::~MotorControlNode() {
-    if (en_line) {
-        gpiod_line_set_value(en_line, 0);
-        gpiod_line_release(en_line);
-    }
     if (dir_line) gpiod_line_release(dir_line);
     if (step_line) gpiod_line_release(step_line);
     if (chip) gpiod_chip_close(chip);
 }
 
 /**
- * Callback for the death_ray_commands subscriber
- * Receives and decides Int16 messages:
- * < 0 -> Counterclockwise
- * > 0 -> Clockwise
+ * Callback for the /death_ray_commands subscriber.
+ * Receives and decodes Float32 messages.
  * 
- * In both cases, the magnitude of the command indicates the number of steps to take
+ * The sign of the command indicates the direction 
+ * to rotate the dish.
+ * NEGATIVE -> Counterclockwise
+ * POSITIVE -> Clockwise
  * 
- * This function decodes the command and transmits it to the death ray via the GPIO pins
+ * The magnitude of the command indicates the number of degrees 
+ * to rotate the dish. This function decodes the command and 
+ * transmits it to the GPIO pins.
  */
-void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Int16::SharedPtr msg) {
-    // Message received from topic will encode the direction in the sign and the num steps in the magnitude
-    int stepper_cmd = msg->data;
+void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    // Message received from topic will encode the direction in the sign and the degrees to rotate in the magnitude
+    float stepper_cmd = msg->data;
 
-    RCLCPP_INFO(this->get_logger(), "Received command: %d", stepper_cmd);
-
-    // Drive the dir_line using the sign of the command
+    // Drive dir_line using the sign of the command
     if (stepper_cmd > 0) {
-        RCLCPP_INFO(this->get_logger(), "Setting direction: CLOCKWISE (%d)", STEPPER_CLOCKWISE_DIRECTION);
         gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
     }
     else if (stepper_cmd < 0) {
-        RCLCPP_INFO(this->get_logger(), "Setting direction: COUNTER-CLOCKWISE (%d)", !STEPPER_CLOCKWISE_DIRECTION);
         gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
     }
-    else {
-        RCLCPP_WARN(this->get_logger(), "Received 0 steps connection command. Standing still.");
-    }
 
-    int steps = std::abs(stepper_cmd);
-    RCLCPP_INFO(this->get_logger(), "Executing %d steps...", steps);
+    float degrees = std::abs(stepper_cmd);
+    int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
 
     // Drive the step_line using the magnitude of the command
     for (int i = 0; i < steps; i++) {
