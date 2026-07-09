@@ -29,12 +29,23 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
+    motor_control_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS), 
+        std::bind(&MotorControlNode::motorTimerCallback, this)
+    );
+
     RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
 }
 
 MotorControlNode::~MotorControlNode() {
-    if (dir_line) gpiod_line_release(dir_line);
-    if (step_line) gpiod_line_release(step_line);
+    if (dir_line) {
+        gpiod_line_set_value(dir_line, 0);
+        gpiod_line_release(dir_line);
+    }
+    if (step_line) {
+        gpiod_line_set_value(step_line, 0);
+        gpiod_line_release(step_line);
+    }
     if (chip) gpiod_chip_close(chip);
 }
 
@@ -49,32 +60,34 @@ MotorControlNode::~MotorControlNode() {
  * 
  * The magnitude of the command indicates the number of degrees 
  * to rotate the dish. This function decodes the command and 
- * transmits it to the GPIO pins.
+ * stores the target number of steps for processing by `motorTimerCallback`
  */
 void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    // Message received from topic will encode the direction in the sign and the degrees to rotate in the magnitude
     float stepper_cmd = msg->data;
-
-    // Drive dir_line using the sign of the command
     if (stepper_cmd > 0) {
         gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
-    }
-    else if (stepper_cmd < 0) {
+    } else if (stepper_cmd < 0) {
         gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
     }
-
     float degrees = std::abs(stepper_cmd);
-    int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+    steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+}
 
-    // Drive the step_line using the magnitude of the command
-    for (int i = 0; i < steps; i++) {
-        gpiod_line_set_value(step_line, 1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
-        gpiod_line_set_value(step_line, 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
+/**
+ * Loop for driving the PUL pin of the stepper motor
+ */
+void MotorControlNode::motorTimerCallback() {
+    static bool pin_high = false;
+    if (steps > 0) {
+        if (!pin_high) {
+            gpiod_line_set_value(step_line, 1);
+            pin_high = true;
+        } else {
+            gpiod_line_set_value(step_line, 0);
+            pin_high = false;
+            steps--;
+        }
     }
-
-    RCLCPP_INFO(this->get_logger(), "Finished executing %d steps.", steps);
 }
 
 int main(int argc, char* argv[]) {
