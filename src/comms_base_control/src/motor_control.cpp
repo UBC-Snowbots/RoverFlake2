@@ -30,10 +30,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     if (!en_line) {
         RCLCPP_ERROR(this->get_logger(), "Failed to get EN line on pin %d", EN_LINE_GPIO_PIN);
     } else {
-        gpiod_line_request_output(en_line, "stepper_enable", 0);
+        gpiod_line_request_output(en_line, "stepper_enable", 1);
         RCLCPP_INFO(this->get_logger(), "Successfully requested EN line on pin %d", EN_LINE_GPIO_PIN);
         
-        gpiod_line_set_value(en_line, 1);
+        gpiod_line_set_value(en_line, 0);
         RCLCPP_INFO(this->get_logger(), "Stepper driver enabled");
     }
 
