@@ -29,11 +29,6 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
         "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
-    motor_control_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS), 
-        std::bind(&MotorControlNode::motorTimerCallback, this)
-    );
-
     RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
 }
 
@@ -60,33 +55,25 @@ MotorControlNode::~MotorControlNode() {
  * 
  * The magnitude of the command indicates the number of degrees 
  * to rotate the dish. This function decodes the command and 
- * stores the target number of steps for processing by `motorTimerCallback`
+ * transmits it to the GPIO pins.
  */
 void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     float stepper_cmd = msg->data;
+
     if (stepper_cmd > 0) {
         gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
     } else if (stepper_cmd < 0) {
         gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
     }
-    float degrees = std::abs(stepper_cmd);
-    steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
-}
 
-/**
- * Loop for driving the PUL pin of the stepper motor
- */
-void MotorControlNode::motorTimerCallback() {
-    static bool pin_high = false;
-    if (steps > 0) {
-        if (!pin_high) {
-            gpiod_line_set_value(step_line, 1);
-            pin_high = true;
-        } else {
-            gpiod_line_set_value(step_line, 0);
-            pin_high = false;
-            steps--;
-        }
+    float degrees = std::abs(stepper_cmd);
+    int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+
+    for (int i = 0; i < steps; i++) {
+        gpiod_line_set_value(step_line, 1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
+        gpiod_line_set_value(step_line, 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
     }
 }
 

@@ -42,10 +42,7 @@ public:
 
 private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr death_ray_sub_;
-    rclcpp::TimerBase::SharedPtr motor_control_timer_;
-
     void deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg);
-    void motorTimerCallback();
 
     gpiod_chip* chip;
     gpiod_line* dir_line;
