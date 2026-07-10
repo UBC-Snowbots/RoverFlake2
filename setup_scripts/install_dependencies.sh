@@ -6,3 +6,8 @@ sudo apt upgrade -y
 curl -fsSL https://www.phidgets.com/downloads/setup_linux | sudo -E bash -
 sudo apt-get install -y libphidget22
 sudo apt-get install -y libphidget22-dev
+
+
+
+# for libcamera
+sudo apt install -y libcamera-dev

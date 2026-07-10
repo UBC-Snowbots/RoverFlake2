@@ -7,7 +7,8 @@ front_camera_node:
     # ExposureTime: 15700
     Saturation: 1.0
     # camera: \_SB_.PCI0.XHC_.RHUB.HS02-2:1.2-046d:082c
-    camera: \_SB_.PCI0.XHC_.RHUB.HS04-4:1.0-046d:0825
+    # camera: \_SB_.PCI0.XHC_.RHUB.HS04-4:1.0-046d:0825
+    camera: \_SB_.PCI0.XHC_.RHUB.HS01-1:1.2-046d:081d
     format: MJPEG
     height: 720
     qos_overrides./parameter_events.publisher.depth: 1000

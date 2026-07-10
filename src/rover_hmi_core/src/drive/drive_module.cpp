@@ -15,8 +15,32 @@
 
 #include <pluginlib/class_list_macros.hpp>
 
+// VirtualJoystick — defined here so Q_OBJECT is in the .cpp (avoids AUTOMOC
+// header-scanning issues with private include directories).
+class VirtualJoystick : public QWidget {
+    Q_OBJECT
+public:
+    explicit VirtualJoystick(QWidget* parent = nullptr);
+    float axisX() const { return axis_x_; }
+    float axisY() const { return axis_y_; }
+    void setAxisFromKey(int dx, int dy);
+    void resetAxes();
+signals:
+    void axisChanged(float x, float y);
+protected:
+    void paintEvent(QPaintEvent*) override;
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
+private:
+    void updateFromPos(const QPointF& pos);
+    float axis_x_ = 0.0f;
+    float axis_y_ = 0.0f;
+    bool  pressed_ = false;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
-// VirtualJoystick
+// VirtualJoystick implementation
 // ─────────────────────────────────────────────────────────────────────────────
 
 VirtualJoystick::VirtualJoystick(QWidget* parent) : QWidget(parent) {
@@ -272,3 +296,4 @@ void DriveModule::publishTwist(float linear_x, float angular_z) {
 }
 
 PLUGINLIB_EXPORT_CLASS(DriveModule, rover_hmi_core::GuiModule)
+#include "drive_module.moc"
