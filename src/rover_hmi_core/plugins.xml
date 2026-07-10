@@ -30,6 +30,8 @@
          type="PowerTimelineModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Rolling power timeline canvas for battery and total power/current series</description>
+  </class>
+
   <!-- Arm -->
   <class name="rover_hmi_core/MotorStatusModule"
          type="MotorStatusModule"
@@ -55,11 +57,15 @@
          type="CommandLogModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Log of sent commands and driver messages</description>
+  </class>
+
   <!-- MoveIt -->
   <class name="rover_hmi_core/RvizModule"
          type="RvizModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Embedded RViz 3D robot visualization</description>
+  </class>
+
   <!-- Science -->
   <class name="rover_hmi_core/ScienceModule"
          type="ScienceModule"
@@ -75,6 +81,8 @@
          type="ScienceAnalysisModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
+  </class>
+
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
          type="DriveModule"
