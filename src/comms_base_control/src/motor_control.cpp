@@ -69,7 +69,11 @@ void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::Sha
     float degrees = std::abs(stepper_cmd);
     int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
 
-    for (int i = 0; i < steps; i++) {
+    /**
+     * rclcpp::ok on each loop iteration ensures that the loop stops
+     * running if the node stops running
+     */
+    for (int i = 0; i < steps && rclcpp::ok(); i++) {
         gpiod_line_set_value(step_line, 1);
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
         gpiod_line_set_value(step_line, 0);
