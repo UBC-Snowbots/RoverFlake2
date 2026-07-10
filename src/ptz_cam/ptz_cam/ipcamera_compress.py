@@ -20,30 +20,36 @@ class CameraEncoder(Node):
             'arm_rgb': (
                 '/camera/arm/rgb_active',
                 lambda: [
-                    'gst-launch-1.0', 'rs2src', 'device=/dev/video2', 'stream-type=0',
+                    'gst-launch-1.0',
+                    'v4l2src', 'device=/dev/video2',
+                    '!', 'video/x-raw,width=640,height=480,framerate=30/1',
                     '!', 'videoconvert',
-                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast',
-                    '!', 'rtpmp4gpay', 'config-interval=1',
+                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast', 'bitrate=2000',
+                    '!', 'rtph264pay', 'config-interval=1', 'pt=96',
                     '!', 'udpsink', 'host=127.0.0.1', 'port=5002'
                 ]
             ),
             'arm_ir': (
                 '/camera/arm/ir_active',
                 lambda: [
-                    'gst-launch-1.0', 'rs2src', 'device=/dev/video2', 'stream-type=2',
+                    'gst-launch-1.0',
+                    'v4l2src', 'device=/dev/video4',
+                    '!', 'video/x-raw,width=640,height=480,framerate=30/1',
                     '!', 'videoconvert',
-                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast',
-                    '!', 'rtpmp4gpay', 'config-interval=1',
+                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast', 'bitrate=2000',
+                    '!', 'rtph264pay', 'config-interval=1', 'pt=96',
                     '!', 'udpsink', 'host=127.0.0.1', 'port=5003'
                 ]
             ),
             'front_rgb': (
                 '/camera/front/rgb_active',
                 lambda: [
-                    'gst-launch-1.0', 'rs2src', 'device=/dev/video8', 'stream-type=0',
+                    'gst-launch-1.0',
+                    'v4l2src', 'device=/dev/video8',
+                    '!', 'video/x-raw,width=640,height=480,framerate=30/1',
                     '!', 'videoconvert',
-                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast',
-                    '!', 'rtpmp4gpay', 'config-interval=1',
+                    '!', 'x264enc', 'tune=zerolatency', 'speed-preset=ultrafast', 'bitrate=2000',
+                    '!', 'rtph264pay', 'config-interval=1', 'pt=96',
                     '!', 'udpsink', 'host=127.0.0.1', 'port=5004'
                 ]
             ),
@@ -73,10 +79,28 @@ class CameraEncoder(Node):
                 self.processes[name].terminate()
                 self.processes[name].wait()
                 del self.processes[name]
+    
+    def destroy_node(self):
+        self.get_logger().info("Shutting down, stopping all cameras...")
+        
+        for name in list(self.processes.keys()):
+            self.processes[name].terminate()
+            self.processes[name].wait(timeout=5)
+        
+        super().destroy_node()
 
-def main():
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     node = CameraEncoder()
-    rclpy.spin(node)
+    
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    
     node.destroy_node()
     rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
