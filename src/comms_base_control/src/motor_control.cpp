@@ -72,6 +72,9 @@ void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::Sha
     /**
      * rclcpp::ok on each loop iteration ensures that the loop stops
      * running if the node stops running
+     * 
+     * Without this, ctrl+C would not be registered until the loop finshed
+     * running.
      */
     for (int i = 0; i < steps && rclcpp::ok(); i++) {
         gpiod_line_set_value(step_line, 1);
