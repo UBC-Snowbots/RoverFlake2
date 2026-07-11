@@ -142,6 +142,8 @@ class NMEAReader(Node):
         
     def msgToNavSatFix(self, msg: pynmea2.types.talker.GGA | EBP) -> NavSatFix:
         navsat_fix = NavSatFix()
+        if msg.lat == '' or msg.lon == '':
+            return navsat_fix
         
         # pynmea doesnt apply the sign
         lat_sign = -1.0 if msg.lat_dir == 'S' else 1.0
