@@ -55,7 +55,14 @@ class NMEAReader(Node):
         self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
 
         self.publisher = self.create_publisher(NavSatFix, 'gnss_fix', 10)  
-        self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)    
+        self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)   
+
+        self.latest_covariance = [
+            0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0
+        ]
+        self.latest_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
 
         # logging Reach output for debugging
         if self.debug:
@@ -127,7 +134,9 @@ class NMEAReader(Node):
                         else:
                             self.publishPosition(natsavfix, self.base_publisher)
                     except pynmea2.ParseError as e:
-                        self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")                    
+                        self.log('e', f"[NMEA/Reader] ERROR: PyNMEA error: {e}")
+                if line[3:6] == 'GST':
+                    self.parseCovariance(line)
 
         else:
             self.log('e', "[NMEA/Reader] Serial port is closed, cannot read data")
@@ -142,6 +151,34 @@ class NMEAReader(Node):
             navsat_fix = self.msgToNavSatFix(msg)
             
             return navsat_fix
+        
+    def parseCovariance(self, line):
+        msg = pynmea2.parse(line)
+        if not isinstance(msg, pynmea2.types.talker.GST):
+            self.log('e', "[NMEA/Parser] ERROR: Received a non-GST message, this shouldn't happen")
+            return None
+        else:
+            # Extract the standard deviations from the GST message
+            try:
+                std_dev_lat = float(msg.std_dev_lat)
+                std_dev_lon = float(msg.std_dev_lon)
+                std_dev_alt = float(msg.std_dev_alt)
+
+                # Convert standard deviations to variances
+                var_lat = std_dev_lat ** 2
+                var_lon = std_dev_lon ** 2
+                var_alt = std_dev_alt ** 2
+
+                # Update the latest covariance matrix
+                self.latest_covariance = [
+                    var_lat, 0.0, 0.0,
+                    0.0, var_lon, 0.0,
+                    0.0, 0.0, var_alt
+                ]
+                self.latest_covariance_type = NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
+
+            except ValueError as e:
+                self.log('e', f"[NMEA/Parser] ERROR: Invalid GST data: {e}")
         
     def msgToNavSatFix(self, msg: pynmea2.types.talker.GGA | EBP) -> NavSatFix:
         navsat_fix = NavSatFix()
@@ -183,14 +220,9 @@ class NMEAReader(Node):
         # Covariance estimation from HDOP
         dil = getattr(msg, 'horizontal_dil', None)
         if dil is not None:
-            base_accuracy = 2.0  # Assumed standard device accuracy factor
-            variance = (float(dil) * base_accuracy) ** 2
-            navsat_fix.position_covariance = [
-                variance, 0.0, 0.0,
-                0.0, variance, 0.0,
-                0.0, 0.0, (variance * 4.0) # Vertical error is approximated higher
-            ]
-            navsat_fix.position_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED
+            navsat_fix.position_covariance = self.latest_covariance
+            navsat_fix.position_covariance_type = self.latest_covariance_type
+            self.latest_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED # set to approximated after use
         else:
             navsat_fix.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
 
