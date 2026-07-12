@@ -81,16 +81,13 @@ class NMEAReader(Node):
     #   d - debug
     def log(self, type, msg):
         if type == 'e':
-            print("\033[31m", self.get_logger().error(msg), "\033[0m")
+            self.get_logger().error(f"\033[31m{msg}\033[0m")
         elif type == 'i':
-            self.get_logger().info(msg)
-        elif type == 'w':
-            print("\033[35m", self.get_logger().warn(msg), "\033[0m")
+            self.get_logger().info(f"{msg}")
         elif type == 'd':
-            print("\033[36m", self.get_logger().debug(msg), "\033[0m")
+            self.get_logger().debug(f"\033[36m{msg}\033[0m")
         else:
-            print("[NMEA/Logger]: Unknown msg type, printing as warn")
-            print("\033[35m", self.get_logger().warn(msg), "\033[0m")
+            self.get_logger().warn(f"\033[35m{msg}\033[0m")
             
 
     # Take the serial device and try to open the port
