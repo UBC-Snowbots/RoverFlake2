@@ -43,8 +43,9 @@ class NMEAReader(Node):
         """
 
         self.debug_file = None
-        self.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG if debug else rclpy.logging.LoggingSeverity.INFO)
         super().__init__('nmea_reader')
+
+        self.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG if debug else rclpy.logging.LoggingSeverity.INFO)
 
         self.debug = debug
         self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
