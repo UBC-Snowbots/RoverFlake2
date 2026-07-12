@@ -42,6 +42,7 @@ class NMEAReader(Node):
         and sets up serial communication with the specified device.
         """
 
+        self.debug_file = None
         super().__init__('nmea_reader')
 
         self.debug = debug
@@ -51,7 +52,6 @@ class NMEAReader(Node):
         self.base_publisher = self.create_publisher(NavSatFix, 'base_fix', 10)    
 
         # logging Reach output for debugging
-        self.debug_file = None
         if self.debug:
             self.debug_file = open(REACH_LOG, 'a+')
             self.debug_file.write(f"--- STARTING REACH LOG @ {time.strftime('(%d/%m %H:%M:%S) ---', time.localtime())}\n")
