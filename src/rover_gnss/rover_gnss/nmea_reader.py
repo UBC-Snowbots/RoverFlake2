@@ -43,6 +43,7 @@ class NMEAReader(Node):
         """
 
         self.debug_file = None
+        self.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG if debug else rclpy.logging.LoggingSeverity.INFO)
         super().__init__('nmea_reader')
 
         self.debug = debug
@@ -197,7 +198,7 @@ class NMEAReader(Node):
         if type(navfixobj) is not NavSatFix:
             self.log('w', "[NMEA/Publisher] WARN: Received a non-NavSatFix message, this shouldn't happen")
         else:
-            self.log('i', time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}" + (f" Alt: {navfixobj.altitude}"))
+            self.log('d', time.strftime("[NMEA] (%H:%M:%S) ", time.localtime()) + f"Lat: {navfixobj.latitude} Lon: {navfixobj.longitude}" + (f" Alt: {navfixobj.altitude}"))
             publisher.publish(navfixobj)
         return None
 
@@ -224,7 +225,7 @@ class NMEAReader(Node):
 
 def main():
     rclpy.init()
-    reader = NMEAReader(debug=True)
+    reader = NMEAReader(debug=False)
     rclpy.spin(reader)
     reader.closeSerial()
     rclpy.shutdown()
