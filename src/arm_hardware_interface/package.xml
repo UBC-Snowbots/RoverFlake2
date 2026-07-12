@@ -16,7 +16,7 @@
   <depend>rover_msgs</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>rover_hmi_core</depend>
+  <depend>rover_arm_common</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

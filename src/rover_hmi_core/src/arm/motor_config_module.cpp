@@ -16,7 +16,7 @@
 //   for every register.  Does NOT save the defaults (so the slot stays clean).
 
 #include "motor_config_module.h"
-#include "motor_config.h"           // get_arm_configuration(), MotorConfig
+#include <rover_arm_common/motor_config.h>           // get_arm_configuration(), MotorConfig
 #include <rover_hmi_core/catppuccin.h>
 
 #include <QApplication>

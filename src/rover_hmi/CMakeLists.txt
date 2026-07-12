@@ -21,37 +21,37 @@ find_package(OpenCV REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(arm_hardware_interface REQUIRED)
+find_package(rover_arm_common REQUIRED)
 find_package(arm_control REQUIRED)
 find_package(rover_utils REQUIRED)
 include_directories(include)
 include_directories(include/dashboard)
 # Add the include directories
 include_directories(${GTKMM_INCLUDE_DIRS})
-# include_directories(${arm_hardware_interface_INCLUDE_DIRS})
+# include_directories(${rover_arm_common_INCLUDE_DIRS})
 # Add the linker flags
 link_directories(${GTKMM_LIBRARY_DIRS})
-# link_directories(${arm_hardware_interface_LIBRARY_DIRS})
+# link_directories(${rover_arm_common_LIBRARY_DIRS})
 
 add_executable(main_hmi_node src/RoverHMI.cpp include/RoverHMI.h src/helper_functions.cpp src/system_overview_functions.cpp include/HMICommon.h)
 # add_executable(middle_rover_viz_node src/RoverViz.cpp include/RoverViz.h)main_hmi_node
 # add_executable(arm_hmi_node src/ArmTestingHMI.cpp include/RoverHMI.h include/ArmTestingHMI.h src/helper_functions.cpp src/system_overview_functions.cpp)
 # add_executable(right_screen src/right_screen.cpp)  # 1080p
 # add_executable(middle_screen src/middle_screen.cpp) # 1440p
-ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control)
-# ament_target_dependencies(arm_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control)
+ament_target_dependencies(main_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs rover_arm_common arm_control)
+# ament_target_dependencies(arm_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs rover_arm_common arm_control)
 # ament_target_dependencies(middle_rover_viz_node rclcpp ament_index_cpp std_msgs rover_msgs rviz_visual_tools arm_hardware_interface)
 target_link_libraries(main_hmi_node ${GTKMM_LIBRARIES})
 
 # target_link_libraries(arm_hmi_node ${GTKMM_LIBRARIES})
 
 add_executable(dashboard_hmi_node src/dashboard/dashboardHMI.cpp include/HMICommon.h include/dashboard/dashboardHMI.h src/helper_functions.cpp)
-ament_target_dependencies(dashboard_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control rover_utils)
+ament_target_dependencies(dashboard_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs rover_arm_common arm_control rover_utils)
 target_link_libraries(dashboard_hmi_node ${GTKMM_LIBRARIES})
 
 
 add_executable(science_module_hmi_node src/science_moduleHMI.cpp include/HMICommon.h include/science_moduleHMI.h src/helper_functions.cpp)
-ament_target_dependencies(science_module_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs arm_hardware_interface arm_control)
+ament_target_dependencies(science_module_hmi_node rclcpp ament_index_cpp std_msgs rover_msgs OpenCV sensor_msgs cv_bridge geometry_msgs rover_arm_common arm_control)
 target_link_libraries(science_module_hmi_node ${GTKMM_LIBRARIES})
 
 if(BUILD_TESTING)

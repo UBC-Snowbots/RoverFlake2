@@ -15,7 +15,7 @@
   <depend>ament_index_cpp</depend>
   <depend>rviz_visual_tools</depend>
   <depend>tf2_eigen</depend>
-  <depend>arm_hardware_interface</depend>
+  <depend>rover_arm_common</depend>
   <depend>arm_control</depend>
   <!-- <depend>rover_utils</depend> -->
 

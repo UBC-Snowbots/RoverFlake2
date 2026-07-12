@@ -16,8 +16,8 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
-#include "motor_addressing.h"
-#include "arm_commands.h"
+#include <rover_arm_common/motor_addressing.h>
+#include <rover_arm_common/arm_commands.h>
 
 #include <QComboBox>
 #include <QDoubleSpinBox>

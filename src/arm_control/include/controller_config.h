@@ -16,7 +16,7 @@
 #pragma once
 
 #include <sensor_msgs/msg/joy.hpp>
-#include <arm_hardware_interface/ArmSerialProtocol.h>
+#include <rover_arm_common/ArmSerialProtocol.h>
 inline static constexpr int MAX_BUTTONS = 20; // can be decreased
 inline static constexpr int MAX_AXES    = 10;
 

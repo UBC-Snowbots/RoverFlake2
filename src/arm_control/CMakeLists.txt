@@ -28,7 +28,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   tf2_eigen
   trajectory_msgs
   moteus_msgs
-  arm_hardware_interface
+  rover_arm_common
 )
 
 find_package(ament_cmake REQUIRED)
