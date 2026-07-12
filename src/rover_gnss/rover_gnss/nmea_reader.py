@@ -160,9 +160,9 @@ class NMEAReader(Node):
         else:
             # Extract the standard deviations from the GST message
             try:
-                std_dev_lat = float(msg.std_dev_lat)
-                std_dev_lon = float(msg.std_dev_lon)
-                std_dev_alt = float(msg.std_dev_alt)
+                std_dev_lat = float(msg.std_dev_latitude)
+                std_dev_lon = float(msg.std_dev_longitude)
+                std_dev_alt = float(msg.std_dev_altitude)
 
                 # Convert standard deviations to variances
                 var_lat = std_dev_lat ** 2
