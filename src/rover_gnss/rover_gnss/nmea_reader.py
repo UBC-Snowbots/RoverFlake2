@@ -87,7 +87,7 @@ class NMEAReader(Node):
         elif type == 'w':
             print("\033[35m", self.get_logger().warn(msg), "\033[0m")
         elif type == 'd':
-            print("\033[36m", f"[DEBUG] {repr(msg)}", "\033[0m")
+            print("\033[36m", self.get_logger().debug(msg), "\033[0m")
         else:
             print("[NMEA/Logger]: Unknown msg type, printing as warn")
             print("\033[35m", self.get_logger().warn(msg), "\033[0m")
