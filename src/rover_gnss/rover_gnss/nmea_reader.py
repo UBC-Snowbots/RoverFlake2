@@ -7,6 +7,7 @@ from rclpy.node import Node, Publisher
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 from std_msgs.msg import Header
 from pathlib import Path
+from rclpy.logging import LoggingSeverity
 
 DEVICE = '/dev/ttyACM0'
 BAUD_RATE = 38400
@@ -45,7 +46,10 @@ class NMEAReader(Node):
         self.debug_file = None
         super().__init__('nmea_reader')
 
-        self.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG if debug else rclpy.logging.LoggingSeverity.INFO)
+        rclpy.logging.set_logger_level(
+            self.get_logger().name, 
+            LoggingSeverity.DEBUG if debug else LoggingSeverity.INFO
+        )
 
         self.debug = debug
         self.log('w', f"[WARN] Debug is enabled, Reach output is saved to {REACH_LOG}") if self.debug else self.log('w', "[WARN] Debug is disabled")
