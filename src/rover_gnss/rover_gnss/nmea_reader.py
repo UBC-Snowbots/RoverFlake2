@@ -160,6 +160,9 @@ class NMEAReader(Node):
         else:
             # Extract the standard deviations from the GST message
             try:
+                if msg.std_dev_latitude == '' or msg.std_dev_longitude == '' or msg.std_dev_altitude == '' or msg.std_dev_latitude is None or msg.std_dev_longitude is None or msg.std_dev_altitude is None:
+                    self.log('w', "[NMEA/Parser] WARN: Received a GST message with missing standard deviation values, skipping covariance update")
+                    return None
                 std_dev_lat = float(msg.std_dev_latitude)
                 std_dev_lon = float(msg.std_dev_longitude)
                 std_dev_alt = float(msg.std_dev_altitude)
