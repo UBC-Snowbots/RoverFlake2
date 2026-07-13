@@ -44,6 +44,7 @@ class NMEAReader(Node):
         """
 
         self.debug_file = None
+        self.ser = None
         super().__init__('nmea_reader')
 
         rclpy.logging.set_logger_level(
@@ -258,7 +259,8 @@ class NMEAReader(Node):
     def __del__(self):
         if self.debug_file:
             self.debug_file.close()
-        self.closeSerial()
+        if self.ser and self.ser.is_open:
+            self.closeSerial()
 
 def main():
     rclpy.init()
