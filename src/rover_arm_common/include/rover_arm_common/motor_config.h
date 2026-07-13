@@ -14,11 +14,9 @@
 // Defines the per-motor servo parameters pushed to each moteus controller at
 // startup via DiagnosticCommand ("conf set <register> <value>").
 //
-// WHEN TO CHANGE THESE:
-//   - PID gains (kp/kd): if the arm oscillates or feels sluggish
-//   - Current limits: protect motors from overheating / hardware limits
-//   - Position limits: software travel limits to protect the arm geometry
-//   - Velocity limits: cap maximum speed for safety
+// THE VALUES LIVE IN THE REPOSITORY: rover_arm_common/config/motor_config.yaml.
+// get_arm_configuration() loads that file via the package share directory
+// (a symlink back into src/ under --symlink-install, so HMI edits land here).
 //
 // HOW THEY ARE APPLIED:
 //   1. On node startup, configureMotors() calls configureMotor() for each axis.
@@ -92,11 +90,12 @@ struct MotorConfig {
 
 
 // =============================================================================
-// Per-axis configuration values — edit this function to tune the arm.
+// Compiled-in fallback — used when motor_config.yaml cannot be loaded and by
+// the HMI's ↺ reset. To TUNE the arm edit motor_config.yaml, not this.
 // Each index corresponds to ARM_JOINTS[i] in motor_addressing.h.
 // =============================================================================
 
-inline std::vector<MotorConfig> get_arm_configuration() {
+inline std::vector<MotorConfig> fallback_arm_configuration() {
     std::vector<MotorConfig> axes(NUM_MOTORS);
 
     // --- PID gains (hand-tuned per axis) ---
@@ -134,3 +133,18 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
     return axes;
 }
+
+
+// =============================================================================
+// YAML accessors — implemented in motor_config_io.cpp (librover_arm_common)
+// =============================================================================
+
+// Share-dir path of motor_config.yaml ("" if the package isn't installed).
+std::string motor_config_yaml_path();
+
+// Loads motor_config.yaml; falls back to fallback_arm_configuration() if the
+// file can't be read.
+std::vector<MotorConfig> get_arm_configuration();
+
+// Rewrites one "<key>: <value>" line in motor_<idx+1>'s block. False on failure.
+bool save_motor_config_value(int motor_idx, const std::string& key, float value);

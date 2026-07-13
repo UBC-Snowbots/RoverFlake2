@@ -5,14 +5,18 @@
   <version>0.1.0</version>
   <description>
     Shared arm contract: motor addressing, motor configuration, command and
-    telemetry structs, and the legacy serial protocol constants. Header-only
-    and Qt-free so the arm driver, arm control, and both HMIs can share one
-    definition without depending on each other.
+    telemetry structs, and the legacy serial protocol constants. Qt-free so
+    the arm driver, arm control, and both HMIs can share one definition
+    without depending on each other. Headers plus one small library for the
+    repo-tracked motor_config.yaml loader/saver.
   </description>
   <maintainer email="rhimaaron@gmail.com">Aaron Rhim</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>ament_index_cpp</depend>
+  <depend>yaml-cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
