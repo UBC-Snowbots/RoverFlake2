@@ -21,7 +21,6 @@ setup(
     entry_points={
         'console_scripts': [
             'nmea_reader = rover_gnss.nmea_reader:main',
-	    'nmea_reader_new = rover_gnss.nmea_reader_updated:main'
         ],
     },
 )
