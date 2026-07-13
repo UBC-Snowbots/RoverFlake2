@@ -9,7 +9,7 @@ from std_msgs.msg import Header
 from pathlib import Path
 from rclpy.logging import LoggingSeverity
 
-DEVICE = '/dev/ttyACM0'
+DEVICE = '/dev/serial/by-id/usb-Emlid_ReachM+_82435519E0ADA406-if02'
 BAUD_RATE = 38400
 REACH_LOG = Path.home() / 'reach_log.txt'
 
