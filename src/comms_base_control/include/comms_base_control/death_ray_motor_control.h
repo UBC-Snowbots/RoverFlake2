@@ -27,10 +27,10 @@
  * 
  * Acts as an interface between the rotation commands and the GPIO output
  */
-class MotorControlNode : public rclcpp::Node {
+class DeathRayMotorControlNode : public rclcpp::Node {
 public:
-    MotorControlNode();
-    ~MotorControlNode();
+    DeathRayMotorControlNode();
+    ~DeathRayMotorControlNode();
 
 private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr death_ray_sub_;

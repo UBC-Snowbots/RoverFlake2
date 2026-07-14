@@ -10,23 +10,23 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_executable(motor_control_node src/motor_control.cpp)
+add_executable(death_ray_motor_control_node src/death_ray_motor_control.cpp)
 
-ament_target_dependencies(motor_control_node
+ament_target_dependencies(death_ray_motor_control_node
   rclcpp
   std_msgs
 )
 
-target_link_libraries(motor_control_node gpiod)
+target_link_libraries(death_ray_motor_control_node gpiod)
 
-target_include_directories(motor_control_node PUBLIC
+target_include_directories(death_ray_motor_control_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/comms_base_control>
   $<INSTALL_INTERFACE:include>
 )
 
 install(TARGETS
-  motor_control_node
+  death_ray_motor_control_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

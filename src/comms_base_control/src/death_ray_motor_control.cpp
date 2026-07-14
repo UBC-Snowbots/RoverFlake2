@@ -1,6 +1,6 @@
-#include "motor_control.h"
+#include "death_ray_motor_control.h"
 
-MotorControlNode::MotorControlNode() : Node("motor_control_node") {
+DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_control_node") {
     RCLCPP_INFO(this->get_logger(), "Attempting to open GPIO chip: %s", GPIO_CHIP_NAME);
 
     // Initialize connections to the GPIO pins via libgpiod
@@ -27,12 +27,12 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
     }
 
     death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-        "death_ray_commands", rclcpp::QoS(10), std::bind(&MotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
+        "death_ray_commands", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
 
-    RCLCPP_INFO(this->get_logger(), "MotorControlNode initialization complete.");
+    RCLCPP_INFO(this->get_logger(), "DeathRayMotorControlNode initialization complete.");
 }
 
-MotorControlNode::~MotorControlNode() {
+DeathRayMotorControlNode::~DeathRayMotorControlNode() {
     if (dir_line) {
         gpiod_line_set_value(dir_line, 0);
         gpiod_line_release(dir_line);
@@ -57,7 +57,7 @@ MotorControlNode::~MotorControlNode() {
  * to rotate the dish. This function decodes the command and 
  * transmits it to the GPIO pins.
  */
-void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+void DeathRayMotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     float stepper_cmd = msg->data;
 
     if (stepper_cmd > 0) {
@@ -86,7 +86,7 @@ void MotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::Sha
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<MotorControlNode>();
+    auto node = std::make_shared<DeathRayMotorControlNode>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
