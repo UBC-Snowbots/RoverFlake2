@@ -47,6 +47,7 @@ apt_packages_to_install=(
     "python3-rosdep"
     "libsfml-dev"
     "rviz_common"
+    "libgpiod-dev"
 )
 
 # Loop through the package list and install missing packages
