@@ -10,7 +10,7 @@ find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(rover_hmi_core REQUIRED)
+find_package(rover_arm_common REQUIRED)
 
 include_directories(include)
 
@@ -19,7 +19,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_buil
 # CAN-FD driver executable
 add_executable(moteus_driver src/moteus_driver_node.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
-ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_hmi_core)
+ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

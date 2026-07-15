@@ -9,6 +9,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(rover_arm_common REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -75,7 +76,7 @@ target_link_libraries(rover_hmi_modules
     rover_hmi_core
     Qt5::Widgets
 )
-ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp)
+ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp rover_arm_common)
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 # ---------------------------------------------------------------------------
@@ -103,6 +104,6 @@ install(DIRECTORY include/ DESTINATION include)
 install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)
-ament_export_dependencies(rclcpp pluginlib Qt5Widgets)
+ament_export_dependencies(rclcpp pluginlib Qt5Widgets rover_arm_common)
 
 ament_package()

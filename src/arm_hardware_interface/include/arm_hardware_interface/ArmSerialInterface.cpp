@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 
-#include <arm_hardware_interface/ArmSerialProtocol.h>
+#include <rover_arm_common/ArmSerialProtocol.h>
 #include <serial/serial.h>
 
 #define SIMULATE false
