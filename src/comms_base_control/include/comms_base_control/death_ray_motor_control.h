@@ -1,5 +1,5 @@
-#ifndef DRIVE_CONTROL_H
-#define DRIVE_CONTROL_H
+#ifndef DEATH_RAY_MOTOR_CONTROL_H
+#define DEATH_RAY_MOTOR_CONTROL_H
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -23,7 +23,7 @@
 #define DISH_PULSES_PER_DEGREE (DISH_PULSES_PER_REVOLUTION / 360.0f)
 
 /**
- * @brief MotorControlNode controls the stepper motor to rotate the comms dish
+ * @brief DeathRayMotorControlNode controls the stepper motor to rotate the comms dish
  * 
  * Acts as an interface between the rotation commands and the GPIO output
  */
