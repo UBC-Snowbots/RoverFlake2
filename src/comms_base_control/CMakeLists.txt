@@ -11,8 +11,14 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(death_ray_motor_control_node src/death_ray_motor_control.cpp)
+add_executable(death_ray_magnetometer_node src/death_ray_magnetometer.cpp)
 
 ament_target_dependencies(death_ray_motor_control_node
+  rclcpp
+  std_msgs
+)
+
+ament_target_dependencies(death_ray_magnetometer_node
   rclcpp
   std_msgs
 )
@@ -25,8 +31,15 @@ target_include_directories(death_ray_motor_control_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(death_ray_magnetometer_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/comms_base_control>
+  $<INSTALL_INTERFACE:include>
+)
+
 install(TARGETS
   death_ray_motor_control_node
+  death_ray_magnetometer_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
