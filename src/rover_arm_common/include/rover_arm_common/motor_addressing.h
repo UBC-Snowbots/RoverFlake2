@@ -26,7 +26,39 @@
 //   a physically meaningful /joint_states for RViz.
 // =============================================================================
 
-constexpr int NUM_MOTORS = 6;
+enum class MotorIndex : int {
+    MOTOR_1 = 0, // Axis 1 Motor
+    MOTOR_2 = 1, // Axis 2 Motor
+    MOTOR_3 = 2, // Axis 3 Motor
+    MOTOR_4 = 3, // Axis 4 Motor
+    MOTOR_5 = 4, // Axis 5/6 Motor A
+    MOTOR_6 = 5, // Axis 5/6 Motor B
+    MOTOR_EE = 6, // EE Axis Motor
+};
+
+enum class AxisIndex : int {
+    AXIS_1 = 0, // Base
+    AXIS_2 = 1, // Shoulder
+    AXIS_3 = 2, // Elbow
+    AXIS_4 = 3, // Elbow Twist
+    AXIS_5 = 4, // Wrist Pitch
+    AXIS_6 = 5, // Wrist Roll
+    AXIS_EE = 6, // End Effector Linear Axis
+};
+
+// enum AxisIndex : int {
+//     AXIS_1 = 0, // Base
+//     AXIS_2 = 1, // Shoulder
+//     AXIS_3 = 2, // Elbow
+//     AXIS_4 = 3, // Elbow Twist
+//     AXIS_5 = 4, // Wrist Pitch
+//     AXIS_6 = 5, // Wrist Roll
+//     AXIS_EE = 6, // End Effector Linear Axis
+// };
+constexpr int NUM_AXES = 7;
+
+
+constexpr int NUM_MOTORS = 7;
 
 // Gripper finger joints have no motors.  They are published as static 0 in
 // /joint_states so robot_state_publisher doesn't warn about missing joints.
@@ -45,14 +77,17 @@ struct JointMap {
     double      direction;        // +1 or -1: sign between output revolutions and URDF angle
 };
 
+//!? this is wrong?? where is A4?
+// Should only be needed for IK/rviz. Leave be for now.
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
     //  id   hardware label    urdf joint name    boot angle (rad)   direction
     {  1,   "Base",           "shoulder_joint",       -1.57,          -1.0  },
     {  2,   "Shoulder",       "link_1_joint",         -1.57,          -1.0  },
     {  3,   "Elbow",          "link1_link2",           0.9,           -1.0  },
-    {  4,   "Wrist Pitch",    "a4_rotation",           0.0,           -1.0  },
-    {  5,   "Wrist Roll",     "a5_rotation",           1.2,           -1.0  },
-    {  6,   "End Effector",   "a6_rotation",           0.0,           -1.0  },
+    {  4,   "BALLS",          "MEOWMEOW",           0.9,           -1.0  }, // IDK
+    {  5,   "Wrist Pitch",    "a4_rotation",           0.0,           -1.0  },
+    {  6,   "Wrist Roll",     "a5_rotation",           1.2,           -1.0  },
+    {  7,   "End Effector",   "a6_rotation",           0.0,           -1.0  },
 };
 
 
@@ -73,4 +108,14 @@ inline double motorRevToJointRad(int motor_idx, double output_revolutions) {
 // Convert output-shaft rev/s to URDF joint velocity (rad/s).
 inline double motorRevPerSecToJointRadPerSec(int motor_idx, double output_rev_per_sec) {
     return ARM_JOINTS[motor_idx].direction * output_rev_per_sec * 2.0 * M_PI;
+}
+
+inline double revolutionToDegrees(double rev)
+{
+    return (360.00f / rev);
+}
+
+inline double degreesToRevolution(double degrees)
+{
+    return (degrees / 360.00f);
 }

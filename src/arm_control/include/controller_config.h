@@ -152,6 +152,7 @@ namespace ArmControllerConfig { // Can make into a class later?
 
     enum class GameController {
         PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
+        PS4_JOY_LINUX_ANDRES,
         SWITCH_PRO_CONTROLLER,
         CYBORG_JOYSTICK
 
@@ -176,7 +177,7 @@ namespace ArmControllerConfig { // Can make into a class later?
     */
 
     float ee_speed_scale = 60;
-    float axis_speed_scale = 10;
+    float axis_speed_scale = 10; //Degrress? - max degrees/s
 
     struct ArmControlInput {
         // Static arrays, not vectors here
@@ -193,7 +194,8 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
-                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                // arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
                 arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
                 arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
                 arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
@@ -208,6 +210,34 @@ namespace ArmControllerConfig { // Can make into a class later?
                 arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg->axes[axes::DPAD_Y];
 
                 arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
+    
+                arm_control_msg.home = joy_msg->buttons[buttons::SHARE];
+                arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::CIRCLE];
+            }
+            break;
+        case GameController::PS4_JOY_LINUX_ANDRES:
+            {
+                using namespace ps4_index;
+                // arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X] * -1;
+                arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y] * -1;
+                arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                arm_control_msg.fk_axes[AXIS_5_INDEX] = joy_msg->axes[axes::DPAD_Y];
+                arm_control_msg.fk_axes[AXIS_6_INDEX] = joy_msg->axes[axes::DPAD_X];
+
+
+
+                arm_control_msg.ik_axes[IK_ANG_Z_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.ik_axes[IK_LIN_X_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Z_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
+                arm_control_msg.ik_axes[IK_LIN_Y_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
+                arm_control_msg.ik_axes[IK_ANG_X_INDEX] = joy_msg->axes[axes::DPAD_X];
+                arm_control_msg.ik_axes[IK_ANG_Y_INDEX] = joy_msg->axes[axes::DPAD_Y];
+
+                arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
+
+                // arm_control_msg.end_effector = (joy_msg->axes[axes::R2] - joy_msg->axes[axes::L2]);
     
                 arm_control_msg.home = joy_msg->buttons[buttons::SHARE];
                 arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::CIRCLE];

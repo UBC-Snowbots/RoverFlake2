@@ -27,7 +27,7 @@
 // -----------------------------------------------------------------------------
 // Command codes — carried in rover_msgs::msg::ArmCommand::cmd_type
 // -----------------------------------------------------------------------------
-
+//TODO deshittify this into an enumerator or smt. Or static assert that none can equal eachother
 // Stop all motors immediately.
 //   - Motor enters kStopped mode → no torque, no position hold (goes limp).
 //   - Always accepted, even when a fault is active.
@@ -53,6 +53,15 @@ constexpr char CMD_ABS_VEL = 'V';
 //   positions[] used as a flag: any non-NaN entry means "zero that motor".
 constexpr char CMD_ZERO    = 'Z';
 
+constexpr char CMD_HOME    = 'H';
+
+constexpr char CMD_FORCE_HOME = 'F';
+
+constexpr char CMD_COMMS = 'C';
+
+#define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
+#define HOME_VALUE_ALL_AXES_AND_EE    0xAE
+
 
 // -----------------------------------------------------------------------------
 // Internal command state — one slot per motor
@@ -67,4 +76,6 @@ struct MotorCommand {
     double position   = 0.0;   // output-shaft revolutions  (NaN = no position target)
     double velocity   = 0.0;   // output-shaft rev/s        (NaN = use motion profile)
     double max_torque = NAN;   // N·m output-shaft cap      (NaN = firmware default)
+    double max_velocity = NAN;
+    double max_acceleration = NAN;
 };

@@ -33,7 +33,7 @@ public:
 
     this->package_share_dir = ament_index_cpp::get_package_share_directory("rover_hmi");
 
-    std::string glade_file_path = this->package_share_dir + "/glade_files/middle_screen.glade";
+    std::string glade_file_path = this->package_share_dir + "/glade_files/main_hmi.glade";
     RCLCPP_INFO(this->get_logger(), glade_file_path.c_str());
     auto builder = Gtk::Builder::create_from_file(glade_file_path.c_str());
     // auto qos = rclcpp::QoS(rclcpp::KeepLast(QUEUE_SIZE)).transient_local();
@@ -138,6 +138,13 @@ public:
     builder->get_widget("a6_readout_driver_temp", axis_driver_temp_label[5]);
     builder->get_widget("ee_readout_driver_temp", axis_driver_temp_label[6]);
 
+    builder->get_widget("a1_readout_limitswitch1", axis_limit_switch_label[0]);
+    builder->get_widget("a2_readout_limitswitch1", axis_limit_switch_label[1]);
+    builder->get_widget("a3_readout_limitswitch1", axis_limit_switch_label[2]);
+    builder->get_widget("a4_readout_limitswitch1", axis_limit_switch_label[3]);
+    builder->get_widget("a5_readout_limitswitch1", axis_limit_switch_label[4]);
+    builder->get_widget("a6_readout_limitswitch1", axis_limit_switch_label[5]);
+    builder->get_widget("ee_readout_limitswitch1", axis_limit_switch_label[6]);
 
     builder->get_widget("a1_readout_current", axis_current_label[0]);
     builder->get_widget("a2_readout_current", axis_current_label[1]);
@@ -365,6 +372,7 @@ private:
   Gtk::Label* axis_torque_label[7];
   Gtk::Label* axis_driver_temp_label[7];
   Gtk::Label* axis_current_label[7];
+  Gtk::Label* axis_limit_switch_label[7];
 
   Gtk::Button* home_all_button;
   Gtk::Button* next_panel_button;

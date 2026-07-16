@@ -37,9 +37,9 @@ static inline constexpr int IK_ANG_Z_INDEX = 5;
 
 // Command codes — kept for compatibility with code that uses the old names.
 // New code should use the constants in arm_commands.h.
-#define HOME_CMD        'h'
-#define ABS_POS_CMD     'P'
-#define ABS_VEL_CMD     'V'
-#define COMM_CMD        'C'
-#define TEST_LIMITS_CMD 't'
-#define HOME_ALL_ID     50
+// #define HOME_CMD        'h'
+// #define ABS_POS_CMD     'P'
+// #define ABS_VEL_CMD     'V'
+// #define COMM_CMD        'C'
+// #define TEST_LIMITS_CMD 't'
+// #define HOME_ALL_ID     50
