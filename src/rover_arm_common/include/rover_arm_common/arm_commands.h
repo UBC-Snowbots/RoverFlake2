@@ -27,7 +27,7 @@
 // -----------------------------------------------------------------------------
 // Command codes — carried in rover_msgs::msg::ArmCommand::cmd_type
 // -----------------------------------------------------------------------------
-
+//TODO deshittify this into an enumerator or smt. Or static assert that none can equal eachother
 // Stop all motors immediately.
 //   - Motor enters kStopped mode → no torque, no position hold (goes limp).
 //   - Always accepted, even when a fault is active.
@@ -52,6 +52,11 @@ constexpr char CMD_ABS_VEL = 'V';
 //   Use this to establish a new zero point after manually positioning the arm.
 //   positions[] used as a flag: any non-NaN entry means "zero that motor".
 constexpr char CMD_ZERO    = 'Z';
+
+constexpr char CMD_HOME    = 'H';
+
+#define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
+#define HOME_VALUE_ALL_AXES_AND_EE    0xAE
 
 
 // -----------------------------------------------------------------------------

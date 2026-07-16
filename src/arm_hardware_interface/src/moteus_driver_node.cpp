@@ -7,6 +7,10 @@
 #include <sys/wait.h>  // WIFEXITED / WEXITSTATUS
 #include <stdexcept>
 
+#define LOG_QUEUE_SIZE_MSGS 50
+#define SKIP_CALIBRATION
+using namespace std::chrono_literals;
+
 // =============================================================================
 // MoteusDriverNode implementation
 //
@@ -18,20 +22,30 @@
 MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     // Use a non-singleton transport so we own the only shared_ptr and can truly
     // release the CAN fd when calibration needs exclusive access to the bus.
-    transport_ = mot::TransportRegistry::singleton().make({}).first;
+    // transport_ = mot::TransportRegistry::singleton().make({}).first;
     configs_   = get_arm_configuration();
 
-    for (int id = 1; id <= NUM_MOTORS; id++) {
-        mot::Controller::Options opts;
-        opts.id        = id;
-        opts.transport = transport_;  // explicit — prevents fallback to singleton
-        opts.query_format.q_current = mot::kFloat;
-        opts.query_format.power     = mot::kFloat;
-        controllers_.push_back(std::make_shared<mot::Controller>(opts));
+    for(int i = 0; i < NUM_AXES; i++)
+    {
+        auto& axis = axes[i];
+        axis.homed = false;
+        axis.index = i;
+        axis.state = AxisState::INIT;
+
     }
+    //ROWTAG deslopify - repeated code
+    reInitTransport();
+    // for (int id = 1; id <= NUM_MOTORS; id++) {
+    //     mot::Controller::Options opts;
+    //     opts.id        = id;
+    //     opts.transport = transport_;  // explicit — prevents fallback to singleton
+    //     opts.query_format.q_current = mot::kFloat;
+    //     opts.query_format.power     = mot::kFloat;
+    //     controllers_.push_back(std::make_shared<mot::Controller>(opts));
+    // }
 
     auto qos     = rclcpp::QoS(1).reliable().durability_volatile();
-    auto log_qos = rclcpp::QoS(500).reliable().durability_volatile();
+    auto log_qos = rclcpp::QoS(LOG_QUEUE_SIZE_MSGS).reliable().durability_volatile();
 
     feedback_pub_  = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
     joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
@@ -48,11 +62,15 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     calib_pub_ = this->create_publisher<rover_msgs::msg::MoteusCalibrationStatus>(
         "/arm/calibration_status", qos);
 
-    calib_sub_ = this->create_subscription<rover_msgs::msg::MoteusCalibrationRequest>(
-        "/arm/calibration_request", qos,
-        std::bind(&MoteusDriverNode::calibrationCallback, this, std::placeholders::_1));
+    // calib_sub_ = this->create_subscription<rover_msgs::msg::MoteusCalibrationRequest>(
+    //     "/arm/calibration_request", qos,
+    //     std::bind(&MoteusDriverNode::calibrationCallback, this, std::placeholders::_1));
 
-    configureMotors();
+        #ifndef SKIP_CALIBRATION
+        // configureMotors();
+        #else 
+        RCLCPP_WARN(this->get_logger(), "SKIPPING MOTOR CALIBRATIONS");
+        #endif
 
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
@@ -197,9 +215,53 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
         return;
     }
 
+    if (cmd_type == CMD_HOME)
+    {
+        // Sanitize cmd_value
+        if(msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES)
+        {
+            // User wants to home a single axis
+            home_axis(static_cast<AxisIndex>(msg->cmd_value));
+            return;
+        } 
+        else if(msg->cmd_value == 0xAA)
+        {
+            // User wants to home all axes, except for EE
+        }
+        else if(msg->cmd_value == 0xAE)
+        {
+            // User wants to home all axes including EE
+        }
+        else 
+        {
+            // Invalid command. Return.
+            RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
+            return;
+        }
+
+    }
+
     RCLCPP_WARN(this->get_logger(), "Unknown cmd_type: '%c' (%d)", cmd_type, (int)cmd_type);
 }
 
+// Zero position of a motor.
+void MoteusDriverNode::zero_position(MotorIndex index)
+{
+    int i = static_cast<int>(index);
+
+    controllers_[i]->DiagnosticCommand("d exact 0");
+    RCLCPP_INFO(this->get_logger(),
+    "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
+    publishLog("# Motor " + std::to_string(i + 1)
+        + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+}
+
+void MoteusDriverNode::home_axis(AxisIndex index)
+{
+    // Just set axis state to request homing
+    this->axes[static_cast<int>(index)].state = AxisState::REQUESTING_HOMING;
+    
+}
 
 // ---------------------------------------------------------------------------
 // Poll loop — runs at 10 Hz
@@ -220,7 +282,7 @@ void MoteusDriverNode::poll() {
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
         for (int i = 0; i < NUM_MOTORS; i++) {
-            if (pending_cmds_[i].active)
+            if (pending_cmds_[i].active && axes[i].state != AxisState::HOMING)
                 active_cmds_[i] = pending_cmds_[i];
         }
         pending_cmds_ = {};
@@ -231,11 +293,7 @@ void MoteusDriverNode::poll() {
     for (int i = 0; i < NUM_MOTORS; i++) {
         auto& cmd = active_cmds_[i];
         if (cmd.active && cmd.is_zero) {
-            controllers_[i]->DiagnosticCommand("d exact 0");
-            RCLCPP_INFO(this->get_logger(),
-                "Motor %d (%s) zeroed (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
-            publishLog("# Motor " + std::to_string(i + 1)
-                + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+            zero_position(static_cast<MotorIndex>(i));
             cmd.active = false;  // one-shot; next cycle falls through to MakeQuery
         }
     }
@@ -265,7 +323,9 @@ void MoteusDriverNode::poll() {
             cmd.active = false;  // stop is one-shot; next cycle falls through to query
         } else if (cmd.active) {
             frames.push_back(MoteusProtocol::makePositionFrame(
-                *controllers_[i], cmd.position, cmd.velocity, cmd.max_torque));
+                *controllers_[i], cmd.position, NAN));
+            // frames.push_back(MoteusProtocol::makePositionFrame(
+            //     *controllers_[i], cmd.position, cmd.velocity, cmd.max_torque));
         } else {
             frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[i]));
         }
@@ -295,16 +355,86 @@ void MoteusDriverNode::poll() {
         t.mode        = static_cast<int>(r.mode);
         t.fault       = static_cast<int>(r.fault);
         t.connected   = true;
+        #ifdef DEBUG_LIMIT_SWITCH_RAW_REPLY
+        RCLCPP_WARN(this->get_logger(), "Aux2 Pins of axis %i be looking like: %s",
+            id,
+            std::bitset<8>(r.aux2_gpio).to_string().c_str());
+        #endif
+        t.limit_switch = (r.aux2_gpio > 0); //TODO this is pretty fragile... if pins are not configured then is fucky wucky
+        axes[id - 1].limit_switch = t.limit_switch; // Update for IPC
     }
 
     // Step 5 — safety
-    checkFaults();
+    // checkFaults();
     checkAlerts();
+
+
+    // Check Homing
+    for(auto& axis : axes)
+    {
+        if(axis.state == AxisState::REQUESTING_HOMING)
+        {
+            if(axis.limit_switch)
+            {
+                // Limit swittch is pressed or broken
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Is pressed or broken. Homing Request Denied", axis.index + 1);
+                axis.state = AxisState::ERROR;
+
+            } else 
+            {
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
+
+                // Accept
+                axis.state = AxisState::HOMING;
+            }
+        }
+
+        if(axis.state == AxisState::HOMING)
+        {
+            // Check limit switch
+            if(axis.limit_switch)
+            {
+                // Limit switch is pressed, homing complete
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
+                zero_position(static_cast<MotorIndex>(axis.index));
+                axis.state = AxisState::RUNNING_OK;
+                auto& cmd      = active_cmds_[axis.index];
+                cmd.active     = true;
+                cmd.is_stop    = true;
+                cmd.is_zero    = false;
+                cmd.position   = NAN;
+                cmd.velocity   = NAN;
+                cmd.max_torque = NAN;
+            } 
+            else 
+            {
+                // Move the motor a little tiny bit
+                constexpr float kHomingStepRev = 0.002f;  // ~0.7 deg motor/cycle
+
+                int i = axis.index;
+                float target = telem_[i].position + kHomingStepRev;
+
+                auto& cmd      = active_cmds_[i];
+                cmd.active     = true;
+                cmd.is_stop    = false;
+                cmd.is_zero    = false;
+                cmd.position   = target;
+                cmd.velocity   = NAN;
+                cmd.max_torque = NAN;
+            }
+
+        }
+    }
+
+
+
+
 
     // Step 6a — /arm/moteus_feedback
     rover_msgs::msg::MoteusArmStatus status_msg;
     status_msg.status.resize(NUM_MOTORS);
     status_msg.config.resize(NUM_MOTORS);
+    status_msg.limit_switches.resize(NUM_MOTORS);
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         auto& c   = configs_[i];
@@ -335,7 +465,8 @@ void MoteusDriverNode::poll() {
         s.moteus_fault         = static_cast<int16_t>(t.fault);
         // Desired setpoints from the last command sent to this motor
         s.des_position = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].position : NAN);
-        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);
+        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);\
+        status_msg.limit_switches[i] = t.limit_switch;
     }
     feedback_pub_->publish(status_msg);
 
@@ -540,6 +671,7 @@ void MoteusDriverNode::reInitTransport() {
         opts.transport = transport_;
         opts.query_format.q_current = mot::kFloat;
         opts.query_format.power     = mot::kFloat;
+        opts.query_format.aux2_gpio = mot::kInt8;
         controllers_.push_back(std::make_shared<mot::Controller>(opts));
     }
 }
@@ -562,83 +694,84 @@ void MoteusDriverNode::reInitTransport() {
 // Step 8  Resume poll loop.
 // ---------------------------------------------------------------------------
 void MoteusDriverNode::runCalibration(int motor_can_id) {
-    using namespace std::chrono_literals;
+    RCLCPP_ERROR(this->get_logger(), "Sorry, calibration is under construction... coming soon to a PR near you");
+    // using namespace std::chrono_literals;
 
-    // ── Step 1: pause poll ────────────────────────────────────────────────────
-    calibrating_.store(true);
-    std::this_thread::sleep_for(60ms);  // let any in-flight BlockingCycle finish
+    // // ── Step 1: pause poll ────────────────────────────────────────────────────
+    // calibrating_.store(true);
+    // std::this_thread::sleep_for(60ms);  // let any in-flight BlockingCycle finish
 
-    // ── Step 2: conf write — persist current config before calibration ────────
-    publishCalibStatus(motor_can_id, 1, "Saving config to flash before calibration...");
-    publishLog("# calib motor " + std::to_string(motor_can_id) + ": conf write (pre-calib)");
-    controllers_[motor_can_id - 1]->DiagnosticCommand("conf write");
+    // // ── Step 2: conf write — persist current config before calibration ────────
+    // // publishCalibStatus(motor_can_id, 1, "Saving config to flash before calibration...");
+    // // publishLog("# calib motor " + std::to_string(motor_can_id) + ": conf write (pre-calib)");
+    // // controllers_[motor_can_id - 1]->DiagnosticCommand("conf write");
 
-    // ── Step 3: release CAN fd ────────────────────────────────────────────────
-    publishCalibStatus(motor_can_id, 1, "Releasing CAN bus for moteus_tool...");
-    controllers_.clear();
-    transport_.reset();  // refcount → 0: CAN fd is now closed
-    std::this_thread::sleep_for(100ms);  // small grace period for OS to release the port
+    // // ── Step 3: release CAN fd ────────────────────────────────────────────────
+    // publishCalibStatus(motor_can_id, 1, "Releasing CAN bus for moteus_tool...");
+    // controllers_.clear();
+    // transport_.reset();  // refcount → 0: CAN fd is now closed
+    // std::this_thread::sleep_for(100ms);  // small grace period for OS to release the port
 
-    // ── Step 4: run moteus_tool, stream output line-by-line to command log ────
-    std::string cmd =
-        "python3 -u -m moteus.moteus_tool"
-        " -t " + std::to_string(motor_can_id) +
-        " --calibrate"
-        " --cal-motor-poles 16"
-        " --cal-force-kv 265"
-        " --cal-hal"
-        " 2>&1";  // merge stderr so we see errors too
+    // // ── Step 4: run moteus_tool, stream output line-by-line to command log ────
+    // std::string cmd =
+    //     "python3 -u -m moteus.moteus_tool"
+    //     " -t " + std::to_string(motor_can_id) +
+    //     " --calibrate"
+    //     " --cal-motor-poles 16"
+    //     " --cal-force-kv 265"
+    //     " --cal-hal"
+    //     " 2>&1";  // merge stderr so we see errors too
 
-    publishCalibStatus(motor_can_id, 1,
-        "Running: " + cmd.substr(0, cmd.size() - 5));  // hide 2>&1 from HMI
-    publishLog("# calib motor " + std::to_string(motor_can_id) + ": " + cmd);
+    // publishCalibStatus(motor_can_id, 1,
+    //     "Running: " + cmd.substr(0, cmd.size() - 5));  // hide 2>&1 from HMI
+    // publishLog("# calib motor " + std::to_string(motor_can_id) + ": " + cmd);
 
-    FILE* pipe = popen(cmd.c_str(), "r");
-    int exit_code = 1;
-    if (!pipe) {
-        publishCalibStatus(motor_can_id, 3, "popen failed — cannot launch moteus_tool");
-    } else {
-        char buf[512];
-        while (fgets(buf, sizeof(buf), pipe)) {
-            std::string line(buf);
-            if (!line.empty() && line.back() == '\n') line.pop_back();
-            publishLog("  [moteus_tool] " + line);
-        }
-        exit_code = pclose(pipe);
-        // pclose returns the wait-status; extract real exit code
-        if (WIFEXITED(exit_code)) exit_code = WEXITSTATUS(exit_code);
-    }
+    // FILE* pipe = popen(cmd.c_str(), "r");
+    // int exit_code = 1;
+    // if (!pipe) {
+    //     publishCalibStatus(motor_can_id, 3, "popen failed — cannot launch moteus_tool");
+    // } else {
+    //     char buf[512];
+    //     while (fgets(buf, sizeof(buf), pipe)) {
+    //         std::string line(buf);
+    //         if (!line.empty() && line.back() == '\n') line.pop_back();
+    //         publishLog("  [moteus_tool] " + line);
+    //     }
+    //     exit_code = pclose(pipe);
+    //     // pclose returns the wait-status; extract real exit code
+    //     if (WIFEXITED(exit_code)) exit_code = WEXITSTATUS(exit_code);
+    // }
 
-    // ── Step 5: re-init transport ─────────────────────────────────────────────
-    reInitTransport();
+    // // ── Step 5: re-init transport ─────────────────────────────────────────────
+    // reInitTransport();
 
-    if (exit_code != 0) {
-        publishCalibStatus(motor_can_id, 3,
-            "moteus_tool exited with code " + std::to_string(exit_code) + " — calibration FAILED");
-        configureMotors();
-        calibrating_.store(false);
-        return;
-    }
+    // if (exit_code != 0) {
+    //     publishCalibStatus(motor_can_id, 3,
+    //         "moteus_tool exited with code " + std::to_string(exit_code) + " — calibration FAILED");
+    //     configureMotors();
+    //     calibrating_.store(false);
+    //     return;
+    // }
 
-    // ── Step 6: set Hall sensor source and write to flash ─────────────────────
-    publishCalibStatus(motor_can_id, 1,
-        "Setting motor_position.sources.0.type = type.hall:4 ...");
-    publishLog("# calib motor " + std::to_string(motor_can_id)
-        + ": conf set motor_position.sources.0.type type.hall:4");
-    controllers_[motor_can_id - 1]->DiagnosticCommand(
-        "conf set motor_position.sources.0.type type.hall:4");
+    // // ── Step 6: set Hall sensor source and write to flash ─────────────────────
+    // publishCalibStatus(motor_can_id, 1,
+    //     "Setting motor_position.sources.0.type = type.hall:4 ...");
+    // publishLog("# calib motor " + std::to_string(motor_can_id)
+    //     + ": conf set motor_position.sources.0.type type.hall:4");
+    // controllers_[motor_can_id - 1]->DiagnosticCommand(
+    //     "conf set motor_position.sources.0.type type.hall:4");
 
-    publishLog("# calib motor " + std::to_string(motor_can_id) + ": conf write (post-calib)");
-    controllers_[motor_can_id - 1]->DiagnosticCommand("conf write");
+    // // publishLog("# calib motor " + std::to_string(motor_can_id) + ": conf write (post-calib)");
+    // // controllers_[motor_can_id - 1]->DiagnosticCommand("conf write");
 
-    // ── Step 7: re-push PID/limits into RAM ───────────────────────────────────
-    configureMotors();
+    // // ── Step 7: re-push PID/limits into RAM ───────────────────────────────────
+    // configureMotors();
 
-    publishCalibStatus(motor_can_id, 2,
-        "Calibration complete.  Hall sensor type set and saved to flash.");
+    // publishCalibStatus(motor_can_id, 2,
+    //     "Calibration complete.  Hall sensor type set and saved to flash.");
 
-    // ── Step 8: resume poll ───────────────────────────────────────────────────
-    calibrating_.store(false);
+    // // ── Step 8: resume poll ───────────────────────────────────────────────────
+    // calibrating_.store(false);
 }
 
 void MoteusDriverNode::calibrationCallback(

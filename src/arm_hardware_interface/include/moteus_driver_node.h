@@ -38,6 +38,7 @@
 #include <thread>
 #include <vector>
 #include <array>
+#include <bitset> // for printing out debug bitmasks
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
@@ -55,6 +56,28 @@
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/arm_telemetry.h>      // MotorTelem
 #include "moteus_protocol.h"                       // MoteusProtocol::make*Frame(), parseReply()
+
+enum class AxisState
+{
+    INIT,
+    REQUESTING_HOMING,
+    HOMING,
+    RUNNING_OK,
+    ERROR
+};
+
+struct Axis {
+        int index; // Starts at 0
+        float position = 0;
+        bool limit_switch = 0;
+        bool homed = false;
+        AxisState state = AxisState::INIT;
+        // bool configured = false;
+        // etc..
+};
+
+// Half assed debug printout flags - Uncomment to enable these printouts
+// #define DEBUG_LIMIT_SWITCH_RAW_REPLY
 
 
 class MoteusDriverNode : public rclcpp::Node {
@@ -99,6 +122,12 @@ private:
 
     // Publish a string to /arm/config_log (shown in the HMI command log panel)
     void publishLog(const std::string& msg);
+
+    void zero_position(MotorIndex index);
+    
+    void home_axis(AxisIndex index);
+
+    Axis axes[NUM_AXES];
 
     // -------------------------------------------------------------------------
     // CAN transport + per-motor controllers
@@ -155,4 +184,7 @@ private:
     std::array<int,  NUM_MOTORS> last_fault_{};
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
+
+
+
 };

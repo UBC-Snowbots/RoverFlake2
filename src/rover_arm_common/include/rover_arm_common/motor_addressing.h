@@ -26,6 +26,28 @@
 //   a physically meaningful /joint_states for RViz.
 // =============================================================================
 
+enum class MotorIndex : int {
+    MOTOR_1 = 0, // Axis 1 Motor
+    MOTOR_2 = 1, // Axis 2 Motor
+    MOTOR_3 = 2, // Axis 3 Motor
+    MOTOR_4 = 3, // Axis 4 Motor
+    MOTOR_5 = 4, // Axis 5/6 Motor A
+    MOTOR_6 = 5, // Axis 5/6 Motor B
+    MOTOR_EE = 6, // EE Axis Motor
+};
+
+enum class AxisIndex : int {
+    AXIS_1 = 0, // Base
+    AXIS_2 = 1, // Shoulder
+    AXIS_3 = 2, // Elbow
+    AXIS_4 = 3, // Elbow Twist
+    AXIS_5 = 4, // Wrist Pitch
+    AXIS_6 = 5, // Wrist Roll
+    AXIS_EE = 6, // End Effector Linear Axis
+};
+constexpr int NUM_AXES = 7;
+
+
 constexpr int NUM_MOTORS = 6;
 
 // Gripper finger joints have no motors.  They are published as static 0 in
@@ -45,6 +67,7 @@ struct JointMap {
     double      direction;        // +1 or -1: sign between output revolutions and URDF angle
 };
 
+//!? this is wrong?? where is A4?
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
     //  id   hardware label    urdf joint name    boot angle (rad)   direction
     {  1,   "Base",           "shoulder_joint",       -1.57,          -1.0  },
