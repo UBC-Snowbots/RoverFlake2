@@ -7,6 +7,12 @@
 #include <unistd.h>
 
 DeathRayMagnetometerNode::DeathRayMagnetometerNode() : Node("death_ray_magnetometer_node") {
+    if (!initSerial()) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to open serial port %s!", SERIAL_DEVICE_NAME);
+    } else {
+        RCLCPP_INFO(this->get_logger(), "Successfully connected to IMU on %s", SERIAL_DEVICE_NAME);
+    }
+    
     heading_pub_ = this->create_publisher<std_msgs::msg::Float32>("death_ray_heading", 10);
 
     heading_feedback_timer_ = this->create_wall_timer(
