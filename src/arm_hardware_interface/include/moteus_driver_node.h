@@ -72,6 +72,7 @@ struct Axis {
         bool limit_switch = 0;
         bool homed = false;
         AxisState state = AxisState::INIT;
+        int homing_direction = -1;
         // bool configured = false;
         // etc..
 };
@@ -124,6 +125,8 @@ private:
     void publishLog(const std::string& msg);
 
     void zero_position(MotorIndex index);
+    void set_position(MotorIndex index, float position_revs);
+
     
     void home_axis(AxisIndex index);
 

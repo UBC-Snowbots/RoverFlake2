@@ -154,16 +154,17 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
             if (std::isnan(pos) && std::isnan(vel)) continue;
 
-            if (telem_[i].fault != 0) {
-                RCLCPP_WARN(this->get_logger(),
-                    "BLOCKED position cmd to motor %d (%s) — fault %d active. "
-                    "Send STOP first to clear.",
-                    i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
-                publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name
-                    + ") — fault " + std::to_string(telem_[i].fault));
-                continue;
-            }
+            //TODO fault handling
+            // if (telem_[i].fault != 0) {
+            //     RCLCPP_WARN(this->get_logger(),
+            //         "BLOCKED position cmd to motor %d (%s) — fault %d active. "
+            //         "Send STOP first to clear.",
+            //         i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
+            //     publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
+            //         + " (" + ARM_JOINTS[i].hardware_name
+            //         + ") — fault " + std::to_string(telem_[i].fault));
+            //     continue;
+            // }
 
             pending_cmds_[i].active    = true;
             pending_cmds_[i].is_stop   = false;
@@ -179,26 +180,26 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
             if (std::isnan(vel)) continue;
 
-            if (vel != 0.0 && telem_[i].fault != 0) {
-                RCLCPP_WARN(this->get_logger(),
-                    "BLOCKED velocity cmd to motor %d (%s) — fault %d active. "
-                    "Send STOP first to clear.",
-                    i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
-                publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name
-                    + ") — fault " + std::to_string(telem_[i].fault));
-                continue;
-            }
+            // if (vel != 0.0 && telem_[i].fault != 0) {
+            //     RCLCPP_WARN(this->get_logger(),
+            //         "BLOCKED velocity cmd to motor %d (%s) — fault %d active. "
+            //         "Send STOP first to clear.",
+            //         i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
+            //     publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
+            //         + " (" + ARM_JOINTS[i].hardware_name
+            //         + ") — fault " + std::to_string(telem_[i].fault));
+            //     continue;
+            // }
 
             pending_cmds_[i].active  = true;
-            if (vel == 0.0) {
-                pending_cmds_[i].is_stop = true;
-            } else {
+            // if (vel == 0.0) {
+                // pending_cmds_[i].is_stop = true;
+            // } else {
                 pending_cmds_[i].is_stop  = false;
                 pending_cmds_[i].position = NAN;
-                pending_cmds_[i].velocity = vel;
+                pending_cmds_[i].velocity = vel/180;
                 pending_cmds_[i].max_torque = NAN;
-            }
+            // }
         }
         return;
     }
@@ -250,6 +251,17 @@ void MoteusDriverNode::zero_position(MotorIndex index)
     int i = static_cast<int>(index);
 
     controllers_[i]->DiagnosticCommand("d exact 0");
+    RCLCPP_INFO(this->get_logger(),
+    "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
+    publishLog("# Motor " + std::to_string(i + 1)
+        + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+}
+
+void MoteusDriverNode::set_position(MotorIndex index, float position_revs)
+{
+    int i = static_cast<int>(index);
+
+    controllers_[i]->DiagnosticCommand("d exact 0.9");
     RCLCPP_INFO(this->get_logger(),
     "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
     publishLog("# Motor " + std::to_string(i + 1)
@@ -322,10 +334,12 @@ void MoteusDriverNode::poll() {
             frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[i]));
             cmd.active = false;  // stop is one-shot; next cycle falls through to query
         } else if (cmd.active) {
-            frames.push_back(MoteusProtocol::makePositionFrame(
-                *controllers_[i], cmd.position, NAN));
             // frames.push_back(MoteusProtocol::makePositionFrame(
-            //     *controllers_[i], cmd.position, cmd.velocity, cmd.max_torque));
+                // *controllers_[i], cmd.position, NAN));
+            frames.push_back(MoteusProtocol::makePositionFrame(
+                *controllers_[i], cmd.position, cmd.velocity));
+            cmd.active = false; 
+
         } else {
             frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[i]));
         }
@@ -383,6 +397,8 @@ void MoteusDriverNode::poll() {
             } else 
             {
                 RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
+                set_position(static_cast<MotorIndex>(axis.index), 0.05); //sloppy
+                controllers_[axis.index]->DiagnosticCommand("conf set servo.default_velocity_limit 0.01");
 
                 // Accept
                 axis.state = AxisState::HOMING;
@@ -398,28 +414,32 @@ void MoteusDriverNode::poll() {
                 RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
                 zero_position(static_cast<MotorIndex>(axis.index));
                 axis.state = AxisState::RUNNING_OK;
+                float target = 0.1;
+  
                 auto& cmd      = active_cmds_[axis.index];
-                cmd.active     = true;
-                cmd.is_stop    = true;
-                cmd.is_zero    = false;
-                cmd.position   = NAN;
-                cmd.velocity   = NAN;
-                cmd.max_torque = NAN;
-            } 
-            else 
-            {
-                // Move the motor a little tiny bit
-                constexpr float kHomingStepRev = 0.002f;  // ~0.7 deg motor/cycle
-
-                int i = axis.index;
-                float target = telem_[i].position + kHomingStepRev;
-
-                auto& cmd      = active_cmds_[i];
                 cmd.active     = true;
                 cmd.is_stop    = false;
                 cmd.is_zero    = false;
                 cmd.position   = target;
                 cmd.velocity   = NAN;
+                // cmd.velocity   = 0.01; // Doesnt seem to work.
+                cmd.max_torque = NAN;
+                controllers_[axis.index]->DiagnosticCommand("conf set servo.default_velocity_limit 0.15");
+
+            } 
+            else 
+            {
+                // Move the motor a little tiny bit
+                constexpr float kHomingStepRev = 0.01f;  // ~0.7 deg motor/cycle
+                
+                int i = axis.index;
+                float target = telem_[axis.index].position + kHomingStepRev * axis.homing_direction;
+                auto& cmd      = active_cmds_[i];
+                cmd.active     = true;
+                cmd.is_stop    = false;
+                cmd.is_zero    = false;
+                cmd.position   = target;
+                cmd.velocity   = 0.01 * axis.homing_direction;
                 cmd.max_torque = NAN;
             }
 

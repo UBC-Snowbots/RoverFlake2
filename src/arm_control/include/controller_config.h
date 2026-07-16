@@ -193,7 +193,8 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
-                arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                // arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
+                arm_control_msg.fk_axes[AXIS_1_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
                 arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
                 arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
                 arm_control_msg.fk_axes[AXIS_4_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
