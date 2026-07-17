@@ -96,11 +96,30 @@ void DeathRayMagnetometerNode::publishHeadingFeedback() {
                     if (std::getline(ss, yaw_str, ',')) {
                         float yaw = std::stof(yaw_str);
 
-                        // Normalize Yaw (-180 to 180) to absolute cardinal degrees (0 to 360)
-                        float heading = (yaw >= 0.0f) ? yaw : (360.0f + yaw);
+                        heading_buffer.push(yaw);
+                        if (heading_buffer.size() > MOVING_AVERAGE_FILTER_SIZE) {
+                            heading_buffer.pop();
+                        }
+
+                        double sum_sin = 0.0;
+                        double sum_cos = 0.0;
+                        std::queue<float> temp_queue = heading_buffer;
+                        
+                        while (!temp_queue.empty()) {
+                            double rad = temp_queue.front() * M_PI / 180.0;
+                            sum_sin += std::sin(rad);
+                            sum_cos += std::cos(rad);
+                            temp_queue.pop();
+                        }
+
+                        double avg_rad = std::atan2(sum_sin, sum_cos);
+                        float filtered_heading = avg_rad * 180.0 / M_PI;
+                        if (filtered_heading < 0.0f) {
+                            filtered_heading += 360.0f;
+                        }
 
                         std_msgs::msg::Float32 message;
-                        message.data = heading;
+                        message.data = filtered_heading;
                         heading_pub_->publish(message);
                     }
                 } catch (const std::exception& e) {
