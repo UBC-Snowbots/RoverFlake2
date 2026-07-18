@@ -43,6 +43,8 @@ private:
     void trackingLoop();
     double degToRad(double degrees);
     double radToDeg(double radians);
+    double normalizeAngle(double angle);
+    double shortestAngularDistance(double target, double current);
 };
 
 
