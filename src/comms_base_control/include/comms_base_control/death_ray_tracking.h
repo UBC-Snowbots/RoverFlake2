@@ -1,0 +1,39 @@
+#ifndef DEATH_RAY_TRACKING_H
+#define DEATH_RAY_TRACKING_H
+
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float32.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include <cmath>
+
+/**
+ * @brief DeathRayTracking tracks the position of a rover using GNSS coordinates and magnetometer feedback.
+ * 
+ * Publishes rotation commands to the DeathRayMotorControlNode based on the rover's position relative to the comms base.
+ */
+class DeathRayTracking : public rclcpp::Node {
+public:
+    DeathRayTracking();
+    ~DeathRayTracking();
+
+private:
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr death_ray_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr rover_gnss_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr comms_gnss_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr magnometer_sub_;
+    rclcpp::TimerBase::SharedPtr tracking_timer_;
+    double comms_latitude_;
+    double comms_longitude_;
+    double rover_latitude_;
+    double rover_longitude_;
+    float magnetometer_feedback_;
+    bool tracking_active_;
+
+    void roverGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
+    void commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
+    void magnetometerCallback(const std_msgs::msg::Float32::SharedPtr msg);
+    void trackingLoop();
+};
+
+
+#endif // DEATH_RAY_TRACKING_H
