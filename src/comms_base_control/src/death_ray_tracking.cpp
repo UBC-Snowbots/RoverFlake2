@@ -15,7 +15,7 @@ DeathRayTracking::DeathRayTracking() : Node("death_ray_tracking_node") {
         "/death_ray_feedback", rclcpp::QoS(10), std::bind(&DeathRayTracking::magnetometerCallback, this, std::placeholders::_1));
 
     tracking_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100), std::bind(&DeathRayTracking::trackingLoop, this));
+        std::chrono::milliseconds(LOOP_RATE_MS), std::bind(&DeathRayTracking::trackingLoop, this));
 
     this->rover_latitude_ = 0.0;
     this->rover_longitude_ = 0.0;
@@ -48,23 +48,22 @@ void DeathRayTracking::trackingLoop() {
         return;
     }
 
-    double delta_lon = rover_longitude_ - comms_longitude_;
-    double y = sin(delta_lon) * cos(rover_latitude_);
-    double x = cos(comms_latitude_) * sin(rover_latitude_) - sin(comms_latitude_) * cos(rover_latitude_) * cos(delta_lon);
-    double bearing = atan2(y, x);
-    bearing = radToDeg(bearing);
-    double normalized_bearing = fmod((bearing + 360.0), 360.0);
-    double error = normalized_bearing - magnetometer_feedback_;
-    if (error > 180.0) {
-        error -= 360.0;
-    } else if (error < -180.0) {
-        error += 360.0;
+    if (magnetometer_feedback_ < 0.0 || magnetometer_feedback_ > 360.0) {
+        RCLCPP_DEBUG(this->get_logger(), "Magnetometer feedback is invalid. Skipping tracking loop.");
+        return;
     }
 
-    RCLCPP_DEBUG(this->get_logger(), "Tracking error: %f", error);
+    double delta_lon = rover_longitude_ - comms_longitude_;
+    double y = sin(delta_lon) * cos(rover_latitude_);
+    double x = cos(comms_latitude_) * sin(rover_latitude_) - 
+               sin(comms_latitude_) * cos(rover_latitude_) * cos(delta_lon);
 
-    // Clamp the error to a maximum of 5 degrees since the loop runs every 100ms
-    error = std::clamp(error, -5, 5);
+    double target_bearing = radToDeg(atan2(y, x));
+    target_bearing = normalizeAngle(target_bearing);
+
+    double error = shortestAngularDistance(target_bearing, magnetometer_feedback_);
+    error = std::clamp(error, -MAX_ROTATION, MAX_ROTATION);
+
     death_ray_pub_->publish(std_msgs::msg::Float32().set__data(static_cast<float>(error)));
 }
 
@@ -76,12 +75,12 @@ void DeathRayTracking::trackingLoop() {
 void DeathRayTracking::roverGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
     RCLCPP_DEBUG(this->get_logger(), "Received rover GNSS fix: Latitude: %f, Longitude: %f", msg->latitude, msg->longitude);
     
-    if (msg->latitude != 0.0 && msg->longitude != 0.0) {
+    if (msg->status.status >= sensor_msgs::msg::NavSatStatus::STATUS_FIX) {
         this->rover_latitude_ = degToRad(msg->latitude);
         this->rover_longitude_ = degToRad(msg->longitude);
         this->rover_has_fix_ = true;
     } else {
-        RCLCPP_DEBUG(this->get_logger(), "Did not update rover coordinates since one or both were zero.");
+        RCLCPP_DEBUG(this->get_logger(), "Did not update rover coordinates since GNSS fix is not valid.");
     }
 }
 
@@ -94,7 +93,7 @@ void DeathRayTracking::roverGnssCallback(const sensor_msgs::msg::NavSatFix::Shar
  */
 void DeathRayTracking::commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
     RCLCPP_DEBUG(this->get_logger(), "Received comms GNSS fix: Latitude: %f, Longitude: %f", msg->latitude, msg->longitude);
-    if (msg->latitude != 0.0 && msg->longitude != 0.0) {
+    if (msg->status.status >= sensor_msgs::msg::NavSatStatus::STATUS_FIX) {
         this->comms_latitude_ = degToRad(msg->latitude);
         this->comms_longitude_ = degToRad(msg->longitude);
         this->comms_has_fix_ = true;
@@ -118,6 +117,27 @@ double DeathRayTracking::degToRad(double degrees) {
 
 double DeathRayTracking::radToDeg(double radians) {
     return radians * (180.0 / M_PI);
+}
+
+/**
+ * Normalize an angle to the range [0, 360).
+ */
+double normalizeAngle(double angle) {
+    return fmod((angle + 360.0), 360.0);
+}
+
+/**
+ * Calculate the shortest angular distance between two angles.
+ * The result is in the range [-180, 180].
+ */
+double shortestAngularDistance(double target, double current) {
+    double error = target - current;
+    if (error > 180.0) {
+        error -= 360.0;
+    } else if (error < -180.0) {
+        error += 360.0;
+    }
+    return error;
 }
 
 int main(int argc, char* argv[]) {

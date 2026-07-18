@@ -201,6 +201,10 @@ class NMEAReader(Node):
         # EBP base station only requires signed coordinates and alt
         if isinstance(msg, EBP):
             navsat_fix.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
+            navsat_fix.status = NavSatStatus(
+                status=NavSatStatus.STATUS_FIX, 
+                service=NavSatStatus.SERVICE_GPS
+            )
             return navsat_fix
         
         navsat_fix.header = Header(
