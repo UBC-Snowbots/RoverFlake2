@@ -33,6 +33,8 @@ private:
     double rover_longitude_;
     float magnetometer_feedback_;
     bool tracking_active_;
+    bool rover_has_fix_;
+    bool comms_has_fix_;
 
     void roverGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
