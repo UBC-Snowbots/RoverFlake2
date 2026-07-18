@@ -14,6 +14,9 @@ DeathRayTracking::DeathRayTracking() : Node("death_ray_tracking_node") {
     magnometer_sub_ = this->create_subscription<std_msgs::msg::Float32>(
         "/death_ray_feedback", rclcpp::QoS(10), std::bind(&DeathRayTracking::magnetometerCallback, this, std::placeholders::_1));
 
+    active_tracking_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+        "/active_track_enabled", rclcpp::QoS(10), std::bind(&DeathRayTracking::activeTrackingCallback, this, std::placeholders::_1));
+
     tracking_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(LOOP_RATE_MS), std::bind(&DeathRayTracking::trackingLoop, this));
 
@@ -65,6 +68,11 @@ void DeathRayTracking::trackingLoop() {
     error = std::clamp(error, -MAX_ROTATION, MAX_ROTATION);
 
     death_ray_pub_->publish(std_msgs::msg::Float32().set__data(static_cast<float>(error)));
+}
+
+void DeathRayTracking::activeTrackingCallback(const std_msgs::msg::Bool::SharedPtr msg) {
+    tracking_active_ = msg->data;
+    RCLCPP_INFO(this->get_logger(), "Active tracking set to: %s", tracking_active_ ? "true" : "false");
 }
 
 /**

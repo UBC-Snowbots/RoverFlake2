@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include <cmath>
 
@@ -24,6 +25,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr rover_gnss_sub_;
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr comms_gnss_sub_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr magnometer_sub_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr active_tracking_sub_;
     rclcpp::TimerBase::SharedPtr tracking_timer_;
     double comms_latitude_;
     double comms_longitude_;
@@ -35,6 +37,7 @@ private:
     void roverGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void magnetometerCallback(const std_msgs::msg::Float32::SharedPtr msg);
+    void activeTrackingCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void trackingLoop();
     double degToRad(double degrees);
     double radToDeg(double radians);
