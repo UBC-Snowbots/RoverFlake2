@@ -48,6 +48,24 @@ void DeathRayTracking::trackingLoop() {
         return;
     }
 
+    double delta_lon = rover_longitude_ - comms_longitude_;
+    double y = sin(delta_lon) * cos(rover_latitude_);
+    double x = cos(comms_latitude_) * sin(rover_latitude_) - sin(comms_latitude_) * cos(rover_latitude_) * cos(delta_lon);
+    double bearing = atan2(y, x);
+    bearing = radToDeg(bearing);
+    double normalized_bearing = fmod((bearing + 360.0), 360.0);
+    double error = normalized_bearing - magnetometer_feedback_;
+    if (error > 180.0) {
+        error -= 360.0;
+    } else if (error < -180.0) {
+        error += 360.0;
+    }
+
+    RCLCPP_DEBUG(this->get_logger(), "Tracking error: %f", error);
+
+    // Clamp the error to a maximum of 5 degrees since the loop runs every 100ms
+    error = std::clamp(error, -5, 5);
+    death_ray_pub_->publish(std_msgs::msg::Float32().set__data(static_cast<float>(error)));
 }
 
 /**
@@ -59,8 +77,8 @@ void DeathRayTracking::roverGnssCallback(const sensor_msgs::msg::NavSatFix::Shar
     RCLCPP_DEBUG(this->get_logger(), "Received rover GNSS fix: Latitude: %f, Longitude: %f", msg->latitude, msg->longitude);
     
     if (msg->latitude != 0.0 && msg->longitude != 0.0) {
-        this->rover_latitude_ = msg->latitude;
-        this->rover_longitude_ = msg->longitude;
+        this->rover_latitude_ = degToRad(msg->latitude);
+        this->rover_longitude_ = degToRad(msg->longitude);
         this->rover_has_fix_ = true;
     } else {
         RCLCPP_DEBUG(this->get_logger(), "Did not update rover coordinates since one or both were zero.");
@@ -77,8 +95,8 @@ void DeathRayTracking::roverGnssCallback(const sensor_msgs::msg::NavSatFix::Shar
 void DeathRayTracking::commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
     RCLCPP_DEBUG(this->get_logger(), "Received comms GNSS fix: Latitude: %f, Longitude: %f", msg->latitude, msg->longitude);
     if (msg->latitude != 0.0 && msg->longitude != 0.0) {
-        this->comms_latitude_ = msg->latitude;
-        this->comms_longitude_ = msg->longitude;
+        this->comms_latitude_ = degToRad(msg->latitude);
+        this->comms_longitude_ = degToRad(msg->longitude);
         this->comms_has_fix_ = true;
     }
 }
@@ -92,6 +110,14 @@ void DeathRayTracking::commsGnssCallback(const sensor_msgs::msg::NavSatFix::Shar
 void DeathRayTracking::magnetometerCallback(const std_msgs::msg::Float32::SharedPtr msg) {
     RCLCPP_DEBUG(this->get_logger(), "Received magnetometer feedback: %f", msg->data);
     this->magnetometer_feedback_ = msg->data;
+}
+
+double DeathRayTracking::degToRad(double degrees) {
+    return degrees * (M_PI / 180.0);
+}
+
+double DeathRayTracking::radToDeg(double radians) {
+    return radians * (180.0 / M_PI);
 }
 
 int main(int argc, char* argv[]) {

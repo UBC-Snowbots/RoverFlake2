@@ -33,6 +33,8 @@ private:
     void commsGnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
     void magnetometerCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void trackingLoop();
+    double degToRad(double degrees);
+    double radToDeg(double radians);
 };
 
 
