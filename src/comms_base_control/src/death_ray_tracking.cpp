@@ -130,7 +130,7 @@ double DeathRayTracking::radToDeg(double radians) {
 /**
  * Normalize an angle to the range [0, 360).
  */
-double normalizeAngle(double angle) {
+double DeathRayTracking::normalizeAngle(double angle) {
     return fmod((angle + 360.0), 360.0);
 }
 
@@ -138,7 +138,7 @@ double normalizeAngle(double angle) {
  * Calculate the shortest angular distance between two angles.
  * The result is in the range [-180, 180].
  */
-double shortestAngularDistance(double target, double current) {
+double DeathRayTracking::shortestAngularDistance(double target, double current) {
     double error = target - current;
     if (error > 180.0) {
         error -= 360.0;
