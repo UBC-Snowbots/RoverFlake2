@@ -143,11 +143,10 @@ void DeathRayMagnetometerNode::publishHeadingFeedback() {
 
                 if (line.rfind(IMU_PACKET_PREFIX, 0) == 0) {
                     try {
-                        std::string data = line.substr(sizeof(IMU_PACKET_PREFIX));
+                        std::string data = line.substr(std::string(IMU_PACKET_PREFIX).length());
                         std::stringstream stream(data);
 
                         std::string heading_str;
-
                         if (std::getline(stream, heading_str, ',')) {
                             float heading = std::stof(heading_str);
 
