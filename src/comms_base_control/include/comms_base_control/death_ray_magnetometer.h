@@ -9,6 +9,7 @@
 
 #define HEADING_FEEDBACK_PUBLISH_FREQUENCY_MS 200
 #define SERIAL_DEVICE_NAME "/dev/serial0"
+#define IMU_PACKET_PREFIX "#YPR="
 
 /**
  * Magnetometer readings are very sensitive, so use an
@@ -45,11 +46,11 @@ private:
     /**
      * Buffer to store incoming serial data from the UART until a packet is complete
      */
-    std::string rx_buffer = "";
+    std::string read_buffer = "";
 
     /**
-     * Buffer of the `MOVING_AVERAGE_FILTER_SIZE` most recent heading values.
-     * Queue structure is used to produce a sliding window average
+     * To smooth out the heading readings, queue the `MOVING_AVERAGE_FILTER_SIZE`
+     * most recent values and publish their average
      */
     std::queue<float> heading_buffer;
 };

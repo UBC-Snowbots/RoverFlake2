@@ -30,13 +30,12 @@ DeathRayMagnetometerNode::~DeathRayMagnetometerNode() {
 }
 
 bool DeathRayMagnetometerNode::initSerial() {
-    // Open UART connection like a file using the `open` syscall
     /**
      * Open UART connection to the IMU using the `open` syscall (like a file)
      * 
      * `O_RDWR`: Open for reading and writing. Normal operation of the node only
      *           requires reading, but writing is needed for triggering calibration 
-     *           mode.
+     *           mode from the terminal.
      * `O_NDELAY`: Open in non-blocking mode without waiting for handshake, as the
      *             IMU can't handshake
      */
@@ -46,11 +45,8 @@ bool DeathRayMagnetometerNode::initSerial() {
     }
 
     /**
-     * After opening the connection in non-blocking mode, we'd like to switch to
-     * blocking mode to avoid wasting CPU when there is no data on the serial line.
-     * 
-     * This will cause the connection to wait to receive data before doing anything
-     * rather than polling for data.
+     * After opening the connection in non-blocking mode, switch to
+     * blocking mode to avoid polling when there is no data on the serial line.
      */
     fcntl(uart_connection, F_SETFL, 0);
 
@@ -66,8 +62,8 @@ bool DeathRayMagnetometerNode::initSerial() {
     cfsetispeed(&tty, B57600); // Input speed
 
     /**
-     * Exclude the parity bit, since one corrupted message from UART will
-     * not make a significant impact on the overall dish system.
+     * Exclude the parity bit, since one corrupted message from UART is unlikely to 
+     * impact the overall dish rotation system.
      */
     tty.c_cflag &= ~PARENB;
 
@@ -90,7 +86,7 @@ bool DeathRayMagnetometerNode::initSerial() {
 
     /**
      * Disable signal generation, so control characters in the data stream don't
-     * crash the ROS node.
+     * control the terminal and/or crash the ROS node.
      */
     tty.c_lflag &= ~ISIG;
 
@@ -123,31 +119,52 @@ void DeathRayMagnetometerNode::publishHeadingFeedback() {
 
         if (bytes_read > 0) {
             buf[bytes_read] = '\0';
-            rx_buffer += std::string(buf);
+            read_buffer += std::string(buf);
 
             size_t newline_pos;
-            while ((newline_pos = rx_buffer.find('\n')) != std::string::npos) {
-                std::string line = rx_buffer.substr(0, newline_pos);
-                rx_buffer.erase(0, newline_pos + 1);
 
+            /**
+             * Repeat as long as the buffer contains a newline character.
+             * Otherwise, there is nothing new to publish on this iteration
+             * of the publisher loop.
+             */
+            while ((newline_pos = read_buffer.find('\n')) != std::string::npos) {
+                std::string line = read_buffer.substr(0, newline_pos);
+                read_buffer.erase(0, newline_pos + 1);
+
+                /**
+                 * The IMU firmware ends every line with CRLF. The LF
+                 * is already removed in the `substr` call above, but
+                 * still need to remove the CR to be left with data only.
+                 */
                 if (!line.empty() && line.back() == '\r') {
                     line.pop_back();
                 }
 
-                if (line.rfind("#YPR=", 0) == 0) {
+                if (line.rfind(IMU_PACKET_PREFIX, 0) == 0) {
                     try {
-                        std::string data = line.substr(5);
-                        std::stringstream ss(data);
-                        std::string yaw_str;
+                        std::string data = line.substr(sizeof(IMU_PACKET_PREFIX));
+                        std::stringstream stream(data);
 
-                        if (std::getline(ss, yaw_str, ',')) {
-                            float yaw = std::stof(yaw_str);
+                        std::string heading_str;
 
-                            heading_buffer.push(yaw);
+                        if (std::getline(stream, heading_str, ',')) {
+                            float heading = std::stof(heading_str);
+
+                            heading_buffer.push(heading);
                             if (heading_buffer.size() > MOVING_AVERAGE_FILTER_SIZE) {
                                 heading_buffer.pop();
                             }
 
+                            /**
+                             * Simply averaging the angles in the queue would be incorrect
+                             * For example, if heading1 = 179 and heading2 = -179, their naive average 
+                             * would be 0 even though in our domain the angles are only 2 degrees apart
+                             * 
+                             * Instead, average the sin and cos of the angles, and calculate the final
+                             * average using arctan. In the example above, this would give 180 degrees
+                             * as desired
+                             */
                             double sum_sin = 0.0;
                             double sum_cos = 0.0;
                             std::queue<float> temp_queue = heading_buffer;
