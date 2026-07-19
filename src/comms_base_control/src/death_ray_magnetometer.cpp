@@ -178,9 +178,6 @@ void DeathRayMagnetometerNode::publishHeadingFeedback() {
 
                             double avg_rad = std::atan2(sum_sin, sum_cos);
                             float filtered_heading = avg_rad * 180.0 / M_PI;
-                            if (filtered_heading < 0.0f) {
-                                filtered_heading += 360.0f;
-                            }
 
                             std_msgs::msg::Float32 message;
                             message.data = filtered_heading;
