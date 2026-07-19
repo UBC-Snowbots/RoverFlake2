@@ -44,7 +44,7 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     //     controllers_.push_back(std::make_shared<mot::Controller>(opts));
     // }
 
-    auto qos     = rclcpp::QoS(1).reliable().durability_volatile();
+    auto qos     = rclcpp::QoS(5).reliable().durability_volatile();
     auto log_qos = rclcpp::QoS(LOG_QUEUE_SIZE_MSGS).reliable().durability_volatile();
 
     feedback_pub_  = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
@@ -151,8 +151,8 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     if (cmd_type == CMD_ABS_POS) {
         for (int i = 0; i < NUM_MOTORS; i++) {
             double pos = (i < (int)msg->positions.size())  ? msg->positions[i]  : NAN;
-            double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
-            if (std::isnan(pos) && std::isnan(vel)) continue;
+            double vel_degrees = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
+            if (std::isnan(pos) && std::isnan(vel_degrees)) continue;
 
             //TODO fault handling
             // if (telem_[i].fault != 0) {
@@ -169,7 +169,7 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             pending_cmds_[i].active    = true;
             pending_cmds_[i].is_stop   = false;
             pending_cmds_[i].position  = pos;
-            pending_cmds_[i].velocity  = vel;
+            pending_cmds_[i].velocity  = degreesToRevolution(vel_degrees);
             pending_cmds_[i].max_torque = NAN;
         }
         return;
@@ -177,8 +177,8 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
 
     if (cmd_type == CMD_ABS_VEL) {
         for (int i = 0; i < NUM_MOTORS; i++) {
-            double vel = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
-            if (std::isnan(vel)) continue;
+            double vel_degrees = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
+            if (std::isnan(vel_degrees)) continue;
 
             // if (vel != 0.0 && telem_[i].fault != 0) {
             //     RCLCPP_WARN(this->get_logger(),
@@ -197,7 +197,8 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             // } else {
                 pending_cmds_[i].is_stop  = false;
                 pending_cmds_[i].position = NAN;
-                pending_cmds_[i].velocity = vel/180;
+                pending_cmds_[i].velocity = degreesToRevolution(vel_degrees);
+                pending_cmds_[i].max_velocity = degreesToRevolution(vel_degrees);
                 pending_cmds_[i].max_torque = NAN;
             // }
         }
@@ -239,7 +240,6 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
             return;
         }
-
     }
 
     RCLCPP_WARN(this->get_logger(), "Unknown cmd_type: '%c' (%d)", cmd_type, (int)cmd_type);
@@ -259,20 +259,17 @@ void MoteusDriverNode::zero_position(MotorIndex index)
 
 void MoteusDriverNode::set_position(MotorIndex index, float position_revs)
 {
-    int i = static_cast<int>(index);
+  int i = static_cast<int>(index);
 
-    controllers_[i]->DiagnosticCommand("d exact 0.9");
-    RCLCPP_INFO(this->get_logger(),
-    "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
-    publishLog("# Motor " + std::to_string(i + 1)
-        + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+  char cmd[32];
+  std::snprintf(cmd, sizeof(cmd), "d exact %f", position_revs);
+  controllers_[i]->DiagnosticCommand(cmd);
 }
 
 void MoteusDriverNode::home_axis(AxisIndex index)
 {
     // Just set axis state to request homing
     this->axes[static_cast<int>(index)].state = AxisState::REQUESTING_HOMING;
-    
 }
 
 // ---------------------------------------------------------------------------
@@ -337,7 +334,7 @@ void MoteusDriverNode::poll() {
             // frames.push_back(MoteusProtocol::makePositionFrame(
                 // *controllers_[i], cmd.position, NAN));
             frames.push_back(MoteusProtocol::makePositionFrame(
-                *controllers_[i], cmd.position, cmd.velocity));
+                *controllers_[i], cmd.position, cmd.velocity, cmd.max_velocity, cmd.max_acceleration));
             cmd.active = false; 
 
         } else {
@@ -397,8 +394,7 @@ void MoteusDriverNode::poll() {
             } else 
             {
                 RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
-                set_position(static_cast<MotorIndex>(axis.index), 0.05); //sloppy
-                controllers_[axis.index]->DiagnosticCommand("conf set servo.default_velocity_limit 0.01");
+                set_position(static_cast<MotorIndex>(axis.index), 0.35); //sloppy
 
                 // Accept
                 axis.state = AxisState::HOMING;
@@ -423,14 +419,15 @@ void MoteusDriverNode::poll() {
                 cmd.position   = target;
                 cmd.velocity   = NAN;
                 // cmd.velocity   = 0.01; // Doesnt seem to work.
+                cmd.max_acceleration = 0.1;
+                cmd.max_velocity = 0.1;
                 cmd.max_torque = NAN;
-                controllers_[axis.index]->DiagnosticCommand("conf set servo.default_velocity_limit 0.15");
 
             } 
             else 
             {
                 // Move the motor a little tiny bit
-                constexpr float kHomingStepRev = 0.01f;  // ~0.7 deg motor/cycle
+                constexpr float kHomingStepRev = 0.05f;  // ~0.7 deg motor/cycle
                 
                 int i = axis.index;
                 float target = telem_[axis.index].position + kHomingStepRev * axis.homing_direction;
@@ -439,7 +436,9 @@ void MoteusDriverNode::poll() {
                 cmd.is_stop    = false;
                 cmd.is_zero    = false;
                 cmd.position   = target;
-                cmd.velocity   = 0.01 * axis.homing_direction;
+                // cmd.velocity   = 0.01 * axis.homing_direction;
+                cmd.max_acceleration = 0.1;
+                cmd.max_velocity = 0.01;
                 cmd.max_torque = NAN;
             }
 
@@ -692,6 +691,8 @@ void MoteusDriverNode::reInitTransport() {
         opts.query_format.q_current = mot::kFloat;
         opts.query_format.power     = mot::kFloat;
         opts.query_format.aux2_gpio = mot::kInt8;
+        opts.position_format.velocity_limit = mot::kFloat;   
+        opts.position_format.accel_limit    = mot::kFloat;  
         controllers_.push_back(std::make_shared<mot::Controller>(opts));
     }
 }

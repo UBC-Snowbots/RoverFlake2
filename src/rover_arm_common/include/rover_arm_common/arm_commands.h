@@ -55,6 +55,8 @@ constexpr char CMD_ZERO    = 'Z';
 
 constexpr char CMD_HOME    = 'H';
 
+constexpr char CMD_FORCE_HOME = 'F';
+
 #define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
 #define HOME_VALUE_ALL_AXES_AND_EE    0xAE
 
@@ -72,4 +74,6 @@ struct MotorCommand {
     double position   = 0.0;   // output-shaft revolutions  (NaN = no position target)
     double velocity   = 0.0;   // output-shaft rev/s        (NaN = use motion profile)
     double max_torque = NAN;   // N·m output-shaft cap      (NaN = firmware default)
+    double max_velocity = NAN;
+    double max_acceleration = NAN;
 };

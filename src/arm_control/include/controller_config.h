@@ -176,7 +176,7 @@ namespace ArmControllerConfig { // Can make into a class later?
     */
 
     float ee_speed_scale = 60;
-    float axis_speed_scale = 10;
+    float axis_speed_scale = 10; //Degrress? - max degrees/s
 
     struct ArmControlInput {
         // Static arrays, not vectors here

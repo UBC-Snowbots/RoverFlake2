@@ -1,5 +1,5 @@
 #include <RoverHMI.h>
-
+#include <rover_arm_common/arm_commands.h>
 
 int main(int argc, char* argv[]){
 
@@ -152,8 +152,8 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
 
 void MainHMINode::handleHomeAllButtonClick(){
     rover_msgs::msg::ArmCommand home_msg;
-    home_msg.cmd_type = 'h';
-    home_msg.cmd_value = HOME_ALL_ID;
+    home_msg.cmd_type = CMD_HOME;
+    home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
     arm_cmd_pub->publish(home_msg);
     RCLCPP_WARN(this->get_logger(), "Home all button clicked!");
     // RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
@@ -162,7 +162,7 @@ void MainHMINode::handleHomeAllButtonClick(){
 
 void MainHMINode::handleIncAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = ABS_VEL_CMD;
+    vel_msg.cmd_type = CMD_ABS_VEL;
     vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
         if(index != i){
@@ -181,7 +181,7 @@ void MainHMINode::handleIncAxisButtonClick(int index){
 
 void MainHMINode::handleAxisButtonRelease(){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = ABS_VEL_CMD;
+    vel_msg.cmd_type = CMD_ABS_VEL;
     vel_msg.velocities.resize(6);
     for(int i = 0; i < 6; i++){
         vel_msg.velocities[i] = 0;

@@ -97,3 +97,13 @@ inline double motorRevToJointRad(int motor_idx, double output_revolutions) {
 inline double motorRevPerSecToJointRadPerSec(int motor_idx, double output_rev_per_sec) {
     return ARM_JOINTS[motor_idx].direction * output_rev_per_sec * 2.0 * M_PI;
 }
+
+inline double revolutionToDegrees(double rev)
+{
+    return (360.00f / rev);
+}
+
+inline double degreesToRevolution(double degrees)
+{
+    return (degrees / 360.00f);
+}

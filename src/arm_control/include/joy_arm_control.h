@@ -5,6 +5,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "controller_config.h"
+#include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 
 #include <unordered_map>
 #include <string>
@@ -56,6 +57,8 @@ ArmControllerConfig::ArmControlInput last_control_input = {};
 // Gripper state tracking
 bool gripper_open_ = false;
 bool prev_gripper_btn_ = false;
+
+bool prev_home_btn_ = false;
 
 // ========== Servo → Physical Arm Bridge ==========
 // Maps URDF joint names (from MoveIt Servo) to firmware axis indices (0-5).

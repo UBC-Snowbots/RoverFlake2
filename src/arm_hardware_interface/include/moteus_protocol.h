@@ -90,12 +90,18 @@ inline mot::CanFdFrame makeQueryFrame(mot::Controller& ctrl) {
 // This frame must be re-sent every poll cycle while motion is desired —
 // a single frame does NOT latch; the motor will stop if frames stop arriving.
 inline mot::CanFdFrame makePositionFrame(mot::Controller& ctrl,
-                                          double position,
-                                          double velocity,
-                                          double max_torque = NAN) {
+                                            double position,
+                                            double velocity,
+                                            double max_velocity = NAN,
+                                            double max_acceleration = NAN,
+                                            double max_torque = NAN) {
     mot::PositionMode::Command cmd;
     cmd.position = position;
     cmd.velocity = velocity;
+    if (!std::isnan(max_velocity))
+        cmd.velocity_limit = max_velocity;    
+    if (!std::isnan(max_acceleration))
+        cmd.accel_limit = max_acceleration; 
     if (!std::isnan(max_torque))
         cmd.maximum_torque = max_torque;
     return ctrl.MakePosition(cmd);
