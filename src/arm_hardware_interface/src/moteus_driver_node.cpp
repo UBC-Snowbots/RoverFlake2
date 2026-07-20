@@ -361,6 +361,43 @@ void MoteusDriverNode::poll() {
 
                 }
                 axis.state = AxisState::RUNNING_OK;
+
+
+                int i = axis.index;
+                if(i == static_cast<int>(AxisIndex::AXIS_5))
+                {
+                    axis.state = AxisState::RUNNING_OK;
+                    axes[5].state = AxisState::RUNNING_OK;
+                    int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
+                    int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
+                    // Special case for differential axes
+                    float target_5 = (AxisConfig::idle_position[axis.index]  * AxisConfig::homing_direction[m5_i] * -1);
+                    auto& cmd_5      = active_cmds_[m5_i];
+                    cmd_5.active     = true;
+                    cmd_5.is_stop    = false;
+                    cmd_5.is_zero    = false;
+                    cmd_5.position   = target_5;
+                    cmd_5.max_acceleration = 0.1;
+                    cmd_5.max_velocity = 0.1;
+                    cmd_5.max_torque = NAN;
+
+                    // Tell axis 6 to hold position
+                    float target_6 =  (AxisConfig::idle_position[m6_i]  * AxisConfig::homing_direction[m5_i] * -1);
+                    auto& cmd_6      = active_cmds_[m6_i];
+                    cmd_6.active     = true;
+                    cmd_6.is_stop    = false;
+                    cmd_6.is_zero    = false;
+                    cmd_6.position   = target_6; //telem_[m6_i].position; 
+                    // cmd_6.velocity   = 0.0;
+                    cmd_6.max_acceleration = 0.1;
+                    cmd_6.max_velocity = 0.1;
+                    cmd_6.max_torque = NAN;
+                }
+                else if (i == static_cast<int>(AxisIndex::AXIS_6))
+                {
+                }
+                else
+                {
                 float target = AxisConfig::idle_position[axis.index] * -1 * AxisConfig::homing_direction[axis.index];
   
                 auto& cmd      = active_cmds_[axis.index];
@@ -373,6 +410,7 @@ void MoteusDriverNode::poll() {
                 cmd.max_acceleration = 0.1;
                 cmd.max_velocity = 0.1;
                 cmd.max_torque = NAN;
+                }
 
             } 
             else 
@@ -386,7 +424,7 @@ void MoteusDriverNode::poll() {
                     int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
                     int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
                     // Special case for differential axes
-                    float target_5 = telem_[m5_i].position + kHomingStepRev * AxisConfig::homing_direction[m5_i];
+                    float target_5 = telem_[m5_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
                     auto& cmd_5      = active_cmds_[m5_i];
                     cmd_5.active     = true;
                     cmd_5.is_stop    = false;
@@ -397,7 +435,7 @@ void MoteusDriverNode::poll() {
                     cmd_5.max_torque = NAN;
 
                     // Tell axis 6 to hold position
-                    float target_6 = telem_[m6_i].position + kHomingStepRev * AxisConfig::homing_direction[m5_i];
+                    float target_6 = telem_[m6_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
                     auto& cmd_6      = active_cmds_[m6_i];
                     cmd_6.active     = true;
                     cmd_6.is_stop    = false;
