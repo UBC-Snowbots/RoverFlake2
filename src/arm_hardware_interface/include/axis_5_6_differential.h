@@ -16,18 +16,16 @@
 // Call site: moteus_driver_node.cpp poll() step 2b for motors at indices 4 & 5.
 // =============================================================================
 
+
+// #define DEBUG_MSGS
+
 inline void differential_drive(float axis5_input, float axis6_input,
                                 float& motor5_output, float& motor6_output)
 {
-    if ((axis5_input > 0 && axis6_input > 0) ||
-        (axis5_input < 0 && axis6_input < 0))
-    {
-        motor5_output = -axis5_input - axis6_input;
-        motor6_output = motor5_output;
-    }
-    else
-    {
-        motor5_output = -axis6_input;
-        motor6_output =  axis6_input;
-    }
+
+    motor5_output = axis6_input + axis5_input;
+    motor6_output = -axis6_input + axis5_input;
+
+    // Motors are swapped, so we invert one
+    motor6_output = -motor6_output;
 }

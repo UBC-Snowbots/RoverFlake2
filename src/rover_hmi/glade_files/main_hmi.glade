@@ -1299,6 +1299,7 @@ sends $h(A)</property>
                   <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="column-spacing">21</property>
                     <child>
                       <object class="GtkLabel" id="arm_current_label">
                         <property name="visible">True</property>
@@ -1316,7 +1317,7 @@ sends $h(A)</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="row-spacing">6</property>
-                        <property name="column-spacing">15</property>
+                        <property name="column-spacing">26</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
@@ -1518,7 +1519,7 @@ sends $h(A)</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="row-spacing">6</property>
-                        <property name="column-spacing">15</property>
+                        <property name="column-spacing">26</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
@@ -1720,7 +1721,7 @@ sends $h(A)</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="row-spacing">6</property>
-                        <property name="column-spacing">15</property>
+                        <property name="column-spacing">27</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>

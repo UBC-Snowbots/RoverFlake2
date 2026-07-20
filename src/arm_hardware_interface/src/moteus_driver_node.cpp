@@ -313,6 +313,122 @@ void MoteusDriverNode::poll() {
             cmd.active = false;  // one-shot; next cycle falls through to MakeQuery
         }
     }
+    
+    // Check Homing
+    for(auto& axis : axes)
+    {
+        if(axis.state == AxisState::REQUESTING_HOMING)
+        {
+            if(axis.limit_switch)
+            {
+                // Limit swittch is pressed or broken
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Is pressed or broken. Homing Request Denied", axis.index + 1);
+                axis.state = AxisState::ERROR;
+
+            } else 
+            {
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
+
+                if(axis.index == 4 || axis.index == 5)
+                {
+                    // set_position(static_cast<MotorIndex>(4), AxisConfig::max_position_rev[4] - 0.01); //sloppy
+                    // set_position(static_cast<MotorIndex>(5), AxisConfig::max_position_rev[5] - 0.01); //sloppy
+
+                } else {
+                    set_position(static_cast<MotorIndex>(axis.index), AxisConfig::max_position_rev[axis.index] - 0.01); //sloppy
+                }
+
+                // Accept
+                axis.state = AxisState::HOMING;
+            }
+        }
+
+        if(axis.state == AxisState::HOMING)
+        {
+            // Check limit switch
+            if(axis.limit_switch)
+            {
+                // Limit switch is pressed, homing complete
+                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
+
+                if(axis.index == 4 || axis.index == 5)
+                {
+                    zero_position(MotorIndex::MOTOR_5);
+                     zero_position(MotorIndex::MOTOR_6);
+
+                } else {
+                     zero_position(static_cast<MotorIndex>(axis.index));
+
+                }
+                axis.state = AxisState::RUNNING_OK;
+                float target = AxisConfig::idle_position[axis.index] * -1 * AxisConfig::homing_direction[axis.index];
+  
+                auto& cmd      = active_cmds_[axis.index];
+                cmd.active     = true;
+                cmd.is_stop    = false;
+                cmd.is_zero    = false;
+                cmd.position   = target;
+                cmd.velocity   = NAN;
+                // cmd.velocity   = 0.01; // Prob doesn't do what you think, use max_velocity instead below
+                cmd.max_acceleration = 0.1;
+                cmd.max_velocity = 0.1;
+                cmd.max_torque = NAN;
+
+            } 
+            else 
+            {
+                // Move the motor a little tiny bit
+                constexpr float kHomingStepRev = 0.05f;  // ~0.7 deg motor/cycle
+                
+                int i = axis.index;
+                if(i == static_cast<int>(AxisIndex::AXIS_5))
+                {
+                    int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
+                    int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
+                    // Special case for differential axes
+                    float target_5 = telem_[m5_i].position + kHomingStepRev * AxisConfig::homing_direction[m5_i];
+                    auto& cmd_5      = active_cmds_[m5_i];
+                    cmd_5.active     = true;
+                    cmd_5.is_stop    = false;
+                    cmd_5.is_zero    = false;
+                    cmd_5.position   = target_5;
+                    cmd_5.max_acceleration = 0.1;
+                    cmd_5.max_velocity = AxisConfig::homing_speed_revps[m5_i];
+                    cmd_5.max_torque = NAN;
+
+                    // Tell axis 6 to hold position
+                    float target_6 = telem_[m6_i].position + kHomingStepRev * AxisConfig::homing_direction[m5_i];
+                    auto& cmd_6      = active_cmds_[m6_i];
+                    cmd_6.active     = true;
+                    cmd_6.is_stop    = false;
+                    cmd_6.is_zero    = false;
+                    cmd_6.position   = target_6; //telem_[m6_i].position; 
+                    // cmd_6.velocity   = 0.0;
+                    cmd_6.max_acceleration = 0.1;
+                    cmd_6.max_velocity = AxisConfig::homing_speed_revps[m6_i];
+                    cmd_6.max_torque = NAN;
+                }
+                else if (i == static_cast<int>(AxisIndex::AXIS_6))
+                {
+
+                }
+                else
+                {
+                    float target = telem_[axis.index].position + (kHomingStepRev * axis.homing_direction);
+                    auto& cmd      = active_cmds_[i];
+                    cmd.active     = true;
+                    cmd.is_stop    = false;
+                    cmd.is_zero    = false;
+                    cmd.position   = target;
+                    cmd.max_acceleration = 0.1;
+                    cmd.max_velocity = AxisConfig::homing_speed_revps[axis.index];
+                    cmd.max_torque = NAN;
+                }
+
+            }
+
+        }
+    }
 
     // Step 2b — apply differential wrist transform for axes 5 & 6 (indices 4 & 5)
     // The wrist is mechanically coupled: joint-space commands must be converted
@@ -420,104 +536,6 @@ void MoteusDriverNode::poll() {
     checkAlerts();
 
 
-    // Check Homing
-    for(auto& axis : axes)
-    {
-        if(axis.state == AxisState::REQUESTING_HOMING)
-        {
-            if(axis.limit_switch)
-            {
-                // Limit swittch is pressed or broken
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Is pressed or broken. Homing Request Denied", axis.index + 1);
-                axis.state = AxisState::ERROR;
-
-            } else 
-            {
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
-                set_position(static_cast<MotorIndex>(axis.index), AxisConfig::max_position_rev[axis.index] - 0.01); //sloppy
-
-                // Accept
-                axis.state = AxisState::HOMING;
-            }
-        }
-
-        if(axis.state == AxisState::HOMING)
-        {
-            // Check limit switch
-            if(axis.limit_switch)
-            {
-                // Limit switch is pressed, homing complete
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
-                zero_position(static_cast<MotorIndex>(axis.index));
-                axis.state = AxisState::RUNNING_OK;
-                float target = AxisConfig::idle_position[axis.index] * -1 * AxisConfig::homing_direction[axis.index];
-  
-                auto& cmd      = active_cmds_[axis.index];
-                cmd.active     = true;
-                cmd.is_stop    = false;
-                cmd.is_zero    = false;
-                cmd.position   = target;
-                cmd.velocity   = NAN;
-                // cmd.velocity   = 0.01; // Prob doesn't do what you think, use max_velocity instead below
-                cmd.max_acceleration = 0.1;
-                cmd.max_velocity = 0.1;
-                cmd.max_torque = NAN;
-
-            } 
-            else 
-            {
-                // Move the motor a little tiny bit
-                constexpr float kHomingStepRev = 0.05f;  // ~0.7 deg motor/cycle
-                
-                int i = axis.index;
-                if(i == static_cast<int>(AxisIndex::AXIS_5))
-                {
-                    int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
-                    int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
-                    // Special case for differential axes
-                    float target_5 = telem_[m5_i].position + kHomingStepRev * AxisConfig::homing_direction[m5_i];
-                    auto& cmd_5      = active_cmds_[m5_i];
-                    cmd_5.active     = true;
-                    cmd_5.is_stop    = false;
-                    cmd_5.is_zero    = false;
-                    cmd_5.position   = target_5;
-                    cmd_5.max_acceleration = 0.1;
-                    cmd_5.max_velocity = AxisConfig::homing_speed_revps[m5_i];
-                    cmd_5.max_torque = NAN;
-
-                    // Tell axis 6 to hold position
-                    float target_6 = telem_[m6_i].position + kHomingStepRev * AxisConfig::homing_direction[m6_i];
-                    auto& cmd_6      = active_cmds_[m6_i];
-                    cmd_6.active     = true;
-                    cmd_6.is_stop    = false;
-                    cmd_6.is_zero    = false;
-                    cmd_6.position   = NAN; //telem_[m6_i].position; 
-                    // cmd_6.velocity   = 0.0;
-                    cmd_6.max_acceleration = 0.1;
-                    cmd_6.max_velocity = AxisConfig::homing_speed_revps[m6_i];
-                    cmd_6.max_torque = NAN;
-                }
-                else if (i == static_cast<int>(AxisIndex::AXIS_6))
-                {
-
-                }
-                else
-                {
-                    float target = telem_[axis.index].position + (kHomingStepRev * axis.homing_direction);
-                    auto& cmd      = active_cmds_[i];
-                    cmd.active     = true;
-                    cmd.is_stop    = false;
-                    cmd.is_zero    = false;
-                    cmd.position   = target;
-                    cmd.max_acceleration = 0.1;
-                    cmd.max_velocity = AxisConfig::homing_speed_revps[axis.index];
-                    cmd.max_torque = NAN;
-                }
-
-            }
-
-        }
-    }
 
     // Step 6a — /arm/moteus_feedback
     rover_msgs::msg::MoteusArmStatus status_msg;
