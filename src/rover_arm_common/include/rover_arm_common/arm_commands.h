@@ -57,6 +57,8 @@ constexpr char CMD_HOME    = 'H';
 
 constexpr char CMD_FORCE_HOME = 'F';
 
+constexpr char CMD_COMMS = 'C';
+
 #define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
 #define HOME_VALUE_ALL_AXES_AND_EE    0xAE
 

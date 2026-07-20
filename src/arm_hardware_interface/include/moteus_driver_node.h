@@ -72,7 +72,12 @@ struct Axis {
         bool limit_switch = 0;
         bool homed = false;
         AxisState state = AxisState::INIT;
-        int homing_direction = -1;
+
+        // CONFIG STUFF See motor_config.h -> Set during construction of this class
+        float max_position_rev;
+        float min_position_rev;
+        float homing_speed_revps;
+        int homing_direction; 
         // bool configured = false;
         // etc..
 };

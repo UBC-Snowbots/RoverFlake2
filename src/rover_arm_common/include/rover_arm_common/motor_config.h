@@ -97,40 +97,107 @@ struct MotorConfig {
 // =============================================================================
 
 inline std::vector<MotorConfig> get_arm_configuration() {
-    std::vector<MotorConfig> axes(NUM_MOTORS);
+    std::vector<MotorConfig> motors(NUM_MOTORS);
 
     // --- PID gains (hand-tuned per axis) ---
     //     Higher kp = stiffer.  Add kd to dampen oscillation.
-    axes[0].kp = 180.0f;   axes[0].kd =  40.0f;   // Base
-    axes[1].kp = 2100.0f;  axes[1].kd = 100.0f;   // Shoulder
-    axes[2].kp = 4000.0f;  axes[2].kd = 750.0f;   // Elbow
-    axes[3].kp =  50.0f;   axes[3].kd =   0.0f;   // Wrist Pitch
-    axes[4].kp = 600.0f;   axes[4].kd = 100.0f;   // Wrist Roll
-    axes[5].kp = 600.0f;   axes[5].kd = 100.0f;   // End Effector
+    motors[0].kp = 180.0f;   motors[0].kd =  40.0f;   // Base
+    motors[1].kp = 2100.0f;  motors[1].kd = 100.0f;   // Shoulder
+    motors[2].kp = 4000.0f;  motors[2].kd = 750.0f;   // Elbow
+    motors[3].kp =  50.0f;   motors[3].kd =   0.0f;   // Wrist Pitch
+    motors[4].kp = 600.0f;   motors[4].kd = 100.0f;   // Wrist Roll
+    motors[5].kp = 600.0f;   motors[5].kd = 100.0f;   // End Effector
 
     // --- Gear reductions (for display in HMI only — firmware holds the real value) ---
-    axes[0].gear_reduction = 1.0f / 190.0f;
-    axes[1].gear_reduction = 1.0f / 160.0f;
-    axes[2].gear_reduction = 1.0f / 120.0f;
-    axes[3].gear_reduction = 1.0f / 190.0f;
-    axes[4].gear_reduction = 1.0f /  66.0f;
-    axes[5].gear_reduction = 1.0f /  66.0f;
+    motors[0].gear_reduction = 1.0f / 190.0f;
+    motors[1].gear_reduction = 1.0f / 160.0f;
+    motors[2].gear_reduction = 1.0f / 120.0f;
+    motors[3].gear_reduction = 1.0f / 190.0f;
+    motors[4].gear_reduction = 1.0f /  66.0f;
+    motors[5].gear_reduction = 1.0f /  66.0f;
 
     // --- Current limits (A) ---
-    axes[0].max_current_A = 1.0f;
-    axes[1].max_current_A = 8.0f;
-    axes[2].max_current_A = 5.5f;
-    axes[3].max_current_A = 0.5f;
-    axes[4].max_current_A = 2.5f;
-    axes[5].max_current_A = 2.5f;
+    motors[0].max_current_A = 1.0f;
+    motors[1].max_current_A = 8.0f;
+    motors[2].max_current_A = 5.5f;
+    motors[3].max_current_A = 0.5f;
+    motors[4].max_current_A = 2.5f;
+    motors[5].max_current_A = 2.5f;
 
     // --- Software position limits (output-shaft revolutions) ---
-    axes[0].position_min = -0.3f;     axes[0].position_max =   0.3f;
-    axes[1].position_min = -0.47f;    axes[1].position_max =  -0.05f;
-    axes[2].position_min =  0.01f;    axes[2].position_max =   0.4f;
-    // axes[3]: uses default (-1.0, 1.0)
-    axes[4].position_min = -999.01f;  axes[4].position_max = 999.4f;  // continuous
-    axes[5].position_min = -999.01f;  axes[5].position_max = 999.4f;  // continuous
+    motors[0].position_min = -0.3f;     motors[0].position_max =   0.3f;
+    motors[1].position_min = -0.47f;    motors[1].position_max =  -0.05f;
+    motors[2].position_min =  0.01f;    motors[2].position_max =   0.4f;
+    // motors[3]: uses default (-1.0, 1.0)
+    //TODO this is positions for motors, not motors
+    motors[4].position_min = -999.01f;  motors[4].position_max = 999.4f;  // continuous
+    motors[5].position_min = -999.01f;  motors[5].position_max = 999.4f;  // continuous
 
-    return axes;
+    return motors;
 }
+
+
+// Axis Configs
+#define BANDAID_AXIS_5_MAX_POSITION_OUTPUT_REVS 0.5
+#define BANDAID_AXIS_1_MAX_POSITION_OUTPUT_REVS 0.35
+
+namespace AxisConfig {
+    // In Revolutions
+    float max_position_rev[NUM_AXES] = {
+        /*AXIS 1 */   0.4,
+        /*AXIS 2 */   0.5,
+        /*AXIS 3 */   0.5,
+        /*AXIS 4 */   0.5,
+        /*AXIS 5 */   0.5,
+        /*AXIS 6 */   0.5,
+        /*AXIS EE */  0.5 };
+         
+    float min_position_rev[NUM_AXES] = {0, 0, 0, 0, 0, 0, 0};
+
+    float homing_speed_revps[NUM_AXES] = { // Rev/s Direction Independent. 
+        /*AXIS 1 */   0.01,
+        /*AXIS 2 */   0.01,
+        /*AXIS 3 */   0.01,
+        /*AXIS 4 */   0.01,
+        /*AXIS 5 */   0.01,
+        /*AXIS 6 */   0.01,
+        /*AXIS EE */  0.01 };
+
+    int homing_direction[NUM_AXES] = { // Rev/s Direction Independent. 
+        /*AXIS 1 */   -1,
+        /*AXIS 2 */   -1,
+        /*AXIS 3 */   -1,
+        /*AXIS 4 */   -1,
+        /*AXIS 5 */   1,
+        /*AXIS 6 */   -1,
+        /*AXIS EE */  -1 };
+
+    float max_running_speed[NUM_AXES] = { // Rev/s Direction Independent. 
+        /*AXIS 1 */   0.1,
+        /*AXIS 2 */   0.1,
+        /*AXIS 3 */   0.1,
+        /*AXIS 4 */   0.1,
+        /*AXIS 5 */   0.1,
+        /*AXIS 6 */   0.1,
+        /*AXIS EE */  0.1 };
+
+    float max_running_accel[NUM_AXES] = { // Rev/s Direction Independent. 
+        /*AXIS 1 */   0.5,
+        /*AXIS 2 */   0.5,
+        /*AXIS 3 */   0.5,
+        /*AXIS 4 */   0.5,
+        /*AXIS 5 */   0.5,
+        /*AXIS 6 */   0.5,
+        /*AXIS EE */  0.5 };
+    
+    float idle_position[NUM_AXES] = { // Rev/s Direction Independent. 
+        /*AXIS 1 */   0.1,
+        /*AXIS 2 */   0.1,
+        /*AXIS 3 */   0.1,
+        /*AXIS 4 */   0.1,
+        /*AXIS 5 */   0.1,
+        /*AXIS 6 */   0.1,
+        /*AXIS EE */  0.1 };
+    
+
+};

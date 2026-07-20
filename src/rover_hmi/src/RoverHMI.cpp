@@ -43,6 +43,7 @@ void MainHMINode::moteusDebugFeedbackCallback(const rover_msgs::msg::MoteusArmSt
         
         this->axis_torque_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_torque, 1));
         this->axis_driver_temp_label[i]->set_label(floatToStringTruncate(msg->status[i].driver_temp_degreesc, 1));
+        this->axis_limit_switch_label[i]->set_label((msg->limit_switches[i] ? "OPEN" : "CLOSED"));
         this->axis_current_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_current_amps, 2));
 
     }
