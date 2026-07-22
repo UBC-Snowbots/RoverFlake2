@@ -291,20 +291,22 @@ void MainHMINode::handleIKButtonRelease(){
 void MainHMINode::handleDecEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(6);
+        vel_msg.velocities.resize(7);
     for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0;
     }
+    vel_msg.velocities[6] = 10;
     vel_msg.end_effector = ee_speed * -1;
     arm_cmd_pub->publish(vel_msg);
 }
 void MainHMINode::handleIncEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(6);
+        vel_msg.velocities.resize(7);
     for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0;
     }
+    vel_msg.velocities[6] = 10;
     vel_msg.end_effector = ee_speed;
     arm_cmd_pub->publish(vel_msg);
 }

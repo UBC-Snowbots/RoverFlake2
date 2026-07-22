@@ -11,6 +11,41 @@
 #define SKIP_CALIBRATION
 using namespace std::chrono_literals;
 
+namespace {
+constexpr int A5 = 4;  // axis/motor index of wrist axis 5
+constexpr int A6 = 5;  // axis/motor index of wrist axis 6
+constexpr float kHomingStepRev = 0.05f;
+
+inline bool stateMachineOwns(AxisState s) {
+    return s == AxisState::REQUESTING_HOMING
+        || s == AxisState::HOMING
+        || s == AxisState::GOING_TO_PRESET_POSITION;
+}
+
+
+// Pure axis->motor for the coupled wrist. Assumes both inputs already
+// coherent (same mode, shared limits) — resolveWrist() guarantees that.
+void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
+                   MotorCommand& m5, MotorCommand& m6) {
+    m5 = a5;  m6 = a6;                          // carry flags + shared limits
+    if (!(a5.active || a6.active)) { m5.active = m6.active = false; return; }
+    m5.active = m6.active = true;
+    if (a5.is_stop || a6.is_stop) { m5.is_stop = m6.is_stop = true; return; }
+    m5.is_stop = m6.is_stop = false;
+
+    float o5, o6;  // differential_drive writes float&; cmd fields are double
+    if (!std::isnan(a5.position) && !std::isnan(a6.position)) {
+        differential_drive((float)a5.position, (float)a6.position, o5, o6);
+        m5.position = o5;  m6.position = o6;
+        m5.velocity = m6.velocity = NAN;
+    } else {
+        differential_drive((float)a5.velocity, (float)a6.velocity, o5, o6);
+        m5.velocity = o5;  m6.velocity = o6;
+        m5.position = m6.position = NAN;
+    }
+}
+} // namespace
+
 // =============================================================================
 // MoteusDriverNode implementation
 //
@@ -148,107 +183,53 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     char cmd_type = msg->cmd_type;
 
     if (cmd_type == CMD_STOP) {
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            pending_cmds_[i].active  = true;
-            pending_cmds_[i].is_stop = true;
-        }
+        for (int a = 0; a < NUM_AXES; a++) { pending_axis_cmds_[a].active = true;
+                                             pending_axis_cmds_[a].is_stop = true; }
         RCLCPP_INFO(this->get_logger(), "Command: STOP ALL");
         return;
     }
 
     if (cmd_type == CMD_ABS_POS) {
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            double pos = (i < (int)msg->positions.size())  ? msg->positions[i]  : NAN;
-            double vel_degrees = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
-            if (std::isnan(pos) && std::isnan(vel_degrees)) continue;
-
-            //TODO fault handling
-            // if (telem_[i].fault != 0) {
-            //     RCLCPP_WARN(this->get_logger(),
-            //         "BLOCKED position cmd to motor %d (%s) — fault %d active. "
-            //         "Send STOP first to clear.",
-            //         i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
-            //     publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
-            //         + " (" + ARM_JOINTS[i].hardware_name
-            //         + ") — fault " + std::to_string(telem_[i].fault));
-            //     continue;
-            // }
-
-            pending_cmds_[i].active    = true;
-            pending_cmds_[i].is_stop   = false;
-            pending_cmds_[i].position  = pos;
-            pending_cmds_[i].velocity  = degreesToRevolution(vel_degrees);
-            pending_cmds_[i].max_torque = NAN;
+        for (int a = 0; a < NUM_AXES; a++) {
+            double pos = (a < (int)msg->positions.size())  ? msg->positions[a]  : NAN;
+            double vd  = (a < (int)msg->velocities.size()) ? msg->velocities[a] : NAN;
+            if (std::isnan(pos) && std::isnan(vd)) continue;
+            auto& p = pending_axis_cmds_[a];
+            p.active = true; p.is_stop = false; p.is_zero = false;
+            p.position = pos; p.velocity = degreesToRevolution(vd); p.max_torque = NAN;
         }
         return;
     }
 
     if (cmd_type == CMD_ABS_VEL) {
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            double vel_degrees = (i < (int)msg->velocities.size()) ? msg->velocities[i] : NAN;
-            if (std::isnan(vel_degrees)) continue;
-
-            // if (vel != 0.0 && telem_[i].fault != 0) {
-            //     RCLCPP_WARN(this->get_logger(),
-            //         "BLOCKED velocity cmd to motor %d (%s) — fault %d active. "
-            //         "Send STOP first to clear.",
-            //         i + 1, ARM_JOINTS[i].hardware_name, telem_[i].fault);
-            //     publishLog("# BLOCKED cmd to motor " + std::to_string(i + 1)
-            //         + " (" + ARM_JOINTS[i].hardware_name
-            //         + ") — fault " + std::to_string(telem_[i].fault));
-            //     continue;
-            // }
-
-            pending_cmds_[i].active  = true;
-            // if (vel == 0.0) {
-                // pending_cmds_[i].is_stop = true;
-            // } else {
-                pending_cmds_[i].is_stop  = false;
-                pending_cmds_[i].position = NAN;
-                pending_cmds_[i].velocity = degreesToRevolution(vel_degrees);
-                pending_cmds_[i].max_velocity = degreesToRevolution(vel_degrees);
-                pending_cmds_[i].max_torque = NAN;
-            // }
+        for (int a = 0; a < NUM_AXES; a++) {
+            
+            double vd = (a < (int)msg->velocities.size()) ? msg->velocities[a] : NAN;
+            if (std::isnan(vd)) continue;
+            auto& p = pending_axis_cmds_[a];
+            p.active = true; p.is_stop = false; p.is_zero = false;
+            p.position = NAN;
+            p.velocity = degreesToRevolution(vd);
+            p.max_velocity = degreesToRevolution(vd);
+            p.max_torque = NAN;
         }
         return;
     }
 
-    if (cmd_type == CMD_ZERO) {
-        // positions[] used as a flag: non-NaN entry → zero that motor
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            double flag = (i < (int)msg->positions.size()) ? msg->positions[i] : NAN;
-            if (!std::isnan(flag)) {
-                pending_cmds_[i].active  = true;
-                pending_cmds_[i].is_zero = true;
-            }
+    if (cmd_type == CMD_ZERO) {   // motor-space diagnostic, bypasses the axis funnel
+        for (int m = 0; m < NUM_MOTORS; m++) {
+            double flag = (m < (int)msg->positions.size()) ? msg->positions[m] : NAN;
+            if (!std::isnan(flag)) motor_zero_req_[m] = true;
         }
         return;
     }
 
-    if (cmd_type == CMD_HOME)
-    {
-        // Sanitize cmd_value
-        if(msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES)
-        {
-            // User wants to home a single axis
-            home_axis(static_cast<AxisIndex>(msg->cmd_value));
-            return;
-        } 
-        else if(msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE)
-        {
-            // User wants to home all axes, except for EE
-            home_axis(AxisIndex::AXIS_5);
-        }
-        else if(msg->cmd_value == HOME_VALUE_ALL_AXES_AND_EE)
-        {
-            // User wants to home all axes including EE
-        }
-        else 
-        {
-            // Invalid command. Return.
-            RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
-            return;
-        }
+    if (cmd_type == CMD_HOME) {
+        if (msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES) { home_axis((AxisIndex)msg->cmd_value); return; }
+        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE) { home_axis(AxisIndex::AXIS_5); return; }
+        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_AND_EE)    { /* EE TODO */ return; }
+        RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
+        return;
     }
 
     RCLCPP_WARN(this->get_logger(), "Unknown cmd_type: '%c' (%d)", cmd_type, (int)cmd_type);
@@ -292,440 +273,187 @@ void MoteusDriverNode::home_axis(AxisIndex index)
 // Step 6: publish /arm/moteus_feedback and /joint_states
 // ---------------------------------------------------------------------------
 
+// Pending commands from ros -> merge into active commands, but are rejectev if there is homing and whatnot.
+// Homing is then Checked. 
 void MoteusDriverNode::poll() {
-    // Yield CAN bus to the calibration thread while it runs moteus_tool.
     if (calibrating_.load()) return;
 
-    // Step 1 — merge
+    // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
+    for (auto& c : axis_cmds_) c.active = false;
+
+    // ── Stage 1: intake — ROS -> axis_cmds_ (only for axes the SM doesn't own)
+    bool stop_all = false;
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            if (pending_cmds_[i].active && axes[i].state != AxisState::HOMING)
-                active_cmds_[i] = pending_cmds_[i];
+        for (int a = 0; a < NUM_AXES; a++) {
+            auto& p = pending_axis_cmds_[a];
+            if (!p.active) continue;
+            if (p.is_stop)                              stop_all = true;
+            else if (!stateMachineOwns(axes[a].state))  axis_cmds_[a] = p;
         }
-        pending_cmds_ = {};
+        pending_axis_cmds_ = {};
+    }
+    if (stop_all) {
+        for (int a = 0; a < NUM_AXES; a++) {
+            axis_cmds_[a].active = true; axis_cmds_[a].is_stop = true;
+            if (stateMachineOwns(axes[a].state)) axes[a].state = AxisState::RUNNING_OK; // abort homing
+        }
     }
 
-    // Step 2a — "d exact 0" zero commands (diagnostic channel, separate from BlockingCycle)
-    // This resets the position counter to 0 at the current physical position — no movement.
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto& cmd = active_cmds_[i];
-        if (cmd.active && cmd.is_zero) {
-            zero_position(static_cast<MotorIndex>(i));
-            cmd.active = false;  // one-shot; next cycle falls through to MakeQuery
+    // ── Stage 2: state machine — homing / preset write axis_cmds_ (axis space)
+    for (auto& ax : axes) {
+        const int i = ax.index;
+        switch (ax.state) {
+        case AxisState::REQUESTING_HOMING:
+            if (ax.limit_switch) {
+                RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
+                ax.state = AxisState::ERROR;
+            } else if (i == A6) {
+                RCLCPP_WARN(this->get_logger(), "Axis 6 homing not implemented (runs relative)");
+                ax.state = AxisState::RUNNING_OK;
+            } else {
+                RCLCPP_INFO(this->get_logger(), "Axis %d switch healthy. Homing accepted", i + 1);
+                if (i != A5)  // wrist is continuous — no seed needed
+                    set_position((MotorIndex)i, AxisConfig::max_position_rev[i] - 0.01f);
+                ax.state = AxisState::HOMING;
+            }
+            break;
+
+        case AxisState::HOMING:
+            if (ax.limit_switch) {
+                RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
+                if (i == A5) { zero_position(MotorIndex::MOTOR_5); zero_position(MotorIndex::MOTOR_6); }
+                else         { zero_position((MotorIndex)i); }
+                ax.state = AxisState::GOING_TO_PRESET_POSITION;
+            } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
+                auto& c = axis_cmds_[i];
+                c.active = true; c.is_stop = false; c.is_zero = false;
+                c.position = axes[i].position + kHomingStepRev * ax.homing_direction;
+                c.velocity = NAN;
+                c.max_velocity = AxisConfig::homing_speed_revps[i];
+                c.max_acceleration = 0.1f; c.max_torque = NAN;
+            }
+            break;
+
+        case AxisState::GOING_TO_PRESET_POSITION: {
+            auto& c = axis_cmds_[i];
+            c.active = true; c.is_stop = false; c.is_zero = false;
+            c.position = AxisConfig::idle_position[i];  // axis space
+            c.velocity = NAN;
+            c.max_velocity = 0.1f; c.max_acceleration = 0.1f; c.max_torque = NAN;
+            if (std::fabs(axes[i].position - AxisConfig::idle_position[i]) < 0.01f) {
+                ax.state = AxisState::RUNNING_OK;
+                if (i == A5) axes[A6].state = AxisState::RUNNING_OK; // axis 6 usable (relative), unhomed
+            }
+            break;
+        }
+        default: break;
         }
     }
-    
-    // Check Homing
-    for(auto& axis : axes)
+
+    // ── Stage 3: wrist coherence — make axes 4&5 same mode + shared limits ──
+    // Physically the two motors always move as a pair, so one shared vel/accel.
     {
-        if(axis.state == AxisState::REQUESTING_HOMING)
-        {
-            if(axis.limit_switch)
-            {
-                // Limit swittch is pressed or broken
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Is pressed or broken. Homing Request Denied", axis.index + 1);
-                axis.state = AxisState::ERROR;
+        auto& a5 = axis_cmds_[A5];
+        auto& a6 = axis_cmds_[A6];
+        if (a5.active || a6.active) {
+            if (a5.is_stop || a6.is_stop) {
+                a5.active = a6.active = true; a5.is_stop = a6.is_stop = true;
+            } else {
+                bool posMode = (a5.active && !std::isnan(a5.position))
+                            || (a6.active && !std::isnan(a6.position));
+                // limits come from whichever axis is actually driving
+                const auto& drv = (a5.active && (posMode ? !std::isnan(a5.position)
+                                                         : !std::isnan(a5.velocity))) ? a5 : a6;
+                float vlim = std::isnan(drv.max_velocity)     ? 0.1f : drv.max_velocity;
+                float alim = std::isnan(drv.max_acceleration) ? 0.1f : drv.max_acceleration;
 
-            } else 
-            {
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch appears healthy. Homing Request Accepted", axis.index + 1);
-
-                if(axis.index == 4 || axis.index == 5)
-                {
-                    // set_position(static_cast<MotorIndex>(4), AxisConfig::max_position_rev[4] - 0.01); //sloppy
-                    // set_position(static_cast<MotorIndex>(5), AxisConfig::max_position_rev[5] - 0.01); //sloppy
-
+                auto holdPos = [&](auto& c, int ax){ c.active=true; c.is_stop=false; c.is_zero=false;
+                                                     c.position = axes[ax].position; c.velocity = NAN; };
+                auto holdVel = [&](auto& c){ c.active=true; c.is_stop=false; c.is_zero=false;
+                                             c.position = NAN; c.velocity = 0.0f; };
+                if (posMode) {
+                    if (!a5.active || std::isnan(a5.position)) holdPos(a5, A5);
+                    if (!a6.active || std::isnan(a6.position)) holdPos(a6, A6);
+                    a5.velocity = a6.velocity = NAN;
                 } else {
-                    set_position(static_cast<MotorIndex>(axis.index), AxisConfig::max_position_rev[axis.index] - 0.01); //sloppy
+                    if (!a5.active || std::isnan(a5.velocity)) holdVel(a5);
+                    if (!a6.active || std::isnan(a6.velocity)) holdVel(a6);
+                    a5.position = a6.position = NAN;
                 }
-
-                // Accept
-                axis.state = AxisState::HOMING;
+                a5.active = a6.active = true; a5.is_stop = a6.is_stop = false;
+                a5.max_velocity = a6.max_velocity = vlim;
+                a5.max_acceleration = a6.max_acceleration = alim;
+                a5.max_torque = a6.max_torque = NAN;
             }
-        }
-        
-        if(axis.state == AxisState::GOING_TO_PRESET_POSITION)
-        {
-            if(axis.index == 5)
-            {
-                // Axis 5 drives to idle; axis 6 holds current (it isn't homed,
-                // so an absolute idle_position[5] target is meaningless).
-                auto& c4 = active_cmds_[4];
-                c4.active = true;  c4.is_stop = false;  c4.is_zero = false;
-                c4.position = AxisConfig::idle_position[4];   // real axis-space target
-                c4.velocity = NAN;
-                c4.max_velocity = 0.1f;  c4.max_acceleration = 0.1f;
-
-                auto& c5 = active_cmds_[5];
-                c5.active = true;  c5.is_stop = false;  c5.is_zero = false;
-                c5.position = axes[5].position;               // HOLD, don't chase idle
-                c5.velocity = NAN;
-                c5.max_velocity = 0.1f;  c5.max_acceleration = 0.1f;
-
-                // arrival keyed on axis 5 only — axis 6 isn't going anywhere
-                if(std::fabs(axes[4].position - AxisConfig::idle_position[4]) < 0.01f)
-                {
-                    axes[4].state = AxisState::RUNNING_OK;
-                    // axes[5].state = AxisState::RUNNING_OK;
-                }
-            }
-            else
-            {
-                auto& cmd = active_cmds_[axis.index];
-                cmd.active = true;  cmd.is_stop = false;  cmd.is_zero = false;
-                cmd.position = AxisConfig::idle_position[axis.index];
-                cmd.velocity = NAN;
-                cmd.max_velocity = 0.1f;  cmd.max_acceleration = 0.1f;
-                if(std::fabs(axes[axis.index].position - AxisConfig::idle_position[axis.index]) < 0.01f)
-                    axes[axis.index].state = AxisState::RUNNING_OK;
-            }
-        }
-
-        if(axis.state == AxisState::HOMING)
-        {
-            // Check limit switch
-            if(axis.limit_switch )
-            {
-                // Limit switch is pressed, homing complete
-                RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
-
-                if(axis.index == 4 || axis.index == 5)
-                {
-                    zero_position(MotorIndex::MOTOR_5);
-                     zero_position(MotorIndex::MOTOR_6);
-
-                } else {
-                     zero_position(static_cast<MotorIndex>(axis.index));
-
-                }
-                axis.state = AxisState::GOING_TO_PRESET_POSITION;
-
-
-                int i = axis.index;
-                if(i == static_cast<int>(AxisIndex::AXIS_5))
-                {
-                    axis.state = AxisState::GOING_TO_PRESET_POSITION;
-                    // axes[5].state = AxisState::GOING_TO_PRESET_POSITION;
-                    // int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
-                    // int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
-                    // // Special case for differential axes
-                    // float target_5 = (AxisConfig::idle_position[axis.index]  * AxisConfig::homing_direction[m5_i] * -1);
-                    // auto& cmd_5      = active_cmds_[m5_i];
-                    // cmd_5.active     = true;
-                    // cmd_5.is_stop    = false;
-                    // cmd_5.is_zero    = false;
-                    // cmd_5.position   = target_5;
-                    // cmd_5.max_acceleration = 0.1;
-                    // cmd_5.max_velocity = 0.1;
-                    // cmd_5.max_torque = NAN;
-
-                    // // MUST set the axis-6 half so the transform's 2nd input is real, not stale.
-                    // active_cmds_[5].active   = true;
-                    // active_cmds_[5].is_stop  = false;
-                    // active_cmds_[5].is_zero  = false;
-                    // active_cmds_[5].position = axes[5].position;   // hold
-                    // active_cmds_[5].velocity = NAN;
-                    // active_cmds_[5].max_velocity     = AxisConfig::homing_speed_revps[5];
-                    // active_cmds_[5].max_acceleration = 0.1;
-
-                    // float target_6 =  (AxisConfig::idle_position[m6_i]  * AxisConfig::homing_direction[m5_i] * -1);
-                    // auto& cmd_6      = active_cmds_[m6_i];
-                    // cmd_6.active     = true;
-                    // cmd_6.is_stop    = false;
-                    // cmd_6.is_zero    = false;
-                    // cmd_6.position   = target_6; //telem_[m6_i].position; 
-                    // // cmd_6.velocity   = 0.0;
-                    // cmd_6.max_acceleration = 0.1;
-                    // cmd_6.max_velocity = 0.1;
-                    // cmd_6.max_torque = NAN;
-                }
-                else if (i == static_cast<int>(AxisIndex::AXIS_6))
-                {
-
-                }
-                else
-                {
-                float target = AxisConfig::idle_position[axis.index] * -1 * AxisConfig::homing_direction[axis.index];
-  
-                auto& cmd      = active_cmds_[axis.index];
-                cmd.active     = true;
-                cmd.is_stop    = false;
-                cmd.is_zero    = false;
-                cmd.position   = target;
-                cmd.velocity   = NAN;
-                // cmd.velocity   = 0.01; // Prob doesn't do what you think, use max_velocity instead below
-                cmd.max_acceleration = 0.1;
-                cmd.max_velocity = 0.1;
-                cmd.max_torque = NAN;
-
-
-
-                }
-
-            } 
-            else 
-            {
-                // Move the motor a little tiny bit
-                constexpr float kHomingStepRev = 0.05f;  // ~0.7 deg motor/cycle
-
-                int i = axis.index;
-                if(i == static_cast<int>(AxisIndex::AXIS_5))
-                {
-                        // Axis space in, Step 2b does the ONE transform to motor space.
-                        // Drive axis 5 toward its switch; hold axis 6.
-                        active_cmds_[4].active   = true;
-                        active_cmds_[4].is_stop  = false;
-                        active_cmds_[4].is_zero  = false;
-                        active_cmds_[4].position = axes[4].position + (kHomingStepRev * axis.homing_direction);
-                        active_cmds_[4].velocity = NAN;
-                        active_cmds_[4].max_velocity     = AxisConfig::homing_speed_revps[4];
-                        active_cmds_[4].max_acceleration = 0.1;
-
-                        // MUST set the axis-6 half so the transform's 2nd input is real, not stale.
-                        active_cmds_[5].active   = true;
-                        active_cmds_[5].is_stop  = false;
-                        active_cmds_[5].is_zero  = false;
-                        active_cmds_[5].position = axes[5].position;   // hold
-                        active_cmds_[5].velocity = NAN;
-                        active_cmds_[5].max_velocity     = AxisConfig::homing_speed_revps[5];
-                        active_cmds_[5].max_acceleration = 0.1;
-                    // int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
-                    // int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
-                    // // Special case for differential axes
-                    // float target_5 = telem_[m5_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
-                    // auto& cmd_5      = active_cmds_[m5_i];
-                    // cmd_5.active     = true;
-                    // cmd_5.is_stop    = false;
-                    // cmd_5.is_zero    = false;
-                    // cmd_5.position   = target_5;
-                    // cmd_5.max_acceleration = 0.1;
-                    // cmd_5.max_velocity = AxisConfig::homing_speed_revps[m5_i];
-                    // cmd_5.max_torque = NAN;
-
-                // Tell axis 6 to hold position
-                    // float target_6 = telem_[m6_i].position; //+ (kHomingStepRev * AxisConfig::homing_direction[m5_i]); // Motor 5 and 6 directions are flipped, but we still need to refrence based on Axis 5.
-                    // auto& cmd_6      = active_cmds_[m6_i];
-                    // cmd_6.active     = true;
-                    // cmd_6.is_stop    = false;
-                    // cmd_6.is_zero    = false;
-                    // cmd_6.position   = target_6; //telem_[m6_i].position; 
-                    // // cmd_6.velocity   = 0.0;
-                    // cmd_6.max_acceleration = 0.1;
-                    // cmd_6.max_velocity = AxisConfig::homing_speed_revps[m6_i];
-                    // cmd_6.max_torque = NAN;
-                }
-                else if (i == static_cast<int>(AxisIndex::AXIS_6))
-                {
-
-                }
-                else
-                {
-                    float target = telem_[axis.index].position + (kHomingStepRev * axis.homing_direction);
-                    auto& cmd      = active_cmds_[i];
-                    cmd.active     = true;
-                    cmd.is_stop    = false;
-                    cmd.is_zero    = false;
-                    cmd.position   = target;
-                    cmd.max_acceleration = 0.1;
-                    cmd.max_velocity = AxisConfig::homing_speed_revps[axis.index];
-                    cmd.max_torque = NAN;
-                }
-
-            }
-
         }
     }
 
-    // Step 2b — apply differential wrist transform for axes 5 & 6 (indices 4 & 5)
-    // The wrist is mechanically coupled: joint-space commands must be converted
-    // to motor-space commands before sending.  See axis_5_6_differential.h.
-    if ((active_cmds_[4].active || active_cmds_[5].active) &&
-        !active_cmds_[4].is_stop && !active_cmds_[5].is_stop)
-    {
-        // Force both motors to be live
-        active_cmds_[4].active = true;
-        active_cmds_[5].active = true;
+    // ── Stage 4: THE transform — axis_cmds_ -> motor_cmds_ (only crossing point)
+    for (int m = 0; m < NUM_MOTORS; m++)
+        if (m != A5 && m != A6) motor_cmds_[m] = axis_cmds_[m];   // straight-through
+    combine_wrist(axis_cmds_[A5], axis_cmds_[A6], motor_cmds_[A5], motor_cmds_[A6]);
 
-        if(axes[4].state == AxisState::HOMING || axes[5].state == AxisState::HOMING ||
-            axes[4].state == AxisState::GOING_TO_PRESET_POSITION || axes[5].state == AxisState::GOING_TO_PRESET_POSITION)
-        {
-
-            float m5, m6;
-            differential_drive(
-                static_cast<float>(active_cmds_[4].position),
-                static_cast<float>(active_cmds_[5].position),
-                m5, m6);
-            active_cmds_[4].velocity = NAN;
-            active_cmds_[5].velocity = NAN;
-
-            active_cmds_[4].position = m5;
-            active_cmds_[5].position = m6;
-
-            active_cmds_[4].max_acceleration = 0.1;
-            active_cmds_[4].max_velocity = AxisConfig::homing_speed_revps[4];
-            
-            active_cmds_[5].max_velocity = AxisConfig::homing_speed_revps[5];
-            active_cmds_[5].max_acceleration = 0.1;
-        } else {
-            // Swap back to velocity control
-            float m5, m6;
-            differential_drive(
-                static_cast<float>(active_cmds_[4].velocity),
-                static_cast<float>(active_cmds_[5].velocity),
-                m5, m6);
-            active_cmds_[4].velocity = m5;
-            active_cmds_[5].velocity = m6;
-
-            active_cmds_[4].max_acceleration = AxisConfig::max_running_accel[4];
-            active_cmds_[4].max_velocity = AxisConfig::max_running_speed[4];
-            
-            active_cmds_[5].max_velocity = AxisConfig::homing_speed_revps[5];
-            active_cmds_[5].max_acceleration = AxisConfig::max_running_accel[5];
-        }
+    // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
+    for (int m = 0; m < NUM_MOTORS; m++) {
+        if (motor_zero_req_[m]) { zero_position((MotorIndex)m); motor_zero_req_[m] = false;
+                                  motor_cmds_[m].active = false; }
     }
 
-    // Step 2c — build frames
-    // (See moteus_protocol.h for what goes in the data field of each type.)
+    // ── Stage 6: frames — built ONLY from motor_cmds_ ───────────────────────
     std::vector<mot::CanFdFrame> frames;
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto& cmd = active_cmds_[i];
-        if (cmd.active && cmd.is_stop) {
-            frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[i]));
-            cmd.active = false;  // stop is one-shot; next cycle falls through to query
-        } else if (cmd.active) {
-            // frames.push_back(MoteusProtocol::makePositionFrame(
-                // *controllers_[i], cmd.position, NAN));
-            frames.push_back(MoteusProtocol::makePositionFrame(
-                *controllers_[i], cmd.position, cmd.velocity, cmd.max_velocity, cmd.max_acceleration));
-            cmd.active = false; 
-
-        } else {
-            frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[i]));
-        }
+    for (int m = 0; m < NUM_MOTORS; m++) {
+        auto& c = motor_cmds_[m];
+        if      (c.active && c.is_stop) frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[m]));
+        else if (c.active)              frames.push_back(MoteusProtocol::makePositionFrame(
+                                            *controllers_[m], c.position, c.velocity,
+                                            c.max_velocity, c.max_acceleration));
+        else                            frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[m]));
     }
 
-    // Step 3 — send + receive
+    // ── Stage 7: bus ────────────────────────────────────────────────────────
     std::vector<mot::CanFdFrame> replies;
     transport_->BlockingCycle(frames.data(), frames.size(), &replies);
-
-    // Step 4 — decode replies
-    // Reset connected flags; only set true for motors that replied this cycle.
+rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
+rover_msgs::msg::ArmCommand arm_feedback_msg;
+arm_feedback_msg.positions.resize(NUM_AXES);
+moteus_ros_msg.status.resize(NUM_AXES);
+moteus_ros_msg.config.resize(NUM_AXES);
+moteus_ros_msg.limit_switches.resize(NUM_AXES);
+    // ── Stage 8: decode -> telem_, motor->axis (inverse for wrist) ──────────
     for (auto& t : telem_) t.connected = false;
-
     for (const auto& frame : replies) {
         int id = frame.source;
         if (id < 1 || id > NUM_MOTORS) continue;
-
         auto r = MoteusProtocol::parseReply(frame);
         auto& t = telem_[id - 1];
-        t.position    = r.position;
-        t.velocity    = r.velocity;
-        t.torque      = r.torque;
-        t.voltage     = r.voltage;
-        t.temperature = r.temperature;
-        t.q_current   = std::isnan(r.q_current) ? 0.0f : static_cast<float>(r.q_current);
-        t.power       = std::isnan(r.power)     ? 0.0f : static_cast<float>(r.power);
-        t.mode        = static_cast<int>(r.mode);
-        t.fault       = static_cast<int>(r.fault);
-        t.connected   = true;
-        #ifdef DEBUG_LIMIT_SWITCH_RAW_REPLY
-        RCLCPP_WARN(this->get_logger(), "Aux2 Pins of axis %i be looking like: %s",
-            id,
-            std::bitset<8>(r.aux2_gpio).to_string().c_str());
-        #endif
-        t.limit_switch = (r.aux2_gpio > 0); //TODO this is pretty fragile... if pins are not configured then is fucky wucky
-        axes[id - 1].limit_switch = t.limit_switch; // Update for IPC
-        if((id -1) != static_cast<int>(MotorIndex::MOTOR_5) && (id - 1) != static_cast<int>(MotorIndex::MOTOR_6))
-        {
+        t.position=r.position; t.velocity=r.velocity; t.torque=r.torque; t.voltage=r.voltage;
+        t.temperature=r.temperature;
+        t.q_current = std::isnan(r.q_current)?0.0f:(float)r.q_current;
+        t.power     = std::isnan(r.power)?0.0f:(float)r.power;
+        t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
+        t.limit_switch = (r.aux2_gpio > 0);
+        axes[id - 1].limit_switch = t.limit_switch;
+        moteus_ros_msg.status[id -1].curr_current_amps = t.q_current;
+        moteus_ros_msg.status[id -1].curr_torque = t.torque;
+        moteus_ros_msg.status[id -1].driver_temp_degreesc = t.temperature;
+        moteus_ros_msg.limit_switches[id - 1] = t.limit_switch;
+        if (id - 1 != A5 && id - 1 != A6) {
             axes[id - 1].position = t.position;
-
-        } else {
-            // Handle motor 5 / 6, but wait for both motors data to update
-            if((id - 1) == static_cast<int>(MotorIndex::MOTOR_6))
-            {
-                float a5, a6;
-                differential_drive_inverse(telem_[4].position, telem_[5].position, a5, a6);
-                axes[4].position = a5;
-                axes[5].position = a6;
-            }
+        } else if (id - 1 == A6) {  // both wrist replies in — invert together
+            float a5p, a6p;
+            differential_drive_inverse(telem_[A5].position, telem_[A6].position, a5p, a6p);
+            axes[A5].position = a5p; axes[A6].position = a6p;
         }
+        arm_feedback_msg.positions[id - 1] = axes[id -1].position;
     }
-
-    // Step 5 — safety
-    // checkFaults();
-    checkAlerts();
-
-    // publish to arm feedback (not moteus feedback, bandaid)
-    rover_msgs::msg::ArmCommand arm_feedback_msg;
-    arm_feedback_msg.positions.resize(NUM_AXES);
-    arm_feedback_msg.velocities.resize(NUM_AXES);
-    for(auto axis : axes)
-    {
-        arm_feedback_msg.positions[axis.index] = axis.position;
-    }
+    feedback_pub_->publish(moteus_ros_msg);
     arm_feedback_pub->publish(arm_feedback_msg);
 
-    // Step 6a — /arm/moteus_feedback
-    rover_msgs::msg::MoteusArmStatus status_msg;
-    status_msg.status.resize(NUM_MOTORS);
-    status_msg.config.resize(NUM_MOTORS);
-    status_msg.limit_switches.resize(NUM_MOTORS);
-
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto& c   = configs_[i];
-        auto& cfg = status_msg.config[i];
-        cfg.max_acceleration  = c.max_acceleration;
-        cfg.max_velocity      = c.max_velocity;
-        cfg.max_position      = c.position_max;
-        cfg.min_position      = c.position_min;
-        cfg.kp                = c.kp;
-        cfg.ki                = c.ki;
-        cfg.kd                = c.kd;
-        cfg.max_current_amps  = c.max_current_A;
-        cfg.max_voltage_volts = c.max_voltage;
-        cfg.max_power_watts   = c.max_power_W;
-        cfg.cmd_timeout_s     = c.def_timeout;
-        cfg.gear_reduction    = c.gear_reduction;
-
-
-        auto& t = telem_[i];
-        auto& s = status_msg.status[i];
-        s.curr_position        = t.position;
-        s.curr_velocity        = t.velocity;
-        s.curr_torque          = t.torque;
-        s.curr_voltage_volts   = t.voltage;
-        s.curr_current_amps    = t.q_current;
-        s.curr_power_watts     = t.power;
-        s.driver_temp_degreesc = t.temperature;
-        s.moteus_mode          = static_cast<int16_t>(t.mode);
-        s.moteus_fault         = static_cast<int16_t>(t.fault);
-        // Desired setpoints from the last command sent to this motor
-        s.des_position = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].position : NAN);
-        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);
-        status_msg.limit_switches[i] = t.limit_switch;
-    }
-    feedback_pub_->publish(status_msg);
-
-    // Step 6b — /joint_states (consumed by robot_state_publisher → RViz2)
-    // Unit conversion via motorRevToJointRad() — see motor_addressing.h.
-    sensor_msgs::msg::JointState js;
-    js.header.stamp = this->now();
-    js.name.resize(NUM_MOTORS + NUM_GRIPPER_JOINTS);
-    js.position.resize(NUM_MOTORS + NUM_GRIPPER_JOINTS);
-    js.velocity.resize(NUM_MOTORS + NUM_GRIPPER_JOINTS);
-
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        js.name[i]     = ARM_JOINTS[i].urdf_joint_name;
-        js.position[i] = motorRevToJointRad(i, telem_[i].position);
-        js.velocity[i] = motorRevPerSecToJointRadPerSec(i, telem_[i].velocity);
-    }
-    for (int g = 0; g < NUM_GRIPPER_JOINTS; g++) {
-        js.name[NUM_MOTORS + g]     = GRIPPER_JOINT_NAMES[g];
-        js.position[NUM_MOTORS + g] = 0.0;
-        js.velocity[NUM_MOTORS + g] = 0.0;
-    }
-    joint_state_pub_->publish(js);
+    // ── Stage 9: safety + publish (unchanged, but read motor_cmds_ for des_) ─
+    checkAlerts();
+    // ... your existing arm_feedback / MoteusArmStatus / joint_states publish,
+    //     with active_cmds_[i]  ->  motor_cmds_[i]  in the des_position/des_velocity lines.
 }
 
 

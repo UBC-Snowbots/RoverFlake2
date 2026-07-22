@@ -172,9 +172,12 @@ private:
     //                   stays set until a stop or override arrives
     // -------------------------------------------------------------------------
     std::mutex cmd_mutex_;
-    std::array<MotorCommand, NUM_MOTORS> pending_cmds_{};
-    std::array<MotorCommand, NUM_MOTORS> active_cmds_{};
-
+// REMOVE:  pending_cmds_, active_cmds_
+// ADD:
+std::array<MotorCommand, NUM_AXES>   pending_axis_cmds_{};  // ROS intake (axis space)
+std::array<MotorCommand, NUM_AXES>   axis_cmds_{};          // resolved desired (axis space)
+std::array<MotorCommand, NUM_MOTORS> motor_cmds_{};         // transformed (motor space) — only thing framed
+std::array<bool, NUM_MOTORS>         motor_zero_req_{};     // 'd exact 0' side-channel (motor space)
     // -------------------------------------------------------------------------
     // Telemetry (see arm_telemetry.h for struct definition)
     // Updated each poll cycle from CAN reply frames.
