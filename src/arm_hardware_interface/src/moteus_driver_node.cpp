@@ -56,6 +56,8 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     feedback_pub_  = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
     joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
     config_log_pub_  = this->create_publisher<std_msgs::msg::String>("/arm/config_log", log_qos);
+    arm_feedback_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
+    
 
     command_sub_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos,
@@ -342,11 +344,48 @@ void MoteusDriverNode::poll() {
                 axis.state = AxisState::HOMING;
             }
         }
+        
+        if(axis.state == AxisState::GOING_TO_PRESET_POSITION)
+        {
+            if(axis.index == 5)
+            {
+                // Axis 5 drives to idle; axis 6 holds current (it isn't homed,
+                // so an absolute idle_position[5] target is meaningless).
+                auto& c4 = active_cmds_[4];
+                c4.active = true;  c4.is_stop = false;  c4.is_zero = false;
+                c4.position = AxisConfig::idle_position[4];   // real axis-space target
+                c4.velocity = NAN;
+                c4.max_velocity = 0.1f;  c4.max_acceleration = 0.1f;
+
+                auto& c5 = active_cmds_[5];
+                c5.active = true;  c5.is_stop = false;  c5.is_zero = false;
+                c5.position = axes[5].position;               // HOLD, don't chase idle
+                c5.velocity = NAN;
+                c5.max_velocity = 0.1f;  c5.max_acceleration = 0.1f;
+
+                // arrival keyed on axis 5 only — axis 6 isn't going anywhere
+                if(std::fabs(axes[4].position - AxisConfig::idle_position[4]) < 0.01f)
+                {
+                    axes[4].state = AxisState::RUNNING_OK;
+                    // axes[5].state = AxisState::RUNNING_OK;
+                }
+            }
+            else
+            {
+                auto& cmd = active_cmds_[axis.index];
+                cmd.active = true;  cmd.is_stop = false;  cmd.is_zero = false;
+                cmd.position = AxisConfig::idle_position[axis.index];
+                cmd.velocity = NAN;
+                cmd.max_velocity = 0.1f;  cmd.max_acceleration = 0.1f;
+                if(std::fabs(axes[axis.index].position - AxisConfig::idle_position[axis.index]) < 0.01f)
+                    axes[axis.index].state = AxisState::RUNNING_OK;
+            }
+        }
 
         if(axis.state == AxisState::HOMING)
         {
             // Check limit switch
-            if(axis.limit_switch)
+            if(axis.limit_switch )
             {
                 // Limit switch is pressed, homing complete
                 RCLCPP_INFO(this->get_logger(), "Axis %i Limit Switch Triggered. Homing Complete!", axis.index + 1);
@@ -360,41 +399,50 @@ void MoteusDriverNode::poll() {
                      zero_position(static_cast<MotorIndex>(axis.index));
 
                 }
-                axis.state = AxisState::RUNNING_OK;
+                axis.state = AxisState::GOING_TO_PRESET_POSITION;
 
 
                 int i = axis.index;
                 if(i == static_cast<int>(AxisIndex::AXIS_5))
                 {
-                    axis.state = AxisState::RUNNING_OK;
-                    axes[5].state = AxisState::RUNNING_OK;
-                    int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
-                    int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
-                    // Special case for differential axes
-                    float target_5 = (AxisConfig::idle_position[axis.index]  * AxisConfig::homing_direction[m5_i] * -1);
-                    auto& cmd_5      = active_cmds_[m5_i];
-                    cmd_5.active     = true;
-                    cmd_5.is_stop    = false;
-                    cmd_5.is_zero    = false;
-                    cmd_5.position   = target_5;
-                    cmd_5.max_acceleration = 0.1;
-                    cmd_5.max_velocity = 0.1;
-                    cmd_5.max_torque = NAN;
+                    axis.state = AxisState::GOING_TO_PRESET_POSITION;
+                    // axes[5].state = AxisState::GOING_TO_PRESET_POSITION;
+                    // int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
+                    // int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
+                    // // Special case for differential axes
+                    // float target_5 = (AxisConfig::idle_position[axis.index]  * AxisConfig::homing_direction[m5_i] * -1);
+                    // auto& cmd_5      = active_cmds_[m5_i];
+                    // cmd_5.active     = true;
+                    // cmd_5.is_stop    = false;
+                    // cmd_5.is_zero    = false;
+                    // cmd_5.position   = target_5;
+                    // cmd_5.max_acceleration = 0.1;
+                    // cmd_5.max_velocity = 0.1;
+                    // cmd_5.max_torque = NAN;
 
-                    // Tell axis 6 to hold position
-                    float target_6 =  (AxisConfig::idle_position[m6_i]  * AxisConfig::homing_direction[m5_i] * -1);
-                    auto& cmd_6      = active_cmds_[m6_i];
-                    cmd_6.active     = true;
-                    cmd_6.is_stop    = false;
-                    cmd_6.is_zero    = false;
-                    cmd_6.position   = target_6; //telem_[m6_i].position; 
-                    // cmd_6.velocity   = 0.0;
-                    cmd_6.max_acceleration = 0.1;
-                    cmd_6.max_velocity = 0.1;
-                    cmd_6.max_torque = NAN;
+                    // // MUST set the axis-6 half so the transform's 2nd input is real, not stale.
+                    // active_cmds_[5].active   = true;
+                    // active_cmds_[5].is_stop  = false;
+                    // active_cmds_[5].is_zero  = false;
+                    // active_cmds_[5].position = axes[5].position;   // hold
+                    // active_cmds_[5].velocity = NAN;
+                    // active_cmds_[5].max_velocity     = AxisConfig::homing_speed_revps[5];
+                    // active_cmds_[5].max_acceleration = 0.1;
+
+                    // float target_6 =  (AxisConfig::idle_position[m6_i]  * AxisConfig::homing_direction[m5_i] * -1);
+                    // auto& cmd_6      = active_cmds_[m6_i];
+                    // cmd_6.active     = true;
+                    // cmd_6.is_stop    = false;
+                    // cmd_6.is_zero    = false;
+                    // cmd_6.position   = target_6; //telem_[m6_i].position; 
+                    // // cmd_6.velocity   = 0.0;
+                    // cmd_6.max_acceleration = 0.1;
+                    // cmd_6.max_velocity = 0.1;
+                    // cmd_6.max_torque = NAN;
                 }
                 else if (i == static_cast<int>(AxisIndex::AXIS_6))
                 {
+
                 }
                 else
                 {
@@ -410,6 +458,9 @@ void MoteusDriverNode::poll() {
                 cmd.max_acceleration = 0.1;
                 cmd.max_velocity = 0.1;
                 cmd.max_torque = NAN;
+
+
+
                 }
 
             } 
@@ -417,34 +468,52 @@ void MoteusDriverNode::poll() {
             {
                 // Move the motor a little tiny bit
                 constexpr float kHomingStepRev = 0.05f;  // ~0.7 deg motor/cycle
-                
+
                 int i = axis.index;
                 if(i == static_cast<int>(AxisIndex::AXIS_5))
                 {
-                    int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
-                    int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
-                    // Special case for differential axes
-                    float target_5 = telem_[m5_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
-                    auto& cmd_5      = active_cmds_[m5_i];
-                    cmd_5.active     = true;
-                    cmd_5.is_stop    = false;
-                    cmd_5.is_zero    = false;
-                    cmd_5.position   = target_5;
-                    cmd_5.max_acceleration = 0.1;
-                    cmd_5.max_velocity = AxisConfig::homing_speed_revps[m5_i];
-                    cmd_5.max_torque = NAN;
+                        // Axis space in, Step 2b does the ONE transform to motor space.
+                        // Drive axis 5 toward its switch; hold axis 6.
+                        active_cmds_[4].active   = true;
+                        active_cmds_[4].is_stop  = false;
+                        active_cmds_[4].is_zero  = false;
+                        active_cmds_[4].position = axes[4].position + (kHomingStepRev * axis.homing_direction);
+                        active_cmds_[4].velocity = NAN;
+                        active_cmds_[4].max_velocity     = AxisConfig::homing_speed_revps[4];
+                        active_cmds_[4].max_acceleration = 0.1;
 
-                    // Tell axis 6 to hold position
-                    float target_6 = telem_[m6_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
-                    auto& cmd_6      = active_cmds_[m6_i];
-                    cmd_6.active     = true;
-                    cmd_6.is_stop    = false;
-                    cmd_6.is_zero    = false;
-                    cmd_6.position   = target_6; //telem_[m6_i].position; 
-                    // cmd_6.velocity   = 0.0;
-                    cmd_6.max_acceleration = 0.1;
-                    cmd_6.max_velocity = AxisConfig::homing_speed_revps[m6_i];
-                    cmd_6.max_torque = NAN;
+                        // MUST set the axis-6 half so the transform's 2nd input is real, not stale.
+                        active_cmds_[5].active   = true;
+                        active_cmds_[5].is_stop  = false;
+                        active_cmds_[5].is_zero  = false;
+                        active_cmds_[5].position = axes[5].position;   // hold
+                        active_cmds_[5].velocity = NAN;
+                        active_cmds_[5].max_velocity     = AxisConfig::homing_speed_revps[5];
+                        active_cmds_[5].max_acceleration = 0.1;
+                    // int m5_i = static_cast<int>(MotorIndex::MOTOR_5);
+                    // int m6_i = static_cast<int>(MotorIndex::MOTOR_6);
+                    // // Special case for differential axes
+                    // float target_5 = telem_[m5_i].position + (kHomingStepRev * AxisConfig::homing_direction[m5_i]);
+                    // auto& cmd_5      = active_cmds_[m5_i];
+                    // cmd_5.active     = true;
+                    // cmd_5.is_stop    = false;
+                    // cmd_5.is_zero    = false;
+                    // cmd_5.position   = target_5;
+                    // cmd_5.max_acceleration = 0.1;
+                    // cmd_5.max_velocity = AxisConfig::homing_speed_revps[m5_i];
+                    // cmd_5.max_torque = NAN;
+
+                // Tell axis 6 to hold position
+                    // float target_6 = telem_[m6_i].position; //+ (kHomingStepRev * AxisConfig::homing_direction[m5_i]); // Motor 5 and 6 directions are flipped, but we still need to refrence based on Axis 5.
+                    // auto& cmd_6      = active_cmds_[m6_i];
+                    // cmd_6.active     = true;
+                    // cmd_6.is_stop    = false;
+                    // cmd_6.is_zero    = false;
+                    // cmd_6.position   = target_6; //telem_[m6_i].position; 
+                    // // cmd_6.velocity   = 0.0;
+                    // cmd_6.max_acceleration = 0.1;
+                    // cmd_6.max_velocity = AxisConfig::homing_speed_revps[m6_i];
+                    // cmd_6.max_torque = NAN;
                 }
                 else if (i == static_cast<int>(AxisIndex::AXIS_6))
                 {
@@ -478,9 +547,8 @@ void MoteusDriverNode::poll() {
         active_cmds_[4].active = true;
         active_cmds_[5].active = true;
 
-
-
-        if(axes[4].state == AxisState::HOMING || axes[5].state == AxisState::HOMING)
+        if(axes[4].state == AxisState::HOMING || axes[5].state == AxisState::HOMING ||
+            axes[4].state == AxisState::GOING_TO_PRESET_POSITION || axes[5].state == AxisState::GOING_TO_PRESET_POSITION)
         {
 
             float m5, m6;
@@ -500,6 +568,7 @@ void MoteusDriverNode::poll() {
             active_cmds_[5].max_velocity = AxisConfig::homing_speed_revps[5];
             active_cmds_[5].max_acceleration = 0.1;
         } else {
+            // Swap back to velocity control
             float m5, m6;
             differential_drive(
                 static_cast<float>(active_cmds_[4].velocity),
@@ -567,13 +636,35 @@ void MoteusDriverNode::poll() {
         #endif
         t.limit_switch = (r.aux2_gpio > 0); //TODO this is pretty fragile... if pins are not configured then is fucky wucky
         axes[id - 1].limit_switch = t.limit_switch; // Update for IPC
+        if((id -1) != static_cast<int>(MotorIndex::MOTOR_5) && (id - 1) != static_cast<int>(MotorIndex::MOTOR_6))
+        {
+            axes[id - 1].position = t.position;
+
+        } else {
+            // Handle motor 5 / 6, but wait for both motors data to update
+            if((id - 1) == static_cast<int>(MotorIndex::MOTOR_6))
+            {
+                float a5, a6;
+                differential_drive_inverse(telem_[4].position, telem_[5].position, a5, a6);
+                axes[4].position = a5;
+                axes[5].position = a6;
+            }
+        }
     }
 
     // Step 5 — safety
     // checkFaults();
     checkAlerts();
 
-
+    // publish to arm feedback (not moteus feedback, bandaid)
+    rover_msgs::msg::ArmCommand arm_feedback_msg;
+    arm_feedback_msg.positions.resize(NUM_AXES);
+    arm_feedback_msg.velocities.resize(NUM_AXES);
+    for(auto axis : axes)
+    {
+        arm_feedback_msg.positions[axis.index] = axis.position;
+    }
+    arm_feedback_pub->publish(arm_feedback_msg);
 
     // Step 6a — /arm/moteus_feedback
     rover_msgs::msg::MoteusArmStatus status_msg;
@@ -597,6 +688,7 @@ void MoteusDriverNode::poll() {
         cfg.cmd_timeout_s     = c.def_timeout;
         cfg.gear_reduction    = c.gear_reduction;
 
+
         auto& t = telem_[i];
         auto& s = status_msg.status[i];
         s.curr_position        = t.position;
@@ -610,7 +702,7 @@ void MoteusDriverNode::poll() {
         s.moteus_fault         = static_cast<int16_t>(t.fault);
         // Desired setpoints from the last command sent to this motor
         s.des_position = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].position : NAN);
-        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);\
+        s.des_velocity = static_cast<float>(active_cmds_[i].active ? active_cmds_[i].velocity : NAN);
         status_msg.limit_switches[i] = t.limit_switch;
     }
     feedback_pub_->publish(status_msg);

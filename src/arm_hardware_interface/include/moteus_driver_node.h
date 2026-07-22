@@ -62,6 +62,7 @@ enum class AxisState
     INIT,
     REQUESTING_HOMING,
     HOMING,
+    GOING_TO_PRESET_POSITION,
     RUNNING_OK,
     ERROR
 };
@@ -150,6 +151,7 @@ private:
     rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr         feedback_pub_;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr             joint_state_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                    config_log_pub_;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr           arm_feedback_pub;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;

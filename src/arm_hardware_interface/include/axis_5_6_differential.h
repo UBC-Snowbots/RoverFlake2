@@ -29,3 +29,17 @@ inline void differential_drive(float axis5_input, float axis6_input,
     // Motors are swapped, so we invert one
     motor6_output = -motor6_output;
 }
+
+
+inline void differential_drive_inverse(float motor5_input, float motor6_input,
+                                       float& axis5_output, float& axis6_output)
+{
+    // Exact inverse of differential_drive():
+    //   m5 = a5 + a6
+    //   m6 = a6 - a5
+    // =>
+    //   a5 = (m5 - m6) / 2
+    //   a6 = (m5 + m6) / 2
+    axis5_output = (motor5_input - motor6_input) * 0.5f;
+    axis6_output = (motor5_input + motor6_input) * 0.5f;
+}

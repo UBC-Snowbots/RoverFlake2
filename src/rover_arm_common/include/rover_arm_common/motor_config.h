@@ -195,7 +195,7 @@ namespace AxisConfig {
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
         /*AXIS 4 */   0.1,
-        /*AXIS 5 */   0.1,
+        /*AXIS 5 */   -0.1,
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.1 };
     
