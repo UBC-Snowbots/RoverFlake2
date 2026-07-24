@@ -205,12 +205,13 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
         for (int a = 0; a < NUM_AXES; a++) {
             
             double vd = (a < (int)msg->velocities.size()) ? msg->velocities[a] : NAN;
-            if (std::isnan(vd)) continue;
+            if (std::isnan(vd)) continue; // Was breaking?
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
             p.position = NAN;
             p.velocity = degreesToRevolution(vd);
-            p.max_velocity = degreesToRevolution(vd);
+            // p.max_velocity = degreesToRevolution(vd);
+            p.max_velocity = AxisConfig::max_running_speed[a];
             p.max_torque = NAN;
         }
         return;
@@ -391,9 +392,19 @@ void MoteusDriverNode::poll() {
 
     // ── Stage 4: THE transform — axis_cmds_ -> motor_cmds_ (only crossing point)
     for (int m = 0; m < NUM_MOTORS; m++)
-        if (m != A5 && m != A6) motor_cmds_[m] = axis_cmds_[m];   // straight-through
+    {
+
+    
+        if (m != A5 && m != A6)
+        {
+            motor_cmds_[m] = axis_cmds_[m];   // straight-through
+            continue;
+        } 
     combine_wrist(axis_cmds_[A5], axis_cmds_[A6], motor_cmds_[A5], motor_cmds_[A6]);
 
+    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[A5].velocity, axis_cmds_[A6].velocity, motor_cmds_[A5].velocity, motor_cmds_[A6].velocity);
+    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[A5].position, axis_cmds_[A6].position, motor_cmds_[A5].position, motor_cmds_[A6].position);
+    }
     // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
     for (int m = 0; m < NUM_MOTORS; m++) {
         if (motor_zero_req_[m]) { zero_position((MotorIndex)m); motor_zero_req_[m] = false;

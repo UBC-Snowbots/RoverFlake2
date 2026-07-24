@@ -164,8 +164,8 @@ void MainHMINode::handleHomeAllButtonClick(){
 void MainHMINode::handleIncAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = CMD_ABS_VEL;
-    vel_msg.velocities.resize(6);
-    for(int i = 0; i < 6; i++){
+    vel_msg.velocities.resize(7);
+    for(int i = 0; i < 7; i++){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
@@ -183,8 +183,8 @@ void MainHMINode::handleIncAxisButtonClick(int index){
 void MainHMINode::handleAxisButtonRelease(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = CMD_ABS_VEL;
-    vel_msg.velocities.resize(6);
-    for(int i = 0; i < 6; i++){
+    vel_msg.velocities.resize(7);
+    for(int i = 0; i < 7; i++){
         vel_msg.velocities[i] = 0;
     }
     arm_cmd_pub->publish(vel_msg);
@@ -292,10 +292,10 @@ void MainHMINode::handleDecEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
         vel_msg.velocities.resize(7);
-    for(int i = 0; i < 6; i++){
+    for(int i = 0; i < 7; i++){
             vel_msg.velocities[i] = 0;
     }
-    vel_msg.velocities[6] = 10;
+    vel_msg.velocities[6] = -40;
     vel_msg.end_effector = ee_speed * -1;
     arm_cmd_pub->publish(vel_msg);
 }
@@ -303,10 +303,10 @@ void MainHMINode::handleIncEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
         vel_msg.velocities.resize(7);
-    for(int i = 0; i < 6; i++){
+    for(int i = 0; i < 7; i++){
             vel_msg.velocities[i] = 0;
     }
-    vel_msg.velocities[6] = 10;
+    vel_msg.velocities[6] = 40;
     vel_msg.end_effector = ee_speed;
     arm_cmd_pub->publish(vel_msg);
 }
@@ -316,8 +316,8 @@ void MainHMINode::handleIncEEButtonClick(){
 void MainHMINode::handleDecAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(6);
-    for(int i = 0; i < 6; i++){
+        vel_msg.velocities.resize(7);
+    for(int i = 0; i < 7; i++){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
@@ -349,8 +349,8 @@ void MainHMINode::handleIKSpeedUpdate(int i) {
 void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-            vel_msg.velocities.resize(6);
-    for(int i = 0; i < 6; i++){
+            vel_msg.velocities.resize(7);
+    for(int i = 0; i < 7; i++){
             vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
     vel_msg.end_effector = 0;

@@ -179,7 +179,7 @@ namespace AxisConfig {
         /*AXIS 4 */   0.1,
         /*AXIS 5 */   0.1,
         /*AXIS 6 */   0.1,
-        /*AXIS EE */  0.1 };
+        /*AXIS EE */  0.5 };
 
     float max_running_accel[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   0.5,
