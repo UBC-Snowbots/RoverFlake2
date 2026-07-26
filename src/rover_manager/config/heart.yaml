@@ -30,7 +30,7 @@
     subsystems_onboard_nuc:
       - "drive_interface"
       - "arm_interface"
-      - "gnss_interface"
+      #- "gnss_interface"
     subsystems_onboard_jetson: # Not implemented in the dashboard gui yet
       - "yolo_detection"
       - "aruco_detection"
@@ -63,7 +63,7 @@
       drive_interface: "ros2 launch drive_control drive_control_launch.launch.py"
       # drive_control: "ros2 launch drive_control drive_the_rover.launch.py"
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
-      gnss_interface: "ros2 run rover_gnss nmea_reader"
+      #gnss_interface: "ros2 run rover_gnss nmea_reader"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
