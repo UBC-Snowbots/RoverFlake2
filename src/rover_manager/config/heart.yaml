@@ -27,7 +27,6 @@
     heart_feedback_topic: "/heart/running_subsystems"
     subsystems_control_base:
       - "drive_control"
-      - "banana"
       - "apple"
     subsystems_onboard_nuc:
       - "drive_interface"
@@ -55,7 +54,6 @@
     subsystems:
       # drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
       drive_control: "ros2 run joy joy_node"
-      banana: "notify-send hello"
       apple: "notify-send apple"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
