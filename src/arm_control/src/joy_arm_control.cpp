@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
 bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int index) {
 
-    if (index >= static_cast<int>(msg->buttons.size()) && index >= 0)
+    if (index >= static_cast<int>(msg->buttons.size()) || index < 0)
     {
         return false; // index is out of bounds.
     }
@@ -100,8 +100,8 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         RCLCPP_ERROR(this->get_logger(), "Failure to parse gamepad input. Disregarding joy message");
         return;
     }
-    // Handle home, return early if user asked to home so message rate stays constant.
 
+    // Handle home, return early if user asked to home so message rate stays constant.
     bool home_btn = control_input.home;
     if(home_btn && !prev_home_btn_)
     {
@@ -121,14 +121,11 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         this->fk = !this->fk; // Flip it
     }
 
-
     if(this->fk)
     {
     rover_msgs::msg::ArmCommand target;
     target.positions.resize(NUM_AXES);
     target.velocities.resize(NUM_AXES);
-
-
 
     if(CONTROL_MODE == POSITION_CONTROL){
         target.cmd_type = 'P';
@@ -147,7 +144,6 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
         arm_publisher->publish(target);
     } else {
-
 
     // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
     auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
@@ -220,17 +216,13 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
     prev_gripper_btn_ = gripper_btn;
 
-
-
     // NOTE: ArmCommand (joint velocities + gripper) is now published in
     // trajectory_callback(), which fires whenever MoveIt Servo outputs a
     // JointTrajectory.  This ensures the physical arm receives the actual
     // IK-solved velocities rather than zeros.
 
-
     last_control_input = control_input;
 }
-
 
 void ArmJoy::trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg) {
     if (msg->points.empty()) return;

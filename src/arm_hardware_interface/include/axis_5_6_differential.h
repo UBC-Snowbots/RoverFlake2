@@ -16,9 +16,6 @@
 // Call site: moteus_driver_node.cpp poll() step 2b for motors at indices 4 & 5.
 // =============================================================================
 
-
-// #define DEBUG_MSGS
-
 inline void differential_drive(float axis5_input, float axis6_input,
                                 float& motor5_output, float& motor6_output)
 {

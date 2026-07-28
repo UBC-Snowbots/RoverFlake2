@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cmath>  // M_PI
+#include <cmath>  // M_PI, cstdint
 
 // =============================================================================
 // Motor Addressing & Joint Mapping  (motor_addressing.h)
@@ -26,38 +26,36 @@
 //   a physically meaningful /joint_states for RViz.
 // =============================================================================
 
-enum class MotorIndex : int {
-    MOTOR_1 = 0, // Axis 1 Motor
-    MOTOR_2 = 1, // Axis 2 Motor
-    MOTOR_3 = 2, // Axis 3 Motor
-    MOTOR_4 = 3, // Axis 4 Motor
-    MOTOR_5 = 4, // Axis 5/6 Motor A
-    MOTOR_6 = 5, // Axis 5/6 Motor B
-    MOTOR_EE = 6, // EE Axis Motor
+enum MotorIndex : uint8_t {
+    MOTOR_1_INDEX = 0, // Axis 1 Motor
+    MOTOR_2_INDEX = 1, // Axis 2 Motor
+    MOTOR_3_INDEX = 2, // Axis 3 Motor
+    MOTOR_4_INDEX = 3, // Axis 4 Motor
+    MOTOR_5_INDEX = 4, // Axis 5/6 Motor A
+    MOTOR_6_INDEX = 5, // Axis 5/6 Motor B
+    MOTOR_EE_INDEX = 6, // EE Axis Motor
 };
 
-enum class AxisIndex : int {
-    AXIS_1 = 0, // Base
-    AXIS_2 = 1, // Shoulder
-    AXIS_3 = 2, // Elbow
-    AXIS_4 = 3, // Elbow Twist
-    AXIS_5 = 4, // Wrist Pitch
-    AXIS_6 = 5, // Wrist Roll
-    AXIS_EE = 6, // End Effector Linear Axis
+enum AxisIndex : uint8_t {
+    AXIS_1_INDEX = 0, // Base
+    AXIS_2_INDEX = 1, // Shoulder
+    AXIS_3_INDEX = 2, // Elbow
+    AXIS_4_INDEX = 3, // Elbow Twist
+    AXIS_5_INDEX = 4, // Wrist Pitch
+    AXIS_6_INDEX = 5, // Wrist Roll
+    AXIS_EE_INDEX = 6, // End Effector Linear Axis
 };
 
-// enum AxisIndex : int {
-//     AXIS_1 = 0, // Base
-//     AXIS_2 = 1, // Shoulder
-//     AXIS_3 = 2, // Elbow
-//     AXIS_4 = 3, // Elbow Twist
-//     AXIS_5 = 4, // Wrist Pitch
-//     AXIS_6 = 5, // Wrist Roll
-//     AXIS_EE = 6, // End Effector Linear Axis
-// };
+enum IkIndex : uint8_t {
+    IK_LIN_X_INDEX = 0,
+    IK_LIN_Y_INDEX = 1,
+    IK_LIN_Z_INDEX = 2,
+    IK_ANG_X_INDEX = 3,
+    IK_ANG_Y_INDEX = 4,
+    IK_ANG_Z_INDEX = 5,
+};
+
 constexpr int NUM_AXES = 7;
-
-
 constexpr int NUM_MOTORS = 7;
 
 // Gripper finger joints have no motors.  They are published as static 0 in

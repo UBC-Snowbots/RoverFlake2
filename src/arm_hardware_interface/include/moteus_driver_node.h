@@ -130,11 +130,10 @@ private:
     // Publish a string to /arm/config_log (shown in the HMI command log panel)
     void publishLog(const std::string& msg);
 
-    void zero_position(MotorIndex index);
-    void set_position(MotorIndex index, float position_revs);
-
+    void zero_position(uint8_t index);
+    void set_position(uint8_t index, float position_revs);
     
-    void home_axis(AxisIndex index);
+    void home_axis(uint8_t index);
 
     Axis axes[NUM_AXES];
 

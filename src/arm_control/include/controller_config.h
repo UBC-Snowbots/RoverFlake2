@@ -16,7 +16,7 @@
 #pragma once
 
 #include <sensor_msgs/msg/joy.hpp>
-#include <rover_arm_common/ArmSerialProtocol.h>
+#include <rover_arm_common/motor_addressing.h>
 inline static constexpr int MAX_BUTTONS = 20; // can be decreased
 inline static constexpr int MAX_AXES    = 10;
 
@@ -176,8 +176,9 @@ namespace ArmControllerConfig { // Can make into a class later?
     Note: the above is based on control base arm joysticks "default", we can create other 
     */
 
-    float ee_speed_scale = 60;
-    float axis_speed_scale = 10; //Degrress? - max degrees/s
+
+    float ee_speed_scale = 60; // Currently Arbitrary units.
+    float axis_speed_scale = 10; // Degrees. Note that the /joint_states topic and certain topics may be in rads or revolutions. For arm commands, we assume Degrees.
 
     struct ArmControlInput {
         // Static arrays, not vectors here
@@ -194,6 +195,7 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX:
             {
                 using namespace ps4_index;
+                // Example to use the L2 R2 triggers
                 // arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
                 arm_control_msg.fk_axes[AXIS_1_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X];
                 arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
@@ -218,7 +220,6 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::PS4_JOY_LINUX_ANDRES:
             {
                 using namespace ps4_index;
-                // arm_control_msg.fk_axes[AXIS_1_INDEX] = ((joy_msg->axes[axes::L2] - joy_msg->axes[axes::R2])) / (2.0f);
                 arm_control_msg.fk_axes[AXIS_1_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_X] * -1;
                 arm_control_msg.fk_axes[AXIS_2_INDEX] = joy_msg->axes[axes::LEFT_JOYSTICK_Y] * -1;
                 arm_control_msg.fk_axes[AXIS_3_INDEX] = joy_msg->axes[axes::RIGHT_JOYSTICK_Y];
@@ -237,7 +238,6 @@ namespace ArmControllerConfig { // Can make into a class later?
 
                 arm_control_msg.end_effector = joy_msg->buttons[buttons::L1] - joy_msg->buttons[buttons::R1];
 
-                // arm_control_msg.end_effector = (joy_msg->axes[axes::R2] - joy_msg->axes[axes::L2]);
     
                 arm_control_msg.home = joy_msg->buttons[buttons::SHARE];
                 arm_control_msg.kinematics_mode_switch = joy_msg->buttons[buttons::CIRCLE];

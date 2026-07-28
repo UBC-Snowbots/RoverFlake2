@@ -13,8 +13,6 @@ static constexpr uint32_t ARM_RUN_RATE_MS = (1000u / 100u); // 100 hz
 using namespace std::chrono_literals;
 
 namespace {
-constexpr int A5 = 4;  // axis/motor index of wrist axis 5
-constexpr int A6 = 5;  // axis/motor index of wrist axis 6
 constexpr float kHomingStepRev = 0.05f;
 
 inline bool stateMachineOwns(AxisState s) {
@@ -22,7 +20,6 @@ inline bool stateMachineOwns(AxisState s) {
         || s == AxisState::HOMING
         || s == AxisState::GOING_TO_PRESET_POSITION;
 }
-
 
 // Pure axis->motor for the coupled wrist. Assumes both inputs already
 // coherent (same mode, shared limits) — resolveWrist() guarantees that.
@@ -91,11 +88,11 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
         "/arm/config_update", qos,
         std::bind(&MoteusDriverNode::configUpdateCallback, this, std::placeholders::_1));
+        
+        // TODO Calibration in a future PR
 
-    calib_pub_ = this->create_publisher<rover_msgs::msg::MoteusCalibrationStatus>(
-        "/arm/calibration_status", qos);
-
-    // TODO Calibration in a future PR
+    // calib_pub_ = this->create_publisher<rover_msgs::msg::MoteusCalibrationStatus>(
+    //     "/arm/calibration_status", qos);
     // calib_sub_ = this->create_subscription<rover_msgs::msg::MoteusCalibrationRequest>(
     //     "/arm/calibration_request", qos,
     //     std::bind(&MoteusDriverNode::calibrationCallback, this, std::placeholders::_1));
@@ -162,7 +159,6 @@ void MoteusDriverNode::configureMotor(int motor_id, mot::Controller& ctrl) {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 // Command callback — ROS topic → pending_cmds_[]
 // (See arm_commands.h for command code definitions and MotorCommand struct.)
@@ -216,8 +212,8 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     }
 
     if (cmd_type == CMD_HOME) {
-        if (msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES) { home_axis((AxisIndex)msg->cmd_value); return; }
-        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE) { home_axis(AxisIndex::AXIS_5); return; }
+        if (msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES) { home_axis(msg->cmd_value); return; }
+        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE) { home_axis(AXIS_5_INDEX); return; }
         else if (msg->cmd_value == HOME_VALUE_ALL_AXES_AND_EE)    { /* EE TODO */ return; }
         RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
         return;
@@ -226,7 +222,7 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
 }
 
 // Zero position of a motor.
-void MoteusDriverNode::zero_position(MotorIndex index)
+void MoteusDriverNode::zero_position(uint8_t index)
 {
     int i = static_cast<int>(index);
 
@@ -237,7 +233,7 @@ void MoteusDriverNode::zero_position(MotorIndex index)
         + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
 }
 
-void MoteusDriverNode::set_position(MotorIndex index, float position_revs)
+void MoteusDriverNode::set_position(uint8_t index, float position_revs)
 {
   int i = static_cast<int>(index);
 
@@ -246,10 +242,10 @@ void MoteusDriverNode::set_position(MotorIndex index, float position_revs)
   controllers_[i]->DiagnosticCommand(cmd);
 }
 
-void MoteusDriverNode::home_axis(AxisIndex index)
+void MoteusDriverNode::home_axis(uint8_t index)
 {
     // Just set axis state to request homing
-    this->axes[static_cast<int>(index)].state = AxisState::REQUESTING_HOMING;
+    this->axes[index].state = AxisState::REQUESTING_HOMING;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +259,7 @@ void MoteusDriverNode::home_axis(AxisIndex index)
 // Step 6: publish /arm/moteus_feedback and /joint_states
 // ---------------------------------------------------------------------------
 
-// Pending commands from ros -> merge into active commands, but are rejectev if there is homing and whatnot.
+// Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
 // Homing is then Checked. 
 void MoteusDriverNode::run() {
     if (calibrating_.load()) return;
@@ -298,13 +294,13 @@ void MoteusDriverNode::run() {
             if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
-            } else if (i == A6) {
+            } else if (i == AXIS_6_INDEX) {
                 RCLCPP_WARN(this->get_logger(), "Axis 6 homing not implemented (runs relative)");
                 ax.state = AxisState::RUNNING_OK;
             } else {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch healthy. Homing accepted", i + 1);
-                if (i != A5)  // wrist is continuous — no seed needed
-                    set_position((MotorIndex)i, AxisConfig::max_position_rev[i] - 0.01f);
+                if (i != AXIS_5_INDEX)  // wrist is continuous — no seed needed
+                    set_position(i, AxisConfig::max_position_rev[i] - 0.01f);
                 ax.state = AxisState::HOMING;
             }
             break;
@@ -312,8 +308,8 @@ void MoteusDriverNode::run() {
         case AxisState::HOMING:
             if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
-                if (i == A5) { zero_position(MotorIndex::MOTOR_5); zero_position(MotorIndex::MOTOR_6); }
-                else         { zero_position((MotorIndex)i); }
+                if (i == AXIS_5_INDEX) { zero_position(MOTOR_5_INDEX); zero_position(MOTOR_6_INDEX); }
+                else         { zero_position(i); }
                 ax.state = AxisState::GOING_TO_PRESET_POSITION;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
@@ -331,24 +327,27 @@ void MoteusDriverNode::run() {
             c.position = AxisConfig::idle_position[i];  // axis space
             c.velocity = NAN;
             c.max_velocity = 0.1f; c.max_acceleration = 0.1f; c.max_torque = NAN;
-            if (std::fabs(axes[i].position - AxisConfig::idle_position[i]) < 0.01f) {
+            if (std::fabs(axes[i].position - AxisConfig::idle_position[i]) < 0.01f) 
+            {
                 ax.state = AxisState::RUNNING_OK;
-                if (i == A5) axes[A6].state = AxisState::RUNNING_OK; // axis 6 usable (relative), unhomed
+                if (i == AXIS_5_INDEX) axes[AXIS_6_INDEX].state = AxisState::RUNNING_OK; // axis 6 usable (relative), unhomed
             }
             break;
         }
-        default: break;
+        default: 
+            break;
         }
     }
 
     // ── Stage 3: wrist coherence — make axes 4&5 same mode + shared limits ──
     // Physically the two motors always move as a pair, so one shared vel/accel.
     {
-        auto& a5 = axis_cmds_[A5];
-        auto& a6 = axis_cmds_[A6];
+        auto& a5 = axis_cmds_[AXIS_5_INDEX];
+        auto& a6 = axis_cmds_[AXIS_6_INDEX];
         if (a5.active || a6.active) {
             if (a5.is_stop || a6.is_stop) {
-                a5.active = a6.active = true; a5.is_stop = a6.is_stop = true;
+                a5.active = a6.active = true; 
+                a5.is_stop = a6.is_stop = true;
             } else {
                 bool posMode = (a5.active && !std::isnan(a5.position))
                             || (a6.active && !std::isnan(a6.position));
@@ -363,8 +362,8 @@ void MoteusDriverNode::run() {
                 auto holdVel = [&](auto& c){ c.active=true; c.is_stop=false; c.is_zero=false;
                                              c.position = NAN; c.velocity = 0.0f; };
                 if (posMode) {
-                    if (!a5.active || std::isnan(a5.position)) holdPos(a5, A5);
-                    if (!a6.active || std::isnan(a6.position)) holdPos(a6, A6);
+                    if (!a5.active || std::isnan(a5.position)) holdPos(a5, AXIS_5_INDEX);
+                    if (!a6.active || std::isnan(a6.position)) holdPos(a6, AXIS_6_INDEX);
                     a5.velocity = a6.velocity = NAN;
                 } else {
                     if (!a5.active || std::isnan(a5.velocity)) holdVel(a5);
@@ -383,20 +382,19 @@ void MoteusDriverNode::run() {
     for (int m = 0; m < NUM_MOTORS; m++)
     {
 
-    
-        if (m != A5 && m != A6)
+        if (m != AXIS_5_INDEX && m != AXIS_6_INDEX)
         {
             motor_cmds_[m] = axis_cmds_[m];   // straight-through
             continue;
         } 
-    combine_wrist(axis_cmds_[A5], axis_cmds_[A6], motor_cmds_[A5], motor_cmds_[A6]);
+    combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
 
-    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[A5].velocity, axis_cmds_[A6].velocity, motor_cmds_[A5].velocity, motor_cmds_[A6].velocity);
-    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[A5].position, axis_cmds_[A6].position, motor_cmds_[A5].position, motor_cmds_[A6].position);
+    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
+    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
     }
     // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
     for (int m = 0; m < NUM_MOTORS; m++) {
-        if (motor_zero_req_[m]) { zero_position((MotorIndex)m); motor_zero_req_[m] = false;
+        if (motor_zero_req_[m]) { zero_position(m); motor_zero_req_[m] = false;
                                   motor_cmds_[m].active = false; }
     }
 
@@ -415,12 +413,12 @@ void MoteusDriverNode::run() {
     // ── Stage 7: bus ────────────────────────────────────────────────────────
     std::vector<mot::CanFdFrame> replies;
     transport_->BlockingCycle(frames.data(), frames.size(), &replies);
-rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
-rover_msgs::msg::ArmCommand arm_feedback_msg;
-arm_feedback_msg.positions.resize(NUM_AXES);
-moteus_ros_msg.status.resize(NUM_AXES);
-moteus_ros_msg.config.resize(NUM_AXES);
-moteus_ros_msg.limit_switches.resize(NUM_AXES);
+    rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
+    rover_msgs::msg::ArmCommand arm_feedback_msg;
+    arm_feedback_msg.positions.resize(NUM_AXES);
+    moteus_ros_msg.status.resize(NUM_AXES);
+    moteus_ros_msg.config.resize(NUM_AXES);
+    moteus_ros_msg.limit_switches.resize(NUM_AXES);
     // ── Stage 8: decode -> telem_, motor->axis (inverse for wrist) ──────────
     for (auto& t : telem_) t.connected = false;
     for (const auto& frame : replies) {
@@ -444,12 +442,12 @@ moteus_ros_msg.limit_switches.resize(NUM_AXES);
 
         moteus_ros_msg.status[id -1].driver_temp_degreesc = t.temperature;
         moteus_ros_msg.limit_switches[id - 1] = t.limit_switch;
-        if (id - 1 != A5 && id - 1 != A6) {
+        if (id - 1 != AXIS_5_INDEX && id - 1 != AXIS_6_INDEX) {
             axes[id - 1].position = t.position;
-        } else if (id - 1 == A6) {  // both wrist replies in — invert together
+        } else if (id - 1 == AXIS_6_INDEX) {  // both wrist replies in — invert together
             float a5p, a6p;
-            differential_drive_inverse(telem_[A5].position, telem_[A6].position, a5p, a6p);
-            axes[A5].position = a5p; axes[A6].position = a6p;
+            differential_drive_inverse(telem_[AXIS_5_INDEX].position, telem_[AXIS_6_INDEX].position, a5p, a6p);
+            axes[AXIS_5_INDEX].position = a5p; axes[AXIS_6_INDEX].position = a6p;
         }
         arm_feedback_msg.positions[id - 1] = axes[id -1].position;
     }
@@ -536,7 +534,6 @@ void MoteusDriverNode::checkAlerts() {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 // Real-time config update — HMI publishes to /arm/config_update
 //
@@ -617,13 +614,14 @@ void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, floa
 // ---------------------------------------------------------------------------
 
 void MoteusDriverNode::publishCalibStatus(int motor_id, int state, const std::string& message) {
-    rover_msgs::msg::MoteusCalibrationStatus s;
-    s.motor_id = motor_id;
-    s.state    = state;
-    s.message  = message;
-    calib_pub_->publish(s);
-    publishLog("# calib motor " + std::to_string(motor_id) + ": " + message);
-    RCLCPP_INFO(this->get_logger(), "[calib] motor %d: %s", motor_id, message.c_str());
+    //! Calibration is not implementet yet
+    // rover_msgs::msg::MoteusCalibrationStatus s;
+    // s.motor_id = motor_id;
+    // s.state    = state;
+    // s.message  = message;
+    // calib_pub_->publish(s);
+    // publishLog("# calib motor " + std::to_string(motor_id) + ": " + message);
+    // RCLCPP_INFO(this->get_logger(), "[calib] motor %d: %s", motor_id, message.c_str());
 }
 
 // ---------------------------------------------------------------------------
