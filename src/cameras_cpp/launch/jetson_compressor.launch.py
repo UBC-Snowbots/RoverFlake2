@@ -12,15 +12,14 @@ def generate_launch_description():
     )
 
     feed_test = Node(
-        package='camera_ros',
-        executable='camera_node',
+        package='v4l2_camera',
+        executable='v4l2_camera_node',
         name='test_camera_node',
         output='screen',
         parameters=[test_params],
         remappings=[
-            ('/test_camera_node/image_raw', '/vehicle_1/rear_feed/image_raw'),  
-            ('/test_camera_node/image_raw/ffmpeg', '/vehicle_1/rear_feed/image_raw/ffmpeg'),
-            ('/test_camera_node/camera_info', '/vehicle_1/rear_feed/camera_info'),
+            ('/image_raw', '/vehicle_1/rear_feed/image_raw'),  
+            ('/image_raw/ffmpeg', '/vehicle_1/rear_feed/image_raw/ffmpeg'),
             # Add more remappings here if needed
         ],
     )

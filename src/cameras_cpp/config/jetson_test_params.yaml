@@ -1,8 +1,7 @@
-/**:
-  test_camera_node:
-    ros__parameters:
-      video_device: "/dev/v4l/by-id/usb-"
-      image_raw:
-        ffmpeg:
-          encoder: "h264_nvmpi"
-          bitrate: 2000000
+test_camera_node:
+  ros__parameters:
+    video_device: "/dev/v4l/by-id/usb-"
+    image_raw:
+      ffmpeg:
+        encoder: "h264_nvmpi"
+        bitrate: 2000000
