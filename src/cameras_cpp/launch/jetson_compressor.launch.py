@@ -1,14 +1,21 @@
+import json
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from ..config.cameras import CAMERAS
-
 def generate_launch_description():
     nodes = []
 
-    for camera_name, camera_params_file in CAMERAS:
+    cameras_config_path = os.path.join(
+        get_package_share_directory('cameras_cpp'),
+        'config', 'cameras.json'
+    )
+    cameras = json.load(open(cameras_config_path))['cameras']
+
+    for camera in cameras:
+        camera_name = camera['name']
+        camera_params_file = camera['params_file']
         camera_params_path = os.path.join(
             get_package_share_directory('cameras_cpp'),
             'config', camera_params_file

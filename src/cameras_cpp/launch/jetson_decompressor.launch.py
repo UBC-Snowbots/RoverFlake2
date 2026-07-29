@@ -1,11 +1,20 @@
+import os
+import json
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-from ..config.cameras import CAMERAS
-
 def generate_launch_description():
     broadcastor_nodes = []
-    for camera_name, _ in CAMERAS:
+
+    cameras_config_path = os.path.join(
+        get_package_share_directory('cameras_cpp'),
+        'config', 'cameras.json'
+    )
+    cameras = json.load(open(cameras_config_path))['cameras']
+
+    for camera in cameras:
+        camera_name = camera['name']
         broadcastor_node = Node(
             package='image_transport',
             executable='republish',
