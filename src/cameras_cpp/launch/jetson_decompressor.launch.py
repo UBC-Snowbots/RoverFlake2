@@ -7,7 +7,7 @@ def generate_launch_description():
         executable='republish',
         name='test_decoder_node',
         remappings=[
-            ('in/ffmpeg', '/vehicle_1/rear_feed/ffmpeg'),
+            ('in/ffmpeg', '/vehicle_1/image_raw/rear_feed/ffmpeg'),
             ('out', '/vehicle_1/rear_feed/image_raw_decoded'),
         ],
         parameters=[
