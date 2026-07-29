@@ -1,5 +1,4 @@
-#ifndef DEATH_RAY_MOTOR_CONTROL_H
-#define DEATH_RAY_MOTOR_CONTROL_H
+#pragma once
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -42,5 +41,3 @@ private:
 
     int steps = 0;
 };
-
-#endif
