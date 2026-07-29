@@ -1,0 +1,8 @@
+{
+    "cameras": [
+        {
+            "name": "front_feed",
+            "params_file": "jetson_test_params.yaml"
+        }
+    ]
+}
