@@ -4,4 +4,4 @@ test_camera_node:
     image_raw:
       ffmpeg:
         encoder: "h264_nvmpi"
-        bitrate: 2000000
+        bit_rate: 2000000
