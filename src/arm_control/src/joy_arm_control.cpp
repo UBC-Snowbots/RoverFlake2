@@ -78,8 +78,15 @@ int main(int argc, char *argv[]) {
 
 // ---------- Helpers ----------
 
-bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx) {
-    return idx >= 0 && idx < static_cast<int>(msg->buttons.size()) && msg->buttons[idx];
+bool ArmJoy::btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int index) {
+
+    if (index >= static_cast<int>(msg->buttons.size()) || index < 0)
+    {
+        return false; // index is out of bounds.
+    }
+
+    // Just return the state of the button
+    return  msg->buttons[index];
 }
 
 // ---------- Callbacks ----------
@@ -94,20 +101,31 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         return;
     }
 
+    // Handle home, return early if user asked to home so message rate stays constant.
+    bool home_btn = control_input.home;
+    if(home_btn && !prev_home_btn_)
+    {
+        RCLCPP_INFO(this->get_logger(), "HOMING AXIS 2");
+        rover_msgs::msg::ArmCommand home_msg;
+        home_msg.cmd_type = CMD_HOME;
+        home_msg.cmd_value = 1; //TODO set to all.
+        arm_publisher->publish(home_msg);
+        return;
+        
+    }
+    prev_home_btn_ = home_btn;
+
     // Handle IK / FK switch
     if(this->last_control_input.kinematics_mode_switch != control_input.kinematics_mode_switch && control_input.kinematics_mode_switch == 1)
     {
         this->fk = !this->fk; // Flip it
     }
 
-
     if(this->fk)
     {
     rover_msgs::msg::ArmCommand target;
-    target.positions.resize(NUM_JOINTS);
-    target.velocities.resize(NUM_JOINTS);
-
-    target.end_effector = control_input.end_effector * ArmControllerConfig::ee_speed_scale;
+    target.positions.resize(NUM_AXES);
+    target.velocities.resize(NUM_AXES);
 
     if(CONTROL_MODE == POSITION_CONTROL){
         target.cmd_type = 'P';
@@ -117,6 +135,8 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
     RCLCPP_WARN(this->get_logger(), "Position control has not been tested on new arm, beware!");
     }else if(CONTROL_MODE == VELOCITY_CONTROL){
+        target.end_effector = control_input.end_effector * ArmControllerConfig::ee_speed_scale;
+        target.velocities[6] = target.end_effector;
         target.cmd_type = 'V';
     for (int i = 0; i < NUM_JOINTS; i++){
         target.velocities[i] = control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale;
@@ -124,7 +144,6 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     }
         arm_publisher->publish(target);
     } else {
-
 
     // --- Also publish TwistStamped for MoveIt Servo (drives RViz arm) ---
     auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
@@ -202,10 +221,8 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     // JointTrajectory.  This ensures the physical arm receives the actual
     // IK-solved velocities rather than zeros.
 
-
     last_control_input = control_input;
 }
-
 
 void ArmJoy::trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg) {
     if (msg->points.empty()) return;
