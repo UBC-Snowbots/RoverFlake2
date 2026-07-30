@@ -26,8 +26,11 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
         RCLCPP_INFO(this->get_logger(), "Successfully requested STEP line on pin %d", STEP_LINE_GPIO_PIN);
     }
 
-    death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-        "death_ray_commands", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
+    death_ray_motor_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+        "death_ray/motor_commands", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayMotorCallback, this, std::placeholders::_1));
+
+    death_ray_zero_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+        "death_ray/zero", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "DeathRayMotorControlNode initialization complete.");
 }
@@ -45,7 +48,7 @@ DeathRayMotorControlNode::~DeathRayMotorControlNode() {
 }
 
 /**
- * Callback for the /death_ray_commands subscriber.
+ * Callback for the /death_ray/motor_commands subscriber.
  * Receives and decodes Float32 messages.
  * 
  * The sign of the command indicates the direction 
@@ -57,17 +60,30 @@ DeathRayMotorControlNode::~DeathRayMotorControlNode() {
  * to rotate the dish. This function decodes the command and 
  * transmits it to the GPIO pins.
  */
-void DeathRayMotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    float stepper_cmd = msg->data;
+void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    int steps;
 
-    if (stepper_cmd > 0) {
-        gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
-    } else if (stepper_cmd < 0) {
-        gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+    if (DEATH_RAY_CONTROL_MODE == DeathRayControlMode::ABS) {
+        float cmd = msg->data;
+
+        bool clockwise = cmd > position;
+        float degrees = std::abs(cmd - position);
+        if (!clockwise) degrees *= -1;
+
+        steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
     }
+    else { // Relative mode
+        float cmd = msg->data;
 
-    float degrees = std::abs(stepper_cmd);
-    int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+        if (cmd > 0) {
+            gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+        } else if (cmd < 0) {
+            gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+        }
+
+        float degrees = std::abs(cmd);
+        steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+    }
 
     /**
      * rclcpp::ok on each loop iteration ensures that the loop stops
@@ -82,6 +98,24 @@ void DeathRayMotorControlNode::deathRayCommandCallback(const std_msgs::msg::Floa
         gpiod_line_set_value(step_line, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
     }
+}
+
+/**
+ * Callback for the death_ray/zero subscriber.
+ * 
+ * Sets the current tracked position to 0, for manual homing.
+ */
+void DeathRayMotorControlNode::deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg) {
+    /**
+     * Message content is empty: receiving any message on this topic indicates that the dish
+     * should be zeroed.
+     * 
+     * There doesn't seem to be a way to define a subscriber callback without any parameters,
+     * so this prevents compiler errors due to an unused parameter.
+     */
+    (void) msg;
+
+    position = 0;
 }
 
 int main(int argc, char* argv[]) {
