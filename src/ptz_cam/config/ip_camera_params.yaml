@@ -1,0 +1,24 @@
+# Single source of truth for the Hi3510 / Hisilicon OEM IP camera (feed + zoom).
+#
+# Loaded by launch/ip_camera.launch.py, which builds the gscam RTSP pipeline from
+# these values AND passes the connection/zoom subset to the zoom service node.
+# Do NOT duplicate these values in source or in another config file.
+ip_camera:
+  # --- Connection (shared by feed + zoom) ---
+  camera_ip: "192.168.1.88"     # static-DHCP-reserved on eth0 (USB-C->ethernet)
+  camera_user: "admin"
+  camera_pass: "admin"
+  rtsp_port: 554
+  http_port: 80
+  stream_path: "12"             # 11 = main (1920x1080, H.264 Baseline, 20fps), 12 = sub (1280x720)
+
+  # --- Feed (gscam) ---
+  frame_id: "ip_camera_link"
+  camera_name: "ip_camera"
+  rtsp_latency_ms: 0
+
+  # --- Zoom + focus (hi3510 ptzctrl.cgi, continuous/motor-driven) ---
+  zoom_endpoint_path: "/web/cgi-bin/hi3510/ptzctrl.cgi"
+  zoom_speed: 45
+  zoom_step: 0
+  request_timeout: 2.0          # seconds; per-request HTTP timeout for the CGI call
