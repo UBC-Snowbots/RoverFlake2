@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    video_device: "/dev/v4l/by-id/usb-"
+    video_device: "/dev/v4l/by-id/usb-046d_081d_374D8990-video-index0"
     image_raw:
       ffmpeg:
         encoder: "h264_nvmpi"

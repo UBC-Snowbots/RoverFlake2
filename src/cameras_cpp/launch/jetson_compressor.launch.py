@@ -34,7 +34,10 @@ def create_camera_node(camera_name, camera_params):
         executable='v4l2_camera_node',
         name=camera_name,
         output='screen',
-        parameters=[camera_params],
+        parameters=[
+            camera_params, 
+            {'image_raw.ffmpeg.encoder': 'h264_nvmpi'},
+        ],
         remappings=[
             ('/image_raw', f'/{camera_name}/image_raw'),
             ('/image_raw/ffmpeg', f'/{camera_name}/image_raw/ffmpeg'),
