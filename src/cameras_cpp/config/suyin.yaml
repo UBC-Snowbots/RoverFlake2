@@ -1,10 +1,14 @@
 /**:
   ros__parameters:
     video_device: "/dev/v4l/by-id/usb-Suyin_HD_Camera_200910120001-video-index0"
+    image_width: 640
+    image_height: 480
+    framerate: 30.0
+    pixel_format: "yuyv"
     image_raw:
       ffmpeg:
         encoder: "h264_nvmpi"
         bit_rate: 2000000
-        gop_size: 15 # Set the Group of Pictures (GOP) size for the encoder. A smaller GOP size can improve error resilience but may increase file size, while a larger GOP size can reduce file size but may be less resilient to errors.
-        qmax: 10 # Set the maximum quantization parameter (Q) for the encoder. Lower values result in higher quality but larger file sizes, while higher values result in lower quality but smaller file sizes.
-        encoder_av_options: 'preset:ll,tune:zerolatency'
+        gop_size: 20 # Set the Group of Pictures (GOP) size for the encoder. A smaller GOP size can improve error resilience but may increase file size, while a larger GOP size can reduce file size but may be less resilient to errors.
+        qmax: 20 # Set the maximum quantization parameter (Q) for the encoder. Lower values result in higher quality but larger file sizes, while higher values result in lower quality but smaller file sizes.
+        encoder_av_options: 'preset:ultrafast,profile:baseline'
