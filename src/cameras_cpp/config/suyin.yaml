@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     video_device: "/dev/v4l/by-id/usb-Suyin_HD_Camera_200910120001-video-index0"
-    image_width: 640
-    image_height: 480
+    #image_width: 640
+    #image_height: 480
     framerate: 30.0
     pixel_format: "yuyv"
     image_raw:
