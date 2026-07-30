@@ -11,7 +11,11 @@ def generate_launch_description():
         get_package_share_directory('cameras_cpp'),
         'config', 'cameras.json'
     )
-    cameras = json.load(open(cameras_config_path))['cameras']
+
+    with open(cameras_config_path, 'r') as f:
+        cameras_json = json.load(f)
+
+    cameras = cameras_json.get('cameras', [])
 
     for camera in cameras:
         camera_name = camera['name']
