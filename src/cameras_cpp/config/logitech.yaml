@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     video_device: "/dev/v4l/by-id/usb-046d_081d_374D8990-video-index0"
-    image_width: 640
-    image_height: 480
+    #image_width: 640
+    #image_height: 480
     framerate: 30.0
     pixel_format: "yuyv"
     image_raw:
