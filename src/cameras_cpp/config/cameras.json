@@ -5,8 +5,8 @@
             "params_file": "realsense415.yaml"
         },
         {
-            "name": "realsense415i",
-            "params_file": "realsense415i.yaml"
+            "name": "realsense435i",
+            "params_file": "realsense435i.yaml"
         },
         {
             "name": "logitech",
