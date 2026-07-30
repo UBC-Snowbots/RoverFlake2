@@ -24,8 +24,8 @@ def generate_launch_description():
             executable='republish',
             name=f'{camera_name}_decoder_node',
             remappings=[
-                ('in/ffmpeg', f'/vehicle_1/{camera_name}/image_raw/ffmpeg'),
-                ('out', f'/vehicle_1/{camera_name}/image_raw_decoded'),
+                ('in/ffmpeg', f'/{camera_name}/image_raw/ffmpeg'),
+                ('out', f'/{camera_name}/image_raw_decoded'),
             ],
             parameters=[
                 {'in.ffmpeg.decoders.h264': 'h264'},
