@@ -36,7 +36,7 @@ def create_camera_node(camera_name, camera_params):
         output='screen',
         parameters=[camera_params],
         remappings=[
-            ('/image_raw', f'/vehicle_1/{camera_name}/image_raw'),
-            ('/image_raw/ffmpeg', f'/vehicle_1/{camera_name}/image_raw/ffmpeg'),
+            ('/image_raw', f'/{camera_name}/image_raw'),
+            ('/image_raw/ffmpeg', f'/{camera_name}/image_raw/ffmpeg'),
         ],
     )

@@ -1,8 +1,20 @@
 {
     "cameras": [
         {
-            "name": "front_feed",
-            "params_file": "jetson_test_params.yaml"
+            "name": "realsense",
+            "params_file": "realsense.yaml"
+        },
+        {
+            "name": "microsoft",
+            "params_file": "microsoft.yaml"
+        },
+        {
+            "name": "intel",
+            "params_file": "intel.yaml"
+        },
+        {
+            "name": "suyin",
+            "params_file": "suyin.yaml"
         }
     ]
 }
