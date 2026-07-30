@@ -1,7 +1,0 @@
-/**:
-  ros__parameters:
-    video_device: "/dev/v4l/by-id/usb-"
-    image_raw:
-      ffmpeg:
-        encoder: "h264_nvmpi"
-        bit_rate: 2000000

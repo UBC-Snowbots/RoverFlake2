@@ -1,16 +1,16 @@
 {
     "cameras": [
         {
-            "name": "realsense",
-            "params_file": "realsense.yaml"
+            "name": "realsense415",
+            "params_file": "realsense415.yaml"
         },
         {
-            "name": "microsoft",
-            "params_file": "microsoft.yaml"
+            "name": "realsense415i",
+            "params_file": "realsense415i.yaml"
         },
         {
-            "name": "intel",
-            "params_file": "intel.yaml"
+            "name": "logitech",
+            "params_file": "logitech.yaml"
         },
         {
             "name": "suyin",
