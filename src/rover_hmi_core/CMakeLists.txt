@@ -102,6 +102,7 @@ install(TARGETS rover_hmi_modules
 )
 install(DIRECTORY include/ DESTINATION include)
 install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY scripts/ DESTINATION share/${PROJECT_NAME}/scripts)
 
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(rclcpp pluginlib Qt5Widgets rover_arm_common)
