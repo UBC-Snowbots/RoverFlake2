@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    video_device: "usb-Intel_R__RealSense_TM__Depth_Camera_435i_Intel_R__RealSense_TM__Depth_Camera_435i_114123062393-video-index0"
+    video_device: "/dev/v4l/by-id/usb-Intel_R__RealSense_TM__Depth_Camera_435i_Intel_R__RealSense_TM__Depth_Camera_435i_114123062393-video-index0"
     image_raw:
       ffmpeg:
         encoder: "h264_nvmpi"
