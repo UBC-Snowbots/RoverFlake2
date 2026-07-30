@@ -13,8 +13,8 @@ class IPCameraNode(Node):
 
         # Declare parameters for user, pass, IP, stream path, interface
         self.declare_parameter('camera_user', 'admin')
-        self.declare_parameter('camera_pass', '123456')
-        self.declare_parameter('camera_ip', '192.168.0.95')
+        self.declare_parameter('camera_pass', 'admin')
+        self.declare_parameter('camera_ip', '192.168.0.88')
         self.declare_parameter('stream_path', 'stream0')
         self.declare_parameter('interface', 'eth0')
 
