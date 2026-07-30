@@ -17,6 +17,7 @@
 #?    -> sudo systemctl restart rover_heart_<press tab here to figure out what the service name is>.service 
 #? OR, just restart computer.
 
+#? /** might work... for any names
 /dashboard_hmi_node:
   ros__parameters:
     watchdog_timeout_ms: 2000 
