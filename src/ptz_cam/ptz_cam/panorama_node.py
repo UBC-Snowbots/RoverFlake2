@@ -27,13 +27,39 @@ for discussion — for now the panorama only goes out on the image topic.
 import threading
 
 import cv2
+import numpy as np
 import rclpy
-from cv_bridge import CvBridge
 from geometry_msgs.msg import Vector3
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
+
+# sensor_msgs <-> numpy by hand: cv_bridge's compiled extension is numpy-1-ABI
+# and crashes under the container's numpy 2; for raw rgb8/bgr8 it's trivial.
+
+
+def _imgmsg_to_bgr(msg):
+    ch = {'bgr8': 3, 'rgb8': 3, 'mono8': 1}.get(msg.encoding)
+    if ch is None:
+        raise ValueError(f'unsupported encoding {msg.encoding}')
+    arr = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.step)
+    arr = arr[:, :msg.width * ch].reshape(msg.height, msg.width, ch)
+    if msg.encoding == 'rgb8':
+        return arr[:, :, ::-1].copy()
+    if msg.encoding == 'mono8':
+        return cv2.cvtColor(arr, cv2.COLOR_GRAY2BGR)
+    return arr.copy()
+
+
+def _bgr_to_imgmsg(bgr, stamp):
+    msg = Image()
+    msg.header.stamp = stamp
+    msg.height, msg.width = bgr.shape[:2]
+    msg.encoding = 'rgb8'
+    msg.step = msg.width * 3
+    msg.data = np.ascontiguousarray(bgr[:, :, ::-1]).tobytes()
+    return msg
 
 # Sweep state machine phases
 IDLE, MOVE, SETTLE, ROW_SHIFT, STITCH = range(5)
@@ -53,7 +79,6 @@ class PanoramaNode(Node):
         self.declare_parameter('row_shift_secs', 0.5)   # tilt time between rows
         self.declare_parameter('image_topic', '/ip_camera/image_raw')
 
-        self._bridge = CvBridge()
         self._frame = None            # latest feed frame (BGR), written by _on_image
         self._frames = []             # captured sweep frames
         self._phase = IDLE
@@ -78,7 +103,7 @@ class PanoramaNode(Node):
 
     def _on_image(self, msg):
         try:
-            self._frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            self._frame = _imgmsg_to_bgr(msg)
         except Exception as exc:  # bad encoding etc. — keep the node alive
             self.get_logger().warn(f'frame conversion failed: {exc}')
 
@@ -158,9 +183,7 @@ class PanoramaNode(Node):
                 pano = cv2.hconcat([cv2.resize(f, (int(f.shape[1] * h / f.shape[0]), h))
                                     for f in frames])
             # TODO(discussion): persist the panorama (path/format/rover-vs-base).
-            msg = self._bridge.cv2_to_imgmsg(cv2.cvtColor(pano, cv2.COLOR_BGR2RGB),
-                                             encoding='rgb8')
-            self._image_pub.publish(msg)
+            self._image_pub.publish(_bgr_to_imgmsg(pano, self.get_clock().now().to_msg()))
             self._status('done: stitched' if stitched else 'done: unstitched strip (stitch failed)')
         except Exception as exc:
             self._status(f'error: stitch crashed: {exc}')
