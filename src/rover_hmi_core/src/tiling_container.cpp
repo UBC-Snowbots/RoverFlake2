@@ -35,7 +35,7 @@ static constexpr float TOP_BOTTOM_SPLIT_RATIO = 1.6f;   // initial top/bottom = 
 
 // TilePanel chrome
 static constexpr int PANEL_PADDING    = 10;  // content inset
-static constexpr int PANEL_TITLEBAR_H = 38;  // painted title strip
+static constexpr int PANEL_TITLEBAR_H = 60;  // painted title strip
 
 // Modal overlays (keybindings + layout manager)
 static constexpr int OVERLAY_MAX_W        = 680;
@@ -172,8 +172,10 @@ void TilePanel::paintEvent(QPaintEvent*) {
         p.drawRoundedRect(outer, r, r);
     }
 
-    QRectF titleRect(bw + 12, bw + 6, width() - 2 * bw - 24, 28);
-    QFont font("monospace", theme::FontSizeLg, QFont::Bold);
+    QRectF titleRect(bw + 12, bw + 6, width() - 2 * bw - 24, PANEL_TITLEBAR_H - 12);
+    QFont font("monospace");
+    font.setPixelSize(theme::px(theme::FontSizeTitle));
+    font.setBold(true);
     p.setFont(font);
     p.setPen(QColor(focused_ ? theme::Text : theme::TextDim));
     p.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter,
@@ -305,7 +307,6 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel,
     name_lbl->setFont(QFont("monospace", theme::FontSize));
     name_lbl->setWordWrap(true);
     name_lbl->setStyleSheet(QString("color: %1;").arg(theme::Text));
-    name_lbl->setCursor(Qt::PointingHandCursor);
     name_lbl->installEventFilter(new ToggleOnClick(check, name_lbl));
 
     // Row: [idx_lbl] [check] [name]
@@ -319,6 +320,18 @@ void ModuleSidebar::addModule(const std::string& name, TilePanel* panel,
     auto* row_w = new QWidget();
     row_w->setLayout(row);
     layout_->insertWidget(layout_->count() - 2, row_w);
+
+    // Default width: wide enough that no module name wraps (user can still
+    // drag-resize afterwards). Measured via font metrics because a wrapping
+    // QLabel's sizeHint() does not report the unwrapped text width.
+    int need = 22 + row->spacing()                       // idx_lbl min-width
+             + check->sizeHint().width() + row->spacing()
+             + QFontMetrics(name_lbl->font()).horizontalAdvance(name_lbl->text())
+             + layout_->contentsMargins().left()
+             + layout_->contentsMargins().right()
+             + SIDEBAR_GRIP_PX + 4;
+    content_width_ = std::max(content_width_, need);
+    setFixedWidth(std::clamp(content_width_, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
 
     sec.entries.push_back({ check, panel, idx_lbl });
 

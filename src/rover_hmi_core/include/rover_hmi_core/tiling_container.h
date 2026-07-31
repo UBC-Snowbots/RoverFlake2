@@ -230,6 +230,7 @@ private:
     QVBoxLayout* layout_;
     QLabel*      section_indicator_ = nullptr;  // shows "▸ SECTION" in header
     bool         resizing_edge_ = false;        // width drag in progress
+    int          content_width_ = 0;            // widest row so far (no-wrap fit)
 
     struct Entry { QCheckBox* check; TilePanel* panel; QLabel* idx_lbl; };
     struct Section {
