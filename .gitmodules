@@ -10,3 +10,6 @@
 [submodule "src/external_pkgs/moteus"]
 	path = src/external_pkgs/moteus
 	url = https://github.com/mjbots/moteus.git
+[submodule "src/external_pkgs/moteus_ros2"]
+	path = src/external_pkgs/moteus_ros2
+	url = https://github.com/mjbots/moteus_ros2

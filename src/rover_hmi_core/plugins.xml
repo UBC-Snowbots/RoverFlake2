@@ -83,6 +83,13 @@
     <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
   </class>
 
+  <!-- Cameras -->
+  <class name="rover_hmi_core/PtzCameraModule"
+         type="PtzCameraModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>PTZ camera panel: live feed, pan/tilt gimbal, Hi3510 zoom/focus, and panorama sweep capture</description>
+  </class>
+
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
          type="DriveModule"
