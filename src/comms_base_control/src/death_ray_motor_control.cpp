@@ -32,6 +32,11 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
     death_ray_zero_sub_ = this->create_subscription<std_msgs::msg::Empty>(
         "death_ray/zero", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
 
+    position_feedback_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
+        std::bind(&DeathRayMotorControlNode::publishDeathRayPosition, this)
+    );
+
     RCLCPP_INFO(this->get_logger(), "DeathRayMotorControlNode initialization complete.");
 }
 
@@ -122,6 +127,15 @@ void DeathRayMotorControlNode::deathRayZeroCallback(const std_msgs::msg::Empty::
     (void) msg;
 
     position = 0;
+}
+
+/**
+ * Publish the current position of the death ray.
+ */
+void DeathRayMotorControlNode::publishDeathRayPosition() {
+    std_msgs::msg::Float32 msg;
+    msg.data = position;
+    death_ray_position_pub_->publish(msg);
 }
 
 int main(int argc, char* argv[]) {

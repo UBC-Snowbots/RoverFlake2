@@ -54,6 +54,8 @@ enum DeathRayControlMode {
 #define DISH_PULSES_PER_REVOLUTION (STEPPER_PULSES_PER_REVOLUTION * STEPPER_GEAR_RATIO)
 #define DISH_PULSES_PER_DEGREE (DISH_PULSES_PER_REVOLUTION / 360.0f)
 
+#define POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS 200
+
 /**
  * @brief DeathRayMotorControlNode controls the stepper motor to rotate the comms dish
  * 
@@ -70,6 +72,10 @@ private:
 
     rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr death_ray_zero_sub_;
     void deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg);
+
+    rclcpp::TimerBase::SharedPtr position_feedback_timer_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr death_ray_position_pub_;
+    void publishDeathRayPosition();
 
     gpiod_chip* chip;
     gpiod_line* dir_line;
