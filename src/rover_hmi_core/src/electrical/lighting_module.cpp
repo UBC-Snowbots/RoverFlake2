@@ -21,7 +21,7 @@ static const char* CLUSTER_NAMES[]  = { "FRONT", "LEFT", "RIGHT", "BACK" };
 static const char* CLUSTER_ACCENT[] = { theme::Cyan, theme::Yellow, theme::Green, "#ff9944" };
 
 // Which wire board(s) each UI cluster drives (-1 = unused slot).
-// The FRONT cluster gangs both front boards behind one control.
+// The FRONT cluster gangs both front boards behind one control (when linked).
 const int LightingModule::CLUSTER_BOARDS[LightingModule::NUM_CLUSTERS][2] = {
     { BOARD_FRONT_LEFT, BOARD_FRONT_RIGHT },
     { BOARD_LEFT,  -1 },
@@ -38,6 +38,21 @@ static QString sliderStyle() {
         " border-radius: 13px; margin: -8px 0; }"
         "QSlider::sub-page:horizontal { background: %3; border-radius: 5px; }")
         .arg(theme::BgPanel).arg(theme::Text).arg(theme::Cyan);
+}
+
+// Big squarish touch-target buttons (generous vertical padding, modest radius).
+static QString buttonStyle(const QString& bg, const QString& fg) {
+    return QString(
+        "QPushButton { background: %1; color: %2; border: 2px solid %2;"
+        " border-radius: 6px; padding: 16px 20px; font-weight: bold;"
+        " font-size: %3px; }")
+        .arg(bg).arg(fg).arg(theme::FontSizeLg);
+}
+
+// Value/tag label styling at the enlarged control font size.
+static QString labelStyle(const QString& color) {
+    return QString("color: %1; border: none; font-size: %2px;")
+        .arg(color).arg(theme::FontSizeLg);
 }
 
 // ---------------------------------------------------------------- rover view
@@ -149,7 +164,8 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
 
     auto* mtitle = new QLabel("MASTER");
     mtitle->setStyleSheet(
-        QString("color: %1; border: none; font-weight: bold;").arg(theme::Text));
+        QString("color: %1; border: none; font-weight: bold; font-size: %2px;")
+        .arg(theme::Text).arg(theme::FontSizeLg));
     mrow->addWidget(mtitle);
 
     master_slider_ = new QSlider(Qt::Horizontal);
@@ -159,14 +175,14 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     mrow->addWidget(master_slider_, 1);
 
     master_lbl_ = new QLabel("0%");
-    master_lbl_->setMinimumWidth(56);
+    master_lbl_->setMinimumWidth(72);
     master_lbl_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    master_lbl_->setStyleSheet(QString("color: %1; border: none;").arg(theme::Text));
+    master_lbl_->setStyleSheet(labelStyle(theme::Text));
     mrow->addWidget(master_lbl_);
 
-    // Master slider overrides every cluster to the same value, syncing their
-    // widgets (signals blocked so they don't each publish) and sending one
-    // combined command.
+    // Master slider overrides every cluster (and both split front sliders) to
+    // the same value, syncing their widgets with signals blocked so they don't
+    // each publish, then sends one combined command.
     QObject::connect(master_slider_, &QSlider::valueChanged, [this](int val) {
         master_lbl_->setText(QString("%1%").arg(val));
         for (int c = 0; c < NUM_CLUSTERS; c++) {
@@ -178,6 +194,13 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
             if (val > 0) remembered_[c] = val;
             applyToggleStyle(c, cluster_on_[c]);
         }
+        if (fr_slider_) {
+            fr_slider_->blockSignals(true);
+            fr_slider_->setValue(val);
+            fr_slider_->blockSignals(false);
+            fr_lbl_->setText(QString("%1%").arg(val));
+            if (val > 0) remembered_fr_ = val;
+        }
         for (int b = 0; b < NUM_BOARDS; b++) desired_[b] = val;
         publishCmd();
     });
@@ -185,6 +208,7 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     // ALL ON restores each cluster to its own remembered brightness
     // (not one uniform value).
     auto* all_on = new QPushButton("ALL ON");
+    all_on->setStyleSheet(buttonStyle(theme::BgPanel, theme::Green));
     QObject::connect(all_on, &QPushButton::clicked, [this]() {
         for (int c = 0; c < NUM_CLUSTERS; c++) {
             cluster_on_[c] = true;
@@ -198,6 +222,14 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
                 if (b >= 0) desired_[b] = remembered_[c];
             }
         }
+        // Split front pair keeps its own FR memory.
+        if (!front_linked_ && fr_slider_) {
+            fr_slider_->blockSignals(true);
+            fr_slider_->setValue(int(remembered_fr_));
+            fr_slider_->blockSignals(false);
+            fr_lbl_->setText(QString("%1%").arg(int(remembered_fr_)));
+            desired_[BOARD_FRONT_RIGHT] = remembered_fr_;
+        }
         publishCmd();
     });
     mrow->addWidget(all_on);
@@ -205,12 +237,14 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     // ALL OFF zeroes every board but keeps each cluster's brightness remembered
     // so ALL ON / toggles can bring the same levels back.
     auto* all_off = new QPushButton("ALL OFF");
+    all_off->setStyleSheet(buttonStyle(theme::BgPanel, theme::Red));
     QObject::connect(all_off, &QPushButton::clicked, [this]() {
         for (int c = 0; c < NUM_CLUSTERS; c++) {
             if (sliders_[c]->value() > 0) remembered_[c] = sliders_[c]->value();
             cluster_on_[c] = false;
             applyToggleStyle(c, false);
         }
+        if (fr_slider_ && fr_slider_->value() > 0) remembered_fr_ = fr_slider_->value();
         for (int b = 0; b < NUM_BOARDS; b++) desired_[b] = 0.0;
         publishCmd();
     });
@@ -262,26 +296,63 @@ QWidget* LightingModule::makeCluster(int cluster, const char* title,
     title_lbl->setAlignment(Qt::AlignCenter);
     title_lbl->setStyleSheet(
         QString("color: %1; border: none; font-weight: bold; font-size: %2px;")
-        .arg(accent).arg(theme::FontSize));
-    lay->addWidget(title_lbl);
+        .arg(accent).arg(theme::FontSizeLg));
+
+    if (cluster == 0) {
+        // Front title row also hosts the LINKED/SPLIT mode button, which flips
+        // between driving both floodlights together and independently.
+        auto* trow = new QHBoxLayout();
+        trow->setSpacing(6);
+        trow->addWidget(title_lbl, 1);
+        link_btn_ = new QPushButton("LINKED");
+        link_btn_->setToolTip("Toggle between one control for both front lights (LINKED)\n"
+                              "and separate FL / FR sliders (SPLIT)");
+        link_btn_->setStyleSheet(buttonStyle(theme::BgPanel, theme::Cyan));
+        QObject::connect(link_btn_, &QPushButton::clicked, [this]() {
+            setFrontLinked(!front_linked_);
+        });
+        trow->addWidget(link_btn_);
+        lay->addLayout(trow);
+    } else {
+        lay->addWidget(title_lbl);
+    }
 
     // Toggle works like a dimmer switch: there is no on/off bit on the wire,
     // so OFF just commands 0% (remembering the slider), ON re-commands the
-    // remembered brightness.
+    // remembered brightness. In split mode it drives both floodlights, each
+    // restoring its own memory.
     toggle_btns_[cluster] = new QPushButton("OFF");
     applyToggleStyle(cluster, false);
     QObject::connect(toggle_btns_[cluster], &QPushButton::clicked, [this, cluster]() {
         cluster_on_[cluster] = !cluster_on_[cluster];
+        const bool split_front = (cluster == 0 && !front_linked_);
         if (cluster_on_[cluster]) {
             sliders_[cluster]->blockSignals(true);
             sliders_[cluster]->setValue(int(remembered_[cluster]));
             sliders_[cluster]->blockSignals(false);
             value_lbls_[cluster]->setText(QString("%1%").arg(int(remembered_[cluster])));
-            setClusterValue(cluster, remembered_[cluster]);
+            if (split_front) {
+                fr_slider_->blockSignals(true);
+                fr_slider_->setValue(int(remembered_fr_));
+                fr_slider_->blockSignals(false);
+                fr_lbl_->setText(QString("%1%").arg(int(remembered_fr_)));
+                desired_[BOARD_FRONT_LEFT]  = remembered_[cluster];
+                desired_[BOARD_FRONT_RIGHT] = remembered_fr_;
+                publishCmd();
+            } else {
+                setClusterValue(cluster, remembered_[cluster]);
+            }
         } else {
             if (sliders_[cluster]->value() > 0)
                 remembered_[cluster] = sliders_[cluster]->value();
-            setClusterValue(cluster, 0.0);
+            if (split_front) {
+                if (fr_slider_->value() > 0) remembered_fr_ = fr_slider_->value();
+                desired_[BOARD_FRONT_LEFT]  = 0.0;
+                desired_[BOARD_FRONT_RIGHT] = 0.0;
+                publishCmd();
+            } else {
+                setClusterValue(cluster, 0.0);
+            }
         }
         applyToggleStyle(cluster, cluster_on_[cluster]);
     });
@@ -290,45 +361,114 @@ QWidget* LightingModule::makeCluster(int cluster, const char* title,
     auto* row = new QHBoxLayout();
     row->setSpacing(6);
 
+    if (cluster == 0) {
+        // "FL" tag appears only in split mode, when this slider is FL-only.
+        fl_tag_ = new QLabel("FL");
+        fl_tag_->setStyleSheet(labelStyle(theme::TextDim) + "font-weight: bold;");
+        fl_tag_->setVisible(false);
+        row->addWidget(fl_tag_);
+    }
+
+    // Dragging publishes live; any nonzero position counts as "on" and becomes
+    // the value the toggle will restore. In split mode this slider is FL only.
     sliders_[cluster] = new QSlider(Qt::Horizontal);
     sliders_[cluster]->setRange(0, 100);
     sliders_[cluster]->setValue(0);
     sliders_[cluster]->setStyleSheet(sliderStyle());
-    // Dragging publishes live; any nonzero position counts as "on" and becomes
-    // the value the toggle will restore.
     QObject::connect(sliders_[cluster], &QSlider::valueChanged, [this, cluster](int val) {
         value_lbls_[cluster]->setText(QString("%1%").arg(val));
-        cluster_on_[cluster] = (val > 0);
         if (val > 0) remembered_[cluster] = val;
-        applyToggleStyle(cluster, cluster_on_[cluster]);
-        setClusterValue(cluster, val);
+        if (cluster == 0 && !front_linked_) {
+            cluster_on_[0] = (val > 0 || (fr_slider_ && fr_slider_->value() > 0));
+            applyToggleStyle(0, cluster_on_[0]);
+            setBoardValue(BOARD_FRONT_LEFT, val);
+        } else {
+            cluster_on_[cluster] = (val > 0);
+            applyToggleStyle(cluster, cluster_on_[cluster]);
+            setClusterValue(cluster, val);
+        }
     });
     row->addWidget(sliders_[cluster], 1);
 
     value_lbls_[cluster] = new QLabel("0%");
-    value_lbls_[cluster]->setMinimumWidth(56);
+    value_lbls_[cluster]->setMinimumWidth(72);
     value_lbls_[cluster]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    value_lbls_[cluster]->setStyleSheet(
-        QString("color: %1; border: none;").arg(theme::Text));
+    value_lbls_[cluster]->setStyleSheet(labelStyle(theme::Text));
     row->addWidget(value_lbls_[cluster]);
 
     lay->addLayout(row);
+
+    if (cluster == 0) {
+        // Second slider row for the front-right floodlight, hidden while the
+        // pair is linked.
+        fr_row_ = new QWidget();
+        fr_row_->setStyleSheet("border: none;");
+        auto* frl = new QHBoxLayout(fr_row_);
+        frl->setContentsMargins(0, 0, 0, 0);
+        frl->setSpacing(6);
+
+        auto* fr_tag = new QLabel("FR");
+        fr_tag->setStyleSheet(labelStyle(theme::TextDim) + "font-weight: bold;");
+        frl->addWidget(fr_tag);
+
+        fr_slider_ = new QSlider(Qt::Horizontal);
+        fr_slider_->setRange(0, 100);
+        fr_slider_->setValue(0);
+        fr_slider_->setStyleSheet(sliderStyle());
+        QObject::connect(fr_slider_, &QSlider::valueChanged, [this](int val) {
+            fr_lbl_->setText(QString("%1%").arg(val));
+            if (val > 0) remembered_fr_ = val;
+            cluster_on_[0] = (val > 0 || (sliders_[0] && sliders_[0]->value() > 0));
+            applyToggleStyle(0, cluster_on_[0]);
+            setBoardValue(BOARD_FRONT_RIGHT, val);
+        });
+        frl->addWidget(fr_slider_, 1);
+
+        fr_lbl_ = new QLabel("0%");
+        fr_lbl_->setMinimumWidth(72);
+        fr_lbl_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        fr_lbl_->setStyleSheet(labelStyle(theme::Text));
+        frl->addWidget(fr_lbl_);
+
+        fr_row_->setVisible(false);
+        lay->addWidget(fr_row_);
+    }
+
     return box;
 }
 
 void LightingModule::applyToggleStyle(int cluster, bool on) {
     if (!toggle_btns_[cluster]) return;
     toggle_btns_[cluster]->setText(on ? "ON" : "OFF");
-    if (on) {
-        toggle_btns_[cluster]->setStyleSheet(
-            QString("background: #1b3d2a; color: %1; border: 1px solid %1;"
-                    " border-radius: 4px; padding: 6px; font-weight: bold;")
-            .arg(theme::Green));
+    toggle_btns_[cluster]->setStyleSheet(
+        on ? buttonStyle("#1b3d2a", theme::Green)
+           : buttonStyle(theme::BgPanel, theme::TextDim));
+}
+
+// Switch the front pair between one ganged control and independent FL/FR
+// sliders. Re-linking snaps both floodlights to the FL slider's value.
+void LightingModule::setFrontLinked(bool linked) {
+    front_linked_ = linked;
+    if (link_btn_) {
+        link_btn_->setText(linked ? "LINKED" : "SPLIT");
+        // Yellow while split as a visual cue that front is in the non-default mode.
+        link_btn_->setStyleSheet(
+            buttonStyle(theme::BgPanel, linked ? theme::Cyan : theme::Yellow));
+    }
+    if (fl_tag_) fl_tag_->setVisible(!linked);
+    if (fr_row_) fr_row_->setVisible(!linked);
+
+    if (linked) {
+        setClusterValue(0, sliders_[0] ? sliders_[0]->value() : 0.0);
     } else {
-        toggle_btns_[cluster]->setStyleSheet(
-            QString("background: %1; color: %2; border: 1px solid %2;"
-                    " border-radius: 4px; padding: 6px; font-weight: bold;")
-            .arg(theme::BgPanel).arg(theme::TextDim));
+        // Split starts from the current per-board desired values.
+        const int fr = int(desired_[BOARD_FRONT_RIGHT] + 0.5);
+        if (fr_slider_) {
+            fr_slider_->blockSignals(true);
+            fr_slider_->setValue(fr);
+            fr_slider_->blockSignals(false);
+        }
+        if (fr_lbl_) fr_lbl_->setText(QString("%1%").arg(fr));
     }
 }
 
@@ -338,6 +478,12 @@ void LightingModule::setClusterValue(int cluster, double pct) {
         const int b = CLUSTER_BOARDS[cluster][k];
         if (b >= 0) desired_[b] = pct;
     }
+    publishCmd();
+}
+
+// Split-mode write: one board only, then broadcast the full array.
+void LightingModule::setBoardValue(int board, double pct) {
+    desired_[board] = pct;
     publishCmd();
 }
 
@@ -381,8 +527,9 @@ void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPt
     }
     if (view_) view_->setPercents(fb, true);
 
-    // Sync each cluster's widgets to the confirmed value (front shows FL).
-    // Signals are blocked so this sync can never trigger a re-publish loop.
+    // Sync each cluster's widgets to the confirmed value (front shows FL, and
+    // its FR slider syncs separately when split). Signals are blocked so this
+    // sync can never trigger a re-publish loop.
     for (int c = 0; c < NUM_CLUSTERS; c++) {
         const int ival = int(fb[CLUSTER_BOARDS[c][0]] + 0.5);
         if (sliders_[c]) {
@@ -391,8 +538,20 @@ void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPt
             sliders_[c]->blockSignals(false);
         }
         if (value_lbls_[c]) value_lbls_[c]->setText(QString("%1%").arg(ival));
-        cluster_on_[c] = (ival > 0);
+        bool on = (ival > 0);
         if (ival > 0) remembered_[c] = ival;
+        if (c == 0) {
+            const int fr = int(fb[BOARD_FRONT_RIGHT] + 0.5);
+            if (fr_slider_) {
+                fr_slider_->blockSignals(true);
+                fr_slider_->setValue(fr);
+                fr_slider_->blockSignals(false);
+            }
+            if (fr_lbl_) fr_lbl_->setText(QString("%1%").arg(fr));
+            if (fr > 0) remembered_fr_ = fr;
+            on = on || (fr > 0);
+        }
+        cluster_on_[c] = on;
         applyToggleStyle(c, cluster_on_[c]);
     }
 

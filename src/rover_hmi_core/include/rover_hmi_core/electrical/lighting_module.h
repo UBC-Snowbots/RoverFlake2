@@ -4,7 +4,8 @@
 // Publishes the full desired-brightness array (5 floats, 0-100) as
 // std_msgs/Float64MultiArray to /lights/cmd; subscribes /lights/feedback
 // for hardware-confirmed brightness. The front pair is ganged behind one
-// control cluster. Section: Electricals. defaultVisible: false.
+// control cluster by default, with a LINKED/SPLIT button to drive the two
+// floodlights independently. Section: Electricals. defaultVisible: false.
 
 #pragma once
 
@@ -57,13 +58,15 @@ private:
     static constexpr int BOARD_BACK        = 4;
     static constexpr int NUM_BOARDS        = 5;
 
-    // UI clusters: 0=Front (gangs boards 0+1), 1=Left, 2=Right, 3=Back.
+    // UI clusters: 0=Front (gangs boards 0+1 when linked), 1=Left, 2=Right, 3=Back.
     static constexpr int NUM_CLUSTERS = 4;
     static const int CLUSTER_BOARDS[NUM_CLUSTERS][2];  // second entry -1 if none
 
     QWidget* makeCluster(int cluster, const char* title, const char* accent);
     void     applyToggleStyle(int cluster, bool on);
-    void     setClusterValue(int cluster, double pct);  // writes desired_ + publishes
+    void     setClusterValue(int cluster, double pct);  // writes all cluster boards + publishes
+    void     setBoardValue(int board, double pct);      // split-mode: one board + publish
+    void     setFrontLinked(bool linked);
     void     publishCmd();
     void     onFeedback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
@@ -71,9 +74,19 @@ private:
     double remembered_[NUM_CLUSTERS] = {50, 50, 50, 50};  // restored on toggle-ON
     bool   cluster_on_[NUM_CLUSTERS] = {};
 
+    // Front pair mode: linked = one control drives both floodlights;
+    // split = independent FL/FR sliders (FR gets its own row + memory).
+    bool   front_linked_  = true;
+    double remembered_fr_ = 50;
+
     QPushButton* toggle_btns_[NUM_CLUSTERS] = {};
-    QSlider*     sliders_[NUM_CLUSTERS]     = {};
+    QSlider*     sliders_[NUM_CLUSTERS]     = {};   // front slider doubles as FL in split mode
     QLabel*      value_lbls_[NUM_CLUSTERS]  = {};
+    QPushButton* link_btn_                  = nullptr;
+    QLabel*      fl_tag_                    = nullptr;  // "FL" marker, split mode only
+    QWidget*     fr_row_                    = nullptr;  // FR slider row, split mode only
+    QSlider*     fr_slider_                 = nullptr;
+    QLabel*      fr_lbl_                    = nullptr;
     QSlider*     master_slider_             = nullptr;
     QLabel*      master_lbl_                = nullptr;
     QLabel*      status_                    = nullptr;
