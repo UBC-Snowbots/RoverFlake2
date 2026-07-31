@@ -32,6 +32,7 @@ setup(
             'ipcamera = ptz_cam.ipcamera:main',
             'ipcamerazoom = ptz_cam.ipcamerazoom:main',
             'ip_camera_zoom = ptz_cam.ip_camera_zoom:main',
+            'panorama_node = ptz_cam.panorama_node:main',
             'pitch_tilt_node = ptz_cam.pitch_tilt_node:main',
         ],
     },
