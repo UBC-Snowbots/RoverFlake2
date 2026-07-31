@@ -63,6 +63,7 @@ add_library(rover_hmi_modules SHARED
     src/science/science_module.cpp
     src/science/science_pipeline_module.cpp
     src/science/science_analysis_module.cpp
+    src/science/science_sim_module.cpp
     # Drive
     src/drive/drive_module.cpp
 )
