@@ -19,6 +19,8 @@
 static const char* CLUSTER_NAMES[]  = { "FRONT", "LEFT", "RIGHT", "BACK" };
 static const char* CLUSTER_ACCENT[] = { theme::Cyan, theme::Yellow, theme::Green, "#ff9944" };
 
+// Which wire board(s) each UI cluster drives (-1 = unused slot).
+// The FRONT cluster gangs both front boards behind one control.
 const int LightingModule::CLUSTER_BOARDS[LightingModule::NUM_CLUSTERS][2] = {
     { BOARD_FRONT_LEFT, BOARD_FRONT_RIGHT },
     { BOARD_LEFT,  -1 },
@@ -26,6 +28,7 @@ const int LightingModule::CLUSTER_BOARDS[LightingModule::NUM_CLUSTERS][2] = {
     { BOARD_BACK,  -1 },
 };
 
+// Shared by cluster + master sliders; oversized handle for glove-friendly clicks.
 static QString sliderStyle() {
     return QString(
         "QSlider { min-height: 34px; }"
@@ -80,8 +83,11 @@ void RoverLightingView::paintEvent(QPaintEvent*) {
     const double r = qMin(width(), height()) * 0.05;
 
     for (int i = 0; i < 5; i++) {
+        // Until first feedback arrives, draw every light as off/unknown.
         const double pct = have_feedback_ ? qBound(0.0, percents_[i], 100.0) : 0.0;
         if (pct > 0.0) {
+            // Lit: warm radial halo whose radius and alpha grow with brightness,
+            // plus a solid core dot.
             const double glow_r = r * (2.0 + 3.0 * pct / 100.0);
             QRadialGradient grad(pos[i], glow_r);
             QColor warm(0xff, 0xf2, 0xb0);
@@ -97,6 +103,7 @@ void RoverLightingView::paintEvent(QPaintEvent*) {
             p.setBrush(QColor(0xff, 0xf6, 0xd0));
             p.drawEllipse(pos[i], r, r);
         } else {
+            // Off/unknown: dim outline only.
             p.setPen(QPen(QColor(theme::BorderDim), 2));
             p.setBrush(QColor(theme::BgPanel));
             p.drawEllipse(pos[i], r, r);
@@ -117,6 +124,8 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     view_ = new RoverLightingView();
     view_->setPercents({}, false);
 
+    // Grid mirrors the physical layout: FRONT across the top, LEFT/RIGHT
+    // flanking the rover canvas, BACK across the bottom, then MASTER + status.
     grid->addWidget(makeCluster(0, CLUSTER_NAMES[0], CLUSTER_ACCENT[0]), 0, 0, 1, 3);
     grid->addWidget(makeCluster(1, CLUSTER_NAMES[1], CLUSTER_ACCENT[1]), 1, 0);
     grid->addWidget(view_,                                               1, 1);
@@ -149,6 +158,9 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     master_lbl_->setStyleSheet(QString("color: %1; border: none;").arg(theme::Text));
     mrow->addWidget(master_lbl_);
 
+    // Master slider overrides every cluster to the same value, syncing their
+    // widgets (signals blocked so they don't each publish) and sending one
+    // combined command.
     QObject::connect(master_slider_, &QSlider::valueChanged, [this](int val) {
         master_lbl_->setText(QString("%1%").arg(val));
         for (int c = 0; c < NUM_CLUSTERS; c++) {
@@ -164,6 +176,8 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
         publishCmd();
     });
 
+    // ALL ON restores each cluster to its own remembered brightness
+    // (not one uniform value).
     auto* all_on = new QPushButton("ALL ON");
     QObject::connect(all_on, &QPushButton::clicked, [this]() {
         for (int c = 0; c < NUM_CLUSTERS; c++) {
@@ -182,6 +196,8 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
     });
     mrow->addWidget(all_on);
 
+    // ALL OFF zeroes every board but keeps each cluster's brightness remembered
+    // so ALL ON / toggles can bring the same levels back.
     auto* all_off = new QPushButton("ALL OFF");
     QObject::connect(all_off, &QPushButton::clicked, [this]() {
         for (int c = 0; c < NUM_CLUSTERS; c++) {
@@ -227,6 +243,9 @@ QWidget* LightingModule::makeCluster(int cluster, const char* title,
         .arg(accent).arg(theme::FontSize));
     lay->addWidget(title_lbl);
 
+    // Toggle works like a dimmer switch: there is no on/off bit on the wire,
+    // so OFF just commands 0% (remembering the slider), ON re-commands the
+    // remembered brightness.
     toggle_btns_[cluster] = new QPushButton("OFF");
     applyToggleStyle(cluster, false);
     QObject::connect(toggle_btns_[cluster], &QPushButton::clicked, [this, cluster]() {
@@ -253,6 +272,8 @@ QWidget* LightingModule::makeCluster(int cluster, const char* title,
     sliders_[cluster]->setRange(0, 100);
     sliders_[cluster]->setValue(0);
     sliders_[cluster]->setStyleSheet(sliderStyle());
+    // Dragging publishes live; any nonzero position counts as "on" and becomes
+    // the value the toggle will restore.
     QObject::connect(sliders_[cluster], &QSlider::valueChanged, [this, cluster](int val) {
         value_lbls_[cluster]->setText(QString("%1%").arg(val));
         cluster_on_[cluster] = (val > 0);
@@ -289,6 +310,7 @@ void LightingModule::applyToggleStyle(int cluster, bool on) {
     }
 }
 
+// Write one cluster's board(s) into the desired array and broadcast it.
 void LightingModule::setClusterValue(int cluster, double pct) {
     for (int k = 0; k < 2; k++) {
         const int b = CLUSTER_BOARDS[cluster][k];
@@ -297,6 +319,7 @@ void LightingModule::setClusterValue(int cluster, double pct) {
     publishCmd();
 }
 
+// Wire contract: every command carries the full 5-board array (never a delta).
 void LightingModule::publishCmd() {
     if (!pub_) return;
     std_msgs::msg::Float64MultiArray msg;
@@ -306,6 +329,7 @@ void LightingModule::publishCmd() {
 
 void LightingModule::setNode(rclcpp::Node::SharedPtr node) {
     node_ = node;
+    // Reliable QoS: lighting commands are sparse and must not be dropped.
     auto qos = rclcpp::QoS(10).reliable();
     pub_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("/lights/cmd", qos);
     sub_ = node->create_subscription<std_msgs::msg::Float64MultiArray>(
@@ -315,11 +339,14 @@ void LightingModule::setNode(rclcpp::Node::SharedPtr node) {
         });
 }
 
+// Hardware-confirmed state from the CAN bridge. Runs on the Qt thread (the
+// host spins ROS from a QTimer), so touching widgets directly is safe.
 void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
-    if (msg->data.size() < static_cast<size_t>(NUM_BOARDS)) return;
+    if (msg->data.size() < static_cast<size_t>(NUM_BOARDS)) return;  // malformed
 
     std::array<double, 5> fb{};
     for (int b = 0; b < NUM_BOARDS; b++) {
+        // Clamp so a bad feedback value can never be shown or re-published.
         fb[b] = qBound(0.0, msg->data[b], 100.0);
         // Adopt confirmed state so the next publish doesn't resurrect stale
         // values for boards the user hasn't touched since.
@@ -327,6 +354,8 @@ void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPt
     }
     if (view_) view_->setPercents(fb, true);
 
+    // Sync each cluster's widgets to the confirmed value (front shows FL).
+    // Signals are blocked so this sync can never trigger a re-publish loop.
     for (int c = 0; c < NUM_CLUSTERS; c++) {
         const int ival = int(fb[CLUSTER_BOARDS[c][0]] + 0.5);
         if (sliders_[c]) {
