@@ -1,0 +1,7 @@
+# Spectrometer pipeline deps.
+# Floors matter: the image ships numpy 2.x, and matplotlib/scipy built against
+# the numpy 1.x ABI fail at import with "numpy.core.multiarray failed to import".
+numpy>=1.24
+pandas>=1.5
+scipy>=1.11
+matplotlib>=3.8
