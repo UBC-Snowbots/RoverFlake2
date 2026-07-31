@@ -27,7 +27,7 @@
 // TOPICS:
 //   Subscribed:  /arm/command         (rover_msgs/ArmCommand)
 //   Published:   /arm/moteus_feedback  (rover_msgs/MoteusArmStatus)
-//                /joint_states         (sensor_msgs/JointState)  → RViz / RSP
+//                /joint_states         (sensor_msgs/JointState)  → RViz / Inverse Kin
 //                /arm/config_log       (std_msgs/String)          → HMI log panel
 // =============================================================================
 
@@ -38,6 +38,7 @@
 #include <thread>
 #include <vector>
 #include <array>
+#include <bitset> // for printing out debug bitmasks
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
@@ -54,7 +55,36 @@
 #include <rover_arm_common/motor_config.h>       // MotorConfig, get_arm_configuration()
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/arm_telemetry.h>      // MotorTelem
-#include "moteus_protocol.h"                       // MoteusProtocol::make*Frame(), parseReply()
+#include "moteus_protocol.h"                       // MoteusProtocol::makeFrame(), parseReply()
+
+enum class AxisState
+{
+    INIT,
+    REQUESTING_HOMING,
+    HOMING,
+    GOING_TO_PRESET_POSITION,
+    RUNNING_OK,
+    ERROR
+};
+
+struct Axis {
+        int index; // Starts at 0
+        float position = 0;
+        bool limit_switch = 0;
+        bool homed = false;
+        AxisState state = AxisState::INIT;
+
+        // CONFIG STUFF See motor_config.h -> Set during construction of this class
+        float max_position_rev;
+        float min_position_rev;
+        float homing_speed_revps;
+        int homing_direction; 
+        // bool configured = false;
+        // etc..
+};
+
+// Half assed debug printout flags - Uncomment to enable these printouts
+// #define DEBUG_LIMIT_SWITCH_RAW_REPLY
 
 
 class MoteusDriverNode : public rclcpp::Node {
@@ -66,8 +96,8 @@ private:
     void configureMotors();
     void configureMotor(int motor_id, mot::Controller& ctrl);
 
-    // 10 Hz poll: build CAN frames → BlockingCycle → parse replies → publish
-    void poll();
+    // "superloop" style. Blocking can transactions (100hz is slow for CANFD, so this should be okay)
+    void run();
 
     // ROS subscription callback: fills pending_cmds_[] (mutex-protected)
     void commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
@@ -100,6 +130,13 @@ private:
     // Publish a string to /arm/config_log (shown in the HMI command log panel)
     void publishLog(const std::string& msg);
 
+    void zero_position(uint8_t index);
+    void set_position(uint8_t index, float position_revs);
+    
+    void home_axis(uint8_t index);
+
+    Axis axes[NUM_AXES];
+
     // -------------------------------------------------------------------------
     // CAN transport + per-motor controllers
     // -------------------------------------------------------------------------
@@ -113,29 +150,25 @@ private:
     rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr         feedback_pub_;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr             joint_state_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                    config_log_pub_;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr           arm_feedback_pub;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
-    rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
-    rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
+    //TODO Calibration in future PR
+    // rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
+    // rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
 
     // -------------------------------------------------------------------------
     // Configuration (loaded from motor_config.h at construction)
     // -------------------------------------------------------------------------
     std::vector<MotorConfig> configs_;
 
-    // -------------------------------------------------------------------------
-    // Command pipeline (see arm_commands.h for struct definition)
-    //
-    //   pending_cmds_ — written by commandCallback() under cmd_mutex_
-    //                   cleared after each poll merges them into active_cmds_
-    //
-    //   active_cmds_  — re-sent every poll cycle to keep the watchdog alive
-    //                   stays set until a stop or override arrives
-    // -------------------------------------------------------------------------
-    std::mutex cmd_mutex_;
-    std::array<MotorCommand, NUM_MOTORS> pending_cmds_{};
-    std::array<MotorCommand, NUM_MOTORS> active_cmds_{};
 
+    std::mutex cmd_mutex_;
+
+    std::array<MotorCommand, NUM_AXES>   pending_axis_cmds_{};  // ROS intake (axis space)
+    std::array<MotorCommand, NUM_AXES>   axis_cmds_{};          // resolved desired (axis space)
+    std::array<MotorCommand, NUM_MOTORS> motor_cmds_{};         // transformed (motor space) — only thing framed
+    std::array<bool, NUM_MOTORS>         motor_zero_req_{};     // 'd exact 0' side-channel (motor space)
     // -------------------------------------------------------------------------
     // Telemetry (see arm_telemetry.h for struct definition)
     // Updated each poll cycle from CAN reply frames.
@@ -155,4 +188,7 @@ private:
     std::array<int,  NUM_MOTORS> last_fault_{};
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
+
+
+
 };
