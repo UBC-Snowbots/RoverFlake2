@@ -56,6 +56,8 @@ enum DeathRayControlMode {
 
 #define POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS 200
 
+#define ROS_SUBSCRIBER_QOS 1
+
 /**
  * @brief DeathRayMotorControlNode controls the stepper motor to rotate the comms dish
  * 

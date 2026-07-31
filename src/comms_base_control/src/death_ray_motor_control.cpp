@@ -27,10 +27,10 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
     }
 
     death_ray_motor_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-        "death_ray/motor_commands", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayMotorCallback, this, std::placeholders::_1));
+        "death_ray/motor_commands", rclcpp::QoS(ROS_SUBSCRIBER_QOS), std::bind(&DeathRayMotorControlNode::deathRayMotorCallback, this, std::placeholders::_1));
 
     death_ray_zero_sub_ = this->create_subscription<std_msgs::msg::Empty>(
-        "death_ray/zero", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
+        "death_ray/zero", rclcpp::QoS(ROS_SUBSCRIBER_QOS), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
 
     auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
     death_ray_position_pub_ = this->create_publisher<std_msgs::msg::Float32>(
