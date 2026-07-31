@@ -15,6 +15,13 @@ single fire-and-forget trigger (start = button down, stop = button up):
 Note: -act=stop halts whichever motor is moving, so zoom_stop and focus_stop are the same
 underlying call; both exist so each HMI button has its own release binding.
 
+sudo ip addr add 192.168.1.100/24 dev  <--- change to correct subnet
+sudo ip link set eth0 up               <--- change to correct subnet
+
+HFOV of cam = 48.3 degrees
+
+focal length ~= 2143 px
+
 All connection/zoom params come from the shared ip_camera_params.yaml (see the launch file);
 nothing here is hardcoded.
 """
