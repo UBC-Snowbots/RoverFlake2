@@ -27,6 +27,7 @@
 #include <QStandardPaths>
 #include <QDateTime>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <pluginlib/class_list_macros.hpp>
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,27 +41,39 @@ public:
     }
     void setFrame(const QImage& img) { frame_ = img; stale_ = false; update(); }
     void setStale() { stale_ = true; update(); }
+    void setIdleImage(const QImage& img) { idle_ = img; update(); }
 protected:
     void paintEvent(QPaintEvent*) override {
         QPainter p(this);
         p.fillRect(rect(), QColor(theme::Bg));
-        if (!frame_.isNull()) {
+        if (frame_.isNull()) {
+            // Camera never connected: wallpaper centered at natural size
+            // (deliberately not scaled to fit).
+            if (!idle_.isNull())
+                p.drawImage(QPoint((width() - idle_.width()) / 2,
+                                   (height() - idle_.height()) / 2), idle_);
+            p.setPen(QColor(theme::TextDim));
+            p.setFont(QFont("monospace", theme::FontSizeSm, QFont::Bold));
+            p.drawText(rect().adjusted(0, 0, 0, -6),
+                       Qt::AlignBottom | Qt::AlignHCenter, "NO SIGNAL");
+        } else {
             QSize s = frame_.size().scaled(size(), Qt::KeepAspectRatio);
             QRect target(QPoint((width() - s.width()) / 2, (height() - s.height()) / 2), s);
             p.setRenderHint(QPainter::SmoothPixmapTransform);
             p.drawImage(target, frame_);
-            if (stale_) p.fillRect(target, QColor(0, 0, 0, 160));  // dim the frozen frame
-        }
-        if (frame_.isNull() || stale_) {
-            p.setPen(QColor(stale_ ? theme::Yellow : theme::TextDim));
-            p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
-            p.drawText(rect(), Qt::AlignCenter, stale_ ? "FEED STALE" : "NO SIGNAL");
+            if (stale_) {
+                p.fillRect(target, QColor(0, 0, 0, 160));  // dim the frozen frame
+                p.setPen(QColor(theme::Yellow));
+                p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+                p.drawText(rect(), Qt::AlignCenter, "FEED STALE");
+            }
         }
         p.setPen(QPen(QColor(theme::BorderDim), 1));
         p.drawRect(rect().adjusted(0, 0, -1, -1));
     }
 private:
     QImage frame_;
+    QImage idle_;
     bool   stale_ = false;
 };
 
@@ -119,6 +132,11 @@ QWidget* PtzCameraModule::createWidget(QWidget* parent) {
 
     auto* feed_col = new QVBoxLayout();
     preview_ = new PtzPreview(widget);
+    // Installed by rover_hmi_core's CMake; missing file just leaves a black idle canvas.
+    try {
+        const auto share = ament_index_cpp::get_package_share_directory("rover_hmi_core");
+        preview_->setIdleImage(QImage(QString::fromStdString(share + "/resources/ptz_idle.png")));
+    } catch (const std::exception&) {}
     feed_col->addWidget(preview_, 1);
     feed_lbl_ = new QLabel("/ip_camera/image_raw — waiting for frames");
     feed_lbl_->setFont(monoSm);
@@ -450,15 +468,32 @@ void PtzCameraModule::onPanoStatus(const std_msgs::msg::String::ConstSharedPtr& 
 }
 
 void PtzCameraModule::showPanoResult(const QImage& img) {
+    pano_result_ = img;
+    const QString title = QString("Panorama — %1×%2").arg(img.width()).arg(img.height());
+
+    // Reuse the open dialog: a repeated/duplicate result updates it in place
+    // rather than stacking a second window.
+    if (pano_dlg_) {
+        pano_dlg_->setWindowTitle(title);
+        if (pano_dlg_lbl_) {
+            pano_dlg_lbl_->setPixmap(QPixmap::fromImage(img));
+            pano_dlg_lbl_->adjustSize();
+        }
+        pano_dlg_->raise();
+        pano_dlg_->activateWindow();
+        return;
+    }
+
     auto* dlg = new QDialog(preview_ ? preview_->window() : nullptr);
+    pano_dlg_ = dlg;   // QPointer nulls itself on close (WA_DeleteOnClose)
     dlg->setAttribute(Qt::WA_DeleteOnClose);
-    dlg->setWindowTitle(QString("Panorama — %1×%2").arg(img.width()).arg(img.height()));
+    dlg->setWindowTitle(title);
     auto* lay = new QVBoxLayout(dlg);
 
     auto* scroll = new QScrollArea(dlg);
-    auto* lbl = new QLabel();
-    lbl->setPixmap(QPixmap::fromImage(img));
-    scroll->setWidget(lbl);
+    pano_dlg_lbl_ = new QLabel();
+    pano_dlg_lbl_->setPixmap(QPixmap::fromImage(img));
+    scroll->setWidget(pano_dlg_lbl_);
     scroll->setWidgetResizable(false);
     lay->addWidget(scroll, 1);
 
@@ -466,11 +501,11 @@ void PtzCameraModule::showPanoResult(const QImage& img) {
     // Interim save path — the real persistence story (rover-side vs base,
     // format, auto-save) is still to be decided; see panorama_node.py TODO.
     auto* save = new QPushButton("Save PNG", dlg);
-    QObject::connect(save, &QPushButton::clicked, [dlg, img]() {
+    QObject::connect(save, &QPushButton::clicked, [this, dlg]() {
         const QString def = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)
             + "/pano_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
         const QString path = QFileDialog::getSaveFileName(dlg, "Save panorama", def, "PNG (*.png)");
-        if (!path.isEmpty()) img.save(path, "PNG");
+        if (!path.isEmpty()) pano_result_.save(path, "PNG");
     });
     auto* close = new QPushButton("Close", dlg);
     QObject::connect(close, &QPushButton::clicked, dlg, &QDialog::accept);

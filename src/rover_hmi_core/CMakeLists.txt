@@ -105,6 +105,7 @@ install(TARGETS rover_hmi_modules
     RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY resources DESTINATION share/${PROJECT_NAME})
 install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)

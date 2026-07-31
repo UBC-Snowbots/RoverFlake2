@@ -6,10 +6,12 @@
 #include <QLabel>
 #include <QTimer>
 #include <QImage>
+#include <QPointer>
 
 #include <chrono>
 
 class QPushButton;
+class QDialog;
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
@@ -111,6 +113,10 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr pano_img_sub_;
     QPushButton* pano_btn_ = nullptr;
     bool pano_active_ = false;
+    // One reusable result window: repeated results update it, never stack.
+    QPointer<QDialog> pano_dlg_;
+    QLabel* pano_dlg_lbl_ = nullptr;   // only touched while pano_dlg_ is alive
+    QImage  pano_result_;              // backs the dialog's Save PNG button
 
     int   pan_dir_  = 0;      // held direction per axis: -1 / 0 / +1
     int   tilt_dir_ = 0;
