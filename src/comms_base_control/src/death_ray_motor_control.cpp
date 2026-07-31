@@ -77,6 +77,15 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
     if (DEATH_RAY_CONTROL_MODE == DeathRayControlMode::ABS) {
         float cmd = msg->data;
 
+        if (cmd <= -180.0 || cmd > 180.0f) {
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Invalid death ray command: %.2f degrees. Commands must be in range (-180, 180].",
+                cmd
+            );
+            return;
+        }
+
         if (cmd > position) {
             gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
         }
