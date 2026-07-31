@@ -320,7 +320,7 @@ void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPt
 
     std::array<double, 5> fb{};
     for (int b = 0; b < NUM_BOARDS; b++) {
-        fb[b] = msg->data[b];
+        fb[b] = qBound(0.0, msg->data[b], 100.0);
         // Adopt confirmed state so the next publish doesn't resurrect stale
         // values for boards the user hasn't touched since.
         desired_[b] = fb[b];
