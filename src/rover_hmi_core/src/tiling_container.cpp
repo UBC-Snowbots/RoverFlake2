@@ -1,3 +1,6 @@
+// tiling_container.cpp — Hyprland-style dwindle tiling container.
+// Architecture and keybindings are documented in tiling_container.h.
+
 #include <rover_hmi_core/tiling_container.h>
 #include <rover_hmi_core/catppuccin.h>
 
@@ -6,17 +9,47 @@
 #include <QCursor>
 #include <QJsonDocument>
 #include <QJsonArray>
-#include <QSettings>
 #include <QDateTime>
 #include <algorithm>
 #include <cmath>
 
+
+// ---- Tunables (px unless noted) --------------------------------------------
+// Saved layouts: repo-tracked JSON files, see layout_store.h
+
+// Tiling geometry
 static constexpr int SIDEBAR_WIDTH     = 180;  // initial; user can drag the right edge
 static constexpr int SIDEBAR_MIN_WIDTH = 140;
 static constexpr int SIDEBAR_MAX_WIDTH = 420;
-static constexpr int SIDEBAR_GRIP_PX   = 8;   // grab zone along the right edge
-static constexpr int PANEL_GAP = 3;
-static constexpr float RESIZE_RATIO_STEP = 0.08f;
+static constexpr int SIDEBAR_GRIP_PX   = 8;    // grab zone along the right edge
+static constexpr int PANEL_GAP       = 3;
+static constexpr int MIN_PANE_WIDTH  = 80;   // splits never squeeze a side below these
+static constexpr int MIN_PANE_HEIGHT = 60;
+static const char*   SIDEBAR_BG      = "#080808";  // other colors: catppuccin.h
+
+// splitRatio: 1.0 = 50/50 (see DwindleNode); clamped so a side can't collapse
+static constexpr float SPLIT_RATIO_MIN        = 0.1f;
+static constexpr float SPLIT_RATIO_MAX        = 1.9f;
+static constexpr float RESIZE_RATIO_STEP      = 0.08f;  // per Alt+Shift+Arrow press
+static constexpr float TOP_BOTTOM_SPLIT_RATIO = 1.6f;   // initial top/bottom = 80/20
+
+// TilePanel chrome
+static constexpr int PANEL_PADDING    = 10;  // content inset
+static constexpr int PANEL_TITLEBAR_H = 38;  // painted title strip
+
+// Modal overlays (keybindings + layout manager)
+static constexpr int OVERLAY_MAX_W        = 680;
+static constexpr int OVERLAY_MAX_H        = 700;
+static constexpr int OVERLAY_SCREEN_PAD   = 48;   // min gap to widget edge
+static constexpr int OVERLAY_MARGIN       = 24;
+static constexpr int OVERLAY_RADIUS       = 12;
+static constexpr int OVERLAY_SCRIM_ALPHA  = 210;
+static constexpr int OVERLAY_LIST_TOP_PAD = 12;   // gap under header rule
+static constexpr int KEYBIND_HEADER_H     = 34;   // title line
+static constexpr int LAYOUT_HEADER_H      = 52;   // title + hint lines
+static constexpr int KEYBIND_CAT_H        = 38;   // category heading row
+static constexpr int KEYBIND_ROW_H        = 30;
+static constexpr int LAYOUT_ROW_H         = 52;
 
 // Lets the wrapping name label toggle its checkbox — QCheckBox cannot
 // word-wrap its own text, so module names live in a separate QLabel.
@@ -39,6 +72,7 @@ private:
 // DwindleNode
 // ---------------------------------------------------------------------------
 
+// DFS for the leaf holding panel `p`; nullptr if absent
 DwindleNode* DwindleNode::leafFor(TilePanel* p) {
     if (!isNode) return (panel == p) ? this : nullptr;
     auto* r = children[0] ? children[0]->leafFor(p) : nullptr;
@@ -60,13 +94,14 @@ void DwindleNode::recalcSizePosRecursive(int gap) {
     if (!splitTop) {
         // Left/right split
         int w0 = (int)(box.width() / 2.0f * splitRatio);
-        w0 = std::max(80, std::min(w0, box.width() - 80));
+        // max(min()) not std::clamp: bounds may cross when box < 2*MIN_PANE_WIDTH
+        w0 = std::max(MIN_PANE_WIDTH, std::min(w0, box.width() - MIN_PANE_WIDTH));
         c0->box = QRect(box.x(), box.y(), w0, box.height());
         c1->box = QRect(box.x() + w0, box.y(), box.width() - w0, box.height());
     } else {
         // Top/bottom split
         int h0 = (int)(box.height() / 2.0f * splitRatio);
-        h0 = std::max(60, std::min(h0, box.height() - 60));
+        h0 = std::max(MIN_PANE_HEIGHT, std::min(h0, box.height() - MIN_PANE_HEIGHT));
         c0->box = QRect(box.x(), box.y(), box.width(), h0);
         c1->box = QRect(box.x(), box.y() + h0, box.width(), box.height() - h0);
     }
@@ -83,7 +118,9 @@ void DwindleNode::recalcSizePosRecursive(int gap) {
 TilePanel::TilePanel(const std::string& title, QWidget* content, QWidget* parent)
     : QWidget(parent), title_(title), content_(content) {
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(10, 38, 10, 10);
+    // top margin reserves room for the title strip painted in paintEvent()
+    layout->setContentsMargins(PANEL_PADDING, PANEL_TITLEBAR_H,
+                               PANEL_PADDING, PANEL_PADDING);
     layout->setSpacing(0);
     content->setParent(this);
     layout->addWidget(content);
@@ -357,7 +394,7 @@ void ModuleSidebar::syncCheckboxes(const std::vector<std::string>& visible_title
 
 void ModuleSidebar::paintEvent(QPaintEvent*) {
     QPainter p(this);
-    p.fillRect(rect(), QColor("#080808"));
+    p.fillRect(rect(), QColor(SIDEBAR_BG));
     p.setPen(QPen(QColor(theme::BorderDim), 1));
     p.drawLine(width() - 1, 0, width() - 1, height());
     // Drag-handle affordance on the resizable right edge
@@ -401,11 +438,54 @@ void ModuleSidebar::leaveEvent(QEvent* e) {
 
 
 // ---------------------------------------------------------------------------
-// KeybindingsOverlay
+// Shared overlay helpers — scrim/panel chrome, geometry, scrollbar
 // ---------------------------------------------------------------------------
 
-static constexpr int CAT_H = 38;
-static constexpr int ROW_H = 30;
+struct OverlayFrame {
+    int px, py, pw, ph;              // centred panel rect
+    int listX, listY, listW, listH;  // scrollable list rect, below the header
+};
+
+static OverlayFrame overlayFrame(const QWidget* w, int header_h) {
+    OverlayFrame f;
+    f.pw = std::min(OVERLAY_MAX_W, w->width()  - OVERLAY_SCREEN_PAD);
+    f.ph = std::min(OVERLAY_MAX_H, w->height() - OVERLAY_SCREEN_PAD);
+    f.px = (w->width()  - f.pw) / 2;
+    f.py = (w->height() - f.ph) / 2;
+    f.listX = f.px + OVERLAY_MARGIN;
+    f.listY = f.py + OVERLAY_MARGIN + header_h + OVERLAY_LIST_TOP_PAD;
+    f.listW = f.pw - 2 * OVERLAY_MARGIN;
+    f.listH = f.ph - (f.listY - f.py) - OVERLAY_MARGIN;
+    return f;
+}
+
+static void drawOverlayChrome(QPainter& p, const QWidget* w, const OverlayFrame& f) {
+    p.fillRect(w->rect(), QColor(0, 0, 0, OVERLAY_SCRIM_ALPHA));
+    QPainterPath panelPath;
+    panelPath.addRoundedRect(QRect(f.px, f.py, f.pw, f.ph),
+                             OVERLAY_RADIUS, OVERLAY_RADIUS);
+    p.fillPath(panelPath, QColor(theme::BgPanel));
+    p.setPen(QPen(QColor(theme::Border), 2));
+    p.drawRoundedRect(QRect(f.px, f.py, f.pw, f.ph),
+                      OVERLAY_RADIUS, OVERLAY_RADIUS);
+}
+
+// no-op when the list fits
+static void drawOverlayScrollbar(QPainter& p, const OverlayFrame& f,
+                                 int total_h, int scroll_offset) {
+    if (total_h <= f.listH) return;
+    int barH = std::max(20, f.listH * f.listH / total_h);
+    int barY = f.listY + (f.listH - barH) * scroll_offset
+                             / std::max(1, total_h - f.listH);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(theme::BorderDim));
+    p.drawRoundedRect(f.px + f.pw - OVERLAY_MARGIN + 6, barY, 4, barH, 2, 2);
+}
+
+
+// ---------------------------------------------------------------------------
+// KeybindingsOverlay
+// ---------------------------------------------------------------------------
 
 KeybindingsOverlay::KeybindingsOverlay(TilingContainer* tc, QWidget* parent)
     : QWidget(parent), tc_(tc) {
@@ -427,45 +507,37 @@ int KeybindingsOverlay::totalEntries() const {
     return n;
 }
 
+// y of the entry in unscrolled list coordinates
 int KeybindingsOverlay::yOfEntry(int flat_idx) const {
     int y = 0, cur = 0;
     for (auto& cat : categories_) {
-        y += CAT_H;
+        y += KEYBIND_CAT_H;
         for (int e = 0; e < (int)cat.entries.size(); ++e) {
             if (cur == flat_idx) return y;
-            y += ROW_H;
+            y += KEYBIND_ROW_H;
             cur++;
         }
     }
     return y;
 }
 
+// keep the focused entry visible with one row of context
 void KeybindingsOverlay::scrollToFocused(int list_h) {
     int y = yOfEntry(focused_idx_);
-    if (y - scroll_offset_ < ROW_H)
-        scroll_offset_ = std::max(0, y - ROW_H);
-    else if (y + ROW_H * 2 - scroll_offset_ > list_h)
-        scroll_offset_ = y + ROW_H * 2 - list_h;
+    if (y - scroll_offset_ < KEYBIND_ROW_H)
+        scroll_offset_ = std::max(0, y - KEYBIND_ROW_H);
+    else if (y + KEYBIND_ROW_H * 2 - scroll_offset_ > list_h)
+        scroll_offset_ = y + KEYBIND_ROW_H * 2 - list_h;
 }
 
 void KeybindingsOverlay::paintEvent(QPaintEvent*) {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    p.fillRect(rect(), QColor(0, 0, 0, 210));
 
-    int pw = std::min(680, width()  - 48);
-    int ph = std::min(700, height() - 48);
-    int px = (width()  - pw) / 2;
-    int py = (height() - ph) / 2;
+    const OverlayFrame f = overlayFrame(this, KEYBIND_HEADER_H);
+    drawOverlayChrome(p, this, f);
 
-    QPainterPath panelPath;
-    panelPath.addRoundedRect(QRect(px, py, pw, ph), 12, 12);
-    p.fillPath(panelPath, QColor(theme::BgPanel));
-    p.setPen(QPen(QColor(theme::Border), 2));
-    p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
-
-    int margin = 24;
-    QRect titleRect(px + margin, py + margin, pw - 2 * margin, 30);
+    QRect titleRect(f.px + OVERLAY_MARGIN, f.py + OVERLAY_MARGIN, f.listW, 30);
     p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
     p.setPen(QColor(theme::Text));
     p.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, "Keybindings");
@@ -473,76 +545,62 @@ void KeybindingsOverlay::paintEvent(QPaintEvent*) {
     p.setPen(QColor(theme::TextDim));
     p.drawText(titleRect, Qt::AlignRight | Qt::AlignVCenter, "Esc · Alt+/ to close");
 
-    int sepY = py + margin + 34;
+    int sepY = f.listY - OVERLAY_LIST_TOP_PAD;
     p.setPen(QPen(QColor(theme::BorderDim), 1));
-    p.drawLine(px + margin, sepY, px + pw - margin, sepY);
+    p.drawLine(f.listX, sepY, f.px + f.pw - OVERLAY_MARGIN, sepY);
 
     if (categories_.empty()) return;
 
-    int listX = px + margin;
-    int listY = sepY + 12;
-    int listW = pw - 2 * margin;
-    int listH = ph - (listY - py) - margin;
-
-    p.setClipRect(listX, listY, listW, listH);
-    p.translate(0, listY - scroll_offset_);
+    p.setClipRect(f.listX, f.listY, f.listW, f.listH);
+    p.translate(0, f.listY - scroll_offset_);
 
     int y = 0, flat = 0;
     for (auto& cat : categories_) {
         p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
         p.setPen(QColor(theme::TextDim));
-        p.drawText(QRect(listX, y + 8, listW, 22),
+        p.drawText(QRect(f.listX, y + 8, f.listW, 22),
                    Qt::AlignLeft | Qt::AlignVCenter, cat.name.toUpper());
         p.setPen(QPen(QColor(theme::BorderDim), 1));
-        p.drawLine(listX, y + CAT_H - 2, listX + listW, y + CAT_H - 2);
-        y += CAT_H;
+        p.drawLine(f.listX, y + KEYBIND_CAT_H - 2,
+                   f.listX + f.listW, y + KEYBIND_CAT_H - 2);
+        y += KEYBIND_CAT_H;
 
+        // rows: key sequence (left 45%) / description (right 55%)
         p.setFont(QFont("monospace", theme::FontSizeSm));
         for (auto& entry : cat.entries) {
             bool focused = (flat == focused_idx_);
             if (focused) {
                 QColor hi(theme::Green); hi.setAlpha(38);
-                p.fillRect(QRect(listX, y, listW, ROW_H), hi);
+                p.fillRect(QRect(f.listX, y, f.listW, KEYBIND_ROW_H), hi);
             }
             p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
-            p.drawText(QRect(listX + 8, y, listW * 45 / 100, ROW_H),
+            p.drawText(QRect(f.listX + 8, y, f.listW * 45 / 100, KEYBIND_ROW_H),
                        Qt::AlignLeft | Qt::AlignVCenter, entry.keys);
             p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
-            p.drawText(QRect(listX + listW * 45 / 100, y, listW * 55 / 100, ROW_H),
+            p.drawText(QRect(f.listX + f.listW * 45 / 100, y,
+                             f.listW * 55 / 100, KEYBIND_ROW_H),
                        Qt::AlignLeft | Qt::AlignVCenter, entry.description);
-            y += ROW_H;
+            y += KEYBIND_ROW_H;
             flat++;
         }
     }
 
     p.resetTransform();
     p.setClipping(false);
-    int totalH = y;
-    if (totalH > listH) {
-        int barH = std::max(20, listH * listH / totalH);
-        int barY = listY + (listH - barH) * scroll_offset_ / std::max(1, totalH - listH);
-        p.setPen(Qt::NoPen);
-        p.setBrush(QColor(theme::BorderDim));
-        p.drawRoundedRect(px + pw - margin + 6, barY, 4, barH, 2, 2);
-    }
+    drawOverlayScrollbar(p, f, y, scroll_offset_);
 }
 
 void KeybindingsOverlay::keyPressEvent(QKeyEvent* ke) {
     if (categories_.empty()) return;
-
-    int ph     = std::min(700, height() - 48);
-    int py     = (height() - ph) / 2;
-    int margin = 24;
-    int listY  = py + margin + 52 + 12;
-    int listH  = ph - (listY - py) - margin;
+    const OverlayFrame f = overlayFrame(this, KEYBIND_HEADER_H);
 
     if (ke->key() == Qt::Key_Up) {
         focused_idx_ = std::max(0, focused_idx_ - 1);
-        scrollToFocused(listH);
+        scrollToFocused(f.listH);
         update();
     } else if (ke->key() == Qt::Key_Down) {
         focused_idx_ = std::min(totalEntries() - 1, focused_idx_ + 1);
-        scrollToFocused(listH);
+        scrollToFocused(f.listH);
         update();
     } else if (ke->key() == Qt::Key_Escape ||
                (ke->key() == Qt::Key_Slash && (ke->modifiers() & Qt::AltModifier))) {
@@ -551,19 +609,15 @@ void KeybindingsOverlay::keyPressEvent(QKeyEvent* ke) {
 }
 
 void KeybindingsOverlay::wheelEvent(QWheelEvent* we) {
-    int ph     = std::min(700, height() - 48);
-    int py     = (height() - ph) / 2;
-    int margin = 24;
-    int listY  = py + margin + 52 + 12;
-    int listH  = ph - (listY - py) - margin;
+    const OverlayFrame f = overlayFrame(this, KEYBIND_HEADER_H);
 
     int steps = we->angleDelta().y() / 40;
-    scroll_offset_ = std::max(0, scroll_offset_ - steps * ROW_H);
+    scroll_offset_ = std::max(0, scroll_offset_ - steps * KEYBIND_ROW_H);
 
     int totalH = 0;
     for (auto& cat : categories_)
-        totalH += CAT_H + (int)cat.entries.size() * ROW_H;
-    scroll_offset_ = std::min(scroll_offset_, std::max(0, totalH - listH));
+        totalH += KEYBIND_CAT_H + (int)cat.entries.size() * KEYBIND_ROW_H;
+    scroll_offset_ = std::min(scroll_offset_, std::max(0, totalH - f.listH));
     update();
 }
 
@@ -571,8 +625,6 @@ void KeybindingsOverlay::wheelEvent(QWheelEvent* we) {
 // ---------------------------------------------------------------------------
 // LayoutManagerOverlay
 // ---------------------------------------------------------------------------
-
-static constexpr int LAYOUT_ROW_H = 52;
 
 LayoutManagerOverlay::LayoutManagerOverlay(TilingContainer* tc, QWidget* parent)
     : QWidget(parent), tc_(tc) {
@@ -590,20 +642,7 @@ void LayoutManagerOverlay::cancelRename() {
 }
 
 void LayoutManagerOverlay::refresh() {
-    snapshots_.clear();
-    QSettings s("rover_hmi", "layouts");
-    int count = s.value("count", 0).toInt();
-    for (int i = 0; i < count; ++i) {
-        s.beginGroup(QString("layout_%1").arg(i));
-        if (!s.value("deleted", false).toBool()) {
-            LayoutSnapshot snap;
-            snap.name     = s.value("name").toString();
-            snap.saved_at = s.value("saved_at").toString();
-            snap.json     = s.value("json").toString();
-            snapshots_.push_back(snap);
-        }
-        s.endGroup();
-    }
+    snapshots_ = tc_->layoutStore().list();
     focused_idx_   = std::min(focused_idx_, std::max(0, (int)snapshots_.size() - 1));
     scroll_offset_ = 0;
 }
@@ -611,52 +650,39 @@ void LayoutManagerOverlay::refresh() {
 void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    p.fillRect(rect(), QColor(0, 0, 0, 210));
 
-    int pw = std::min(680, width()  - 48);
-    int ph = std::min(700, height() - 48);
-    int px = (width()  - pw) / 2;
-    int py = (height() - ph) / 2;
+    const OverlayFrame f = overlayFrame(this, LAYOUT_HEADER_H);
+    drawOverlayChrome(p, this, f);
 
-    QPainterPath panelPath;
-    panelPath.addRoundedRect(QRect(px, py, pw, ph), 12, 12);
-    p.fillPath(panelPath, QColor(theme::BgPanel));
-    p.setPen(QPen(QColor(theme::Border), 2));
-    p.drawRoundedRect(QRect(px, py, pw, ph), 12, 12);
-
-    int margin = 24;
-    // Title row
+    // title line, then hint line (red store status when saving is unavailable)
+    const bool writable = tc_->layoutStore().writable();
     p.setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
     p.setPen(QColor(theme::Text));
-    p.drawText(QRect(px + margin, py + margin, pw - 2 * margin, 24),
+    p.drawText(QRect(f.px + OVERLAY_MARGIN, f.py + OVERLAY_MARGIN, f.listW, 24),
                Qt::AlignLeft | Qt::AlignVCenter, "Saved Layouts");
-    // Hint row (separate line so it never overlaps the title)
     p.setFont(QFont("monospace", theme::FontSizeSm));
-    p.setPen(QColor(theme::TextDim));
-    p.drawText(QRect(px + margin, py + margin + 26, pw - 2 * margin, 18),
+    p.setPen(QColor(writable ? theme::TextDim : theme::Red));
+    p.drawText(QRect(f.px + OVERLAY_MARGIN, f.py + OVERLAY_MARGIN + 26, f.listW, 18),
                Qt::AlignRight | Qt::AlignVCenter,
-               renaming_ ? "Enter confirm  Esc cancel"
-                         : "S save  R rename  D delete  Enter load  Esc close");
+               !writable  ? tc_->layoutStore().statusMessage()
+               : renaming_ ? "Enter confirm  Esc cancel"
+                           : "S save  R rename  D delete  Enter load  Esc close");
 
-    int sepY = py + margin + 52;
+    int sepY = f.listY - OVERLAY_LIST_TOP_PAD;
     p.setPen(QPen(QColor(theme::BorderDim), 1));
-    p.drawLine(px + margin, sepY, px + pw - margin, sepY);
-
-    int listX = px + margin;
-    int listY = sepY + 12;
-    int listW = pw - 2 * margin;
-    int listH = ph - (listY - py) - margin;
+    p.drawLine(f.listX, sepY, f.px + f.pw - OVERLAY_MARGIN, sepY);
 
     if (snapshots_.empty()) {
         p.setFont(QFont("monospace", theme::FontSize));
         p.setPen(QColor(theme::TextDim));
-        p.drawText(QRect(listX, listY, listW, listH),
-                   Qt::AlignCenter, "No saved layouts.\nPress S to save the current layout.");
+        p.drawText(QRect(f.listX, f.listY, f.listW, f.listH), Qt::AlignCenter,
+                   writable ? "No saved layouts.\nPress S to save the current layout."
+                            : "No saved layouts.");
         return;
     }
 
-    p.setClipRect(listX, listY, listW, listH);
-    p.translate(0, listY - scroll_offset_);
+    p.setClipRect(f.listX, f.listY, f.listW, f.listH);
+    p.translate(0, f.listY - scroll_offset_);
 
     int y = 0;
     for (int i = 0; i < (int)snapshots_.size(); ++i) {
@@ -665,13 +691,12 @@ void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
 
         if (focused) {
             QColor hi(theme::Green); hi.setAlpha(38);
-            p.fillRect(QRect(listX, y, listW, LAYOUT_ROW_H), hi);
+            p.fillRect(QRect(f.listX, y, f.listW, LAYOUT_ROW_H), hi);
         }
 
-        // Name (or inline rename field if renaming this row)
+        // name, or inline rename field when renaming this row
         if (focused && renaming_) {
-            // Draw a text-input box
-            QRect editRect(listX + 8, y + 6, listW - 16, 24);
+            QRect editRect(f.listX + 8, y + 6, f.listW - 16, 24);
             p.setPen(QPen(QColor(theme::Cyan), 1));
             p.setBrush(QColor(theme::Bg));
             p.drawRoundedRect(editRect.adjusted(-2, -2, 2, 2), 3, 3);
@@ -680,55 +705,45 @@ void LayoutManagerOverlay::paintEvent(QPaintEvent*) {
             p.setPen(QColor(theme::Cyan));
             p.drawText(editRect, Qt::AlignLeft | Qt::AlignVCenter, rename_buf_);
 
-            // Blinking cursor (always show — no timer needed)
+            // static text cursor at end of buffer — no blink timer
             QFontMetrics fm(p.font());
             int cx = editRect.x() + fm.horizontalAdvance(rename_buf_);
             p.drawLine(cx, editRect.top() + 3, cx, editRect.bottom() - 3);
         } else {
             p.setFont(QFont("monospace", theme::FontSize, QFont::Bold));
             p.setPen(focused ? QColor(theme::Green) : QColor(theme::Text));
-            p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+            p.drawText(QRect(f.listX + 8, y + 6, f.listW - 16, 24),
                        Qt::AlignLeft | Qt::AlignVCenter, snap.name);
         }
 
-        // Date (right-aligned on name row, hidden while renaming this row)
+        // save date, right-aligned; hidden while renaming
         if (!(focused && renaming_)) {
             p.setFont(QFont("monospace", theme::FontSizeSm));
             p.setPen(focused ? QColor(theme::Green).lighter(130) : QColor(theme::TextDim));
-            p.drawText(QRect(listX + 8, y + 6, listW - 16, 24),
+            p.drawText(QRect(f.listX + 8, y + 6, f.listW - 16, 24),
                        Qt::AlignRight | Qt::AlignVCenter, snap.saved_at);
         }
 
-        // Separator
         p.setPen(QPen(QColor(theme::BorderDim), 1));
-        p.drawLine(listX, y + LAYOUT_ROW_H - 1, listX + listW, y + LAYOUT_ROW_H - 1);
+        p.drawLine(f.listX, y + LAYOUT_ROW_H - 1,
+                   f.listX + f.listW, y + LAYOUT_ROW_H - 1);
 
         y += LAYOUT_ROW_H;
     }
 
     p.resetTransform();
     p.setClipping(false);
-    int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
-    if (totalH > listH) {
-        int barH = std::max(20, listH * listH / totalH);
-        int barY = listY + (listH - barH) * scroll_offset_ / std::max(1, totalH - listH);
-        p.setPen(Qt::NoPen);
-        p.setBrush(QColor(theme::BorderDim));
-        p.drawRoundedRect(px + pw - margin + 6, barY, 4, barH, 2, 2);
-    }
+    drawOverlayScrollbar(p, f, (int)snapshots_.size() * LAYOUT_ROW_H, scroll_offset_);
 }
 
 void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
-    int ph     = std::min(700, height() - 48);
-    int py     = (height() - ph) / 2;
-    int margin = 24;
-    int listY  = py + margin + 52 + 12;
-    int listH  = ph - (listY - py) - margin;
+    const OverlayFrame f = overlayFrame(this, LAYOUT_HEADER_H);
+    const int listH = f.listH;
 
+    // keep the focused row inside the visible list
     auto clampScroll = [&]() {
         int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
         int maxScroll = std::max(0, totalH - listH);
-        // Keep focused row visible
         int rowY = focused_idx_ * LAYOUT_ROW_H;
         if (rowY - scroll_offset_ < 0)
             scroll_offset_ = rowY;
@@ -771,6 +786,9 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
         update();
     } else if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
         if (!snapshots_.empty()) tc_->loadLayout(focused_idx_);
+    } else if (!tc_->layoutStore().writable() &&
+               (ke->key() == Qt::Key_S || ke->key() == Qt::Key_R || ke->key() == Qt::Key_D)) {
+        // read-only store: mutating keys are inert (banner explains why)
     } else if (ke->key() == Qt::Key_S) {
         tc_->saveCurrentLayout();
         refresh();
@@ -795,16 +813,12 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
 }
 
 void LayoutManagerOverlay::wheelEvent(QWheelEvent* we) {
-    int ph     = std::min(700, height() - 48);
-    int py     = (height() - ph) / 2;
-    int margin = 24;
-    int listY  = py + margin + 52 + 12;
-    int listH  = ph - (listY - py) - margin;
+    const OverlayFrame f = overlayFrame(this, LAYOUT_HEADER_H);
 
     int steps = we->angleDelta().y() / 40;
     scroll_offset_ -= steps * LAYOUT_ROW_H;
     int totalH = (int)snapshots_.size() * LAYOUT_ROW_H;
-    scroll_offset_ = std::clamp(scroll_offset_, 0, std::max(0, totalH - listH));
+    scroll_offset_ = std::clamp(scroll_offset_, 0, std::max(0, totalH - f.listH));
     update();
 }
 
@@ -956,12 +970,12 @@ void TilingContainer::finalize() {
         top_tree = left_tree ? left_tree : right_tree;
     }
 
-    // Combine top+bottom into a vertical split (80% / 20%)
+    // Combine top+bottom into a vertical split
     if (top_tree && bottom_tree) {
         auto* tb = new DwindleNode();
         tb->isNode = true;
         tb->splitTop = true;    // top/bottom
-        tb->splitRatio = 1.6f;  // 80% top, 20% bottom
+        tb->splitRatio = TOP_BOTTOM_SPLIT_RATIO;
         tb->children[0] = top_tree;
         tb->children[1] = bottom_tree;
         top_tree->parent    = tb;
@@ -1068,6 +1082,19 @@ void TilingContainer::finalize() {
 // ---------------------------------------------------------------------------
 // Dwindle tree operations
 // ---------------------------------------------------------------------------
+
+// Nearest ancestor of `leaf` split in the given orientation; child_on_path
+// receives that ancestor's child on the path from leaf (resize direction).
+static DwindleNode* splitAncestor(DwindleNode* leaf, bool split_top,
+                                  DwindleNode** child_on_path = nullptr) {
+    for (auto* cur = leaf; cur && cur->parent; cur = cur->parent) {
+        if (cur->parent->splitTop == split_top) {
+            if (child_on_path) *child_on_path = cur;
+            return cur->parent;
+        }
+    }
+    return nullptr;
+}
 
 void TilingContainer::dwindleAdd(TilePanel* panel) {
     auto* newLeaf = new DwindleNode();
@@ -1201,30 +1228,14 @@ bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
             && !ke->isAutoRepeat() && drag_mode_ == DragMode::None) {
             // Embedded X11 windows (e.g. RViz) swallow hover events so
             // focused_panel_ may be stale. Re-derive from cursor position.
-            if (tiling_area_) {
-                QPoint local = tiling_area_->mapFromGlobal(QCursor::pos());
-                for (auto& pi : panels_) {
-                    if (pi.panel->isVisible() && pi.panel->geometry().contains(local)) {
-                        setFocusedPanel(pi.panel);
-                        break;
-                    }
-                }
-            }
+            if (auto* under = panelUnderCursor()) setFocusedPanel(under);
             enterMoveMode();
             return true;
         }
         if (ke->key() == Qt::Key_X && (ke->modifiers() & Qt::AltModifier)
             && !ke->isAutoRepeat() && drag_mode_ == DragMode::None) {
             // Same cursor-position fix for resize mode.
-            if (tiling_area_) {
-                QPoint local = tiling_area_->mapFromGlobal(QCursor::pos());
-                for (auto& pi : panels_) {
-                    if (pi.panel->isVisible() && pi.panel->geometry().contains(local)) {
-                        setFocusedPanel(pi.panel);
-                        break;
-                    }
-                }
-            }
+            if (auto* under = panelUnderCursor()) setFocusedPanel(under);
             drag_mode_ = DragMode::Resize;
             last_mouse_global_ = QCursor::pos();
             setCursor(Qt::SizeFDiagCursor);
@@ -1280,29 +1291,24 @@ bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
             }
 
         } else if (drag_mode_ == DragMode::Resize && focused_panel_) {
-            // Adjust splitRatio of closest ancestor with matching orientation
+            // per axis, resize the closest matching-orientation split;
+            // *2 maps a full-box drag to the full 0..2 ratio range
             auto* leaf = getLeafFor(focused_panel_);
             if (leaf) {
-                if (std::abs(delta.x()) > 0) {
-                    for (auto* cur = leaf; cur->parent; cur = cur->parent) {
-                        auto* p = cur->parent;
-                        if (!p->splitTop) {
-                            float rel = (float)delta.x() * 2.0f / std::max(1, p->box.width());
-                            p->splitRatio = std::clamp(p->splitRatio + rel, 0.1f, 1.9f);
-                            recalculate();
-                            break;
-                        }
+                if (delta.x() != 0) {
+                    if (auto* split = splitAncestor(leaf, /*split_top=*/false)) {
+                        float rel = (float)delta.x() * 2.0f / std::max(1, split->box.width());
+                        split->splitRatio = std::clamp(split->splitRatio + rel,
+                                                       SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
+                        recalculate();
                     }
                 }
-                if (std::abs(delta.y()) > 0) {
-                    for (auto* cur = leaf; cur->parent; cur = cur->parent) {
-                        auto* p = cur->parent;
-                        if (p->splitTop) {
-                            float rel = (float)delta.y() * 2.0f / std::max(1, p->box.height());
-                            p->splitRatio = std::clamp(p->splitRatio + rel, 0.1f, 1.9f);
-                            recalculate();
-                            break;
-                        }
+                if (delta.y() != 0) {
+                    if (auto* split = splitAncestor(leaf, /*split_top=*/true)) {
+                        float rel = (float)delta.y() * 2.0f / std::max(1, split->box.height());
+                        split->splitRatio = std::clamp(split->splitRatio + rel,
+                                                       SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
+                        recalculate();
                     }
                 }
             }
@@ -1437,7 +1443,8 @@ void TilingContainer::hideLayoutManagerOverlay() {
 
 
 // ---------------------------------------------------------------------------
-// Layout persistence
+// Layout persistence — repo-tracked JSON files via LayoutStore.
+// UI indices are into LayoutStore::list(), same ordering everywhere.
 // ---------------------------------------------------------------------------
 
 QJsonObject TilingContainer::serializeTree(DwindleNode* node) const {
@@ -1485,7 +1492,7 @@ DwindleNode* TilingContainer::deserializeTree(const QJsonObject& obj) {
 void TilingContainer::saveCurrentLayout() {
     QJsonObject layout;
     QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
-    layout["name"]     = ts;
+    layout["name"]     = ts;  // renameable later
     layout["saved_at"] = ts;
 
     if (root_) layout["tree"] = serializeTree(root_);
@@ -1496,55 +1503,17 @@ void TilingContainer::saveCurrentLayout() {
             visible.append(QString::fromStdString(pi.panel->title()));
     layout["visible"] = visible;
 
-    QSettings s("rover_hmi", "layouts");
-    int count = s.value("count", 0).toInt();
-    s.beginGroup(QString("layout_%1").arg(count));
-    s.setValue("name",     ts);
-    s.setValue("saved_at", ts);
-    s.setValue("json",     QString(QJsonDocument(layout).toJson(QJsonDocument::Compact)));
-    s.setValue("deleted",  false);
-    s.endGroup();
-    s.setValue("count", count + 1);
+    layout_store_.save(layout);
 }
 
 void TilingContainer::loadLayout(int index) {
-    // index is into the non-deleted snapshot list — resolve to settings key
-    QSettings s("rover_hmi", "layouts");
-    int count = s.value("count", 0).toInt();
-    int found = 0;
-    int settingsIdx = -1;
-    for (int i = 0; i < count; ++i) {
-        s.beginGroup(QString("layout_%1").arg(i));
-        bool deleted = s.value("deleted", false).toBool();
-        s.endGroup();
-        if (!deleted) {
-            if (found == index) { settingsIdx = i; break; }
-            found++;
-        }
-    }
-    if (settingsIdx < 0) return;
+    auto entries = layout_store_.list();
+    if (index < 0 || index >= (int)entries.size()) return;
+    const QJsonObject& layout = entries[index].json;
 
-    s.beginGroup(QString("layout_%1").arg(settingsIdx));
-    QString json = s.value("json").toString();
-    s.endGroup();
-
-    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
-    if (doc.isNull()) return;
-    QJsonObject layout = doc.object();
-
-    // Build visible set — prefer new "visible" key, fall back to inverting legacy "hidden" key
     QSet<QString> visible_set;
-    if (layout.contains("visible")) {
-        for (auto v : layout["visible"].toArray())
-            visible_set.insert(v.toString());
-    } else {
-        QSet<QString> hidden_set;
-        for (auto h : layout["hidden"].toArray())
-            hidden_set.insert(h.toString());
-        for (auto& pi : panels_)
-            if (!hidden_set.contains(QString::fromStdString(pi.panel->title())))
-                visible_set.insert(QString::fromStdString(pi.panel->title()));
-    }
+    for (auto v : layout["visible"].toArray())
+        visible_set.insert(v.toString());
 
     // Clear tree
     for (auto* n : all_nodes_) delete n;
@@ -1576,49 +1545,15 @@ void TilingContainer::loadLayout(int index) {
 }
 
 void TilingContainer::deleteLayout(int index) {
-    QSettings s("rover_hmi", "layouts");
-    int count = s.value("count", 0).toInt();
-    int found = 0;
-    for (int i = 0; i < count; ++i) {
-        s.beginGroup(QString("layout_%1").arg(i));
-        bool deleted = s.value("deleted", false).toBool();
-        if (!deleted) {
-            if (found == index) {
-                s.setValue("deleted", true);
-                s.endGroup();
-                return;
-            }
-            found++;
-        }
-        s.endGroup();
-    }
+    auto entries = layout_store_.list();
+    if (index >= 0 && index < (int)entries.size())
+        layout_store_.remove(entries[index].file_path);
 }
 
 void TilingContainer::renameLayout(int index, const QString& name) {
-    QSettings s("rover_hmi", "layouts");
-    int count = s.value("count", 0).toInt();
-    int found = 0;
-    for (int i = 0; i < count; ++i) {
-        s.beginGroup(QString("layout_%1").arg(i));
-        bool deleted = s.value("deleted", false).toBool();
-        if (!deleted) {
-            if (found == index) {
-                // Update name in both the display key and inside the JSON blob
-                QString json = s.value("json").toString();
-                QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
-                if (!doc.isNull()) {
-                    QJsonObject obj = doc.object();
-                    obj["name"] = name;
-                    s.setValue("json", QString(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
-                }
-                s.setValue("name", name);
-                s.endGroup();
-                return;
-            }
-            found++;
-        }
-        s.endGroup();
-    }
+    auto entries = layout_store_.list();
+    if (index >= 0 && index < (int)entries.size())
+        layout_store_.rename(entries[index].file_path, name);
 }
 
 
@@ -1655,88 +1590,67 @@ void TilingContainer::focusPrev() {
     }
 }
 
-// Navigate by geometry center: find nearest panel in the given direction
-void TilingContainer::focusDirection(int dx, int dy) {
-    if (!focused_panel_) return;
+// Hit-test at the cursor: embedded X11 windows (RViz) swallow hover events,
+// leaving focused_panel_ stale when a drag mode starts.
+TilePanel* TilingContainer::panelUnderCursor() const {
+    if (!tiling_area_) return nullptr;
+    QPoint local = tiling_area_->mapFromGlobal(QCursor::pos());
+    for (const auto& pi : panels_)
+        if (pi.panel->isVisible() && pi.panel->geometry().contains(local))
+            return pi.panel;
+    return nullptr;
+}
+
+// Nearest visible panel strictly in the given direction (arrow semantics:
+// one of dx/dy non-zero); nullptr if none.
+TilePanel* TilingContainer::nearestPanelInDirection(int dx, int dy) const {
+    if (!focused_panel_) return nullptr;
     QPoint cur = focused_panel_->geometry().center();
 
     TilePanel* best = nullptr;
-    double bestDist = 1e18;
+    double best_dist = 1e18;
 
-    for (auto& pi : panels_) {
+    for (const auto& pi : panels_) {
         auto* p = pi.panel;
         if (p == focused_panel_ || !p->isVisible()) continue;
-        QPoint pc = p->geometry().center();
-        int relX = pc.x() - cur.x();
-        int relY = pc.y() - cur.y();
+        QPoint rel = p->geometry().center() - cur;
+        if (dx > 0 && rel.x() <= 0) continue;
+        if (dx < 0 && rel.x() >= 0) continue;
+        if (dy > 0 && rel.y() <= 0) continue;
+        if (dy < 0 && rel.y() >= 0) continue;
 
-        if (dx > 0 && relX <= 0) continue;
-        if (dx < 0 && relX >= 0) continue;
-        if (dy > 0 && relY <= 0) continue;
-        if (dy < 0 && relY >= 0) continue;
-
-        double dist = (double)(relX * relX + relY * relY);
-        if (dist < bestDist) { bestDist = dist; best = p; }
+        double dist = (double)rel.x() * rel.x() + (double)rel.y() * rel.y();
+        if (dist < best_dist) { best_dist = dist; best = p; }
     }
+    return best;
+}
 
-    if (best) setFocusedPanel(best);
+void TilingContainer::focusDirection(int dx, int dy) {
+    if (auto* best = nearestPanelInDirection(dx, dy))
+        setFocusedPanel(best);
 }
 
 void TilingContainer::swapWithFocused(int dx, int dy) {
-    if (!focused_panel_) return;
-    QPoint cur = focused_panel_->geometry().center();
-
-    TilePanel* target = nullptr;
-    double bestDist = 1e18;
-
-    for (auto& pi : panels_) {
-        auto* p = pi.panel;
-        if (p == focused_panel_ || !p->isVisible()) continue;
-        QPoint pc = p->geometry().center();
-        int relX = pc.x() - cur.x();
-        int relY = pc.y() - cur.y();
-
-        if (dx > 0 && relX <= 0) continue;
-        if (dx < 0 && relX >= 0) continue;
-        if (dy > 0 && relY <= 0) continue;
-        if (dy < 0 && relY >= 0) continue;
-
-        double dist = (double)(relX * relX + relY * relY);
-        if (dist < bestDist) { bestDist = dist; target = p; }
-    }
-
-    if (target) dwindleSwap(focused_panel_, target);
+    if (auto* target = nearestPanelInDirection(dx, dy))
+        dwindleSwap(focused_panel_, target);
 }
 
-// Adjust splitRatio of the nearest ancestor with the matching split orientation
+// Resize along the arrow axis via the nearest matching-orientation split;
+// the sign flips by which side the panel is on so it grows toward the arrow.
 void TilingContainer::resizeFocused(int dx, int dy) {
     if (!focused_panel_) return;
     auto* leaf = getLeafFor(focused_panel_);
     if (!leaf) return;
 
-    if (dx != 0) {
-        for (auto* cur = leaf; cur->parent; cur = cur->parent) {
-            auto* p = cur->parent;
-            if (!p->splitTop) {
-                float delta = (p->children[0] == cur) ? dx * RESIZE_RATIO_STEP
-                                                       : -dx * RESIZE_RATIO_STEP;
-                p->splitRatio = std::clamp(p->splitRatio + delta, 0.1f, 1.9f);
-                recalculate();
-                return;
-            }
-        }
-    }
+    int arrow = (dx != 0) ? dx : dy;
+    bool split_top = (dx == 0);  // vertical arrow → top/bottom split
 
-    if (dy != 0) {
-        for (auto* cur = leaf; cur->parent; cur = cur->parent) {
-            auto* p = cur->parent;
-            if (p->splitTop) {
-                float delta = (p->children[0] == cur) ? dy * RESIZE_RATIO_STEP
-                                                       : -dy * RESIZE_RATIO_STEP;
-                p->splitRatio = std::clamp(p->splitRatio + delta, 0.1f, 1.9f);
-                recalculate();
-                return;
-            }
-        }
-    }
+    DwindleNode* child = nullptr;
+    auto* split = splitAncestor(leaf, split_top, &child);
+    if (!split) return;
+
+    float delta = (split->children[0] == child ? arrow : -arrow) * RESIZE_RATIO_STEP;
+    split->splitRatio = std::clamp(split->splitRatio + delta,
+                                   SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
+    recalculate();
 }

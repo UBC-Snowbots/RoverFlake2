@@ -22,11 +22,15 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
+    src/layout_store.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
 )
 target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
 ament_target_dependencies(rover_hmi_core rclcpp pluginlib)
+# lets LayoutStore find the source tree on the machine that built the binary
+target_compile_definitions(rover_hmi_core PRIVATE
+    ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_include_directories(rover_hmi_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
