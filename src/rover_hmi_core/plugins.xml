@@ -19,7 +19,7 @@
   <class name="rover_hmi_core/LightingModule"
          type="LightingModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+    <description>Five-board lighting control: spatial rover view with per-board brightness over /lights/cmd</description>
   </class>
   <class name="rover_hmi_core/VawTreeModule"
          type="VawTreeModule"
