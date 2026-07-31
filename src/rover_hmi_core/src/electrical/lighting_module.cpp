@@ -13,6 +13,7 @@
 #include <QPainter>
 #include <QRadialGradient>
 #include <QSizePolicy>
+#include <QTimer>
 
 #include <pluginlib/class_list_macros.hpp>
 
@@ -58,9 +59,10 @@ void RoverLightingView::paintEvent(QPaintEvent*) {
     p.setRenderHint(QPainter::Antialiasing);
     p.fillRect(rect(), QColor(theme::Bg));
 
-    // Rover body, with margin left around it for glow halos
-    const double mx = width() * 0.20, my = height() * 0.16;
-    QRectF body(mx, my, width() - 2 * mx, height() - 2 * my);
+    // Square rover body centered in the widget, with margin around it for
+    // glow halos (the physical rover is square).
+    const double side = qMin(width(), height()) * 0.62;
+    QRectF body((width() - side) / 2.0, (height() - side) / 2.0, side, side);
     p.setPen(QPen(QColor(have_feedback_ ? theme::Border : theme::BorderDim), 2));
     p.setBrush(QColor(theme::BgPanel));
     p.drawRoundedRect(body, 14, 14);
@@ -68,22 +70,26 @@ void RoverLightingView::paintEvent(QPaintEvent*) {
     // Chevron above the body marks the front
     p.setPen(QPen(QColor(theme::TextDim), 2));
     const double cx = body.center().x();
-    const double cy = body.top() - my * 0.5;
+    const double cy = body.top() - (height() - side) * 0.25;
     p.drawLine(QPointF(cx - 10, cy + 5), QPointF(cx, cy - 5));
     p.drawLine(QPointF(cx, cy - 5), QPointF(cx + 10, cy + 5));
 
-    // Glyph positions, indexed by board number
+    // Glyph positions, indexed by board number. The two front lights are
+    // forward-facing floodlights mounted along the front edge (not corner
+    // lights); sides are mid-edge, back is center-rear.
     const QPointF pos[5] = {
-        QPointF(body.left(),  body.top()),           // 0 front-left
-        QPointF(body.right(), body.top()),           // 1 front-right
+        QPointF(cx - side * 0.18, body.top()),       // 0 front-left floodlight
+        QPointF(cx + side * 0.18, body.top()),       // 1 front-right floodlight
         QPointF(body.left(),  body.center().y()),    // 2 left
         QPointF(body.right(), body.center().y()),    // 3 right
-        QPointF(body.center().x(), body.bottom()),   // 4 back
+        QPointF(cx,           body.bottom()),        // 4 back
     };
     const double r = qMin(width(), height()) * 0.05;
 
     for (int i = 0; i < 5; i++) {
-        // Until first feedback arrives, draw every light as off/unknown.
+        // Glyphs show HARDWARE-CONFIRMED state only (from /lights/feedback) —
+        // deliberately not the commanded value, so a lit glyph means the light
+        // is really on. Until the first feedback, everything draws off/unknown.
         const double pct = have_feedback_ ? qBound(0.0, percents_[i], 100.0) : 0.0;
         if (pct > 0.0) {
             // Lit: warm radial halo whose radius and alpha grow with brightness,
@@ -218,6 +224,22 @@ QWidget* LightingModule::createWidget(QWidget* parent) {
         .arg(theme::TextDim).arg(theme::BorderDim));
     grid->addWidget(status_, 4, 0, 1, 3);
 
+    // No-feedback watchdog (single-shot, re-armed by every publish, cancelled
+    // by every feedback). Firing means commands are going unanswered — the
+    // glyphs are intentionally dark, so tell the operator why.
+    confirm_timer_ = new QTimer(widget);
+    confirm_timer_->setSingleShot(true);
+    QObject::connect(confirm_timer_, &QTimer::timeout, [this]() {
+        if (status_) {
+            status_->setText(
+                "\xe2\x9a\xa0 No response on /lights/feedback \xc2\xb7 "
+                "commands sent but unconfirmed \xc2\xb7 glyphs show confirmed state only");
+            status_->setStyleSheet(
+                QString("color: %1; padding: 4px 6px; border: 1px solid %1; font-weight: bold;")
+                .arg(theme::Yellow));
+        }
+    });
+
     grid->setColumnStretch(0, 2);
     grid->setColumnStretch(1, 3);
     grid->setColumnStretch(2, 2);
@@ -325,6 +347,11 @@ void LightingModule::publishCmd() {
     std_msgs::msg::Float64MultiArray msg;
     msg.data.assign(desired_, desired_ + NUM_BOARDS);
     pub_->publish(msg);
+
+    // Glyphs deliberately do NOT light up here — they only show what the
+    // hardware confirms. Instead, arm the no-feedback watchdog: if nothing
+    // answers within the window, the status line turns into a warning.
+    if (confirm_timer_) confirm_timer_->start(FEEDBACK_TIMEOUT_MS);
 }
 
 void LightingModule::setNode(rclcpp::Node::SharedPtr node) {
@@ -369,7 +396,14 @@ void LightingModule::onFeedback(const std_msgs::msg::Float64MultiArray::SharedPt
         applyToggleStyle(c, cluster_on_[c]);
     }
 
-    if (status_) status_->setText("Live  \xc2\xb7  /lights/feedback");
+    // Feedback arrived: disarm the watchdog and clear any warning styling.
+    if (confirm_timer_) confirm_timer_->stop();
+    if (status_) {
+        status_->setText("Live  \xc2\xb7  /lights/feedback");
+        status_->setStyleSheet(
+            QString("color: %1; padding: 4px 6px; border: 1px solid %2;")
+            .arg(theme::Green).arg(theme::BorderDim));
+    }
 }
 
 PLUGINLIB_EXPORT_CLASS(LightingModule, rover_hmi_core::GuiModule)

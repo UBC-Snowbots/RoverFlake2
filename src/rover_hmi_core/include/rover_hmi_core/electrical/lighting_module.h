@@ -20,6 +20,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
+class QTimer;
+
 // Top-down rover outline with five light glyphs whose glow intensity tracks
 // hardware-confirmed brightness. Renders dim outlines until feedback arrives.
 class RoverLightingView : public QWidget {
@@ -76,6 +78,11 @@ private:
     QLabel*      master_lbl_                = nullptr;
     QLabel*      status_                    = nullptr;
     RoverLightingView* view_                = nullptr;
+
+    // Watchdog: armed on every publish, cancelled by feedback. If it fires,
+    // commands are going unanswered and the status line shows a warning.
+    static constexpr int FEEDBACK_TIMEOUT_MS = 1500;
+    QTimer* confirm_timer_ = nullptr;
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr    pub_;
