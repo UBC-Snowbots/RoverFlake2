@@ -66,11 +66,17 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
     if (DEATH_RAY_CONTROL_MODE == DeathRayControlMode::ABS) {
         float cmd = msg->data;
 
-        bool clockwise = cmd > position;
-        float degrees = std::abs(cmd - position);
-        if (!clockwise) degrees *= -1;
+        if (cmd > position) {
+            gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+        }
+        else if (cmd < position) {
+            gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+        }
 
+        float degrees = std::abs(cmd - position);
         steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+
+        position = cmd;
     }
     else { // Relative mode
         float cmd = msg->data;
