@@ -73,7 +73,7 @@ private:
     rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr death_ray_zero_sub_;
     void deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg);
 
-    rclcpp::TimerBase::SharedPtr position_feedback_timer_;
+    rclcpp::TimerBase::SharedPtr death_ray_position_feedback_timer_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr death_ray_position_pub_;
     void publishDeathRayPosition();
 

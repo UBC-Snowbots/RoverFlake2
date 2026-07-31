@@ -32,7 +32,13 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
     death_ray_zero_sub_ = this->create_subscription<std_msgs::msg::Empty>(
         "death_ray/zero", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
 
-    position_feedback_timer_ = this->create_wall_timer(
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
+    death_ray_position_pub_ = this->create_publisher<std_msgs::msg::Float32>(
+        "death_ray/position",
+        qos
+    );
+    
+    death_ray_position_feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&DeathRayMotorControlNode::publishDeathRayPosition, this)
     );
