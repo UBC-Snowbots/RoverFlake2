@@ -28,10 +28,11 @@ const int LightingModule::CLUSTER_BOARDS[LightingModule::NUM_CLUSTERS][2] = {
 
 static QString sliderStyle() {
     return QString(
-        "QSlider::groove:horizontal { height: 6px; background: %1; border-radius: 3px; }"
-        "QSlider::handle:horizontal { width: 14px; height: 14px; background: %2;"
-        " border-radius: 7px; margin: -4px 0; }"
-        "QSlider::sub-page:horizontal { background: %3; border-radius: 3px; }")
+        "QSlider { min-height: 34px; }"
+        "QSlider::groove:horizontal { height: 10px; background: %1; border-radius: 5px; }"
+        "QSlider::handle:horizontal { width: 26px; height: 26px; background: %2;"
+        " border-radius: 13px; margin: -8px 0; }"
+        "QSlider::sub-page:horizontal { background: %3; border-radius: 5px; }")
         .arg(theme::BgPanel).arg(theme::Text).arg(theme::Cyan);
 }
 
