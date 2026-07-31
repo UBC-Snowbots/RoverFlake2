@@ -8,11 +8,11 @@
 
 /**
  * Enum to define the control mode of the death ray.
- * For both modes, commands are in the range (-180, 180).
  * 
  * ABS: Absolute commands. The dish is assumed to be at position 0
  *      on node startup (and can be zeroed throughout its runtime).
  *      Commands take the form of absolute positions relative to 0.
+ *      Valid commands are in (-180, 180].
  * 
  *      Example: If the dish is at position 20 and you issue the command
  *      50, it will rotate 30 degrees clockwise until it is at 50 degrees.
