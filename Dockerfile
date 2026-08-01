@@ -49,6 +49,10 @@ COPY src/ $ROVERFLAKE_ROOT/src/
 # run full setup to install dependencies inside the image (auto-confirm prompts)
 RUN yes | bash setup_scripts/setup_everything_common.sh
 
+# spectrometer pipeline deps — apt's matplotlib/scipy are built against the
+# numpy 1.x ABI and fail to import against the numpy 2.x in this image
+RUN pip3 install --no-cache-dir -r $ROVERFLAKE_ROOT/src/rover_hmi_core/scripts/spectrometer/requirements.txt
+
 # copy everything else (code changes invalidate from here, but deps are cached)
 COPY . $ROVERFLAKE_ROOT
 
