@@ -26,8 +26,22 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
         RCLCPP_INFO(this->get_logger(), "Successfully requested STEP line on pin %d", STEP_LINE_GPIO_PIN);
     }
 
-    death_ray_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-        "death_ray_commands", rclcpp::QoS(10), std::bind(&DeathRayMotorControlNode::deathRayCommandCallback, this, std::placeholders::_1));
+    death_ray_motor_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+        "death_ray/motor_commands", rclcpp::QoS(ROS_SUBSCRIBER_QOS), std::bind(&DeathRayMotorControlNode::deathRayMotorCallback, this, std::placeholders::_1));
+
+    death_ray_zero_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+        "death_ray/zero", rclcpp::QoS(ROS_SUBSCRIBER_QOS), std::bind(&DeathRayMotorControlNode::deathRayZeroCallback, this, std::placeholders::_1));
+
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
+    death_ray_position_pub_ = this->create_publisher<std_msgs::msg::Float32>(
+        "death_ray/position",
+        qos
+    );
+    
+    death_ray_position_feedback_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
+        std::bind(&DeathRayMotorControlNode::publishDeathRayPosition, this)
+    );
 
     RCLCPP_INFO(this->get_logger(), "DeathRayMotorControlNode initialization complete.");
 }
@@ -45,7 +59,7 @@ DeathRayMotorControlNode::~DeathRayMotorControlNode() {
 }
 
 /**
- * Callback for the /death_ray_commands subscriber.
+ * Callback for the /death_ray/motor_commands subscriber.
  * Receives and decodes Float32 messages.
  * 
  * The sign of the command indicates the direction 
@@ -57,17 +71,45 @@ DeathRayMotorControlNode::~DeathRayMotorControlNode() {
  * to rotate the dish. This function decodes the command and 
  * transmits it to the GPIO pins.
  */
-void DeathRayMotorControlNode::deathRayCommandCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    float stepper_cmd = msg->data;
+void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float32::SharedPtr msg) {
+    int steps;
 
-    if (stepper_cmd > 0) {
-        gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
-    } else if (stepper_cmd < 0) {
-        gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+    if (DEATH_RAY_CONTROL_MODE == DeathRayControlMode::ABS) {
+        float cmd = msg->data;
+
+        if (cmd <= -180.0 || cmd > 180.0f) {
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Invalid death ray command: %.2f degrees. Commands must be in range (-180, 180].",
+                cmd
+            );
+            return;
+        }
+
+        if (cmd > position) {
+            gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+        }
+        else if (cmd < position) {
+            gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+        }
+
+        float degrees = std::abs(cmd - position);
+        steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+
+        position = cmd;
     }
+    else { // Relative mode
+        float cmd = msg->data;
 
-    float degrees = std::abs(stepper_cmd);
-    int steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+        if (cmd > 0) {
+            gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+        } else if (cmd < 0) {
+            gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+        }
+
+        float degrees = std::abs(cmd);
+        steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+    }
 
     /**
      * rclcpp::ok on each loop iteration ensures that the loop stops
@@ -82,6 +124,33 @@ void DeathRayMotorControlNode::deathRayCommandCallback(const std_msgs::msg::Floa
         gpiod_line_set_value(step_line, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
     }
+}
+
+/**
+ * Callback for the death_ray/zero subscriber.
+ * 
+ * Sets the current tracked position to 0, for manual homing.
+ */
+void DeathRayMotorControlNode::deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg) {
+    /**
+     * Message content is empty: receiving any message on this topic indicates that the dish
+     * should be zeroed.
+     * 
+     * There doesn't seem to be a way to define a subscriber callback without any parameters,
+     * so this prevents compiler errors due to an unused parameter.
+     */
+    (void) msg;
+
+    position = 0;
+}
+
+/**
+ * Publish the current position of the death ray.
+ */
+void DeathRayMotorControlNode::publishDeathRayPosition() {
+    std_msgs::msg::Float32 msg;
+    msg.data = position;
+    death_ray_position_pub_->publish(msg);
 }
 
 int main(int argc, char* argv[]) {

@@ -102,7 +102,7 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
     for (auto [b, dir] : dirs) {
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect(b, &QPushButton::clicked, [this, dir = dir]() {
-            state_.drillstepperdir = static_cast<int16_t>(dir);
+            state_.drillstepperdir = static_cast<int8_t>(dir);
             updateDrillBtns();
             publish();
         });
@@ -354,7 +354,7 @@ void ScienceModule::updatePumpBtns()
 
 void ScienceModule::setDrillDir(int dir)
 {
-    state_.drilldir = static_cast<int16_t>(dir);
+    state_.drilldir = static_cast<int8_t>(dir);
     updateDrillBtns();
     publish();
 }

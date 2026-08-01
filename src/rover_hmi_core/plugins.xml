@@ -95,4 +95,10 @@
     <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
   </class>
 
+
+  <class name="rover_hmi_core/SpectrometerModule"
+         type="SpectrometerModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
+  </class>
 </library>
