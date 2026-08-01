@@ -213,7 +213,11 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
 
     if (cmd_type == CMD_HOME) {
         if (msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES) { home_axis(msg->cmd_value); return; }
-        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE) { home_axis(AXIS_5_INDEX); return; }
+        else if (msg->cmd_value == HOME_VALUE_ALL_AXES_EXCEPT_EE) {
+            for (int a = 0; a < NUM_AXES; a++)
+                if (a != AXIS_EE_INDEX) home_axis(a);   // gate below denies switchless axes
+            return;
+        }
         else if (msg->cmd_value == HOME_VALUE_ALL_AXES_AND_EE)    { /* EE TODO */ return; }
         RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
         return;
@@ -291,16 +295,18 @@ void MoteusDriverNode::run() {
         const int i = ax.index;
         switch (ax.state) {
         case AxisState::REQUESTING_HOMING:
-            if (ax.limit_switch) {
+            if (!AxisConfig::has_limit_switch[i]) {
+                RCLCPP_WARN(this->get_logger(), "Axis %d has no limit switch — homing denied", i + 1);
+                ax.state = AxisState::RUNNING_OK;
+            } else if (i == AXIS_4_INDEX) {   // its motor is disabled in the frame loop — would creep forever
+                RCLCPP_WARN(this->get_logger(), "Axis %d motor disabled — homing denied", i + 1);
+                ax.state = AxisState::RUNNING_OK;
+            } else if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
-            } else if (i == AXIS_6_INDEX) {
-                RCLCPP_WARN(this->get_logger(), "Axis 6 homing not implemented (runs relative)");
-                ax.state = AxisState::RUNNING_OK;
             } else {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch healthy. Homing accepted", i + 1);
-                if (i != AXIS_5_INDEX)  // wrist is continuous — no seed needed
-                    set_position(i, AxisConfig::max_position_rev[i] - 0.01f);
+                set_position(i, AxisConfig::max_position_rev[i] - 0.01f);  // seed so soft limits can't block travel
                 ax.state = AxisState::HOMING;
             }
             break;
@@ -308,8 +314,7 @@ void MoteusDriverNode::run() {
         case AxisState::HOMING:
             if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
-                if (i == AXIS_5_INDEX) { zero_position(MOTOR_5_INDEX); zero_position(MOTOR_6_INDEX); }
-                else         { zero_position(i); }
+                zero_position(i);   // axes 1-4 only; wrist never passes the homing gate
                 ax.state = AxisState::GOING_TO_PRESET_POSITION;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
@@ -330,7 +335,6 @@ void MoteusDriverNode::run() {
             if (std::fabs(axes[i].position - AxisConfig::idle_position[i]) < 0.01f) 
             {
                 ax.state = AxisState::RUNNING_OK;
-                if (i == AXIS_5_INDEX) axes[AXIS_6_INDEX].state = AxisState::RUNNING_OK; // axis 6 usable (relative), unhomed
             }
             break;
         }
