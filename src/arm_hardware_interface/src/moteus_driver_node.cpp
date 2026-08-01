@@ -290,6 +290,25 @@ void MoteusDriverNode::run() {
         }
     }
 
+    // ── Stage 1.5: limit switch soft-block — clamp intake motion toward a
+    //    pressed switch. SM-owned axes handle the switch in their own states.
+    for (int a = 0; a < NUM_AXES; a++) {
+        if (!axes[a].limit_switch) { limit_block_logged_[a] = false; continue; }
+        auto& c = axis_cmds_[a];
+        if (!c.active || c.is_stop || stateMachineOwns(axes[a].state)) continue;
+        const int dir = AxisConfig::homing_direction[a];  // toward the switch
+        bool blocked = false;
+        if (!std::isnan(c.velocity) && c.velocity * dir > 0.0) { c.velocity = 0.0; blocked = true; }
+        if (!std::isnan(c.position) && (c.position - axes[a].position) * dir > 0.0) {
+            c.position = axes[a].position;  blocked = true;
+        }
+        if (blocked && !limit_block_logged_[a]) {
+            RCLCPP_WARN(this->get_logger(),
+                "Axis %d limit switch pressed — blocking motion toward switch", a + 1);
+            limit_block_logged_[a] = true;
+        }
+    }
+
     // ── Stage 2: state machine — homing / preset write axis_cmds_ (axis space)
     for (auto& ax : axes) {
         const int i = ax.index;

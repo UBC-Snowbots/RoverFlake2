@@ -188,6 +188,7 @@ private:
     std::array<int,  NUM_MOTORS> last_fault_{};
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
+    std::array<bool, NUM_AXES> limit_block_logged_{};  // edge log for stage 1.5 soft-block
 
 
 
