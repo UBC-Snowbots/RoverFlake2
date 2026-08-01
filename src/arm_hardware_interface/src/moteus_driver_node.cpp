@@ -332,6 +332,12 @@ void MoteusDriverNode::run() {
                 RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
                 zero_position(i);   // axes 1-4 only; wrist never passes the homing gate
                 ax.state = AxisState::GOING_TO_PRESET_POSITION;
+            } else if (axes[i].position < ax.min_position_rev - 0.05f) {
+                RCLCPP_ERROR(this->get_logger(),
+                    "Axis %d homing overtravel — no switch contact (aux2 input not configured?). Stopping.", i + 1);
+                auto& c = axis_cmds_[i];
+                c.active = true; c.is_stop = true;
+                ax.state = AxisState::ERROR;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
                 c.active = true; c.is_stop = false; c.is_zero = false;
@@ -450,6 +456,8 @@ void MoteusDriverNode::run() {
         t.q_current = std::isnan(r.q_current)?0.0f:(float)r.q_current;
         t.power     = std::isnan(r.power)?0.0f:(float)r.power;
         t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
+        // NOTE: motor-indexed lookup into axis-indexed config — valid only while
+        // switch-equipped axes (0-3) map 1:1 to motors; wrist/EE entries are false.
         const bool sw_raw = (r.aux2_gpio & AxisConfig::limit_switch_mask[id - 1]) != 0;
         t.limit_switch = AxisConfig::has_limit_switch[id - 1]
                       && (sw_raw != AxisConfig::limit_switch_inverted[id - 1]);

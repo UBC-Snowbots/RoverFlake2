@@ -3,6 +3,7 @@
 #include "motor_addressing.h"  // NUM_MOTORS
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
