@@ -1,27 +1,12 @@
 // Generic CAN hardware interface. See can_node.h for the topic layout.
-#include "generic_can_hardware_interface.h"
+#include "generic_can_hardware_interface.hpp"
 
 #include "can_topic_routing.h"
 
 #include <cstring>
 #include <stdexcept>
 
-// ---- CAN id pack/unpack -----------------------------------------------------
-// Same layout as comms.c: 13 bit device id in the upper bits, 16 bit message
-// type in the lower bits, which is exactly 29 bits (extended id).
-static inline uint32_t pack_can_id(uint16_t sender_id, uint16_t type)
-{
-    return (((uint32_t)(sender_id & COMMS_DEVICE_ID_MASK)) << COMMS_DEVICE_ID_SHIFT)
-         | ((uint32_t)type & COMMS_MSG_ID_MASK);
-}
-static inline uint16_t can_id_sender(uint32_t id)
-{
-    return (uint16_t)((id >> COMMS_DEVICE_ID_SHIFT) & COMMS_DEVICE_ID_MASK);
-}
-static inline uint16_t can_id_type(uint32_t id)
-{
-    return (uint16_t)(id & COMMS_MSG_ID_MASK);
-}
+
 
 // Constructor
 CanNode::CanNode() : Node("generic_can_hardware_interface")
@@ -77,7 +62,7 @@ int main(int argc, char* argv[])
         auto node = std::make_shared<CanNode>();
         rclcpp::spin(node);
     } catch (const std::exception& e) {
-        RCLCPP_FATAL(rclcpp::get_logger("can_node"), "%s", e.what());
+        RCLCPP_FATAL(rclcpp::get_logger("generic_can_hardware_interface"), "%s", e.what());
         rclcpp::shutdown();
         return 1;
     }
@@ -109,7 +94,7 @@ void CanNode::outgoing_callback(const GenericCommsMsg::SharedPtr msg)
 
     struct canfd_frame frame;
     std::memset(&frame, 0, sizeof(frame));
-    frame.can_id = pack_can_id(msg->sender_id, msg->type) | CAN_EFF_FLAG;  // always extended ids
+    frame.can_id = pack_id(msg->sender_id, msg->type) | CAN_EFF_FLAG;  // always extended ids
     frame.len = (uint8_t)msg->payload.size();
     std::memcpy(frame.data, msg->payload.data(), frame.len);
 
@@ -155,13 +140,16 @@ void CanNode::rx_timer_callback()
 
         const uint32_t id = frame.can_id & CAN_EFF_MASK;
 
+
         GenericCommsMsg msg;
-        msg.sender_id   = can_id_sender(id);
-        msg.type        = can_id_type(id);
+        msg.sender_id   = id_device(id);
+        msg.type        = id_type(id);
         msg.payload_len = frame.len;
         msg.payload.assign(frame.data, frame.data + frame.len);
 
         publish_incoming(msg);
+        
+
     }
 }
 
