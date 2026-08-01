@@ -75,17 +75,18 @@ struct JointMap {
     double      direction;        // +1 or -1: sign between output revolutions and URDF angle
 };
 
-//!? this is wrong?? where is A4?
-// Should only be needed for IK/rviz. Leave be for now.
+// urdf joint names only needed for IK/rviz. The URDF still describes the old
+// 6-joint arm (a4_rotation..a6_rotation) — a5_differential/a6_differential/
+// ee_prismatic don't exist there yet.
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
     //  id   hardware label    urdf joint name    boot angle (rad)   direction
-    {  1,   "Base",           "shoulder_joint",       -1.57,          -1.0  },
-    {  2,   "Shoulder",       "link_1_joint",         -1.57,          -1.0  },
-    {  3,   "Elbow",          "link1_link2",           0.9,           -1.0  },
-    {  4,   "BALLS",          "MEOWMEOW",           0.9,           -1.0  }, // IDK
-    {  5,   "Wrist Pitch",    "a4_rotation",           0.0,           -1.0  },
-    {  6,   "Wrist Roll",     "a5_rotation",           1.2,           -1.0  },
-    {  7,   "End Effector",   "a6_rotation",           0.0,           -1.0  },
+    {  1,   "A1",   "shoulder_joint",       -1.57,          -1.0  },
+    {  2,   "A2",   "link_1_joint",         -1.57,          -1.0  },
+    {  3,   "A3",   "link1_link2",           0.9,           -1.0  },
+    {  4,   "A4",   "a4_rotation",           0.9,           -1.0  },
+    {  5,   "A5",   "a5_differential",       0.0,           -1.0  },
+    {  6,   "A6",   "a6_differential",       1.2,           -1.0  },
+    {  7,   "EE",   "ee_prismatic",          0.0,           -1.0  },
 };
 
 

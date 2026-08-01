@@ -94,10 +94,6 @@ static constexpr int NUM_COLS = 12;
 
 static const int PRECISION[] = { 0, 3, 0, 1, 4, 3, 3, 3, 1, 1, 3, 0 };
 
-static const char* JOINT_NAMES[] = {
-    "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
-};
-
 // QSettings group/key helpers
 static QString settingsKey(int motor_idx, const char* reg) {
     return QString("motor_params/motor_%1/%2").arg(motor_idx).arg(reg);
@@ -195,7 +191,7 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     auto arm_defaults = get_arm_configuration();
 
     for (int r = 0; r < NUM_MOTORS; r++) {
-        auto* jlbl = new QLabel(JOINT_NAMES[r]);
+        auto* jlbl = new QLabel(ARM_JOINTS[r].hardware_name);
         jlbl->setFont(monoBold);
         jlbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         jlbl->setStyleSheet(
@@ -283,7 +279,7 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
         auto* rst_btn = new QPushButton("↺");
         rst_btn->setFont(monoBold);
         rst_btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        rst_btn->setToolTip(QString("Reset %1 to motor_config.h defaults").arg(JOINT_NAMES[r]));
+        rst_btn->setToolTip(QString("Reset %1 to motor_config.h defaults").arg(ARM_JOINTS[r].hardware_name));
         rst_btn->setStyleSheet(
             QString("QPushButton { background: %1; color: %2;"
                     "  border: 1px solid %3; border-radius: 4px; padding: 5px 10px; }"
@@ -309,7 +305,7 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
                     "  python3 -m moteus.moteus_tool -t %2\n"
                     "    --calibrate --cal-motor-poles 16 --cal-force-kv 265 --cal-hal\n"
                     "then sets motor_position.sources.0.type = type.hall:4")
-            .arg(JOINT_NAMES[r]).arg(r + 1));
+            .arg(ARM_JOINTS[r].hardware_name).arg(r + 1));
         cal_btn->setStyleSheet(
             QString("QPushButton { background: %1; color: %2;"
                     "  border: 1px solid %3; border-radius: 4px; padding: 5px 10px; }"
@@ -562,7 +558,7 @@ void MotorConfigModule::resetMotorToDefaults(int motor_idx) {
     if (status_) {
         status_->setText(
             QString("Motor %1 (%2) reset to defaults — saved overrides cleared")
-            .arg(motor_idx + 1).arg(JOINT_NAMES[motor_idx]));
+            .arg(motor_idx + 1).arg(ARM_JOINTS[motor_idx].hardware_name));
     }
 }
 
@@ -598,7 +594,7 @@ void MotorConfigModule::requestCalibration(int motor_id) {
         if (status_)
             status_->setText(
                 QString("Calibrating motor %1 (%2)...  ~30 s")
-                .arg(motor_id).arg(JOINT_NAMES[motor_id - 1]));
+                .arg(motor_id).arg(ARM_JOINTS[motor_id - 1].hardware_name));
     }
 }
 
