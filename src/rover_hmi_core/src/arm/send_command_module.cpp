@@ -331,7 +331,7 @@ void SendCommandModule::sendPosition(int motor_id, double pos, double vel, doubl
     msg.velocities.resize(NUM_MOTORS, NAN);
     if (motor_id >= 1 && motor_id <= NUM_MOTORS) {
         msg.positions[motor_id - 1] = pos;
-        msg.velocities[motor_id - 1] = vel;
+        msg.velocities[motor_id - 1] = vel * 360.0;  // wire contract is deg/s, UI is rev/s
     }
     cmd_pub_->publish(msg);
 
@@ -348,9 +348,9 @@ void SendCommandModule::sendVelocity(int motor_id, double velocity) {
     msg.cmd_type = CMD_ABS_VEL;
     msg.velocities.resize(NUM_MOTORS, NAN);
     if (motor_id >= 1 && motor_id <= NUM_MOTORS)
-        msg.velocities[motor_id - 1] = velocity;
+        msg.velocities[motor_id - 1] = velocity * 360.0;  // wire contract is deg/s, UI is rev/s
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d vel %2").arg(motor_id).arg(QString::number(velocity, 'f', 3)));
+    logCmd(QString("%1> d pos nan %2 nan").arg(motor_id).arg(QString::number(velocity, 'f', 3)));
 }
 
 void SendCommandModule::sendStop(int motor_id) {
@@ -361,7 +361,7 @@ void SendCommandModule::sendStop(int motor_id) {
     if (motor_id >= 1 && motor_id <= NUM_MOTORS)
         msg.velocities[motor_id - 1] = 0.0;
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d stop").arg(motor_id));
+    logCmd(QString("%1> d pos nan 0 nan (hold)").arg(motor_id));
 }
 
 void SendCommandModule::sendStopAll() {

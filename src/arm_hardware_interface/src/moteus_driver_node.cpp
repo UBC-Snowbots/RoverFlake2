@@ -2,6 +2,7 @@
 #include "axis_5_6_differential.h"
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 #include <thread>
 #include <cstdio>      // popen / pclose
 #include <sys/wait.h>  // WIFEXITED / WEXITSTATUS
@@ -182,7 +183,19 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             if (std::isnan(pos) && std::isnan(vd)) continue;
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
-            p.position = pos; p.velocity = degreesToRevolution(vd); p.max_torque = NAN;
+            p.position = pos;
+            const double cap = (double)AxisConfig::max_running_speed[a];
+            if (std::isnan(pos)) {
+                // d pos nan v nan — velocities[] IS the velocity
+                p.velocity = std::clamp(degreesToRevolution(vd), -cap, cap);
+                p.max_velocity = cap;
+            } else {
+                // d pos p v nan — velocities[] is the travel speed, stop at target
+                p.velocity = 0.0;
+                p.max_velocity = std::isnan(vd) ? cap
+                    : std::min(degreesToRevolution(std::fabs(vd)), cap);
+            }
+            p.max_torque = NAN;
         }
         return;
     }
