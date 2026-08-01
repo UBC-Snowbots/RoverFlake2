@@ -53,7 +53,8 @@ private:
 
     int  current_step_    = 0;
     bool steps_done_[4]   = {};
-    bool vials_filled_[6] = {};
+    static constexpr int kNumVials = 3;
+    bool vials_filled_[kNumVials] = {};
 
     QPushButton* checks_[4][3] = {};
 
@@ -67,10 +68,10 @@ private:
 
     // Sensor display labels
     QLabel* ultrasonic_lbl_  = nullptr;
-    QLabel* spectro_lbls_[6] = {};
+    QLabel* spectro_lbls_[kNumVials] = {};
 
     // Vial buttons (step 2)
-    QPushButton* vial_btns_[6]  = {};
+    QPushButton* vial_btns_[kNumVials]  = {};
     QLabel*      vials_count_lbl_ = nullptr;
 
     // Navigation

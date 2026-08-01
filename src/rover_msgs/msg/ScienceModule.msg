@@ -10,7 +10,7 @@ int16 p1status
 
 int16 largestatus
 int16 smallstatus
-int16 carouselindex      # target chamber, 0-2 (servo-rotated, 3 chambers)
+int16 carouselindex      # target vial, 0-2 (servo-rotated, 3 vials)
 bool dropservo           # dirt drop servo: true=open
 
 int16 agpowerstatus

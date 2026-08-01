@@ -184,7 +184,7 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
     auto* carouselRow = new QHBoxLayout();
     carouselRow->setSpacing(4);
     auto* prevBtn  = new QPushButton("◀ Prev");
-    carousel_lbl_  = new QLabel("0");
+    carousel_lbl_  = new QLabel("Vial 1");
     auto* nextBtn  = new QPushButton("Next ▶");
     auto* resetBtn = new QPushButton("Reset");
 
@@ -194,11 +194,11 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
         "border-radius:5px;padding:3px 12px;").arg(theme::FontSizeLg));
     carousel_lbl_->setAlignment(Qt::AlignCenter);
 
-    // 3-chamber carousel rotated by a servo; the index is the commanded chamber
+    // 3-vial carousel rotated by a servo; the index is the commanded vial
     auto bump = [this](int dir) {
         carousel_idx_ = (carousel_idx_ + dir + 3) % 3;
         state_.carouselindex = static_cast<int16_t>(carousel_idx_);
-        carousel_lbl_->setText(QString::number(carousel_idx_));
+        carousel_lbl_->setText(QString("Vial %1").arg(carousel_idx_ + 1));
         publish();
     };
     QObject::connect(prevBtn, &QPushButton::clicked, [bump]() { bump(-1); });
@@ -206,7 +206,7 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
     QObject::connect(resetBtn, &QPushButton::clicked, [this]() {
         carousel_idx_        = 0;
         state_.carouselindex = 0;
-        carousel_lbl_->setText("0");
+        carousel_lbl_->setText("Vial 1");
         publish();
     });
 
@@ -218,7 +218,7 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
     carouselRow->addWidget(resetBtn);
     root->addLayout(carouselRow);
 
-    // Dirt drop servo gating the carousel chambers
+    // Dirt drop servo gating the carousel vials
     drop_btn_ = new QPushButton();
     drop_btn_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect(drop_btn_, &QPushButton::clicked, [this]() {
@@ -475,7 +475,7 @@ void ScienceModule::advanceSequence(int seq)
                 case 0:
                     carousel_idx_ = 0;
                     state_.carouselindex = 0;
-                    carousel_lbl_->setText("0");
+                    carousel_lbl_->setText("Vial 1");
                     state_.sv1status = 1; state_.p1status = 2;
                     updateValveBtn(0); updatePumpBtns();
                     seq_status_lbl_->setText("Process — step 1/2: pump fwd");

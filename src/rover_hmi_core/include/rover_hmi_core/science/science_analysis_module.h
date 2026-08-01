@@ -38,9 +38,10 @@ private:
     void appendNpkRecord(float n, float p, float k);
 
     // Spectro
-    QLabel*       spectro_lbls_[6] = {};
+    static constexpr int kNumVials = 3;
+    QLabel*       spectro_lbls_[kNumVials] = {};
     SpectroPaint* spectro_chart_   = nullptr;
-    std::array<float,6> spectro_vals_{};
+    std::array<float,kNumVials> spectro_vals_{};
 
     // NPK
     QLabel*       npk_n_lbl_   = nullptr;

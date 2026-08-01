@@ -266,20 +266,18 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
 
         vl->addWidget(makeHeader("STEP 3 — SEPARATE", theme::Yellow));
         vl->addWidget(makeBodyText(
-            "6-way carousel distributes soil into 6 vials via hinge servo."));
+            "3-way carousel distributes soil into 3 vials via the drop servo."));
 
         // Vial grid
         vl->addWidget(makeHeader("Vial Fill Status:", theme::Cyan));
 
         auto* vial_grid = new QGridLayout();
         vial_grid->setSpacing(6);
-        for (int i = 0; i < 6; i++) {
-            vial_grid->setColumnStretch(i % 3, 1);
-        }
+        for (int i = 0; i < kNumVials; i++)
+            vial_grid->setColumnStretch(i, 1);
         vial_grid->setRowStretch(0, 1);
-        vial_grid->setRowStretch(1, 1);
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             vial_btns_[i] = new QPushButton(QString("○ Vial %1").arg(i + 1));
             vial_btns_[i]->setFont(QFont("monospace", theme::FontSize));
             vial_btns_[i]->setStyleSheet(kVialOff);
@@ -331,7 +329,7 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
             spectro_grid->setColumnStretch(i * 2 + 1, 1);
         }
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             auto* vlbl = new QLabel(QString("Vial %1:").arg(i + 1));
             vlbl->setFont(QFont("monospace", theme::FontSize));
             vlbl->setStyleSheet(
@@ -496,7 +494,7 @@ void SciencePipelineModule::resetPipeline()
 
     current_step_ = 0;
     for (int i = 0; i < 4; i++) steps_done_[i] = false;
-    for (int i = 0; i < 6; i++) setVial(i, false);
+    for (int i = 0; i < kNumVials; i++) setVial(i, false);
     for (auto& row : checks_)
         for (auto* c : row)
             if (c) c->setChecked(false);
@@ -562,7 +560,7 @@ void SciencePipelineModule::onSensorData(
     if (msg->ultrasonic_distance_in >= 6.0f) setCheck(0, 2, true);
 
     // Spectro
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < kNumVials; i++) {
         if (spectro_lbls_[i]) {
             float val = msg->spectro_absorbance[i];
             spectro_lbls_[i]->setText(

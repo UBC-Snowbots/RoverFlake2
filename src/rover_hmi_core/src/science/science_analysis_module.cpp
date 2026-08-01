@@ -18,6 +18,8 @@
 #include <limits>
 
 #include <pluginlib/class_list_macros.hpp>
+
+namespace { constexpr int kNumVials = 3; }
 #include <rover_hmi_core/catppuccin.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,7 +39,7 @@ public:
         setStyleSheet("background: #000000;");
     }
 
-    void setValues(const std::array<float,6>& vals)
+    void setValues(const std::array<float,kNumVials>& vals)
     {
         values_ = vals;
         update();
@@ -95,8 +97,8 @@ protected:
         p.drawText(-15, -2, 30, 14, Qt::AlignCenter, "AU");
         p.restore();
 
-        // 6 bars
-        int bar_area_w = plot_w / 6;
+        // one bar per vial
+        int bar_area_w = plot_w / kNumVials;
         int bar_pad = qMax(2, bar_area_w / 6);
 
         const char* colors[] = {
@@ -104,7 +106,7 @@ protected:
             "#ff9944", "#ff4466", "#44ddcc"
         };
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             int x0 = margin_left + i * bar_area_w;
             int bar_x = x0 + bar_pad;
             int bar_w = bar_area_w - 2 * bar_pad;
@@ -152,7 +154,7 @@ protected:
     }
 
 private:
-    std::array<float,6> values_;
+    std::array<float,kNumVials> values_;
 };
 
 // Include the moc-generated code for SpectroPaint (since it's in a .cpp file)
@@ -240,14 +242,14 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     // ── ROW 0: SPECTROPHOTOMETER ─────────────────────────────────────────────
     root->addWidget(makeSectionHdr("Spectrophotometer", theme::Cyan));
 
-    // 6 readout cells in 2 rows x 3 cols
+    // one readout cell per vial, single row
     auto* spectro_grid = new QGridLayout();
     spectro_grid->setSpacing(4);
     for (int c = 0; c < 3; c++) spectro_grid->setColumnStretch(c, 1);
     spectro_grid->setRowStretch(0, 1);
     spectro_grid->setRowStretch(1, 1);
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < kNumVials; i++) {
         auto* cell = new QFrame();
         cell->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         cell->setStyleSheet(
@@ -294,7 +296,7 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     QObject::connect(clear_btn, &QPushButton::clicked, [this]() {
         spectro_vals_.fill(std::numeric_limits<float>::quiet_NaN());
         if (spectro_chart_) spectro_chart_->clearAll();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             if (spectro_lbls_[i]) {
                 spectro_lbls_[i]->setText("--");
                 spectro_lbls_[i]->setStyleSheet(kDataCellDim);
@@ -502,7 +504,7 @@ void ScienceAnalysisModule::onSensorData(
     const rover_msgs::msg::ScienceSensorData::SharedPtr msg)
 {
     // ── Spectro ──────────────────────────────────────────────────────────────
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < kNumVials; i++) {
         float val = msg->spectro_absorbance[i];
         if (msg->spectro_ready) {
             spectro_vals_[i] = val;

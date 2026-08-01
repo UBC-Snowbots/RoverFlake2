@@ -1,0 +1,59 @@
+{
+    "name": "2026-08-01 03:42",
+    "saved_at": "2026-08-01 03:42",
+    "tree": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Motor Telemetry"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Motor Params"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1,
+                        "splitTop": true
+                    },
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Plots"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Send Command"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1,
+                        "splitTop": true
+                    }
+                ],
+                "isNode": true,
+                "splitRatio": 1,
+                "splitTop": false
+            },
+            {
+                "isNode": false,
+                "panel": "Command Log"
+            }
+        ],
+        "isNode": true,
+        "splitRatio": 1.721964955329895,
+        "splitTop": true
+    },
+    "visible": [
+        "Command Log",
+        "Motor Params",
+        "Motor Telemetry",
+        "Plots",
+        "Send Command"
+    ]
+}
