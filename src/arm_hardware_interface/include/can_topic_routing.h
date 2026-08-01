@@ -20,7 +20,8 @@ static inline const char* type_to_topic_suffix(uint16_t type)
 {
     switch (type) {
     case MSG_TYPE__HEARTBEAT:       return "heartbeats";
-    // case MSG_TYPE__SET_LED_PWM:     return "set_led_pwm";
+    case MSG_TYPE__SET_LED_PWM:     return "lighting";
+    // case MSG_TYPE__LED_PANEL_FEEDBACK return "lighting"
     // case MSG_TYPE__HARDWARE_ERROR:  return "hardware_error";
     default:                        return nullptr;   // -> /can/<loop_name>/incoming
     }

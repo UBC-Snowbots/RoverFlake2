@@ -6,6 +6,7 @@
 #include <cstring>
 #include <stdexcept>
 
+#define UNSET_CAN_NODE "ERROR_UNSET"
 
 
 // Constructor
@@ -13,12 +14,14 @@ CanNode::CanNode() : Node("generic_can_hardware_interface")
 {
     // Parameters (all of these live in config/can_loop.yaml)
     loop_name                = this->declare_parameter<std::string>("loop_name", "unnamed");
-    can_interface            = this->declare_parameter<std::string>("can_interface", "can0");
+    can_interface            = this->declare_parameter<std::string>("can_interface", UNSET_CAN_NODE);
     enable_can_fd            = this->declare_parameter<bool>("enable_can_fd", false);
     mirror_typed_to_incoming = this->declare_parameter<bool>("mirror_typed_to_incoming", false);
     max_frames_per_poll      = this->declare_parameter<int>("max_frames_per_poll", 32);
     const double rx_poll_rate_hz = this->declare_parameter<double>("rx_poll_rate_hz", 100.0);
-    const int qos_depth          = this->declare_parameter<int>("qos_depth", 5);
+    const int qos_depth          = this->declare_parameter<int>("qos_depth", 15);
+
+    if(can_interface == UNSET_CAN_NODE)
 
     max_payload_bytes = enable_can_fd ? CANFD_MAX_DLEN : CAN_MAX_DLEN;
     topic_base = "/can/" + loop_name + "/";
