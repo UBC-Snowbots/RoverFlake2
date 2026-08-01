@@ -37,7 +37,7 @@ private:
     std::string loop_name;
     std::string can_interface;
     bool enable_can_fd = false;
-    bool mirror_typed_to_incoming = false;
+    bool mirror_typed_to_incoming = false; // Set to true to also send special messages in can_topic_routing.h to generic topic
     int max_frames_per_poll = 64;
     size_t max_payload_bytes = 8;
 

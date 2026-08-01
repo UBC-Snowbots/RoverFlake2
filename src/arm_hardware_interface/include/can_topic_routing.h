@@ -14,12 +14,14 @@
 //
 // TO ADD A TYPED TOPIC: add a case. The node walks every message
 // type at startup and creates a publisher for anything that returns a name.
+
+//! Do not start topic names with / -> these are suffixes to /can/<loop_name/<your_suffix>
 static inline const char* type_to_topic_suffix(uint16_t type)
 {
     switch (type) {
-    case MSG_TYPE__HEARTBEAT:       return "/can/heartbeats";
-    // case MSG_TYPE__SET_LED_PWM:     return "/can/set_led_pwm";
-    // case MSG_TYPE__HARDWARE_ERROR:  return "/can/hardware_error";
+    case MSG_TYPE__HEARTBEAT:       return "heartbeats";
+    // case MSG_TYPE__SET_LED_PWM:     return "set_led_pwm";
+    // case MSG_TYPE__HARDWARE_ERROR:  return "hardware_error";
     default:                        return nullptr;   // -> /can/<loop_name>/incoming
     }
 }

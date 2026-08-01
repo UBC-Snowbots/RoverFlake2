@@ -17,7 +17,7 @@ from launch_ros.actions import Node
 
 
 def build_can_setup_command(script_path, interface, config):
-    """Turns the 'link' section of the config file into can_setup.sh arguments."""
+    """Turns the 'link' section of the config file into can_bringup.sh arguments."""
     link = config.get("link", {})
 
     cmd = [script_path, "--interface", str(interface)]
@@ -56,7 +56,7 @@ def launch_setup(context, *args, **kwargs):
 
     if bring_up_interface:
         script_path = os.path.join(
-            get_package_share_directory("rover_can"), "scripts", "can_setup.sh")
+            get_package_share_directory("rover_can"), "launch", "can_bringup.sh")
         actions.append(ExecuteProcess(
             cmd=build_can_setup_command(script_path, can_interface, config),
             output="screen"))
