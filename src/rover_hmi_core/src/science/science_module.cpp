@@ -27,7 +27,6 @@ static const QString kInactive = btnStyle(theme::BgPanel, "#999999", theme::Bord
 static const QString kWarning  = btnStyle("#332200", theme::Yellow, theme::Yellow);
 static const QString kStop     = btnStyle(theme::HeaderBg, theme::Text, theme::Text);
 static const QString kDim      = btnStyle(theme::BgPanel, "#555555", "#222222", false);
-static const QString kBad      = btnStyle("#330011", theme::Red, theme::Red);
 
 static QLabel* makeSectionLabel(const QString& title, QWidget* parent = nullptr)
 {
@@ -70,17 +69,22 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
 
     auto* drillRow = new QHBoxLayout();
     drillRow->setSpacing(4);
-    drill_btn_ = new QPushButton("Drill Motor");
-    vac_btn_   = new QPushButton("Vacuum");
-    for (auto* b : { drill_btn_, vac_btn_ }) {
+    drill_ccw_btn_ = new QPushButton("⟲ CCW");
+    drill_cw_btn_  = new QPushButton("CW ⟳");
+    vac_btn_       = new QPushButton("Vacuum");
+    for (auto* b : { drill_ccw_btn_, drill_cw_btn_, vac_btn_ }) {
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         drillRow->addWidget(b);
     }
-    QObject::connect(drill_btn_, &QPushButton::clicked, [this]() {
-        state_.drillmotorstatus = (state_.drillmotorstatus == 1) ? 0 : 1;
-        updateDrillBtns();
-        publish();
-    });
+    // Hold-to-rotate: the drill spins only while a button is held down
+    const std::pair<QPushButton*, int> spins[] = {
+        { drill_ccw_btn_, -1 }, { drill_cw_btn_, 1 } };
+    for (auto [b, dir] : spins) {
+        QObject::connect(b, &QPushButton::pressed,
+                         [this, dir = dir]() { setDrillDir(dir); });
+        QObject::connect(b, &QPushButton::released,
+                         [this]() { setDrillDir(0); });
+    }
     QObject::connect(vac_btn_, &QPushButton::clicked, [this]() {
         state_.vacuumstatus = (state_.vacuumstatus == 1) ? 0 : 1;
         updateDrillBtns();
@@ -190,21 +194,17 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
         "border-radius:5px;padding:3px 12px;").arg(theme::FontSizeLg));
     carousel_lbl_->setAlignment(Qt::AlignCenter);
 
+    // 3-chamber carousel rotated by a servo; the index is the commanded chamber
     auto bump = [this](int dir) {
-        carousel_idx_ = (carousel_idx_ + dir + 16) % 16;
-        state_.carouseldir   = static_cast<int16_t>(dir);
+        carousel_idx_ = (carousel_idx_ + dir + 3) % 3;
         state_.carouselindex = static_cast<int16_t>(carousel_idx_);
         carousel_lbl_->setText(QString::number(carousel_idx_));
         publish();
-        QTimer::singleShot(200, carousel_lbl_, [this]() {
-            state_.carouseldir = 0; publish();
-        });
     };
     QObject::connect(prevBtn, &QPushButton::clicked, [bump]() { bump(-1); });
     QObject::connect(nextBtn, &QPushButton::clicked, [bump]() { bump(1); });
     QObject::connect(resetBtn, &QPushButton::clicked, [this]() {
         carousel_idx_        = 0;
-        state_.carouseldir   = 0;
         state_.carouselindex = 0;
         carousel_lbl_->setText("0");
         publish();
@@ -217,6 +217,17 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
     carouselRow->addWidget(nextBtn);
     carouselRow->addWidget(resetBtn);
     root->addLayout(carouselRow);
+
+    // Dirt drop servo gating the carousel chambers
+    drop_btn_ = new QPushButton();
+    drop_btn_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QObject::connect(drop_btn_, &QPushButton::clicked, [this]() {
+        state_.dropservo = (state_.dropservo == 1) ? 0 : 1;
+        updateDropBtn();
+        publish();
+    });
+    updateDropBtn();
+    root->addWidget(drop_btn_);
 
     // ── Dispensing ──────────────────────────────────────────────────────────
     root->addWidget(makeSectionLabel("Dispensing"));
@@ -238,35 +249,6 @@ QWidget* ScienceModule::createWidget(QWidget* parent)
         if (state_.smallstatus == 0) startDispenser(false);
     });
     root->addLayout(dispRow);
-
-    // ── OSF ─────────────────────────────────────────────────────────────────
-    root->addWidget(makeSectionLabel("Optical Sensors (OSF)"));
-    root->addWidget(makeDivider());
-
-    auto* osfRow = new QHBoxLayout();
-    osfRow->setSpacing(4);
-    osf1_btn_ = new QPushButton();
-    osf2_btn_ = new QPushButton();
-    for (auto* b : { osf1_btn_, osf2_btn_ }) {
-        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        osfRow->addWidget(b);
-    }
-    state_.osf1status = 1;
-    state_.osf2status = 1;
-    QObject::connect(osf1_btn_, &QPushButton::clicked, [this]() {
-        setOSF(0, state_.osf1status == 0);
-    });
-    QObject::connect(osf2_btn_, &QPushButton::clicked, [this]() {
-        setOSF(1, state_.osf2status == 0);
-    });
-
-    osf_warn_lbl_ = new QLabel();
-    osf_warn_lbl_->setStyleSheet(QString(
-        "color:#ff4466;font-size:%1px;font-weight:bold;padding:2px 0;")
-        .arg(theme::FontSizeSm));
-    root->addLayout(osfRow);
-    root->addWidget(osf_warn_lbl_);
-    updateOSFWarning();
 
     // ── Utilities ───────────────────────────────────────────────────────────
     root->addWidget(makeSectionLabel("Utilities"));
@@ -370,34 +352,30 @@ void ScienceModule::updatePumpBtns()
     pump_fwd_btn_ ->setStyleSheet(state_.p1status == 2 ? kActive  : kDim);
 }
 
+void ScienceModule::setDrillDir(int dir)
+{
+    state_.drilldir = static_cast<int16_t>(dir);
+    updateDrillBtns();
+    publish();
+}
+
 void ScienceModule::updateDrillBtns()
 {
-    if (!drill_btn_ || !vac_btn_) return;
-    drill_btn_->setStyleSheet(state_.drillmotorstatus ? kActive : kInactive);
+    if (!drill_cw_btn_ || !vac_btn_) return;
+    drill_ccw_btn_->setStyleSheet(state_.drilldir == -1 ? kWarning : kDim);
+    drill_cw_btn_ ->setStyleSheet(state_.drilldir == 1  ? kWarning : kDim);
     vac_btn_  ->setStyleSheet(state_.vacuumstatus     ? kActive : kInactive);
     step_lower_btn_->setStyleSheet(state_.drillstepperdir == 1  ? kWarning : kDim);
     step_hold_btn_ ->setStyleSheet(state_.drillstepperdir == 0  ? kStop    : kDim);
     step_raise_btn_->setStyleSheet(state_.drillstepperdir == -1 ? kActive  : kDim);
 }
 
-void ScienceModule::setOSF(int idx, bool unblocked)
+void ScienceModule::updateDropBtn()
 {
-    int16_t* fields[] = { &state_.osf1status, &state_.osf2status };
-    *fields[idx] = unblocked ? 1 : 0;
-    updateOSFWarning();
-    publish();
-}
-
-void ScienceModule::updateOSFWarning()
-{
-    if (!osf1_btn_ || !osf2_btn_ || !osf_warn_lbl_) return;
-    bool ok1 = (state_.osf1status == 1);
-    bool ok2 = (state_.osf2status == 1);
-    osf1_btn_->setText(ok1 ? "OSF 1 OK" : "OSF 1 BLOCKED");
-    osf2_btn_->setText(ok2 ? "OSF 2 OK" : "OSF 2 BLOCKED");
-    osf1_btn_->setStyleSheet(ok1 ? kActive : kBad);
-    osf2_btn_->setStyleSheet(ok2 ? kActive : kBad);
-    osf_warn_lbl_->setText((!ok1 || !ok2) ? "⚠ OSF blocked" : "");
+    if (!drop_btn_) return;
+    bool open = (state_.dropservo == 1);
+    drop_btn_->setText(open ? "Drop Servo ● OPEN" : "Drop Servo ○ CLOSED");
+    drop_btn_->setStyleSheet(open ? kWarning : kInactive);
 }
 
 // Sequences ──────────────────────────────────────────────────────────────────
@@ -496,7 +474,7 @@ void ScienceModule::advanceSequence(int seq)
             switch (seq_step_) {
                 case 0:
                     carousel_idx_ = 0;
-                    state_.carouselindex = 0; state_.carouseldir = 0;
+                    state_.carouselindex = 0;
                     carousel_lbl_->setText("0");
                     state_.sv1status = 1; state_.p1status = 2;
                     updateValveBtn(0); updatePumpBtns();

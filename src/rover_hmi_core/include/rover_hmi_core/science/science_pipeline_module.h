@@ -54,8 +54,6 @@ private:
     int  current_step_    = 0;
     bool steps_done_[4]   = {};
     bool vials_filled_[6] = {};
-    bool flow_seen_       = false;   // flow observed during COLLECT
-    bool flow_now_        = false;
 
     QPushButton* checks_[4][3] = {};
 
@@ -69,8 +67,6 @@ private:
 
     // Sensor display labels
     QLabel* ultrasonic_lbl_  = nullptr;
-    QLabel* flow1_lbl_       = nullptr;
-    QLabel* flow2_lbl_       = nullptr;
     QLabel* spectro_lbls_[6] = {};
 
     // Vial buttons (step 2)

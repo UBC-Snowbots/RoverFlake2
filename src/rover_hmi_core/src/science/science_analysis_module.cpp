@@ -201,13 +201,6 @@ static const char* kDataCellGreen =
 static const char* kDataCellDim =
     "QLabel { color: #777777; padding: 4px 6px; border: 1px solid #222222;"
     " background: #050505; }";
-static const char* kFlowGreen =
-    "QLabel { color: #00ff88; font-weight: bold; padding: 4px 8px;"
-    " border: 1px solid #00ff88; background: #001a0a; }";
-static const char* kFlowDim =
-    "QLabel { color: #555555; padding: 4px 8px;"
-    " border: 1px solid #222222; background: #050505; }";
-
 static QLabel* makeSectionHdr(const QString& text, const char* color)
 {
     auto* lbl = new QLabel(text);
@@ -450,49 +443,6 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     fg_row->addWidget(gas_frame, 1);
     root->addLayout(fg_row);
 
-    // ── ROW 3: FLOW SENSORS ───────────────────────────────────────────────────
-    root->addWidget(makeSectionHdr("Flow Sensors", theme::TextDim));
-
-    auto* flow_row = new QHBoxLayout();
-    flow_row->setSpacing(8);
-
-    auto* flow1_frame = new QFrame();
-    flow1_frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    flow1_frame->setStyleSheet(
-        "QFrame { border: 1px solid #222222; background: #050505; border-radius: 4px; }");
-    auto* f1l = new QHBoxLayout(flow1_frame);
-    f1l->setContentsMargins(8, 6, 8, 6);
-    auto* f1_name = new QLabel("OSF1:");
-    f1_name->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-    f1_name->setStyleSheet("color: #ffffff; border: none;");
-    f1_name->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    f1l->addWidget(f1_name);
-    flow1_lbl_ = new QLabel("NO DATA ○");
-    flow1_lbl_->setFont(QFont("monospace", theme::FontSize));
-    flow1_lbl_->setStyleSheet(kFlowDim);
-    flow1_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    f1l->addWidget(flow1_lbl_);
-    flow_row->addWidget(flow1_frame, 1);
-
-    auto* flow2_frame = new QFrame();
-    flow2_frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    flow2_frame->setStyleSheet(
-        "QFrame { border: 1px solid #222222; background: #050505; border-radius: 4px; }");
-    auto* f2l = new QHBoxLayout(flow2_frame);
-    f2l->setContentsMargins(8, 6, 8, 6);
-    auto* f2_name = new QLabel("OSF2:");
-    f2_name->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-    f2_name->setStyleSheet("color: #ffffff; border: none;");
-    f2_name->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    f2l->addWidget(f2_name);
-    flow2_lbl_ = new QLabel("NO DATA ○");
-    flow2_lbl_->setFont(QFont("monospace", theme::FontSize));
-    flow2_lbl_->setStyleSheet(kFlowDim);
-    flow2_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    f2l->addWidget(flow2_lbl_);
-    flow_row->addWidget(flow2_frame, 1);
-
-    root->addLayout(flow_row);
     root->addStretch();
 
     scroll->setWidget(container);
@@ -622,28 +572,6 @@ void ScienceAnalysisModule::onSensorData(
             .arg(static_cast<double>(avg), 0, 'f', 1));
     }
 
-    // ── Flow sensors ─────────────────────────────────────────────────────────
-    bool flow1 = msg->flow_sensor_1_v > 0.5f;
-    bool flow2 = msg->flow_sensor_2_v > 0.5f;
-
-    if (flow1_lbl_) {
-        flow1_lbl_->setText(
-            flow1
-            ? QString("FLOWING ●  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_1_v), 0, 'f', 2)
-            : QString("NO FLOW ○  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_1_v), 0, 'f', 2));
-        flow1_lbl_->setStyleSheet(flow1 ? kFlowGreen : kFlowDim);
-    }
-    if (flow2_lbl_) {
-        flow2_lbl_->setText(
-            flow2
-            ? QString("FLOWING ●  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_2_v), 0, 'f', 2)
-            : QString("NO FLOW ○  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_2_v), 0, 'f', 2));
-        flow2_lbl_->setStyleSheet(flow2 ? kFlowGreen : kFlowDim);
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -62,8 +62,6 @@ private:
     std::deque<float> gas_history_;
 
     // Flow sensors
-    QLabel*       flow1_lbl_  = nullptr;
-    QLabel*       flow2_lbl_  = nullptr;
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::ScienceSensorData>::SharedPtr sub_;

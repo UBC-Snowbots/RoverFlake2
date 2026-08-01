@@ -244,46 +244,13 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         vl->addWidget(makeBodyText(
             "Vacuum draws churned soil through the collection tube."));
 
-        auto* sensor_grid = new QGridLayout();
-        sensor_grid->setSpacing(4);
-        sensor_grid->setColumnStretch(0, 1);
-        sensor_grid->setColumnStretch(1, 1);
-
-        auto* f1lbl = new QLabel("Flow Sensor 1 (OSF1):");
-        f1lbl->setFont(QFont("monospace", theme::FontSize));
-        f1lbl->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
-        f1lbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        sensor_grid->addWidget(f1lbl, 0, 0);
-
-        flow1_lbl_ = new QLabel("NO DATA");
-        flow1_lbl_->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-        flow1_lbl_->setStyleSheet(kSensorDim);
-        flow1_lbl_->setAlignment(Qt::AlignCenter);
-        flow1_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        sensor_grid->addWidget(flow1_lbl_, 0, 1);
-
-        auto* f2lbl = new QLabel("Flow Sensor 2 (OSF2):");
-        f2lbl->setFont(QFont("monospace", theme::FontSize));
-        f2lbl->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
-        f2lbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        sensor_grid->addWidget(f2lbl, 1, 0);
-
-        flow2_lbl_ = new QLabel("NO DATA");
-        flow2_lbl_->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-        flow2_lbl_->setStyleSheet(kSensorDim);
-        flow2_lbl_->setAlignment(Qt::AlignCenter);
-        flow2_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        sensor_grid->addWidget(flow2_lbl_, 1, 1);
-
-        vl->addLayout(sensor_grid);
-
         vl->addWidget(makeHeader("Checklist:", theme::Cyan));
         vl->addWidget(makeCheck(1, 0, "Enable vacuum (in Science Control panel)"));
         vl->addWidget(makeCheck(1, 1, "Open collection servo (dispense)"));
-        vl->addWidget(makeCheck(1, 2, "Flow detected on OSF sensors"));
+        vl->addWidget(makeCheck(1, 2, "Sample collected (visual check)"));
 
         vl->addStretch();
-        vl->addWidget(makeHint("Auto-advances when flow ceases (collection complete)"));
+        vl->addWidget(makeHint("No flow sensors — confirm collection visually"));
 
         detail_stack_->addWidget(page);
     }
@@ -528,7 +495,6 @@ void SciencePipelineModule::resetPipeline()
     if (ret != QMessageBox::Yes) return;
 
     current_step_ = 0;
-    flow_seen_ = flow_now_ = false;
     for (int i = 0; i < 4; i++) steps_done_[i] = false;
     for (int i = 0; i < 6; i++) setVial(i, false);
     for (auto& row : checks_)
@@ -565,7 +531,7 @@ void SciencePipelineModule::setNode(rclcpp::Node::SharedPtr node)
 
 void SciencePipelineModule::onCommand(const rover_msgs::msg::ScienceModule::SharedPtr msg)
 {
-    if (msg->drillmotorstatus == 1) {
+    if (msg->drilldir != 0) {
         setCheck(0, 0, true);  // positioning implied by starting the drill
         setCheck(0, 1, true);
     }
@@ -594,25 +560,6 @@ void SciencePipelineModule::onSensorData(
         ultrasonic_lbl_->setStyleSheet(kSensorCell);
     }
     if (msg->ultrasonic_distance_in >= 6.0f) setCheck(0, 2, true);
-
-    // Flow sensors
-    bool flowing1 = msg->flow_sensor_1_v > 0.5f;
-    bool flowing2 = msg->flow_sensor_2_v > 0.5f;
-    if (flow1_lbl_) {
-        flow1_lbl_->setText(flowing1 ? "FLOWING" : "NO FLOW");
-        flow1_lbl_->setStyleSheet(flowing1 ? kSensorGreen : kSensorDim);
-    }
-    if (flow2_lbl_) {
-        flow2_lbl_->setText(flowing2 ? "FLOWING" : "NO FLOW");
-        flow2_lbl_->setStyleSheet(flowing2 ? kSensorGreen : kSensorDim);
-    }
-    flow_now_ = flowing1 || flowing2;
-    if (flow_now_) {
-        flow_seen_ = true;
-        setCheck(1, 2, true);
-    } else if (flow_seen_) {
-        evalAdvance();  // COLLECT completes when flow stops after being seen
-    }
 
     // Spectro
     for (int i = 0; i < 6; i++) {
@@ -678,7 +625,6 @@ bool SciencePipelineModule::stepSatisfied(int s) const
 {
     for (int i = 0; i < 3; i++)
         if (!checks_[s][i] || !checks_[s][i]->isChecked()) return false;
-    if (s == 1) return flow_seen_ && !flow_now_;  // wait for flow to cease
     return true;
 }
 
