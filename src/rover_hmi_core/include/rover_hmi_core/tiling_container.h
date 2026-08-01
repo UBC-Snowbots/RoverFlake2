@@ -41,6 +41,8 @@
 #include <QRect>
 #include <QJsonObject>
 
+#include <rover_hmi_core/layout_store.h>
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -51,12 +53,6 @@
 // ---------------------------------------------------------------------------
 struct KeybindEntry    { QString keys; QString description; };
 struct KeybindCategory { QString name; std::vector<KeybindEntry> entries; };
-
-struct LayoutSnapshot {
-    QString name;
-    QString saved_at;   // ISO date string
-    QString json;       // full serialized layout
-};
 
 class TilePanel;
 class TilingContainer;
@@ -180,7 +176,7 @@ protected:
 
 private:
     TilingContainer* tc_;
-    std::vector<LayoutSnapshot> snapshots_;
+    std::vector<LayoutStore::Entry> snapshots_;
     int focused_idx_   = 0;
     int scroll_offset_ = 0;
 
@@ -234,6 +230,7 @@ private:
     QVBoxLayout* layout_;
     QLabel*      section_indicator_ = nullptr;  // shows "▸ SECTION" in header
     bool         resizing_edge_ = false;        // width drag in progress
+    int          content_width_ = 0;            // widest row so far (no-wrap fit)
 
     struct Entry { QCheckBox* check; TilePanel* panel; QLabel* idx_lbl; };
     struct Section {
@@ -296,6 +293,7 @@ public:
     void loadLayout(int index);
     void deleteLayout(int index);
     void renameLayout(int index, const QString& name);
+    LayoutStore& layoutStore() { return layout_store_; }
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 
@@ -317,6 +315,10 @@ private:
     void enterMoveMode();
     void exitDragMode();
 
+    // Hit-testing / directional navigation helpers
+    TilePanel* panelUnderCursor() const;
+    TilePanel* nearestPanelInDirection(int dx, int dy) const;
+
     // Tree serialization helpers (used by layout save/load)
     QJsonObject serializeTree(DwindleNode* node) const;
     DwindleNode* deserializeTree(const QJsonObject& obj);
@@ -334,6 +336,7 @@ private:
 
     std::vector<PanelInfo> panels_;
     TilePanel* focused_panel_ = nullptr;
+    LayoutStore layout_store_;
 
     // Dwindle tree data
     DwindleNode* root_ = nullptr;

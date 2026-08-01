@@ -99,14 +99,20 @@ static QLabel* makeBodyText(const QString& text)
     return lbl;
 }
 
-static QLabel* makeCheckItem(const QString& text)
-{
-    auto* lbl = new QLabel("  ●  " + text);
-    lbl->setStyleSheet(
-        "color: #aaaaaa; padding: 2px 4px;");
-    lbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    return lbl;
-}
+static const char* kCheckOff =
+    "QPushButton { text-align: left; background: transparent; border: none;"
+    " color: #aaaaaa; padding: 2px 4px; }";
+static const char* kCheckOn =
+    "QPushButton { text-align: left; background: transparent; border: none;"
+    " color: #00ff88; padding: 2px 4px; }";
+
+static const char* kVialOff =
+    "QPushButton { background: #0a0a0a; color: #777777;"
+    " border: 2px solid #333333; border-radius: 8px; padding: 10px 4px; }";
+static const char* kVialOn =
+    "QPushButton { background: #001a0a; color: #00ff88;"
+    " border: 2px solid #00ff88; border-radius: 8px;"
+    " padding: 10px 4px; font-weight: bold; }";
 
 static QLabel* makeHint(const QString& text)
 {
@@ -215,12 +221,12 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         vl->addLayout(sensor_grid);
 
         vl->addWidget(makeHeader("Checklist:", theme::Cyan));
-        vl->addWidget(makeCheckItem("Position rover over sample site"));
-        vl->addWidget(makeCheckItem("Activate drill motor (in Science Control panel)"));
-        vl->addWidget(makeCheckItem("Lower drill to target depth using stepper"));
+        vl->addWidget(makeCheck(0, 0, "Position rover over sample site"));
+        vl->addWidget(makeCheck(0, 1, "Activate drill motor (in Science Control panel)"));
+        vl->addWidget(makeCheck(0, 2, "Lower drill to target depth (≥ 6.0 in)"));
 
         vl->addStretch();
-        vl->addWidget(makeHint("Advance when target depth is reached"));
+        vl->addWidget(makeHint("Auto-advances when target depth is reached"));
 
         detail_stack_->addWidget(page);
     }
@@ -272,12 +278,12 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         vl->addLayout(sensor_grid);
 
         vl->addWidget(makeHeader("Checklist:", theme::Cyan));
-        vl->addWidget(makeCheckItem("Enable vacuum (in Science Control panel)"));
-        vl->addWidget(makeCheckItem("Open collection servo"));
-        vl->addWidget(makeCheckItem("Monitor flow sensors for sample flow"));
+        vl->addWidget(makeCheck(1, 0, "Enable vacuum (in Science Control panel)"));
+        vl->addWidget(makeCheck(1, 1, "Open collection servo (dispense)"));
+        vl->addWidget(makeCheck(1, 2, "Flow detected on OSF sensors"));
 
         vl->addStretch();
-        vl->addWidget(makeHint("Advance when flow ceases (collection complete)"));
+        vl->addWidget(makeHint("Auto-advances when flow ceases (collection complete)"));
 
         detail_stack_->addWidget(page);
     }
@@ -309,32 +315,11 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         for (int i = 0; i < 6; i++) {
             vial_btns_[i] = new QPushButton(QString("○ Vial %1").arg(i + 1));
             vial_btns_[i]->setFont(QFont("monospace", theme::FontSize));
-            vial_btns_[i]->setStyleSheet(
-                "QPushButton { background: #0a0a0a; color: #777777;"
-                " border: 2px solid #333333; border-radius: 8px;"
-                " padding: 10px 4px; }");
+            vial_btns_[i]->setStyleSheet(kVialOff);
             vial_btns_[i]->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             int idx = i;
             QObject::connect(vial_btns_[i], &QPushButton::clicked, [this, idx]() {
-                vials_filled_[idx] = !vials_filled_[idx];
-                if (vials_filled_[idx]) {
-                    vial_btns_[idx]->setText(QString("✓ Vial %1").arg(idx + 1));
-                    vial_btns_[idx]->setStyleSheet(
-                        "QPushButton { background: #001a0a; color: #00ff88;"
-                        " border: 2px solid #00ff88; border-radius: 8px;"
-                        " padding: 10px 4px; font-weight: bold; }");
-                } else {
-                    vial_btns_[idx]->setText(QString("○ Vial %1").arg(idx + 1));
-                    vial_btns_[idx]->setStyleSheet(
-                        "QPushButton { background: #0a0a0a; color: #777777;"
-                        " border: 2px solid #333333; border-radius: 8px;"
-                        " padding: 10px 4px; }");
-                }
-                int filled = 0;
-                for (int j = 0; j < 6; j++) filled += vials_filled_[j] ? 1 : 0;
-                if (vials_count_lbl_)
-                    vials_count_lbl_->setText(
-                        QString("%1 / 6 vials filled").arg(filled));
+                setVial(idx, !vials_filled_[idx]);
             });
             vial_grid->addWidget(vial_btns_[i], i / 3, i % 3);
         }
@@ -349,12 +334,12 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         vl->addWidget(vials_count_lbl_);
 
         vl->addWidget(makeHeader("Checklist:", theme::Cyan));
-        vl->addWidget(makeCheckItem("Rotate carousel to index 1"));
-        vl->addWidget(makeCheckItem("Open hinge servo to drop sample"));
-        vl->addWidget(makeCheckItem("Advance carousel through all 6 positions"));
+        vl->addWidget(makeCheck(2, 0, "Rotate carousel to index 1"));
+        vl->addWidget(makeCheck(2, 1, "Open hinge servo to drop sample"));
+        vl->addWidget(makeCheck(2, 2, "Fill all 6 vials (auto as carousel visits 1–6)"));
 
         vl->addStretch();
-        vl->addWidget(makeHint("Advance when all 6 vials are filled"));
+        vl->addWidget(makeHint("Auto-advances when all 6 vials are filled"));
 
         detail_stack_->addWidget(page);
     }
@@ -400,12 +385,12 @@ QWidget* SciencePipelineModule::createWidget(QWidget* parent)
         vl->addLayout(spectro_grid);
 
         vl->addWidget(makeHeader("Checklist:", theme::Cyan));
-        vl->addWidget(makeCheckItem("Insert vial 1 into spectrophotometer"));
-        vl->addWidget(makeCheckItem("Take reading (in Science Analysis panel)"));
-        vl->addWidget(makeCheckItem("Repeat for all 6 vials"));
+        vl->addWidget(makeCheck(3, 0, "Power spectrometer (in Science Control panel)"));
+        vl->addWidget(makeCheck(3, 1, "Spectro reading ready"));
+        vl->addWidget(makeCheck(3, 2, "All 6 vials read"));
 
         vl->addStretch();
-        vl->addWidget(makeHint("Pipeline complete when all 6 vials read"));
+        vl->addWidget(makeHint("Pipeline completes when all 6 vials are read"));
 
         detail_stack_->addWidget(page);
     }
@@ -543,20 +528,12 @@ void SciencePipelineModule::resetPipeline()
     if (ret != QMessageBox::Yes) return;
 
     current_step_ = 0;
+    flow_seen_ = flow_now_ = false;
     for (int i = 0; i < 4; i++) steps_done_[i] = false;
-    for (int i = 0; i < 6; i++) vials_filled_[i] = false;
-
-    // Reset vial button visuals
-    for (int i = 0; i < 6; i++) {
-        if (vial_btns_[i]) {
-            vial_btns_[i]->setText(QString("○ Vial %1").arg(i + 1));
-            vial_btns_[i]->setStyleSheet(
-                "QPushButton { background: #0a0a0a; color: #777777;"
-                " border: 2px solid #333333; border-radius: 8px;"
-                " padding: 10px 4px; }");
-        }
-    }
-    if (vials_count_lbl_) vials_count_lbl_->setText("0 / 6 vials filled");
+    for (int i = 0; i < 6; i++) setVial(i, false);
+    for (auto& row : checks_)
+        for (auto* c : row)
+            if (c) c->setChecked(false);
 
     updateStepDisplay();
 }
@@ -574,6 +551,33 @@ void SciencePipelineModule::setNode(rclcpp::Node::SharedPtr node)
         [this](const rover_msgs::msg::ScienceSensorData::SharedPtr msg) {
             onSensorData(msg);
         });
+    cmd_sub_ = node_->create_subscription<rover_msgs::msg::ScienceModule>(
+        "/science/command",
+        rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
+        [this](const rover_msgs::msg::ScienceModule::SharedPtr msg) {
+            onCommand(msg);
+        });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onCommand — operator actions in Science Control auto-check checklist items
+// ─────────────────────────────────────────────────────────────────────────────
+
+void SciencePipelineModule::onCommand(const rover_msgs::msg::ScienceModule::SharedPtr msg)
+{
+    if (msg->drillmotorstatus == 1) {
+        setCheck(0, 0, true);  // positioning implied by starting the drill
+        setCheck(0, 1, true);
+    }
+    if (msg->vacuumstatus == 1) setCheck(1, 0, true);
+    if (msg->largestatus == 1 || msg->smallstatus == 1) setCheck(1, 1, true);
+
+    if (msg->carouselindex >= 1) setCheck(2, 0, true);
+    if (msg->carouselindex >= 1 && msg->carouselindex <= 6)
+        setVial(msg->carouselindex - 1, true);
+    if (msg->largestatus == 1 || msg->smallstatus == 1) setCheck(2, 1, true);
+
+    if (msg->spectrostatus == 1) setCheck(3, 0, true);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -589,17 +593,25 @@ void SciencePipelineModule::onSensorData(
             QString("%1 in").arg(static_cast<double>(msg->ultrasonic_distance_in), 0, 'f', 2));
         ultrasonic_lbl_->setStyleSheet(kSensorCell);
     }
+    if (msg->ultrasonic_distance_in >= 6.0f) setCheck(0, 2, true);
 
     // Flow sensors
+    bool flowing1 = msg->flow_sensor_1_v > 0.5f;
+    bool flowing2 = msg->flow_sensor_2_v > 0.5f;
     if (flow1_lbl_) {
-        bool flowing1 = msg->flow_sensor_1_v > 0.5f;
         flow1_lbl_->setText(flowing1 ? "FLOWING" : "NO FLOW");
         flow1_lbl_->setStyleSheet(flowing1 ? kSensorGreen : kSensorDim);
     }
     if (flow2_lbl_) {
-        bool flowing2 = msg->flow_sensor_2_v > 0.5f;
         flow2_lbl_->setText(flowing2 ? "FLOWING" : "NO FLOW");
         flow2_lbl_->setStyleSheet(flowing2 ? kSensorGreen : kSensorDim);
+    }
+    flow_now_ = flowing1 || flowing2;
+    if (flow_now_) {
+        flow_seen_ = true;
+        setCheck(1, 2, true);
+    } else if (flow_seen_) {
+        evalAdvance();  // COLLECT completes when flow stops after being seen
     }
 
     // Spectro
@@ -612,6 +624,69 @@ void SciencePipelineModule::onSensorData(
                 msg->spectro_ready ? kSensorGreen : kSensorCell);
         }
     }
+    if (msg->spectro_ready) {
+        setCheck(3, 1, true);
+        bool all6 = true;
+        for (float v : msg->spectro_absorbance)
+            if (v <= 0.0f) { all6 = false; break; }
+        if (all6) setCheck(3, 2, true);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live checklist + auto-advance
+// ─────────────────────────────────────────────────────────────────────────────
+
+QPushButton* SciencePipelineModule::makeCheck(int step, int idx, const QString& text)
+{
+    auto* b = new QPushButton("  ○  " + text);
+    b->setCheckable(true);
+    b->setFont(QFont("monospace", theme::FontSize));
+    b->setStyleSheet(kCheckOff);
+    b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    checks_[step][idx] = b;
+    QObject::connect(b, &QPushButton::toggled, [this, b, text](bool on) {
+        b->setText((on ? "  ✓  " : "  ○  ") + text);
+        b->setStyleSheet(on ? kCheckOn : kCheckOff);
+        evalAdvance();
+    });
+    return b;
+}
+
+void SciencePipelineModule::setCheck(int step, int idx, bool on)
+{
+    if (checks_[step][idx] && checks_[step][idx]->isChecked() != on)
+        checks_[step][idx]->setChecked(on);
+}
+
+void SciencePipelineModule::setVial(int idx, bool filled)
+{
+    if (!vial_btns_[idx] || vials_filled_[idx] == filled) return;
+    vials_filled_[idx] = filled;
+    vial_btns_[idx]->setText(
+        QString(filled ? "✓ Vial %1" : "○ Vial %1").arg(idx + 1));
+    vial_btns_[idx]->setStyleSheet(filled ? kVialOn : kVialOff);
+
+    int n = 0;
+    for (bool f : vials_filled_) n += f ? 1 : 0;
+    if (vials_count_lbl_)
+        vials_count_lbl_->setText(QString("%1 / 6 vials filled").arg(n));
+    setCheck(2, 2, n == 6);
+}
+
+bool SciencePipelineModule::stepSatisfied(int s) const
+{
+    for (int i = 0; i < 3; i++)
+        if (!checks_[s][i] || !checks_[s][i]->isChecked()) return false;
+    if (s == 1) return flow_seen_ && !flow_now_;  // wait for flow to cease
+    return true;
+}
+
+void SciencePipelineModule::evalAdvance()
+{
+    while (current_step_ <= 3 && !steps_done_[current_step_] &&
+           stepSatisfied(current_step_))
+        advanceStep();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
