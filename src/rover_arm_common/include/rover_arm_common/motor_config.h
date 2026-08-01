@@ -190,7 +190,7 @@ namespace AxisConfig {
         /*AXIS 6 */   0.5,
         /*AXIS EE */  0.5 };
     
-    float idle_position[NUM_AXES] = { // Rev/s Direction Independent. 
+    float idle_position[NUM_AXES] = { // Rev/s Direction Independent.
         /*AXIS 1 */   0.1,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
@@ -198,6 +198,20 @@ namespace AxisConfig {
         /*AXIS 5 */   -0.1,
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.1 };
-    
+
+    // Limit switches — AUX2 digital input, see setup_limit_switches.py.
+    // mask: aux2 GPIO status bitfield, bit0 = aux2.pins.0 (ABS connector pin 2).
+    // inverted=false: NC switch to GND (hard 2k pullup) -> pin HIGH = pressed.
+    bool has_limit_switch[NUM_AXES] = {
+        /*AXIS 1 */   true,
+        /*AXIS 2 */   true,
+        /*AXIS 3 */   true,
+        /*AXIS 4 */   true,
+        /*AXIS 5 */   false,
+        /*AXIS 6 */   false,
+        /*AXIS EE */  false };
+
+    uint8_t limit_switch_mask[NUM_AXES]     = {1, 1, 1, 1, 0, 0, 0};
+    bool    limit_switch_inverted[NUM_AXES] = {false, false, false, false, false, false, false};
 
 };

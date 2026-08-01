@@ -431,7 +431,9 @@ void MoteusDriverNode::run() {
         t.q_current = std::isnan(r.q_current)?0.0f:(float)r.q_current;
         t.power     = std::isnan(r.power)?0.0f:(float)r.power;
         t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
-        t.limit_switch = (r.aux2_gpio > 0);
+        const bool sw_raw = (r.aux2_gpio & AxisConfig::limit_switch_mask[id - 1]) != 0;
+        t.limit_switch = AxisConfig::has_limit_switch[id - 1]
+                      && (sw_raw != AxisConfig::limit_switch_inverted[id - 1]);
         axes[id - 1].limit_switch = t.limit_switch;
         moteus_ros_msg.status[id -1].curr_current_amps = t.q_current;
         moteus_ros_msg.status[id -1].curr_torque = t.torque;
