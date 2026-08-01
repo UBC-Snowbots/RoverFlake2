@@ -317,9 +317,6 @@ void MoteusDriverNode::run() {
             if (!AxisConfig::has_limit_switch[i]) {
                 RCLCPP_WARN(this->get_logger(), "Axis %d has no limit switch — homing denied", i + 1);
                 ax.state = AxisState::RUNNING_OK;
-            } else if (i == AXIS_4_INDEX) {   // its motor is disabled in the frame loop — would creep forever
-                RCLCPP_WARN(this->get_logger(), "Axis %d motor disabled — homing denied", i + 1);
-                ax.state = AxisState::RUNNING_OK;
             } else if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
@@ -424,7 +421,6 @@ void MoteusDriverNode::run() {
     // ── Stage 6: frames — built ONLY from motor_cmds_ ───────────────────────
     std::vector<mot::CanFdFrame> frames;
     for (int m = 0; m < NUM_MOTORS; m++) {
-        if(m == 3) continue; // A4 DISABLED
         auto& c = motor_cmds_[m];
         if      (c.active && c.is_stop) frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[m]));
         else if (c.active)              frames.push_back(MoteusProtocol::makePositionFrame(
