@@ -22,6 +22,7 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
+    src/layout_store.cpp
     src/spectro_paths.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
@@ -29,8 +30,8 @@ add_library(rover_hmi_core SHARED
 )
 target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
 ament_target_dependencies(rover_hmi_core rclcpp pluginlib)
-
-# fallback for spectro_paths when ROVERFLAKE_ROOT is unset
+# lets LayoutStore find the source tree on the machine that built the binary,
+# and is the spectro_paths fallback when ROVERFLAKE_ROOT is unset
 target_compile_definitions(rover_hmi_core PRIVATE
     ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -65,6 +66,7 @@ add_library(rover_hmi_modules SHARED
     src/science/science_module.cpp
     src/science/science_pipeline_module.cpp
     src/science/science_analysis_module.cpp
+    src/science/science_sim_module.cpp
     src/science/python_runner.cpp
     src/science/spectrum_view.cpp
     src/science/spectrometer_module.cpp

@@ -82,6 +82,11 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
   </class>
+  <class name="rover_hmi_core/ScienceSimModule"
+         type="ScienceSimModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Mock /science/sensor_data publisher for desk-testing the pipeline and analysis panels</description>
+  </class>
 
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
