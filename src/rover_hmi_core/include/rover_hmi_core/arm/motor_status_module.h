@@ -31,11 +31,12 @@ public:
     void start() override {}
     void stop() override {}
 
+    // 12 columns — see FIELD_HEADERS in .cpp
+    static constexpr int NUM_FIELDS = 12; // must equal NUM_COLS in motor_status_module.cpp
+
 private:
     void onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
 
-    // 11 columns — see FIELD_HEADERS in .cpp
-    static constexpr int NUM_FIELDS = 11;
     QLabel* cells_[NUM_MOTORS][NUM_FIELDS] = {};
     QLabel* row_labels_[NUM_MOTORS] = {};
     QLabel* status_ = nullptr;

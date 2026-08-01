@@ -97,6 +97,7 @@ static const char* FIELD_HEADERS[] = {
     "Temp (°C)",
 };
 static_assert(sizeof(FIELD_HEADERS) / sizeof(FIELD_HEADERS[0]) == NUM_COLS, "column count mismatch");
+static_assert(MotorStatusModule::NUM_FIELDS == NUM_COLS, "cells_ storage must match column count");
 
 // Human-readable moteus mode names (index == mode number)
 static const char* MODE_NAMES[] = {
