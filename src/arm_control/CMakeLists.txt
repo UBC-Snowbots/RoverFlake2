@@ -27,7 +27,6 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_srvs
   tf2_eigen
   trajectory_msgs
-  moteus_msgs
   rover_arm_common
 )
 

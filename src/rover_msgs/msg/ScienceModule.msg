@@ -19,3 +19,7 @@ int16 agpowerstatus
 int16 spectrostatus
 int16 light1status
 int16 light2status
+
+int16 drillmotorstatus   # 0=off, 1=on
+int16 drillstepperdir    # -1=raise, 0=hold, 1=lower
+int16 vacuumstatus       # 0=off, 1=on

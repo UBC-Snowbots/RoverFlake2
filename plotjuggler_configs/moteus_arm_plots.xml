@@ -1,58 +1,133 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
  <tabbed_widget name="Main Window" parent="main_window">
-  <Tab containers="1" tab_name="CONFIGS">
+  <Tab tab_name="CONFIGS" containers="1">
    <Container>
     <DockSplitter orientation="-" count="1" sizes="1">
      <DockArea name="...">
-      <plot flip_y="false" flip_x="false" mode="TimeSeries" line_width="1.0">
-       <range bottom="-0.200000" left="33.517104" top="8.200000" right="93.485880"/>
+      <plot flip_x="false" line_width="1.0" flip_y="false" mode="TimeSeries">
+       <range right="64.721508" bottom="-0.100000" top="0.100000" left="4.722711"/>
        <limitY/>
-       <curve color="#1f77b4" name="/arm/moteus_feedback/config[0]/max_current_amps"/>
-       <curve color="#d62728" name="/arm/moteus_feedback/config[1]/max_current_amps"/>
-       <curve color="#1ac938" name="/arm/moteus_feedback/config[2]/max_current_amps"/>
-       <curve color="#ff7f0e" name="/arm/moteus_feedback/config[3]/max_current_amps"/>
-       <curve color="#f14cc1" name="/arm/moteus_feedback/config[4]/max_current_amps"/>
-       <curve color="#9467bd" name="/arm/moteus_feedback/config[5]/max_current_amps"/>
-       <curve color="#17becf" name="/arm/moteus_feedback/config[6]/max_current_amps"/>
+       <curve name="/arm/moteus_feedback/config[0]/max_current_amps" color="#1f77b4"/>
+       <curve name="/arm/moteus_feedback/config[1]/max_current_amps" color="#d62728"/>
+       <curve name="/arm/moteus_feedback/config[2]/max_current_amps" color="#1ac938"/>
+       <curve name="/arm/moteus_feedback/config[3]/max_current_amps" color="#ff7f0e"/>
+       <curve name="/arm/moteus_feedback/config[4]/max_current_amps" color="#f14cc1"/>
+       <curve name="/arm/moteus_feedback/config[5]/max_current_amps" color="#9467bd"/>
+       <curve name="/arm/moteus_feedback/config[6]/max_current_amps" color="#17becf"/>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="tab2">
+  <Tab tab_name="tab2" containers="1">
    <Container>
     <DockSplitter orientation="-" count="2" sizes="0.500426;0.499574">
      <DockArea name="TORQUE">
-      <plot flip_y="false" flip_x="false" mode="TimeSeries" line_width="1.0">
-       <range bottom="-0.880068" left="33.517104" top="0.829475" right="93.485880"/>
+      <plot flip_x="false" line_width="1.0" flip_y="false" mode="TimeSeries">
+       <range right="64.619518" bottom="-21.146626" top="35.297820" left="4.620339"/>
        <limitY/>
-       <curve color="#bcbd22" name="/arm/moteus_feedback/status[0]/curr_torque"/>
-       <curve color="#1f77b4" name="/arm/moteus_feedback/status[1]/curr_torque"/>
-       <curve color="#d62728" name="/arm/moteus_feedback/status[2]/curr_torque"/>
-       <curve color="#1ac938" name="/arm/moteus_feedback/status[3]/curr_torque"/>
-       <curve color="#ff7f0e" name="/arm/moteus_feedback/status[4]/curr_torque"/>
-       <curve color="#f14cc1" name="/arm/moteus_feedback/status[5]/curr_torque"/>
-       <curve color="#9467bd" name="/arm/moteus_feedback/status[6]/curr_torque"/>
+       <curve name="/arm/moteus_feedback/status[0]/curr_torque" color="#bcbd22">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[0]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[1]/curr_torque" color="#1f77b4">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[1]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[2]/curr_torque" color="#d62728">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[2]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[3]/curr_torque" color="#1ac938">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[3]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[4]/curr_torque" color="#ff7f0e">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[4]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[5]/curr_torque" color="#f14cc1">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[5]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[6]/curr_torque" color="#9467bd">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[6]/curr_torque[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
       </plot>
      </DockArea>
      <DockArea name="POSITION">
-      <plot flip_y="false" flip_x="false" mode="TimeSeries" line_width="1.0">
-       <range bottom="-0.001633" left="33.517104" top="0.024643" right="93.485880"/>
+      <plot flip_x="false" line_width="1.0" flip_y="false" mode="TimeSeries">
+       <range right="64.721508" bottom="-0.184156" top="2.726575" left="4.722711"/>
        <limitY/>
-       <curve color="#17becf" name="/arm/moteus_feedback/status[0]/curr_position"/>
-       <curve color="#bcbd22" name="/arm/moteus_feedback/status[1]/curr_position"/>
-       <curve color="#1f77b4" name="/arm/moteus_feedback/status[2]/curr_position"/>
-       <curve color="#d62728" name="/arm/moteus_feedback/status[3]/curr_position"/>
-       <curve color="#1ac938" name="/arm/moteus_feedback/status[4]/curr_position"/>
-       <curve color="#ff7f0e" name="/arm/moteus_feedback/status[5]/curr_position"/>
-       <curve color="#f14cc1" name="/arm/moteus_feedback/status[6]/curr_position"/>
+       <curve name="/arm/moteus_feedback/status[0]/curr_position" color="#17becf"/>
+       <curve name="/arm/moteus_feedback/status[1]/curr_position" color="#bcbd22"/>
+       <curve name="/arm/moteus_feedback/status[2]/curr_position" color="#1f77b4"/>
+       <curve name="/arm/moteus_feedback/status[3]/curr_position" color="#d62728"/>
+       <curve name="/arm/moteus_feedback/status[4]/curr_position" color="#1ac938"/>
+       <curve name="/arm/moteus_feedback/status[5]/curr_position" color="#ff7f0e"/>
+       <curve name="/arm/moteus_feedback/status[6]/curr_position" color="#f14cc1"/>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="1"/>
+  <Tab tab_name="tab2" containers="1">
+   <Container>
+    <DockSplitter orientation="-" count="1" sizes="1">
+     <DockArea name="...">
+      <plot flip_x="false" line_width="1.0" flip_y="false" mode="TimeSeries">
+       <range right="64.619518" bottom="-2.163904" top="4.749117" left="4.620339"/>
+       <limitY/>
+       <curve name="/arm/moteus_feedback/status[0]/curr_current_amps" color="#1f77b4">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[0]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[1]/curr_current_amps" color="#d62728">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[1]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[2]/curr_current_amps" color="#1ac938">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[2]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[3]/curr_current_amps" color="#ff7f0e">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[3]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[4]/curr_current_amps" color="#f14cc1">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[4]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[5]/curr_current_amps" color="#9467bd">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[5]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+       <curve name="/arm/moteus_feedback/status[6]/curr_current_amps" color="#17becf">
+        <transform name="Moving Average" alias="/arm/moteus_feedback/status[6]/curr_current_amps[Moving Average]">
+         <options compensate_offset="true" value="50"/>
+        </transform>
+       </curve>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="2"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->
