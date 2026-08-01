@@ -53,6 +53,11 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
 // For per-motor PID/limits see motor_config.h.
 // =============================================================================
 
+static int64_t steadyMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     // Use a non-singleton transport so we own the only shared_ptr and can truly
     // release the CAN fd when calibration needs exclusive access to the bus.
@@ -107,6 +112,21 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
         std::bind(&MoteusDriverNode::run, this));
+
+    heartbeat_ms_ = steadyMs();
+    std::thread([this]() {
+        while (rclcpp::ok()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            if (calibrating_.load()) continue;
+            int64_t age = steadyMs() - heartbeat_ms_.load();
+            if (age > 3000) {
+                RCLCPP_FATAL(this->get_logger(),
+                    "CAN cycle stalled %lds — transport dead (fdcanusb unplugged/re-enumerated?). Exiting.",
+                    (long)(age / 1000));
+                std::_Exit(2);
+            }
+        }
+    }).detach();
 
     RCLCPP_INFO(this->get_logger(),
         "Moteus driver started: polling %d motors at 100 Hz", NUM_MOTORS);
@@ -275,6 +295,7 @@ void MoteusDriverNode::home_axis(uint8_t index)
 // Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
 // Homing is then Checked. 
 void MoteusDriverNode::run() {
+    heartbeat_ms_ = steadyMs();
     if (calibrating_.load()) return;
 
     // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
