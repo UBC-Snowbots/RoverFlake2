@@ -13,8 +13,8 @@
 
     # How often we check the socket for new frames, and how many frames we are
     # willing to pull out in one go. 
-    rx_poll_rate_hz: 1000.0
-    max_frames_per_poll: 64
+    rx_poll_rate_hz: 100.0
+    max_frames_per_poll: 128 #should be way higher than we need
 
     # Publisher/subscriber queue depth.
     qos_depth: 25

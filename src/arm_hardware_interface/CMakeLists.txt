@@ -39,6 +39,13 @@ add_executable(generic_can_hardware_interface src/generic_can_hardware_interface
 # target_link_libraries(generic_can_hardware_interface )?
 ament_target_dependencies(generic_can_hardware_interface rclcpp rover_msgs)
 
+add_executable(lighting_translator
+  src/lighting_translator.cpp
+  ${COMMS_DIR}/comms.c
+)
+ament_target_dependencies(lighting_translator rclcpp rover_msgs)
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
@@ -57,6 +64,7 @@ install(PROGRAMS launch/can_bringup.sh
 install(TARGETS 
     moteus_driver
     generic_can_hardware_interface
+    lighting_translator
     DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(include)
