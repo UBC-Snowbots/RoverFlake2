@@ -6,7 +6,7 @@ from launch_ros.actions import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 DEFAULT_PARAMS = [
-    {'image_raw.ffmpeg.encoder': 'hvec_nvmpi'},
+    {'image_raw.ffmpeg.encoder': 'hevc_nvmpi'},
     {'image_raw.ffmpeg.bit_rate': 200000},
     {'image_raw.ffmpeg.gop_size': 60},
     {'image_raw.ffmpeg.qmax': 60},
