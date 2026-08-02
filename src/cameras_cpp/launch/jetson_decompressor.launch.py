@@ -28,6 +28,7 @@ def generate_launch_description():
                 ('out', f'/{camera_name}/image_raw_decoded'),
             ],
             parameters=[
+                {'in.ffmpeg.decoders.hvec': 'hvec'},
                 {'in.ffmpeg.decoders.h264': 'h264'},
             ],
             output='screen',
