@@ -7,10 +7,10 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 DEFAULT_PARAMS = [
     {'image_raw.ffmpeg.encoder': 'hevc_nvmpi'},
-    {'image_raw.ffmpeg.bit_rate': 200000},
-    {'image_raw.ffmpeg.gop_size': 60},
+    {'image_raw.ffmpeg.bit_rate': 250000},
+    {'image_raw.ffmpeg.gop_size': 5},
     {'image_raw.ffmpeg.qmax': 60},
-    {'image_raw.ffmpeg.encoder_av_options': 'num_capture_buffers:4;profile:main;preset:ultrafast'},
+    {'image_raw.ffmpeg.encoder_av_options': 'num_capture_buffers:8,profile:main,preset:ultrafast'},
 ]
 
 
