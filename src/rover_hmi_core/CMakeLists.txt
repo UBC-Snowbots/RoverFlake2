@@ -122,4 +122,15 @@ install(DIRECTORY scripts/ DESTINATION share/${PROJECT_NAME}/scripts)
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(rclcpp pluginlib Qt5Widgets rover_arm_common)
 
+if(BUILD_TESTING)
+    find_package(ament_cmake_gtest REQUIRED)
+    ament_add_gtest(test_camera_config
+        test/test_camera_config.cpp
+        src/cameras/camera_config.cpp)
+    target_link_libraries(test_camera_config Qt5::Core)
+    target_include_directories(test_camera_config PRIVATE include)
+    target_compile_definitions(test_camera_config PRIVATE
+        ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
 ament_package()
