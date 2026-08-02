@@ -62,6 +62,9 @@ constexpr char CMD_COMMS = 'C';
 
 #define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
 #define HOME_VALUE_ALL_AXES_AND_EE    0xAE
+// Home a chosen set of axes: positions[] lists 0-based axis indices, e.g. [0, 1, 2]
+// requests homing on A1+A2+A3 (simultaneous — per-axis state machines run in parallel).
+#define HOME_VALUE_SELECTED           0xA5
 
 
 // -----------------------------------------------------------------------------
