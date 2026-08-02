@@ -1,0 +1,112 @@
+#include "camera_viewport.h"
+#include <rover_hmi_core/catppuccin.h>
+
+#include <QPainter>
+#include <QRandomGenerator>
+
+CameraViewport::CameraViewport(QWidget* parent) : QWidget(parent)
+{
+    setMinimumSize(320, 240);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    static_timer_ = new QTimer(this);
+    QObject::connect(static_timer_, &QTimer::timeout, this, [this]() { update(); });
+    static_timer_->start(100);
+}
+
+void CameraViewport::setLabel(const QString& label)
+{
+    label_ = label;
+    update();
+}
+
+void CameraViewport::setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg)
+{
+    if (frame_clock_.isValid()) {
+        qint64 dt = frame_clock_.restart();
+        if (dt > 0) fps_ = fps_ * 0.9 + (1000.0 / dt) * 0.1;
+    } else {
+        frame_clock_.start();
+    }
+    msg_ = std::move(msg);
+    error_.clear();
+    if (static_timer_->isActive()) static_timer_->stop();
+    update();
+}
+
+void CameraViewport::setNoSignal()
+{
+    msg_.reset();
+    fps_ = 0.0;
+    frame_clock_.invalidate();
+    if (!static_timer_->isActive()) static_timer_->start(100);
+    update();
+}
+
+void CameraViewport::setError(const QString& msg)
+{
+    error_ = msg;
+    setNoSignal();
+}
+
+void CameraViewport::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+    p.fillRect(rect(), QColor(theme::Bg));
+    if (msg_) drawFrame(p);
+    else      drawStatic(p);
+    drawOverlay(p);
+}
+
+void CameraViewport::drawFrame(QPainter& p)
+{
+    QImage::Format fmt;
+    const auto& enc = msg_->encoding;
+    if      (enc == "rgb8")  fmt = QImage::Format_RGB888;
+    else if (enc == "bgr8")  fmt = QImage::Format_BGR888;
+    else if (enc == "mono8") fmt = QImage::Format_Grayscale8;
+    else {
+        p.setPen(QColor(theme::Red));
+        p.drawText(rect(), Qt::AlignCenter,
+                   QStringLiteral("unsupported encoding: %1").arg(enc.c_str()));
+        return;
+    }
+    // Zero-copy wrap; msg_ keeps the buffer alive until the next frame replaces it.
+    QImage img(msg_->data.data(), int(msg_->width), int(msg_->height),
+               qsizetype(msg_->step), fmt);
+    QSize scaled = img.size().scaled(size(), Qt::KeepAspectRatio);
+    QRect target(QPoint((width() - scaled.width()) / 2,
+                        (height() - scaled.height()) / 2), scaled);
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
+    p.drawImage(target, img);
+}
+
+void CameraViewport::drawStatic(QPainter& p)
+{
+    auto* rng = QRandomGenerator::global();
+    const int cell = 6;
+    for (int y = 0; y < height(); y += cell)
+        for (int x = 0; x < width(); x += cell) {
+            int g = 20 + int(rng->bounded(70));
+            p.fillRect(x, y, cell, cell, QColor(g, g, g));
+        }
+    p.setFont(QFont("monospace", theme::px(theme::FontSizeLg), QFont::Bold));
+    p.setPen(QColor(theme::Red));
+    QString text = error_.isEmpty()
+        ? QStringLiteral("NO SIGNAL — %1").arg(label_)
+        : error_;
+    p.drawText(rect(), Qt::AlignCenter | Qt::TextWordWrap, text);
+}
+
+void CameraViewport::drawOverlay(QPainter& p)
+{
+    QString info = label_;
+    if (msg_)
+        info += QStringLiteral("  %1x%2  %3 fps")
+                    .arg(msg_->width).arg(msg_->height).arg(fps_, 0, 'f', 0);
+    p.setFont(QFont("monospace", theme::px(theme::FontSizeSm)));
+    QRect box = p.fontMetrics().boundingRect(info).adjusted(-8, -4, 8, 4);
+    box.moveTopLeft(QPoint(8, 8));
+    p.fillRect(box, QColor(0, 0, 0, 170));
+    p.setPen(QColor(theme::Green));
+    p.drawText(box, Qt::AlignCenter, info);
+}

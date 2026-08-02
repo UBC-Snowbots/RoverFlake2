@@ -76,6 +76,9 @@ add_library(rover_hmi_modules SHARED
     include/rover_hmi_core/science/spectrum_view.h
     # Drive
     src/drive/drive_module.cpp
+    # Cameras
+    src/cameras/camera_config.cpp
+    src/cameras/camera_viewport.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
@@ -85,6 +88,7 @@ target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/moveit
     include/rover_hmi_core/science
     include/rover_hmi_core/drive
+    include/rover_hmi_core/cameras
 )
 
 target_link_libraries(rover_hmi_modules
@@ -92,6 +96,8 @@ target_link_libraries(rover_hmi_modules
     Qt5::Widgets
 )
 ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp rover_arm_common)
+target_compile_definitions(rover_hmi_modules PRIVATE
+    ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 # ---------------------------------------------------------------------------
