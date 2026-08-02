@@ -65,6 +65,7 @@ private:
 enum Col {
     COL_MODE = 0,
     COL_FAULT,
+    COL_LIMIT,
     COL_POS_CURR,
     COL_POS_DES,
     COL_VEL_CURR,
@@ -80,6 +81,7 @@ enum Col {
 static const char* FIELD_HEADERS[] = {
     "Mode",
     "Fault",
+    "Lim",
     "Pos (rev)",
     "Des Pos (rev)",
     "Vel (rev/s)",
@@ -91,6 +93,7 @@ static const char* FIELD_HEADERS[] = {
     "Temp (°C)",
 };
 static_assert(sizeof(FIELD_HEADERS) / sizeof(FIELD_HEADERS[0]) == NUM_COLS, "column count mismatch");
+static_assert(MotorStatusModule::NUM_FIELDS == NUM_COLS, "cells_ storage must match column count");
 
 // Human-readable moteus mode names (index == mode number)
 static const char* MODE_NAMES[] = {
@@ -269,6 +272,15 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
                         " border: 1px solid %3; font-weight: bold;")
                 .arg(rowBg).arg(theme::Red).arg(theme::BorderDim));
         }
+
+        // ── Limit switch ─────────────────────────────────────────────────────
+        bool lim = i < (int)msg->limit_switches.size() && msg->limit_switches[i];
+        cells_[i][COL_LIMIT]->setText(lim ? "LIM" : "—");
+        cells_[i][COL_LIMIT]->setStyleSheet(lim
+            ? QString("background: %1; color: %2; padding: 6px 10px;"
+                      " border: 1px solid %3; font-weight: bold;")
+                .arg(rowBg).arg(theme::Red).arg(theme::BorderDim)
+            : cellStyle);
 
         // ── Position ──────────────────────────────────────────────────────────
         cells_[i][COL_POS_CURR]->setText(fmtF(s.curr_position, 3));
