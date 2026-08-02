@@ -11,7 +11,7 @@ DEFAULT_PARAMS = [
     {'image_raw.ffmpeg.gop_size': 7},
     {'image_raw.ffmpeg.qmax': 30},
     {'image_raw.ffmpeg.encoder_av_options': 'num_capture_buffers:16,profile:main,preset:ultrafast'},
-    {'qos_overrides./image_raw/ffmpeg.publisher.depth': 1000},
+    {'qos_overrides./image_raw/ffmpeg.publisher.depth': 100},
     {'qos_overrides./image_raw/ffmpeg.publisher.reliability': 'reliable'},
 ]
 
