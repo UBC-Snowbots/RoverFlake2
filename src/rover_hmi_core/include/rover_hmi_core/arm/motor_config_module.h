@@ -1,45 +1,37 @@
 // motor_config_module.h  —  "Motor Params"
 //
-// Editable per-motor configuration table with local persistence.
+// Flash-truth parameter panel.  One motor at a time (selector on top);
+// rows are registers with three columns:
+//   Default — compile-time motor_config.h value (read-only)
+//   Actual  — value read back from the controller by the driver via
+//             "conf get" (MoteusArmStatus.config[]); '?' until read
+//   New     — edit box; Enter opens a confirm dialog:
+//             [Apply (RAM)] [Apply & Write Flash] [Cancel]
 //
-// Persistence model:
-//   • The moteus driver applies hardcoded motor_config.h defaults on every
-//     startup.  This module sits on top and applies user overrides afterwards.
-//   • When the user edits a value:  it is published to /arm/config_update
-//     (driver applies immediately) AND saved to QSettings.
-//   • On start():  all saved overrides are re-published so they survive
-//     driver and HMI restarts.
-//   • Per-row ↺ Reset button:  clears QSettings for that motor and
-//     re-publishes the motor_config.h defaults.
+// Persistence: controller flash is the persistence (write_flash=true adds
+// "conf write").  Apply & Write Flash also records the value in the
+// repo-tracked config/arm_params.ini (same path resolution as config/layout)
+// so intentional changes are reviewable; the Actual column highlights drift
+// against that file.  There is no hidden re-apply at startup.
 //
-// Columns: Kp | Ki | Kd | Max I | Max Vel | Max Accel | Pos Min | Pos Max |
-//          Max V | Max Power | Timeout | Gear (RO) | [↺ Reset] | [Calibrate]
-//
-// Calibration:
-//   Each motor row has a "Calibrate" button that publishes a
-//   MoteusCalibrationRequest to /arm/calibration_request.
-//   The driver runs: python3 -m moteus.moteus_tool -t <id>
-//       --calibrate --cal-motor-poles 16 --cal-force-kv 265 --cal-hal
-//   then sets motor_position.sources.0.type = type.hall:4 and saves.
-//   A "Calibrate All" button triggers the full sequence (motor 1 → 6).
-//   Button text/colour reflects live status from /arm/calibration_status.
+// Calibration buttons unchanged (moteus_tool hall calibration flow).
 
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
 #include <rover_arm_common/motor_addressing.h>
 
-#include <QLineEdit>
+#include <QComboBox>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
-#include <QScrollArea>
-#include <QString>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/moteus_arm_status.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
 #include "rover_msgs/msg/moteus_calibration_request.hpp"
 #include "rover_msgs/msg/moteus_calibration_status.hpp"
+#include "std_msgs/msg/empty.hpp"
 
 class MotorConfigModule : public rover_hmi_core::GuiModule {
 public:
@@ -49,51 +41,39 @@ public:
 
     QWidget* createWidget(QWidget* parent) override;
     void     setNode(rclcpp::Node::SharedPtr node) override;
-
-    // Re-applies any user-saved overrides from QSettings to the driver.
-    // Called after the window is shown so the driver is ready to receive.
-    void start() override;
-    void stop() override {}
+    void     start() override {}
+    void     stop() override {}
 
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
-            { "Click cell",        "Edit value"                   },
-            { "Enter",             "Apply to motor + save"        },
-            { "↺  (button)",       "Reset motor to defaults"      },
-            { "Calibrate (btn)",   "Run Hall calibration (~30 s)" },
-            { "Calibrate All",     "Calibrate all motors in seq"  },
+            { "Motor selector",  "Choose which motor to view/edit"        },
+            { "Enter (New col)", "Confirm dialog: RAM / flash / cancel"   },
+            { "Refresh",         "Re-read all values from controllers"    },
+            { "Calibrate",       "Run Hall calibration for this motor"    },
         };
     }
 
+    static constexpr int NUM_REGS = 12;   // 11 editable + gear (read-only)
+
 private:
     void onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
-    void onCalibStatus(const rover_msgs::msg::MoteusCalibrationStatus::SharedPtr msg);
+    void refreshDisplay();                // repaint Default/Actual for selected motor
+    void confirmAndApply(int reg_row);    // dialog + publish
 
-    // Publish one config update AND save it to QSettings.
-    void publishUpdate(int motor_idx, int col, float value);
+    QComboBox*   motor_sel_   = nullptr;
+    QLabel*      defaults_[NUM_REGS] = {};
+    QLabel*      actuals_[NUM_REGS]  = {};
+    QLineEdit*   edits_[NUM_REGS]    = {};
+    QPushButton* calib_btn_   = nullptr;
+    QPushButton* calib_all_btn_ = nullptr;
+    QLabel*      status_      = nullptr;
 
-    // Clear QSettings for motor_idx and re-publish motor_config.h defaults.
-    void resetMotorToDefaults(int motor_idx);
+    rover_msgs::msg::MoteusArmStatus latest_;   // last feedback (config + connected)
+    bool have_msg_ = false;
 
-    // Publish a single register update without saving to QSettings.
-    // Used by resetMotorToDefaults() to push defaults without recording them.
-    void publishRaw(int motor_idx, const char* reg, float value);
-
-    // Publish a calibration request.  motor_id: 1-based CAN ID; 0 = all.
-    void requestCalibration(int motor_id);
-
-    // 12 data columns (0..10 editable, 11 gear read-only) + reset + calib columns
-    static constexpr int NUM_EDITABLE = 11;
-    static constexpr int NUM_FIELDS   = 12;
-
-    QLineEdit*   edits_[NUM_MOTORS][NUM_FIELDS] = {};
-    QPushButton* reset_btns_[NUM_MOTORS]  = {};
-    QPushButton* calib_btns_[NUM_MOTORS]  = {};
-    QPushButton* calib_all_btn_           = nullptr;
-    QLabel*      status_                  = nullptr;
-
-    rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr             sub_;
-    rclcpp::Publisher<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr              pub_;
-    rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr      calib_status_sub_;
-    rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr        calib_pub_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr        sub_;
+    rclcpp::Publisher<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr        pub_;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr                       refresh_pub_;
+    rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr calib_status_sub_;
+    rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr  calib_pub_;
 };

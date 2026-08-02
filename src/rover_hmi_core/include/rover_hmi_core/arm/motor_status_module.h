@@ -16,6 +16,9 @@
 #include <rover_arm_common/motor_addressing.h>  // NUM_MOTORS
 
 #include <QLabel>
+#include <QPushButton>
+
+#include "driver_process.h"
 #include <QScrollArea>
 
 #include "rclcpp/rclcpp.hpp"
@@ -36,10 +39,15 @@ public:
 
 private:
     void onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
+    void setBanner(const QString& text, const char* fg, const char* bg, bool bold = true);
+    void updateDriverBtn();
 
     QLabel* cells_[NUM_MOTORS][NUM_FIELDS] = {};
     QLabel* row_labels_[NUM_MOTORS] = {};
     QLabel* status_ = nullptr;
+    qint64  last_msg_ms_ = 0;   // staleness watchdog: no telemetry -> driver down
+    QPushButton*  drv_btn_ = nullptr;
+    DriverProcess drv_;         // bench-only HMI-owned driver (see driver_process.h)
 
     rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr sub_;
 };

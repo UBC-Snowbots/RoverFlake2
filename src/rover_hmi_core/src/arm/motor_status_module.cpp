@@ -21,8 +21,11 @@
 #include <QGridLayout>
 #include <QScrollArea>
 #include <QFont>
+#include <QTimer>
+#include <QDateTime>
 #include <cmath>
 #include <algorithm>
+#include <map>
 #include <vector>
 
 #include <pluginlib/class_list_macros.hpp>
@@ -182,13 +185,37 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
         }
     }
 
-    status_ = new QLabel("Waiting for telemetry...");
+    // Bench-only local driver control; disabled when the fdcanusb lives on
+    // the rover (remote driver is bringup/systemd's job, not the HMI's).
+    drv_btn_ = new QPushButton();
+    drv_btn_->setFont(mono);
+    QObject::connect(drv_btn_, &QPushButton::clicked, [this]() {
+        if (drv_.running()) drv_.stop();
+        else if (!drv_.start())
+            setBanner("✖ FAILED TO START DRIVER — is arm_hardware_interface built?",
+                      theme::Red, "#2a0d0d");
+        updateDriverBtn();
+    });
+    grid->addWidget(drv_btn_, NUM_MOTORS + 1, 0);
+
+    status_ = new QLabel();
     status_->setFont(mono);
-    status_->setStyleSheet(
-        QString("background: %1; color: %2; padding: 4px 6px;")
-        .arg(theme::Bg).arg(theme::TextDim));
-    grid->addWidget(status_, NUM_MOTORS + 1, 0, 1, NUM_COLS + 1);
+    grid->addWidget(status_, NUM_MOTORS + 1, 1, 1, NUM_COLS);
     normal_ws.push_back(status_);
+    setBanner("⏳ WAITING FOR ARM DRIVER — no telemetry yet", theme::TextDim, "#1a1a1a");
+
+    // Staleness watchdog: the CAN-health banner is only trustworthy while
+    // messages arrive; if they stop entirely the driver itself is down.
+    auto* stale = new QTimer(status_);
+    QObject::connect(stale, &QTimer::timeout, [this]() {
+        if (last_msg_ms_ != 0 &&
+            QDateTime::currentMSecsSinceEpoch() - last_msg_ms_ > 1500)
+            setBanner("✖ ARM DRIVER OFFLINE — /arm/moteus_feedback stopped",
+                      theme::Red, "#2a0d0d");
+        updateDriverBtn();
+    });
+    stale->start(500);
+    updateDriverBtn();
 
     // All columns equal stretch
     for (int c = 0; c <= NUM_COLS; c++)
@@ -233,7 +260,12 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
         QString rowBg, rowFg;
         bool bold_row = false;
 
-        if (s.moteus_fault != 0) {
+        // Codes ≥96 are output-limit flags (current/power/temp caps active),
+        // not faults — see moteus fw/error.h.
+        const bool limit_flag = s.moteus_fault >= 96;
+        if (!s.connected) {
+            rowBg = "#0a0a0a"; rowFg = "#444444";   // stale — last-known values
+        } else if (s.moteus_fault != 0 && !limit_flag) {
             rowBg = "#3d1b1b"; rowFg = theme::Red; bold_row = true;
         } else {
             switch (s.moteus_mode) {
@@ -255,16 +287,30 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
         // ── Mode ──────────────────────────────────────────────────────────────
         int mode = s.moteus_mode;
         cells_[i][COL_MODE]->setText(
-            (mode >= 0 && mode < NUM_MODES) ? MODE_NAMES[mode]
-                                            : QString("Mode %1").arg(mode));
+            !s.connected ? "NO REPLY"
+            : (mode >= 0 && mode < NUM_MODES) ? MODE_NAMES[mode]
+                                              : QString("Mode %1").arg(mode));
         cells_[i][COL_MODE]->setStyleSheet(cellStyle);
 
         // ── Fault ─────────────────────────────────────────────────────────────
+        static const std::map<int, const char*> LIMIT_NAMES = {
+            {96, "VEL CAP"}, {97, "PWR CAP"}, {98, "VOLT CAP"}, {99, "CUR CAP"},
+            {100, "FET TEMP"}, {101, "MTR TEMP"}, {102, "TRQ CAP"},
+            {103, "POS BOUND"}, {104, "FLUX BRK"},
+        };
         if (s.moteus_fault == 0) {
             cells_[i][COL_FAULT]->setText("OK");
             cells_[i][COL_FAULT]->setStyleSheet(
                 QString("background: %1; color: %2; padding: 6px 10px; border: 1px solid %3;")
                 .arg(rowBg).arg(theme::Green).arg(theme::BorderDim));
+        } else if (limit_flag) {
+            auto it = LIMIT_NAMES.find(s.moteus_fault);
+            cells_[i][COL_FAULT]->setText(
+                it != LIMIT_NAMES.end() ? QString(it->second)
+                                        : QString("LIM %1").arg(s.moteus_fault));
+            cells_[i][COL_FAULT]->setStyleSheet(
+                QString("background: %1; color: %2; padding: 6px 10px; border: 1px solid %3;")
+                .arg(rowBg).arg(theme::Yellow).arg(theme::BorderDim));
         } else {
             cells_[i][COL_FAULT]->setText(QString("ERR %1").arg(s.moteus_fault));
             cells_[i][COL_FAULT]->setStyleSheet(
@@ -336,9 +382,66 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
         }
     }
 
-    if (status_)
-        status_->setText(QString("Live  ·  %1 motor%2 reporting")
-            .arg(active).arg(active == 1 ? "" : "s"));
+    // ── CAN link banner ───────────────────────────────────────────────────────
+    // Distinguishes the three failure layers the raw table can't: adapter
+    // missing, adapter present but bus silent, and partial replies.
+    last_msg_ms_ = QDateTime::currentMSecsSinceEpoch();
+    const QString dev = QString::fromStdString(msg->can_device);
+    const int expected = NUM_MOTORS - 1;  // A4 disabled
+    (void)active;
+    if (dev.isEmpty()) {
+        setBanner("✖ NO FDCANUSB — USB adapter not found (check cable/port)",
+                  theme::Red, "#2a0d0d");
+    } else if (msg->motors_replying == 0) {
+        setBanner(QString("⚠ FDCANUSB OK on %1 — BUS SILENT: no motor replies "
+                          "(servo power? CAN wiring?)").arg(dev),
+                  theme::Yellow, "#2a2208");
+    } else if (msg->motors_replying < expected) {
+        setBanner(QString("⚠ PARTIAL: %1/%2 motors replying on %3")
+                  .arg(msg->motors_replying).arg(expected).arg(dev),
+                  theme::Yellow, "#2a2208");
+    } else {
+        setBanner(QString("● CAN LIVE on %1 — %2/%3 motors")
+                  .arg(dev).arg(msg->motors_replying).arg(expected),
+                  theme::Green, "#0d2a17", false);
+    }
+}
+
+void MotorStatusModule::updateDriverBtn()
+{
+    if (!drv_btn_) return;
+    const bool fresh = last_msg_ms_ != 0 &&
+        QDateTime::currentMSecsSinceEpoch() - last_msg_ms_ <= 1500;
+    if (drv_.running()) {
+        drv_btn_->setText("■ Stop Driver");
+        drv_btn_->setEnabled(true);
+        drv_btn_->setToolTip("Stops the HMI-owned driver (frees the CAN port for tview)");
+    } else if (fresh) {
+        drv_btn_->setText("Driver: external");
+        drv_btn_->setEnabled(false);
+        drv_btn_->setToolTip("Telemetry is coming from a driver this HMI didn't start "
+                             "(terminal or rover bringup) — stop it where it was started");
+    } else if (DriverProcess::localAdapterPresent()) {
+        drv_btn_->setText("▶ Start Driver");
+        drv_btn_->setEnabled(true);
+        drv_btn_->setToolTip("Starts moteus_driver on this machine, tied to the HMI's "
+                             "lifetime — it dies with the HMI, even on a crash-close");
+    } else {
+        drv_btn_->setText("▶ Start Driver");
+        drv_btn_->setEnabled(false);
+        drv_btn_->setToolTip("No local fdcanusb — on the rover the driver runs on the "
+                             "NUC via bringup, not from the HMI");
+    }
+}
+
+void MotorStatusModule::setBanner(const QString& text, const char* fg,
+                                  const char* bg, bool bold)
+{
+    if (!status_) return;
+    status_->setText(text);
+    status_->setStyleSheet(
+        QString("background: %1; color: %2; padding: 6px 8px;%3")
+        .arg(bg).arg(fg).arg(bold ? " font-weight: bold;" : ""));
 }
 
 PLUGINLIB_EXPORT_CLASS(MotorStatusModule, rover_hmi_core::GuiModule)

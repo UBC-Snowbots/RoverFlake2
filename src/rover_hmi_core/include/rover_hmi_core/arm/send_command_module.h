@@ -23,6 +23,7 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <array>
 #include <cmath>
@@ -52,7 +53,8 @@ private:
     void sendVelocity(int motor_id, double velocity);
     void sendStop(int motor_id);
     void sendStopAll();
-    void sendZero(int motor_id);
+    void sendZeroChecked();
+    void homeChecked();   // safe-pose prompt -> zero selected -> group home
     void logCmd(const QString& cmd);
 
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr cmd_pub_;

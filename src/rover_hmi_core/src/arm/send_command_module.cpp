@@ -171,6 +171,15 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     QObject::connect(estop_btn, &QPushButton::clicked, [this]() { sendStopAll(); });
     btns->addWidget(estop_btn);
 
+    auto* home_btn = new QPushButton("HOME…");
+    home_btn->setFont(fontBold);
+    home_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 2px solid %2; padding: 10px 18px; }"
+                "QPushButton:hover { border-color: %3; }")
+        .arg(theme::Bg).arg(theme::Green).arg(theme::Text));
+    QObject::connect(home_btn, &QPushButton::clicked, [this]() { homeChecked(); });
+    btns->addWidget(home_btn);
+
     btns->addStretch();
     layout->addLayout(btns);
 
@@ -288,11 +297,7 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
         .arg(theme::Bg).arg(theme::Yellow).arg(theme::Yellow).arg(theme::Text));
     layout->addWidget(zero_btn);
 
-    QObject::connect(zero_btn, &QPushButton::clicked, [this]() {
-        for (int i = 0; i < NUM_ZERO_AXES; i++)
-            if (zero_checks_[i]->isChecked())
-                sendZero(i + 1);
-    });
+    QObject::connect(zero_btn, &QPushButton::clicked, [this]() { sendZeroChecked(); });
 
     QObject::connect(all_none_btn, &QPushButton::clicked, [this]() {
         bool any_unchecked = false;
@@ -372,15 +377,65 @@ void SendCommandModule::sendStopAll() {
     logCmd("A> d stop");
 }
 
-void SendCommandModule::sendZero(int motor_id) {
+// Safe-pose homing: the Zero Axes checkboxes select which axes home (switch-
+// equipped axes 1-4 only). The prompt gives the operator time to pose the arm;
+// on confirm, the current pose is stamped 0 and the group homes — each axis
+// creeps to its switch, holds, then all return to this pose (= 0) together.
+void SendCommandModule::homeChecked() {
+    if (!cmd_pub_) return;
+    QStringList names;
+    std::vector<double> selected;
+    for (int i = 0; i < NUM_ZERO_AXES && i <= AXIS_4_INDEX; i++) {
+        if (!zero_checks_[i]->isChecked()) continue;
+        selected.push_back((double)i);
+        names << QString("A%1").arg(i + 1);
+    }
+    if (selected.empty()) return;
+
+    QMessageBox box;
+    box.setWindowTitle("Home arm");
+    box.setText(QString("Move the arm to a safe starting position now.\n\n"
+                        "On confirm, that pose becomes 0 for %1, each axis creeps "
+                        "to its limit switch, and they all return here together.")
+                    .arg(names.join(", ")));
+    box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Cancel);
+    box.setFont(QFont("monospace", theme::FontSize));
+    box.setStyleSheet(QString(
+        "QMessageBox { background: %1; }"
+        "QLabel { color: %2; background: transparent; }"
+        "QPushButton { background: %1; color: %2; border: 1px solid %3; padding: 6px 14px; min-width: 70px; }"
+        "QPushButton:hover { border-color: %2; }")
+        .arg(theme::Bg).arg(theme::Text).arg(theme::Border));
+    if (box.exec() != QMessageBox::Ok) return;
+
+    // No CMD_ZERO needed: the driver stamps the switch as -travel at contact,
+    // which makes the pose homing started from (this one) exactly 0.
+    rover_msgs::msg::ArmCommand home;
+    home.cmd_type = CMD_HOME;
+    home.cmd_value = HOME_VALUE_SELECTED;
+    home.positions = selected;
+    cmd_pub_->publish(home);
+
+    logCmd(QString("%1> group home (safe pose becomes 0)").arg(names.join(",")));
+}
+
+// One message for all selected axes: per-axis publishes on this KeepLast(1)
+// topic overwrite each other in flight, so only the last axis ever zeroed.
+void SendCommandModule::sendZeroChecked() {
     if (!cmd_pub_) return;
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ZERO;
     msg.positions.resize(NUM_MOTORS, NAN);
-    if (motor_id >= 1 && motor_id <= NUM_MOTORS)
-        msg.positions[motor_id - 1] = 1.0;
+    QStringList ids;
+    for (int i = 0; i < NUM_ZERO_AXES && i < NUM_MOTORS; i++) {
+        if (!zero_checks_[i]->isChecked()) continue;
+        msg.positions[i] = 1.0;
+        ids << QString::number(i + 1);
+    }
+    if (ids.isEmpty()) return;
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d exact 0").arg(motor_id));
+    logCmd(QString("%1> d exact 0").arg(ids.join(",")));
 }
 
 PLUGINLIB_EXPORT_CLASS(SendCommandModule, rover_hmi_core::GuiModule)
