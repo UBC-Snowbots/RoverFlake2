@@ -61,10 +61,6 @@ private:
     std::vector<QWidget*> bold_ws_;
 };
 
-static const char* JOINT_NAMES[] = {
-    "Base", "Shoulder", "Elbow", "Wrist Pitch", "Wrist Roll", "End Effector"
-};
-
 // Column indices
 enum Col {
     COL_MODE = 0,
@@ -163,7 +159,7 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
     }
 
     for (int r = 0; r < NUM_MOTORS; r++) {
-        row_labels_[r] = new QLabel(JOINT_NAMES[r]);
+        row_labels_[r] = new QLabel(ARM_JOINTS[r].hardware_name);
         row_labels_[r]->setFont(monoBold);
         row_labels_[r]->setStyleSheet(
             QString("background: %1; color: %2; padding: 4px 6px; border: 1px solid %3;")

@@ -36,12 +36,13 @@ constexpr char CMD_STOP    = 'S';
 
 // Absolute position command.
 //   positions[]  = target output-shaft revolutions for each motor (NaN = skip that motor)
-//   velocities[] = optional velocity feed-forward in rev/s    (NaN = use motion profile)
+//   velocities[] = travel speed in deg/s (wire contract; driver converts to rev/s
+//                  and clamps to AxisConfig::max_running_speed. NaN = axis config cap)
 //   Blocked if the target motor has an active fault — send CMD_STOP first.
 constexpr char CMD_ABS_POS = 'P';
 
 // Velocity command (jog mode — hold the button to move).
-//   velocities[] = target output-shaft rev/s for each motor (NaN = skip that motor)
+//   velocities[] = target output-shaft deg/s for each motor (NaN = skip that motor)
 //   A velocity of exactly 0.0 is treated as CMD_STOP for that motor
 //   (motor goes limp, not hold-position), matching the jog-button release behaviour.
 constexpr char CMD_ABS_VEL = 'V';

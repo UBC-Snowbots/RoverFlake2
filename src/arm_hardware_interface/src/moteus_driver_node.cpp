@@ -2,6 +2,7 @@
 #include "axis_5_6_differential.h"
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 #include <thread>
 #include <cstdio>      // popen / pclose
 #include <sys/wait.h>  // WIFEXITED / WEXITSTATUS
@@ -51,6 +52,11 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
 // For joint mapping and direction signs see motor_addressing.h.
 // For per-motor PID/limits see motor_config.h.
 // =============================================================================
+
+static int64_t steadyMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     // Use a non-singleton transport so we own the only shared_ptr and can truly
@@ -106,6 +112,21 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(10),
         std::bind(&MoteusDriverNode::run, this));
+
+    heartbeat_ms_ = steadyMs();
+    std::thread([this]() {
+        while (rclcpp::ok()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            if (calibrating_.load()) continue;
+            int64_t age = steadyMs() - heartbeat_ms_.load();
+            if (age > 3000) {
+                RCLCPP_FATAL(this->get_logger(),
+                    "CAN cycle stalled %lds — transport dead (fdcanusb unplugged/re-enumerated?). Exiting.",
+                    (long)(age / 1000));
+                std::_Exit(2);
+            }
+        }
+    }).detach();
 
     RCLCPP_INFO(this->get_logger(),
         "Moteus driver started: polling %d motors at 100 Hz", NUM_MOTORS);
@@ -182,7 +203,19 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             if (std::isnan(pos) && std::isnan(vd)) continue;
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
-            p.position = pos; p.velocity = degreesToRevolution(vd); p.max_torque = NAN;
+            p.position = pos;
+            const double cap = (double)AxisConfig::max_running_speed[a];
+            if (std::isnan(pos)) {
+                // d pos nan v nan — velocities[] IS the velocity
+                p.velocity = std::clamp(degreesToRevolution(vd), -cap, cap);
+                p.max_velocity = cap;
+            } else {
+                // d pos p v nan — velocities[] is the travel speed, stop at target
+                p.velocity = 0.0;
+                p.max_velocity = std::isnan(vd) ? cap
+                    : std::min(degreesToRevolution(std::fabs(vd)), cap);
+            }
+            p.max_torque = NAN;
         }
         return;
     }
@@ -262,6 +295,7 @@ void MoteusDriverNode::home_axis(uint8_t index)
 // Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
 // Homing is then Checked. 
 void MoteusDriverNode::run() {
+    heartbeat_ms_ = steadyMs();
     if (calibrating_.load()) return;
 
     // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────

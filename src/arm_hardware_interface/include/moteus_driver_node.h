@@ -180,6 +180,11 @@ private:
     // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
     // -------------------------------------------------------------------------
     std::atomic<bool> calibrating_{false};
+
+    // Watchdog: run() stamps this each cycle; a side thread exits the process
+    // if the loop stalls (BlockingCycle hangs forever on a dead/re-enumerated
+    // fdcanusb fd, leaving a silent zombie node). Exit + respawn re-detects.
+    std::atomic<int64_t> heartbeat_ms_{0};
     std::mutex        calib_mutex_;   // prevents concurrent calibrations
 
     // -------------------------------------------------------------------------
