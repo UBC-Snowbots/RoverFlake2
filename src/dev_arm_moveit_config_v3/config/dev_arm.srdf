@@ -15,8 +15,9 @@
         <joint name="link_1_joint"/>
         <joint name="link1_link2"/>
         <joint name="a4_rotation"/>
-        <joint name="a5_rotation"/>
-        <joint name="a6_rotation"/>
+        <!-- TEMP(a5/a6 disconnected): wrist removed from IK group; chain tip = a4_link2 -->
+        <!-- <joint name="a5_rotation"/> -->
+        <!-- <joint name="a6_rotation"/> -->
     </group>
     <group name="gripper">
         <link name="ee_base_link"/>

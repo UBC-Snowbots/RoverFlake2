@@ -21,8 +21,9 @@ arm_controller:
       - link_1_joint
       - link1_link2
       - a4_rotation
-      - a5_rotation
-      - a6_rotation
+      # TEMP(a5/a6 disconnected): wrist out of the trajectory controller
+      # - a5_rotation
+      # - a6_rotation
     command_interfaces:
       - position
     state_interfaces:

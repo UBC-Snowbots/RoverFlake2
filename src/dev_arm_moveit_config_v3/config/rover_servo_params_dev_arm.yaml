@@ -7,8 +7,8 @@ use_gazebo: false # Whether the robot is started in a Gazebo simulation environm
 command_in_type: "unitless" # "unitless"> in the range [-1:1], as if from joystick. "speed_units"> cmds are in m/s and rad/s
 scale:
   # Scale parameters are only used if command_in_type=="unitless"
-  linear:  0.5  # Max linear velocity. Unit is [m/s]. Only used for Cartesian commands.
-  rotational:  1.2 # Max angular velocity. Unit is [rad/s]. Only used for Cartesian commands.
+  linear:  0.05  # TEMP(first live IK): was 0.5 — crawl speed for maiden real-arm runs
+  rotational:  0.0 # TEMP(a5/a6 disconnected): angular twists meaningless with position-only chain
   # Max joint angular/linear velocity. Only used for joint commands on joint_command_in_topic.
   joint: 0.5
 
@@ -42,8 +42,12 @@ move_group_name:  arm  # Often 'manipulator' or 'arm'
 planning_frame: base_link  # The MoveIt planning frame. Often 'base_link' or 'world'
 
 ## Other frames
-ee_frame_name: ee_base_link  # The name of the end effector link, used to return the EE pose
-robot_link_command_frame:  ee_base_link  # commands must be given in the frame of a robot link. Usually either the base or end effector
+# TEMP(a5/a6 disconnected): tip retargeted from ee_base_link to a4_link2 (end of physical chain)
+# TEMP(a5/a6 disconnected): orientation rows dropped from the Jacobian — a 4-joint chain
+# can't translate AND hold orientation; letting rotation drift makes translation clean.
+drift_dimensions: [false, false, false, true, true, true]  # [x y z rx ry rz]
+ee_frame_name: a4_link2  # The name of the end effector link, used to return the EE pose
+robot_link_command_frame:  base_link  # commands must be given in the frame of a robot link. Usually either the base or end effector
 
 ## Stopping behaviour
 incoming_command_timeout:  1.0  # Stop servoing if X seconds elapse without a new command
