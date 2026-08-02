@@ -13,6 +13,7 @@ using rover_hmi_core::camera_config::topicFor;
 QWidget* CameraModule::createWidget(QWidget* parent)
 {
     auto* widget = new QWidget(parent);
+    widget->setFocusPolicy(Qt::ClickFocus);
     auto* row = new QHBoxLayout(widget);
     row->setContentsMargins(0, 0, 0, 0);
 
@@ -66,6 +67,7 @@ void CameraModule::stop()
 void CameraModule::switchTo(int idx)
 {
     if (idx < 0 || idx >= int(cams_.size()) || !node_) return;
+    if (idx == active_ && sub_) return;
     active_ = idx;
     sub_.reset();
     last_frame_.invalidate();

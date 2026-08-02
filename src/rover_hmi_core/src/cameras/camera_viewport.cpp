@@ -61,17 +61,19 @@ void CameraViewport::paintEvent(QPaintEvent*)
 void CameraViewport::drawFrame(QPainter& p)
 {
     QImage::Format fmt;
+    size_t bpp = 0;
     const auto& enc = msg_->encoding;
-    if      (enc == "rgb8")  fmt = QImage::Format_RGB888;
-    else if (enc == "bgr8")  fmt = QImage::Format_BGR888;
-    else if (enc == "mono8") fmt = QImage::Format_Grayscale8;
+    if      (enc == "rgb8")  { fmt = QImage::Format_RGB888; bpp = 3; }
+    else if (enc == "bgr8")  { fmt = QImage::Format_BGR888; bpp = 3; }
+    else if (enc == "mono8") { fmt = QImage::Format_Grayscale8; bpp = 1; }
     else {
         p.setPen(QColor(theme::Red));
         p.drawText(rect(), Qt::AlignCenter,
                    QStringLiteral("unsupported encoding: %1").arg(enc.c_str()));
         return;
     }
-    if (msg_->data.size() < size_t(msg_->step) * msg_->height) {
+    if (msg_->step < size_t(msg_->width) * bpp
+        || msg_->data.size() < size_t(msg_->step) * msg_->height) {
         p.setPen(QColor(theme::Red));
         p.drawText(rect(), Qt::AlignCenter,
                    QStringLiteral("malformed image: truncated data"));
