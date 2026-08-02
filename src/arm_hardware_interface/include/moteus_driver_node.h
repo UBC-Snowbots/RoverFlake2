@@ -38,6 +38,7 @@
 #include <thread>
 #include <vector>
 #include <array>
+#include <map>
 #include <bitset> // for printing out debug bitmasks
 
 #include "rclcpp/rclcpp.hpp"
@@ -49,6 +50,7 @@
 #include "rover_msgs/msg/moteus_calibration_request.hpp"
 #include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
 // #include <rover_arm_common/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
@@ -62,6 +64,7 @@ enum class AxisState
     INIT,
     REQUESTING_HOMING,
     HOMING,
+    HOMED_WAITING,            // zeroed at switch, holding until the whole homing group is done
     GOING_TO_PRESET_POSITION,
     RUNNING_OK,
     ERROR
@@ -69,6 +72,9 @@ enum class AxisState
 
 struct Axis {
         int index; // Starts at 0
+        float switch_position = 0;   // counter value stamped at switch contact (= -travel, so start pose = 0)
+        float return_position = 0;   // where to go after the group homes (normally 0 = the start pose)
+        float retreat_velocity = 0.1f; // per-axis cap so grouped retreats arrive together
         float position = 0;
         bool limit_switch = 0;
         bool homed = false;
@@ -120,6 +126,27 @@ private:
     // Re-create transport_ and controllers_ (called after moteus_tool exits).
     void reInitTransport();
 
+    // Read the MotorConfig register set from one controller's flash/RAM via
+    // "conf get" (guarded).  Fills flash_cfg_[m]; published in config[] so the
+    // HMI Motor Params panel shows actual values, not assumed ones.
+    void readFlashConfig(int m);
+
+
+    // Runs fn on a detached thread, waiting at most timeout_ms.  fn must only
+    // touch heap state it owns (captured shared_ptrs), never members.  On
+    // timeout the transport is abandoned to a leaked graveyard and false is
+    // returned: the vendored moteus event loop executes callbacks while
+    // holding its mutex, so once a cycle spins on a dead fd, EVERY transport
+    // call (Cycle, Post, DiagnosticCommand) blocks forever — joining or
+    // destroying the transport would hang too.
+    bool guardTransport(std::function<void()> fn, int timeout_ms);
+
+    // Called each poll with whether the cycle produced any CAN replies.
+    // A sustained silent bus triggers fdcanusb re-detection: the device
+    // re-enumerates on replug (ttyACM0 -> ttyACM1) and a stale fd reads
+    // EOF forever while we'd otherwise publish zeros with no error.
+    void checkBusHealth(bool got_replies);
+
     // Publish a calibration status update.
     void publishCalibStatus(int motor_id, int state, const std::string& message);
 
@@ -142,6 +169,11 @@ private:
     // -------------------------------------------------------------------------
     std::shared_ptr<mot::Transport>              transport_;
     std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor_id - 1
+    std::string can_device_path_;        // resolved /dev/ttyACM* we opened
+    std::array<std::map<std::string, float>, NUM_MOTORS> flash_cfg_;  // conf get results
+    bool flash_cfg_valid_[NUM_MOTORS] = {};
+    int         silent_cycles_   = 0;    // consecutive polls with zero CAN replies
+    int64_t     last_redetect_ns_ = 0;   // rate-limits re-detection attempts
 
     // -------------------------------------------------------------------------
     // ROS interfaces
@@ -153,6 +185,7 @@ private:
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr           arm_feedback_pub;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
+    rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr                      config_refresh_sub_;
     //TODO Calibration in future PR
     // rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
     // rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
@@ -194,6 +227,7 @@ private:
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
     std::array<bool, NUM_AXES> limit_block_logged_{};  // edge log for stage 1.5 soft-block
+    std::array<bool, NUM_AXES> homing_group_{};        // axes homing together; retreat starts when all are HOMED_WAITING
 
 
 

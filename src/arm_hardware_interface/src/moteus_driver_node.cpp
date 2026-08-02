@@ -7,6 +7,9 @@
 #include <cstdio>      // popen / pclose
 #include <sys/wait.h>  // WIFEXITED / WEXITSTATUS
 #include <stdexcept>
+#include <climits>     // PATH_MAX (realpath)
+#include <sys/stat.h>  // stat — device-node liveness check
+#include <future>      // CAN cycle watchdog
 
 static constexpr uint32_t ARM_RUN_RATE_MS = (1000u / 100u); // 100 hz
 #define LOG_QUEUE_SIZE_MSGS 50
@@ -19,6 +22,7 @@ constexpr float kHomingStepRev = 0.05f;
 inline bool stateMachineOwns(AxisState s) {
     return s == AxisState::REQUESTING_HOMING
         || s == AxisState::HOMING
+        || s == AxisState::HOMED_WAITING
         || s == AxisState::GOING_TO_PRESET_POSITION;
 }
 
@@ -94,6 +98,12 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
         "/arm/config_update", qos,
         std::bind(&MoteusDriverNode::configUpdateCallback, this, std::placeholders::_1));
+
+    config_refresh_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+        "/arm/config_refresh", qos,
+        [this](const std_msgs::msg::Empty::SharedPtr) {
+            for (int m = 0; m < NUM_MOTORS; m++) readFlashConfig(m);
+        });
         
         // TODO Calibration in a future PR
 
@@ -228,9 +238,12 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
             p.position = NAN;
-            p.velocity = degreesToRevolution(vd);
-            // p.max_velocity = degreesToRevolution(vd);
-            p.max_velocity = AxisConfig::max_running_speed[a];
+            // Clamp INTO the per-frame velocity_limit we send alongside —
+            // commanding past it makes the firmware chase an impossible
+            // reference: unbounded position error, pinned at the current cap.
+            const double cap = AxisConfig::max_running_speed[a];
+            p.velocity = std::clamp(degreesToRevolution(vd), -cap, cap);
+            p.max_velocity = cap;
             p.max_torque = NAN;
         }
         return;
@@ -251,6 +264,11 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
                 if (a != AXIS_EE_INDEX) home_axis(a);   // gate below denies switchless axes
             return;
         }
+        else if (msg->cmd_value == HOME_VALUE_SELECTED) {
+            for (double v : msg->positions)
+                if (!std::isnan(v) && v >= 0 && v < NUM_AXES) home_axis((uint8_t)v);
+            return;
+        }
         else if (msg->cmd_value == HOME_VALUE_ALL_AXES_AND_EE)    { /* EE TODO */ return; }
         RCLCPP_WARN(this->get_logger(), "Unknown home command value: %i", msg->cmd_value);
         return;
@@ -262,8 +280,11 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
 void MoteusDriverNode::zero_position(uint8_t index)
 {
     int i = static_cast<int>(index);
+    if (i >= (int)controllers_.size()) return;
 
-    controllers_[i]->DiagnosticCommand("d exact 0");
+    auto ctrl = controllers_[i];
+    if (!guardTransport([ctrl]() { ctrl->DiagnosticCommand("d exact 0"); }, 1000))
+        return;
     RCLCPP_INFO(this->get_logger(),
     "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
     publishLog("# Motor " + std::to_string(i + 1)
@@ -273,16 +294,20 @@ void MoteusDriverNode::zero_position(uint8_t index)
 void MoteusDriverNode::set_position(uint8_t index, float position_revs)
 {
   int i = static_cast<int>(index);
+  if (i >= (int)controllers_.size()) return;
 
   char cmd[32];
   std::snprintf(cmd, sizeof(cmd), "d exact %f", position_revs);
-  controllers_[i]->DiagnosticCommand(cmd);
+  auto ctrl = controllers_[i];
+  guardTransport([ctrl, cmd = std::string(cmd)]() { ctrl->DiagnosticCommand(cmd); }, 1000);
 }
 
 void MoteusDriverNode::home_axis(uint8_t index)
 {
-    // Just set axis state to request homing
+    // Request homing; axes requested in the same session form a group that
+    // waits at the switches and retreats to idle together (old-arm behavior).
     this->axes[index].state = AxisState::REQUESTING_HOMING;
+    homing_group_[index] = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +326,27 @@ void MoteusDriverNode::home_axis(uint8_t index)
 void MoteusDriverNode::run() {
     heartbeat_ms_ = steadyMs();
     if (calibrating_.load()) return;
+    if (!transport_) {
+        // No fdcanusb — still publish so the HMI can show the link state
+        rover_msgs::msg::MoteusArmStatus msg;
+        msg.status.resize(NUM_AXES);
+        msg.config.resize(NUM_AXES);
+        msg.limit_switches.resize(NUM_AXES);
+        msg.can_device = "";
+        msg.motors_replying = 0;
+        feedback_pub_->publish(msg);
+        checkBusHealth(false);
+        return;
+    }
+    // Cheap early-out when the device node vanished between cycles: reopening
+    // here avoids ever cycling into a dead fd (which wedges the transport).
+    struct stat sb;
+    if (!can_device_path_.empty() && ::stat(can_device_path_.c_str(), &sb) != 0) {
+        RCLCPP_WARN(this->get_logger(), "%s vanished — fdcanusb unplugged; re-detecting",
+                    can_device_path_.c_str());
+        reInitTransport();
+        return;
+    }
 
     // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
     for (auto& c : axis_cmds_) c.active = false;
@@ -321,6 +367,7 @@ void MoteusDriverNode::run() {
         for (int a = 0; a < NUM_AXES; a++) {
             axis_cmds_[a].active = true; axis_cmds_[a].is_stop = true;
             if (stateMachineOwns(axes[a].state)) axes[a].state = AxisState::RUNNING_OK; // abort homing
+            homing_group_[a] = false;
         }
     }
 
@@ -351,9 +398,17 @@ void MoteusDriverNode::run() {
             if (!AxisConfig::has_limit_switch[i]) {
                 RCLCPP_WARN(this->get_logger(), "Axis %d has no limit switch — homing denied", i + 1);
                 ax.state = AxisState::RUNNING_OK;
+                homing_group_[i] = false;   // don't make the group wait for a denied axis
             } else if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
+                homing_group_[i] = false;
+            } else if (!telem_[i].connected || telem_[i].fault != 0) {
+                RCLCPP_WARN(this->get_logger(),
+                    "Axis %d motor %s — homing denied (would stall the group)",
+                    i + 1, telem_[i].connected ? "faulted" : "not replying");
+                ax.state = AxisState::RUNNING_OK;
+                homing_group_[i] = false;
             } else {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch healthy. Homing accepted", i + 1);
                 set_position(i, AxisConfig::max_position_rev[i] - 0.01f);  // seed so soft limits can't block travel
@@ -363,15 +418,24 @@ void MoteusDriverNode::run() {
 
         case AxisState::HOMING:
             if (ax.limit_switch) {
-                RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
-                zero_position(i);   // axes 1-4 only; wrist never passes the homing gate
-                ax.state = AxisState::GOING_TO_PRESET_POSITION;
+                // Travel from seed = distance from the start pose (where the seed was
+                // stamped) to the switch. Stamp the switch as -travel so the pose the
+                // user started homing from becomes exactly 0.
+                const float travel = (AxisConfig::max_position_rev[i] - 0.01f) - axes[i].position;
+                ax.switch_position = -travel;
+                ax.return_position = (travel >= 0.02f) ? 0.0f : (0.02f - travel); // never park on the switch
+                set_position(i, ax.switch_position);
+                RCLCPP_INFO(this->get_logger(),
+                    "Axis %d homed — switch at %.3f, holding for group (returning to %.3f)",
+                    i + 1, ax.switch_position, ax.return_position);
+                ax.state = AxisState::HOMED_WAITING;
             } else if (axes[i].position < ax.min_position_rev - 0.05f) {
                 RCLCPP_ERROR(this->get_logger(),
                     "Axis %d homing overtravel — no switch contact (aux2 input not configured?). Stopping.", i + 1);
                 auto& c = axis_cmds_[i];
                 c.active = true; c.is_stop = true;
                 ax.state = AxisState::ERROR;
+                homing_group_[i] = false;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
                 c.active = true; c.is_stop = false; c.is_zero = false;
@@ -382,20 +446,58 @@ void MoteusDriverNode::run() {
             }
             break;
 
+        case AxisState::HOMED_WAITING: {   // hold at the switch until every group member arrives
+            auto& c = axis_cmds_[i];
+            c.active = true; c.is_stop = false; c.is_zero = false;
+            c.position = ax.switch_position;
+            c.velocity = NAN;
+            c.max_velocity = AxisConfig::homing_speed_revps[i];
+            c.max_acceleration = 0.1f; c.max_torque = NAN;
+            break;
+        }
+
         case AxisState::GOING_TO_PRESET_POSITION: {
             auto& c = axis_cmds_[i];
             c.active = true; c.is_stop = false; c.is_zero = false;
-            c.position = AxisConfig::idle_position[i];  // axis space
+            c.position = ax.return_position;            // back to the pre-homing pose (axis space)
             c.velocity = NAN;
-            c.max_velocity = 0.1f; c.max_acceleration = 0.1f; c.max_torque = NAN;
-            if (std::fabs(axes[i].position - AxisConfig::idle_position[i]) < 0.01f) 
+            c.max_velocity = ax.retreat_velocity; c.max_acceleration = 0.1f; c.max_torque = NAN;
+            if (std::fabs(axes[i].position - ax.return_position) < 0.01f)
             {
                 ax.state = AxisState::RUNNING_OK;
             }
             break;
         }
-        default: 
+        default:
             break;
+        }
+    }
+
+    // ── Stage 2.5: group retreat — when every grouped axis is holding at its
+    //    switch, release them all toward idle_position in the same cycle.
+    {
+        bool group_active = false, all_waiting = true;
+        for (int a = 0; a < NUM_AXES; a++) {
+            if (!homing_group_[a]) continue;
+            group_active = true;
+            if (axes[a].state != AxisState::HOMED_WAITING) all_waiting = false;
+        }
+        if (group_active && all_waiting) {
+            // Scale each axis's speed to its distance so they depart AND arrive together.
+            float d_max = 0.0f;
+            for (int a = 0; a < NUM_AXES; a++)
+                if (homing_group_[a])
+                    d_max = std::max(d_max, std::fabs(axes[a].return_position - axes[a].switch_position));
+            const float T = std::max(1.0f, d_max / 0.1f);   // slowest axis runs at 0.1 rev/s
+            RCLCPP_INFO(this->get_logger(),
+                "Homing group complete — returning to start together (~%.1f s)", T);
+            for (int a = 0; a < NUM_AXES; a++) {
+                if (!homing_group_[a]) continue;
+                axes[a].retreat_velocity = std::max(0.005f,
+                    std::fabs(axes[a].return_position - axes[a].switch_position) / T);
+                axes[a].state = AxisState::GOING_TO_PRESET_POSITION;
+                homing_group_[a] = false;
+            }
         }
     }
 
@@ -469,9 +571,20 @@ void MoteusDriverNode::run() {
         else                            frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[m]));
     }
 
-    // ── Stage 7: bus ────────────────────────────────────────────────────────
-    std::vector<mot::CanFdFrame> replies;
-    transport_->BlockingCycle(frames.data(), frames.size(), &replies);
+    // ── Stage 7: bus (guarded — see guardTransport) ─────────────────────────
+    // The context is heap-owned and captured by the worker so a late-finishing
+    // cycle can't scribble on a dead stack frame.
+    struct CycleCtx { std::vector<mot::CanFdFrame> frames, replies; };
+    auto ctx = std::make_shared<CycleCtx>();
+    ctx->frames = std::move(frames);
+    auto transport = transport_;
+    if (!guardTransport([transport, ctx]() {
+            transport->BlockingCycle(ctx->frames.data(), ctx->frames.size(),
+                                     &ctx->replies);
+        }, 500))
+        return;   // transport abandoned; next tick re-detects
+    const auto& replies = ctx->replies;
+    checkBusHealth(!replies.empty());
     rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
     rover_msgs::msg::ArmCommand arm_feedback_msg;
     arm_feedback_msg.positions.resize(NUM_AXES);
@@ -480,6 +593,7 @@ void MoteusDriverNode::run() {
     moteus_ros_msg.limit_switches.resize(NUM_AXES);
     // ── Stage 8: decode -> telem_, motor->axis (inverse for wrist) ──────────
     for (auto& t : telem_) t.connected = false;
+    int motors_replying = 0;
     for (const auto& frame : replies) {
         int id = frame.source;
         if (id < 1 || id > NUM_MOTORS) continue; 
@@ -489,22 +603,25 @@ void MoteusDriverNode::run() {
         t.temperature=r.temperature;
         t.q_current = std::isnan(r.q_current)?0.0f:(float)r.q_current;
         t.power     = std::isnan(r.power)?0.0f:(float)r.power;
-        t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
+        t.mode=(int)r.mode; t.fault=(int)r.fault;
+        if (!t.connected) motors_replying++;
+        t.connected=true;
+#ifdef DEBUG_LIMIT_SWITCH_RAW_REPLY
+        {
+            static int prev_gpio[NUM_MOTORS] = {-1, -1, -1, -1, -1, -1, -1};
+            const int raw = (int)r.aux2_gpio;
+            if (raw != prev_gpio[id - 1]) {
+                RCLCPP_INFO(this->get_logger(), "M%d aux2_gpio raw=0x%02x", id, raw);
+                prev_gpio[id - 1] = raw;
+            }
+        }
+#endif
         // NOTE: motor-indexed lookup into axis-indexed config — valid only while
         // switch-equipped axes (0-3) map 1:1 to motors; wrist/EE entries are false.
         const bool sw_raw = (r.aux2_gpio & AxisConfig::limit_switch_mask[id - 1]) != 0;
         t.limit_switch = AxisConfig::has_limit_switch[id - 1]
                       && (sw_raw != AxisConfig::limit_switch_inverted[id - 1]);
         axes[id - 1].limit_switch = t.limit_switch;
-        moteus_ros_msg.status[id -1].curr_current_amps = t.q_current;
-        moteus_ros_msg.status[id -1].curr_torque = t.torque;
-        moteus_ros_msg.status[id -1].curr_position = t.position;
-        moteus_ros_msg.status[id -1].curr_power_watts = t.power;
-        moteus_ros_msg.status[id -1].curr_velocity = t.velocity;
-        moteus_ros_msg.status[id -1].moteus_fault = t.fault;
-
-        moteus_ros_msg.status[id -1].driver_temp_degreesc = t.temperature;
-        moteus_ros_msg.limit_switches[id - 1] = t.limit_switch;
         if (id - 1 != AXIS_5_INDEX && id - 1 != AXIS_6_INDEX) {
             axes[id - 1].position = t.position;
         } else if (id - 1 == AXIS_6_INDEX) {  // both wrist replies in — invert together
@@ -514,13 +631,80 @@ void MoteusDriverNode::run() {
         }
         arm_feedback_msg.positions[id - 1] = axes[id -1].position;
     }
+
+    // Publish last-known telemetry for EVERY motor (telem_ persists between
+    // cycles): a motor that misses one reply keeps its previous values with
+    // connected=false, instead of collapsing to zeros — which drew square
+    // waves in the HMI plots whenever the bus flapped.  des_* mirror what was
+    // actually framed this cycle (NaN when only queried).
+    for (int m = 0; m < NUM_MOTORS; m++) {
+        const auto& t = telem_[m];
+        auto& s = moteus_ros_msg.status[m];
+        s.connected            = t.connected;
+        s.curr_position        = t.position;
+        s.curr_velocity        = t.velocity;
+        s.curr_torque          = t.torque;
+        s.curr_current_amps    = t.q_current;
+        s.curr_power_watts     = t.power;
+        s.curr_voltage_volts   = t.voltage;
+        s.driver_temp_degreesc = t.temperature;
+        s.moteus_mode          = static_cast<int16_t>(t.mode);
+        s.moteus_fault         = static_cast<int16_t>(t.fault);
+        const auto& c = motor_cmds_[m];
+        const bool commanding = c.active && !c.is_stop;
+        s.des_position = commanding ? c.position : NAN;
+        s.des_velocity = commanding ? c.velocity : NAN;
+        moteus_ros_msg.limit_switches[m] = t.limit_switch;
+
+        // Actual controller config (conf get results); NaN = never read
+        auto& fc = moteus_ros_msg.config[m];
+        if (flash_cfg_valid_[m]) {
+            const auto& f = flash_cfg_[m];
+            auto g = [&f](const char* k) {
+                auto it = f.find(k); return it != f.end() ? it->second : NAN; };
+            fc.max_acceleration  = g("servo.default_accel_limit");
+            fc.max_velocity      = g("servo.default_velocity_limit");
+            fc.min_position      = g("servopos.position_min");
+            fc.max_position      = g("servopos.position_max");
+            fc.kp                = g("servo.pid_position.kp");
+            fc.ki                = g("servo.pid_position.ki");
+            fc.kd                = g("servo.pid_position.kd");
+            fc.max_current_amps  = g("servo.max_current_A");
+            fc.max_voltage_volts = g("servo.max_voltage");
+            fc.max_power_watts   = g("servo.max_power_W");
+            fc.cmd_timeout_s     = g("servo.default_timeout_s");
+            fc.gear_reduction    = configs_[m].gear_reduction;
+        } else {
+            fc.max_acceleration = fc.max_velocity = fc.min_position =
+            fc.max_position = fc.kp = fc.ki = fc.kd = fc.max_current_amps =
+            fc.max_voltage_volts = fc.max_power_watts = fc.cmd_timeout_s = NAN;
+            fc.gear_reduction = configs_[m].gear_reduction;
+        }
+    }
+    moteus_ros_msg.can_device      = can_device_path_;
+    moteus_ros_msg.motors_replying = static_cast<uint8_t>(motors_replying);
     feedback_pub_->publish(moteus_ros_msg);
     arm_feedback_pub->publish(arm_feedback_msg);
 
-    // ── Stage 9: safety + publish (unchanged, but read motor_cmds_ for des_) ─
+    // /joint_states for MoveIt Servo / RViz: A1-A4 from telemetry (URDF names,
+    // radians via initial_pos_rad + direction); wrist + fingers static — their
+    // URDF joints need values for TF but have no matching hardware right now.
+    sensor_msgs::msg::JointState js;
+    js.header.stamp = this->get_clock()->now();
+    for (int a = AXIS_1_INDEX; a <= AXIS_4_INDEX; a++) {
+        js.name.push_back(ARM_JOINTS[a].urdf_joint_name);
+        js.position.push_back(motorRevToJointRad(a, axes[a].position));
+    }
+    js.name.push_back("a5_rotation");  js.position.push_back(0.0);
+    js.name.push_back("a6_rotation");  js.position.push_back(0.0);
+    for (int g = 0; g < NUM_GRIPPER_JOINTS; g++) {
+        js.name.push_back(GRIPPER_JOINT_NAMES[g]);
+        js.position.push_back(0.0);
+    }
+    joint_state_pub_->publish(js);
+
+    // ── Stage 9: safety ─────────────────────────────────────────────────────
     checkAlerts();
-    // ... your existing arm_feedback / MoteusArmStatus / joint_states publish,
-    //     with active_cmds_[i]  ->  motor_cmds_[i]  in the des_position/des_velocity lines.
 }
 
 
@@ -628,19 +812,28 @@ void MoteusDriverNode::configUpdateCallback(
         + " (" + ARM_JOINTS[idx].hardware_name + "): "
         + msg->register_name + " = " + val_str);
 
-    controllers_[idx]->DiagnosticCommand(cmd);
+    if (idx >= (int)controllers_.size()) return;   // transport abandoned/absent
 
     // For max_velocity, the moteus firmware has two registers that must both
     // be updated to cap velocity consistently during motion profile planning.
-    if (msg->register_name == "servo.max_velocity") {
-        controllers_[idx]->DiagnosticCommand(
-            "conf set servo.default_velocity_limit " + val_str);
-    } else if (msg->register_name == "servo.default_velocity_limit") {
-        controllers_[idx]->DiagnosticCommand(
-            "conf set servo.max_velocity " + val_str);
-    }
+    std::string twin_cmd;
+    if (msg->register_name == "servo.max_velocity")
+        twin_cmd = "conf set servo.default_velocity_limit " + val_str;
+    else if (msg->register_name == "servo.default_velocity_limit")
+        twin_cmd = "conf set servo.max_velocity " + val_str;
+
+    auto ctrl = controllers_[idx];
+    const bool persist = msg->write_flash;
+    if (!guardTransport([ctrl, cmd, twin_cmd, persist]() {
+            ctrl->DiagnosticCommand(cmd);
+            if (!twin_cmd.empty()) ctrl->DiagnosticCommand(twin_cmd);
+            if (persist) ctrl->DiagnosticCommand("conf write");
+        }, persist ? 4000 : 1500))
+        return;
+    if (persist) publishLog("# conf write motor " + std::to_string(idx + 1) + " (persisted)");
 
     applyConfigToMemory(idx, msg->register_name, msg->value);
+    readFlashConfig(idx);   // Actual column confirms from the controller itself
 }
 
 void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, float val) {
@@ -695,7 +888,21 @@ void MoteusDriverNode::reInitTransport() {
     controllers_.clear();
     transport_.reset();  // fd is now closed — refcount hit 0
 
-    transport_ = mot::TransportRegistry::singleton().make({}).first;
+    // Detect explicitly (rather than TransportRegistry::make({})) so we know
+    // which device we opened and can notice when it re-enumerates.
+    const std::string device = mot::Fdcanusb::DetectFdcanusb();
+    if (device.empty()) {
+        RCLCPP_ERROR(this->get_logger(),
+            "No fdcanusb found (/dev/fdcanusb, /dev/serial/by-id/*fdcanusb*) — "
+            "will keep retrying");
+        can_device_path_.clear();
+        return;
+    }
+    char resolved[PATH_MAX];
+    can_device_path_ = ::realpath(device.c_str(), resolved) ? resolved : device;
+    transport_ = std::make_shared<mot::Fdcanusb>(device);
+    RCLCPP_INFO(this->get_logger(), "CAN transport open: %s (%s)",
+                can_device_path_.c_str(), device.c_str());
 
     for (int id = 1; id <= NUM_MOTORS; id++) {
         mot::Controller::Options opts;
@@ -708,6 +915,102 @@ void MoteusDriverNode::reInitTransport() {
         opts.position_format.accel_limit    = mot::kFloat;  
         controllers_.push_back(std::make_shared<mot::Controller>(opts));
     }
+    for (int m = 0; m < NUM_MOTORS; m++) { flash_cfg_valid_[m] = false; readFlashConfig(m); }
+}
+
+void MoteusDriverNode::readFlashConfig(int m) {
+    if (m >= (int)controllers_.size()) return;
+    auto ctrl = controllers_[m];
+    auto regs = std::make_shared<std::vector<std::string>>();
+    for (const auto& [reg, val] : configs_[m].get_configs()) regs->push_back(reg);
+    auto out = std::make_shared<std::map<std::string, float>>();
+    auto dbg_raw = std::make_shared<std::string>();
+    const bool ok = guardTransport([ctrl, regs, out, dbg_raw]() {
+        // SetQuery gates on liveness: DiagnosticCommand to an absent motor
+        // would hang and cost us the whole transport via the guard.
+        if (!ctrl->SetQuery()) return;
+        ctrl->DiagnosticFlush();   // drop stale lines or every reply shifts by one
+        for (const auto& reg : *regs) {
+            // conf get answers a bare value line with no trailing OK
+            const std::string raw = ctrl->DiagnosticCommand(
+                "conf get " + reg, mot::Controller::kExpectSingleLine);
+            (*out)[reg] = std::strtof(raw.c_str(), nullptr);
+            if (dbg_raw) *dbg_raw = raw;   // last raw reply, for the debug log
+        }
+    }, 4000);
+    if (!ok || out->empty()) return;
+    RCLCPP_DEBUG(this->get_logger(), "M%d conf get raw sample: '%s'",
+                 m + 1, dbg_raw ? dbg_raw->c_str() : "");
+    flash_cfg_[m] = *out;
+    flash_cfg_valid_[m] = true;
+}
+
+bool MoteusDriverNode::guardTransport(std::function<void()> fn, int timeout_ms) {
+    auto done = std::make_shared<std::promise<void>>();
+    auto fut = done->get_future();
+    std::thread([fn = std::move(fn), done]() {
+        fn();
+        done->set_value();
+    }).detach();
+    // Wait in slices, stamping the heartbeat: guarded transactions are
+    // sanctioned blocking, and mustn't trip the stall-exit watchdog.
+    const auto deadline = std::chrono::steady_clock::now()
+                        + std::chrono::milliseconds(timeout_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        heartbeat_ms_ = steadyMs();
+        if (fut.wait_for(std::chrono::milliseconds(100)) ==
+            std::future_status::ready)
+            return true;
+    }
+
+    RCLCPP_ERROR(this->get_logger(),
+        "CAN transaction hung >%d ms — fdcanusb died (%s); abandoning transport",
+        timeout_ms, can_device_path_.c_str());
+    // Leaked on purpose: destroying it would join the spinning event thread.
+    static auto* graveyard = new std::vector<std::shared_ptr<mot::Transport>>();
+    if (transport_) graveyard->push_back(transport_);
+    transport_.reset();
+    controllers_.clear();
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// checkBusHealth — recover from fdcanusb re-enumeration without a restart.
+// A replug leaves our fd reading EOF in a tight loop: no error, no replies,
+// zeros published forever.  After ~1 s of silence, re-run detection and
+// reopen; rate-limited to one attempt per 2 s.
+// ---------------------------------------------------------------------------
+void MoteusDriverNode::checkBusHealth(bool got_replies) {
+    if (got_replies) { silent_cycles_ = 0; return; }
+    if (++silent_cycles_ < 100 && transport_) return;
+
+    const int64_t now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (now - last_redetect_ns_ < 2000000000ll) return;
+    last_redetect_ns_ = now;
+    silent_cycles_ = 0;
+
+    const std::string device = mot::Fdcanusb::DetectFdcanusb();
+    char resolved[PATH_MAX];
+    const std::string now_path =
+        (!device.empty() && ::realpath(device.c_str(), resolved)) ? resolved : device;
+
+    if (now_path.empty()) {
+        RCLCPP_WARN(this->get_logger(), "CAN bus silent and no fdcanusb present — check USB");
+        return;
+    }
+    if (!transport_ || now_path != can_device_path_) {
+        RCLCPP_WARN(this->get_logger(), "fdcanusb re-enumerated (%s -> %s) — reconnecting",
+                    can_device_path_.empty() ? "none" : can_device_path_.c_str(),
+                    now_path.c_str());
+    } else {
+        // Same node name: either the motors are unpowered or a same-name replug
+        // left our fd stale.  Reopening is harmless in both cases.
+        RCLCPP_WARN(this->get_logger(),
+            "CAN bus silent on %s — reopening (motors unpowered, or stale port)",
+            can_device_path_.c_str());
+    }
+    reInitTransport();
 }
 
 //TODO Calibration in follow up PR (maybe after comp)
