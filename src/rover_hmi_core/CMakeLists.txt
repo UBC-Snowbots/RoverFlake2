@@ -80,6 +80,7 @@ add_library(rover_hmi_modules SHARED
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
     src/cameras/camera_map.cpp
+    src/cameras/camera_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
