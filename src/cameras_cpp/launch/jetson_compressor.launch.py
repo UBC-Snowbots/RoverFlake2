@@ -4,6 +4,16 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+
+DEFAULT_PARAMS = [
+    {'image_raw.ffmpeg.encoder': 'hvec_nvmpi'},
+    {'image_raw.ffmpeg.bit_rate': 200000},
+    {'image_raw.ffmpeg.gop_size': 60},
+    {'image_raw.ffmpeg.qmax': 60},
+    {'image_raw.ffmpeg.encoder_av_options': 'num_capture_buffers:4;profile:main;preset:ultrafast'},
+]
+
+
 def generate_launch_description():
     nodes = []
 
@@ -29,14 +39,17 @@ def generate_launch_description():
     return LaunchDescription(nodes)
 
 def create_camera_node(camera_name, camera_params):
+
+    params = DEFAULT_PARAMS.copy()
+    params.append(camera_params)
+
     return Node(
         package='v4l2_camera',
         executable='v4l2_camera_node',
         name=camera_name,
         output='screen',
         parameters=[
-            camera_params, 
-            {'image_raw.ffmpeg.encoder': 'h264_nvmpi'},
+            params,
         ],
         remappings=[
             ('/image_raw', f'/{camera_name}/image_raw'),
