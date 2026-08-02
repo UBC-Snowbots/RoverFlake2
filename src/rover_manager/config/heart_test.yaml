@@ -4,5 +4,5 @@
     subsystems:
       sleeper: "sleep 300"
       chatty: "ros2 run demo_nodes_cpp talker"
-      stubborn: 'bash -c ''trap "" INT TERM; sleep 300'''
+      stubborn: 'trap "" INT TERM; sleep 300'
     heartbeat_rate: 1.0
