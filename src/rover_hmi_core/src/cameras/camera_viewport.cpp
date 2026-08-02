@@ -21,6 +21,7 @@ void CameraViewport::setLabel(const QString& label)
 
 void CameraViewport::setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg)
 {
+    if (!msg) { setNoSignal(); return; }
     if (frame_clock_.isValid()) {
         qint64 dt = frame_clock_.restart();
         if (dt > 0) fps_ = fps_ * 0.9 + (1000.0 / dt) * 0.1;
@@ -68,6 +69,12 @@ void CameraViewport::drawFrame(QPainter& p)
         p.setPen(QColor(theme::Red));
         p.drawText(rect(), Qt::AlignCenter,
                    QStringLiteral("unsupported encoding: %1").arg(enc.c_str()));
+        return;
+    }
+    if (msg_->data.size() < size_t(msg_->step) * msg_->height) {
+        p.setPen(QColor(theme::Red));
+        p.drawText(rect(), Qt::AlignCenter,
+                   QStringLiteral("malformed image: truncated data"));
         return;
     }
     // Zero-copy wrap; msg_ keeps the buffer alive until the next frame replaces it.
