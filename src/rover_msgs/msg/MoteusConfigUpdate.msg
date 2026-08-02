@@ -11,3 +11,5 @@
 int32 motor_id
 string register_name
 float32 value
+bool write_flash        # true: follow the conf set with conf write (persists
+                        # across power cycles); false: RAM only, reverts on reboot
