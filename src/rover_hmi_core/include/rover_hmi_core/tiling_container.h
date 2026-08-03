@@ -291,9 +291,13 @@ public:
     // Layout persistence (called by LayoutManagerOverlay)
     void saveCurrentLayout();
     void loadLayout(int index);
+    bool loadLayoutByName(const QString& name);  // external callers bind to names, not indices
     void deleteLayout(int index);
     void renameLayout(int index, const QString& name);
     LayoutStore& layoutStore() { return layout_store_; }
+
+    // Fired with the layout name after every successful layout load.
+    std::function<void(const QString&)> onLayoutChanged;
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 

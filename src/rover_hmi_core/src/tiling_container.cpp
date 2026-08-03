@@ -1555,6 +1555,14 @@ void TilingContainer::loadLayout(int index) {
     }
 
     hideLayoutManagerOverlay();
+    if (onLayoutChanged) onLayoutChanged(entries[index].name);
+}
+
+bool TilingContainer::loadLayoutByName(const QString& name) {
+    auto entries = layout_store_.list();
+    for (int i = 0; i < (int)entries.size(); ++i)
+        if (entries[i].name == name) { loadLayout(i); return true; }
+    return false;
 }
 
 void TilingContainer::deleteLayout(int index) {
