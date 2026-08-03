@@ -3,6 +3,7 @@ uint8 STOPPED=0
 uint8 RUNNING=1
 uint8 STOPPING=2
 uint8 CRASHED=3
+uint8 STUCK=4      # SIGKILL sent, still unreaped 3s later — likely D-state
 
 string name
 uint8 state

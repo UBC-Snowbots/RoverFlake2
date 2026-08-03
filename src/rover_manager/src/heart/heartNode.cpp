@@ -60,9 +60,9 @@ HeartNode::HeartNode() : Node("broken_heart",
 }
 
 void HeartNode::startSubsystem(SubSystem& s){
-    if(s.state == State::RUNNING || s.state == State::STOPPING){
+    if(s.state == State::RUNNING || s.state == State::STOPPING || s.state == State::STUCK){
         RCLCPP_WARN(this->get_logger(), "%s is %s — not starting", s.name.c_str(),
-                    s.state == State::RUNNING ? "running" : "stopping");
+                    s.state == State::RUNNING ? "running" : s.state == State::STOPPING ? "stopping" : "stuck");
         return;
     }
     pid_t pid = fork();
@@ -113,9 +113,13 @@ void HeartNode::superviseTick(){
         int wstatus = 0;
         pid_t r = waitpid(s.pid, &wstatus, WNOHANG);
         if (r == s.pid) {
+            pid_t pgid = s.pid;  // capture before clearing — needed for the sweep below
             s.exit_code = WIFEXITED(wstatus) ? WEXITSTATUS(wstatus)
                         : WIFSIGNALED(wstatus) ? 128 + WTERMSIG(wstatus) : -1;
-            bool was_stopping = (s.state == State::STOPPING);
+            bool was_stopping = (s.state == State::STOPPING || s.state == State::STUCK);
+            // final sweep: catch trap-immune grandchildren the tracked pid alone can't signal for;
+            // errors (e.g. ESRCH, group already empty) are expected and ignored
+            if (s.stop_stage >= 1) killpg(pgid, SIGKILL);
             s.pid = -1;
             s.stop_stage = 0;
             s.state = was_stopping ? State::STOPPED : State::CRASHED;
@@ -128,13 +132,33 @@ void HeartNode::superviseTick(){
                 s.pending_restart = false;
                 startSubsystem(s);
             }
+        } else if (r < 0) {
+            RCLCPP_WARN(this->get_logger(), "waitpid(%d) for %s: %s — treating as gone",
+                        s.pid, s.name.c_str(), strerror(errno));
+            bool was_stopping = (s.state == State::STOPPING || s.state == State::STUCK);
+            s.pid = -1;
+            s.exit_code = -1;
+            s.stop_stage = 0;
+            s.state = was_stopping ? State::STOPPED : State::CRASHED;
+            changed = true;
+            if (s.pending_restart) {
+                s.pending_restart = false;
+                startSubsystem(s);
+            }
         } else if (s.state == State::STOPPING && now >= s.escalate_at) {
-            s.stop_stage++;
-            int sig = (s.stop_stage == 2) ? SIGTERM : SIGKILL;
-            RCLCPP_WARN(this->get_logger(), "%s ignoring stop — escalating to %s",
-                        s.name.c_str(), sig == SIGTERM ? "SIGTERM" : "SIGKILL");
-            signalGroup(s.pid, sig);
-            s.escalate_at = now + std::chrono::seconds(3);
+            if (s.stop_stage < 3) {
+                s.stop_stage++;
+                int sig = (s.stop_stage == 2) ? SIGTERM : SIGKILL;
+                RCLCPP_WARN(this->get_logger(), "%s ignoring stop — escalating to %s",
+                            s.name.c_str(), sig == SIGTERM ? "SIGTERM" : "SIGKILL");
+                signalGroup(s.pid, sig);
+                s.escalate_at = now + std::chrono::seconds(3);
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "%s still unreaped after SIGKILL — likely D-state, "
+                             "no further signals; will reap if the kernel releases it", s.name.c_str());
+                s.state = State::STUCK;
+                changed = true;
+            }
         }
     }
     if (changed) publishStatus();
