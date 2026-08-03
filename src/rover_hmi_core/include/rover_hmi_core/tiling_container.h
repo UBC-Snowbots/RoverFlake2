@@ -270,7 +270,12 @@ public:
                   bool default_visible = true,
                   std::function<void(bool)> on_toggle = nullptr,
                   std::vector<std::pair<std::string,std::string>> module_keybinds = {},
-                  const std::string& section = "General");
+                  const std::string& section = "General",
+                  std::function<QJsonObject()> save_state = nullptr,
+                  std::function<void(const QJsonObject&)> restore_state = nullptr);
+
+    // Hide every visible panel (Alt+C), notifying modules via their toggles.
+    void clearAllPanels();
 
     // Build the initial layout (call after all addPanel calls)
     void finalize();
@@ -338,6 +343,8 @@ private:
         std::string section;
         bool default_visible = true;
         std::function<void(bool)> on_toggle;
+        std::function<QJsonObject()> save_state;
+        std::function<void(const QJsonObject&)> restore_state;
         std::vector<std::pair<std::string,std::string>> module_keybinds;
     };
 

@@ -250,7 +250,9 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     help_hint->setWordWrap(true);
     help_hint->setText(
         QString("<span style='color:%1;'>Alt+/</span>"
-                "&nbsp;&nbsp;<span style='color:%2;'>keybindings</span>")
+                "&nbsp;&nbsp;<span style='color:%2;'>keybindings</span>"
+                "&nbsp;&nbsp;&nbsp;<span style='color:%1;'>Alt+C</span>"
+                "&nbsp;&nbsp;<span style='color:%2;'>clear panels</span>")
         .arg(theme::Text).arg(theme::TextDim));
     help_hint->setStyleSheet("padding-top: 6px;");
     layout_->addWidget(help_hint);
@@ -856,7 +858,9 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
                                 bool default_visible,
                                 std::function<void(bool)> on_toggle,
                                 std::vector<std::pair<std::string,std::string>> module_keybinds,
-                                const std::string& section) {
+                                const std::string& section,
+                                std::function<QJsonObject()> save_state,
+                                std::function<void(const QJsonObject&)> restore_state) {
     auto* panel = new TilePanel(title, content, this);
 
     connect(panel, &TilePanel::clicked, [this, panel]() { setFocusedPanel(panel); });
@@ -864,7 +868,9 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
         if (drag_mode_ == DragMode::None) setFocusedPanel(panel);
     });
 
-    panels_.push_back({panel, layout_hint, section, default_visible, on_toggle, std::move(module_keybinds)});
+    panels_.push_back({panel, layout_hint, section, default_visible, on_toggle,
+                       std::move(save_state), std::move(restore_state),
+                       std::move(module_keybinds)});
 }
 
 // Build a vertical (vertical=true) or horizontal column of panels
@@ -1012,6 +1018,7 @@ void TilingContainer::finalize() {
         { "Focus",   { {"Alt + Arrow",          "Focus adjacent panel"  },
                        {"Alt + Tab",            "Cycle focus"           } }},
         { "Layout",  { {"Alt + J",              "Toggle split direction" },
+                       {"Alt + C",              "Clear all panels"      },
                        {"Alt+Shift+Arrow",      "Resize panel (hold)"   },
                        {"Alt + X + drag",       "Free resize"           },
                        {"Alt+Ctrl+Shift+Arrow", "Swap panel"            },
@@ -1067,6 +1074,7 @@ void TilingContainer::finalize() {
     });
 
     bind("Alt+/", [this]() { toggleKeybindingsOverlay(); });
+    bind("Alt+C", [this]() { if (anyOverlayVisible()) return; clearAllPanels(); });
     bind("Alt+P", [this]() { toggleLayoutManagerOverlay(); });
 
     bind("Alt+[", [this]() { if (anyOverlayVisible()) return; sidebar_->switchSection(-1); });
@@ -1502,6 +1510,20 @@ DwindleNode* TilingContainer::deserializeTree(const QJsonObject& obj) {
     return node;
 }
 
+void TilingContainer::clearAllPanels() {
+    for (auto& pi : panels_) {
+        if (!pi.panel->isVisible()) continue;
+        if (pi.on_toggle) pi.on_toggle(false);
+        pi.panel->setVisible(false);
+    }
+    for (auto* n : all_nodes_) delete n;
+    all_nodes_.clear();
+    root_          = nullptr;
+    focused_panel_ = nullptr;
+    sidebar_->syncCheckboxes({});
+    recalculate();
+}
+
 void TilingContainer::saveCurrentLayout() {
     QJsonObject layout;
     QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
@@ -1515,6 +1537,16 @@ void TilingContainer::saveCurrentLayout() {
         if (pi.panel->isVisible())
             visible.append(QString::fromStdString(pi.panel->title()));
     layout["visible"] = visible;
+
+    // Module-specific state (e.g. camera grid membership), keyed by title.
+    QJsonObject modules;
+    for (auto& pi : panels_) {
+        if (!pi.save_state) continue;
+        QJsonObject st = pi.save_state();
+        if (!st.isEmpty())
+            modules[QString::fromStdString(pi.panel->title())] = st;
+    }
+    if (!modules.isEmpty()) layout["modules"] = modules;
 
     layout_store_.save(layout);
 }
@@ -1538,10 +1570,20 @@ void TilingContainer::loadLayout(int index) {
     std::vector<std::string> visible_titles;
     for (auto& pi : panels_) {
         bool vis = visible_set.contains(QString::fromStdString(pi.panel->title()));
+        bool was = pi.panel->isVisible();
         pi.panel->setVisible(vis);
+        if (vis != was && pi.on_toggle) pi.on_toggle(vis);  // let modules react
         if (vis) visible_titles.push_back(pi.panel->title());
     }
     sidebar_->syncCheckboxes(visible_titles);
+
+    // Apply saved module state after visibility settles.
+    QJsonObject modules = layout["modules"].toObject();
+    for (auto& pi : panels_) {
+        if (!pi.restore_state) continue;
+        auto it = modules.constFind(QString::fromStdString(pi.panel->title()));
+        if (it != modules.constEnd()) pi.restore_state(it->toObject());
+    }
 
     // Reconstruct tree
     if (layout.contains("tree") && !layout["tree"].toObject().isEmpty())
