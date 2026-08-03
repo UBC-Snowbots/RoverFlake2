@@ -104,6 +104,7 @@ void SubsystemsModule::applyState(Row& rw, const rover_msgs::msg::SubsystemState
 void SubsystemsModule::onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg) {
     HostGroup& g = hostGroup(msg->host);
     g.last_arrival_ms = steadyMs();
+    g.offline = false;
     g.box->setTitle(QString::fromStdString(msg->host));
     g.box->setStyleSheet("");
     for (const auto& s : msg->subsystems) applyState(row(g, s.name), s);
@@ -112,11 +113,14 @@ void SubsystemsModule::onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg) {
 void SubsystemsModule::checkHostsAlive() {
     for (auto& [host, g] : hosts_) {
         if (steadyMs() - g.last_arrival_ms <= HOST_TIMEOUT_MS) continue;
-        g.box->setTitle(QString("%1 — ✖ HEART OFFLINE").arg(QString::fromStdString(host)));
-        g.box->setStyleSheet(QString("QGroupBox{color:%1;}").arg(theme::Red));
-        for (auto& [n, rw] : g.rows) {
-            rw.chip->setText("?");
-            rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+        if (!g.offline) {
+            g.offline = true;
+            g.box->setTitle(QString("%1 — ✖ HEART OFFLINE").arg(QString::fromStdString(host)));
+            g.box->setStyleSheet(QString("QGroupBox{color:%1;}").arg(theme::Red));
+            for (auto& [n, rw] : g.rows) {
+                rw.chip->setText("?");
+                rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+            }
         }
     }
 }

@@ -30,6 +30,7 @@ private:
         QGridLayout* grid = nullptr;
         std::map<std::string, Row> rows;
         qint64 last_arrival_ms = 0;   // steady clock, stamped on message arrival
+        bool offline = false;         // transition flag for one-shot offline styling
     };
     void onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg);
     void sendCommand(const std::string& name, uint8_t action);

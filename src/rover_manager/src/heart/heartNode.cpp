@@ -189,7 +189,7 @@ void HeartNode::commandCallback(rover_msgs::msg::SubsystemCommand::SharedPtr cmd
     using Cmd = rover_msgs::msg::SubsystemCommand;
     switch (cmd->action) {
     case Cmd::ACTION_START:   startSubsystem(s); break;
-    case Cmd::ACTION_STOP:    stopSubsystem(s); break;
+    case Cmd::ACTION_STOP:    s.pending_restart = false; stopSubsystem(s); break;
     case Cmd::ACTION_RESTART:
         if (s.state == State::RUNNING) { s.pending_restart = true; stopSubsystem(s); }
         else startSubsystem(s);
