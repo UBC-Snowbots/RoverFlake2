@@ -341,7 +341,7 @@ Note the behavioral deltas vs old code: unknown subsystem names are silently ign
     subsystems:
       sleeper: "sleep 300"
       chatty: "ros2 run demo_nodes_cpp talker"
-      stubborn: "bash -c 'trap \"\" INT TERM; sleep 300'"
+      stubborn: 'trap "" INT TERM; sleep 300'
     heartbeat_rate: 1.0
 ```
 
@@ -548,6 +548,11 @@ void SubsystemsModule::applyState(Row& rw, const rover_msgs::msg::SubsystemState
         break;
     case St::CRASHED:
         rw.chip->setText(QString("CRASHED (%1)").arg(s.exit_code));
+        rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
+        rw.uptime->setText("");
+        break;
+    case St::STUCK:
+        rw.chip->setText("STUCK");
         rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
         rw.uptime->setText("");
         break;
