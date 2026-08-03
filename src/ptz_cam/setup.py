@@ -12,14 +12,12 @@ setup(
         ('share/ament_index/resource_index/packages', [f'resource/{package_name}']),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=[
         'setuptools',
         'onvif-zeep',
         'pyserial',
         'opencv-python',
-        'requests',
     ],
     zip_safe=True,
     maintainer='Cameron Basara',
@@ -31,8 +29,6 @@ setup(
         'console_scripts': [
             'ipcamera = ptz_cam.ipcamera:main',
             'ipcamerazoom = ptz_cam.ipcamerazoom:main',
-            'ip_camera_zoom = ptz_cam.ip_camera_zoom:main',
-            'panorama_node = ptz_cam.panorama_node:main',
             'pitch_tilt_node = ptz_cam.pitch_tilt_node:main',
         ],
     },
