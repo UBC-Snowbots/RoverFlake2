@@ -31,10 +31,28 @@
 #include <QTextStream>
 #include <QTimer>
 
+#include <algorithm>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+#include <std_msgs/msg/string.hpp>
+
+// "A, B ,C" → {"A","B","C"} (trimmed, empties dropped)
+static std::vector<std::string> splitPanelList(const std::string& csv) {
+    std::vector<std::string> out;
+    std::stringstream ss(csv);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        size_t a = item.find_first_not_of(" \t");
+        if (a == std::string::npos) continue;
+        size_t b = item.find_last_not_of(" \t");
+        out.push_back(item.substr(a, b - a + 1));
+    }
+    return out;
+}
 
 // Font-scale cache: survives HMI restarts within a session, deleted on clean
 // shutdown (and cleared by the OS on reboot) so a scale never becomes sticky.
@@ -106,6 +124,54 @@ int main(int argc, char* argv[]) {
     // finalize() builds the initial dwindle tree from the accumulated panels
     // and must be called before the window is shown.
     tiling->finalize();
+
+    // Window title follows the active layout / panel set.
+    tiling->onLayoutChanged = [&window](const QString& name) {
+        window.setWindowTitle(name.isEmpty() ? QString("Rover HMI")
+                                             : "Rover HMI — " + name);
+    };
+
+    // Known panel titles, for validating panel-set requests.
+    std::vector<std::string> module_names;
+    for (auto& m : modules) module_names.push_back(m->name());
+
+    auto applyPanels = [&node, &module_names, tiling](const std::string& csv) {
+        std::vector<std::string> known;
+        for (const auto& t : splitPanelList(csv)) {
+            if (std::find(module_names.begin(), module_names.end(), t)
+                    != module_names.end())
+                known.push_back(t);
+            else
+                RCLCPP_WARN(node->get_logger(),
+                            "show_panels: unknown panel '%s'", t.c_str());
+        }
+        if (!known.empty()) tiling->showPanels(known);
+    };
+    auto applyLayout = [&node, tiling](const std::string& name) {
+        if (tiling->loadLayoutByName(QString::fromStdString(name))) return;
+        std::string names;
+        for (const auto& e : tiling->layoutStore().list())
+            names += (names.empty() ? "" : ", ") + e.name.toStdString();
+        RCLCPP_WARN(node->get_logger(),
+                    "load_layout: unknown layout '%s' (known: %s)",
+                    name.c_str(), names.c_str());
+    };
+
+    // Startup selection: layout name wins over explicit panel list.
+    const auto layout_param = node->declare_parameter<std::string>("layout", "");
+    const auto panels_param = node->declare_parameter<std::string>("panels", "");
+    if (!layout_param.empty())      applyLayout(layout_param);
+    else if (!panels_param.empty()) applyPanels(panels_param);
+
+    // Runtime control topics. Callbacks run on the Qt thread via the
+    // spin_some timer, so they may touch widgets directly.
+    auto load_layout_sub = node->create_subscription<std_msgs::msg::String>(
+        "/hmi/load_layout", 10,
+        [applyLayout](const std_msgs::msg::String& msg) { applyLayout(msg.data); });
+    auto show_panels_sub = node->create_subscription<std_msgs::msg::String>(
+        "/hmi/show_panels", 10,
+        [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
+
     window.setCentralWidget(tiling);
     window.resize(1600, 1000);
     window.showMaximized();

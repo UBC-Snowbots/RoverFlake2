@@ -99,7 +99,7 @@ pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 # ---------------------------------------------------------------------------
 add_executable(rover_hmi src/hmi_host.cpp)
 target_link_libraries(rover_hmi rover_hmi_core Qt5::Widgets)
-ament_target_dependencies(rover_hmi rclcpp pluginlib)
+ament_target_dependencies(rover_hmi rclcpp pluginlib std_msgs)
 
 # ---------------------------------------------------------------------------
 # Install
