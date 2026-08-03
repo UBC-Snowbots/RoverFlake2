@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <QJsonObject>
 #include <QWidget>
 #include <string>
 #include <functional>
@@ -64,6 +65,11 @@ public:
     // Override to expose module-specific keybindings shown in the Alt+/ overlay.
     // Each pair is { keys, description }, e.g. { "Alt+R", "Reset motors" }.
     virtual std::vector<std::pair<std::string,std::string>> keybindings() const { return {}; }
+
+    // Module state persisted inside saved layouts (e.g. camera grid setup).
+    // Return {} when there is nothing to save.
+    virtual QJsonObject saveState() const { return {}; }
+    virtual void restoreState(const QJsonObject& /*state*/) {}
 
     // Section this module belongs to in the sidebar.
     // Modules sharing a section name are grouped together.
