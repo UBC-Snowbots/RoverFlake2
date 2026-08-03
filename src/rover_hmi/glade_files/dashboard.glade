@@ -1141,6 +1141,63 @@
           </packing>
         </child>
         <child>
+          <!-- n-columns=3 n-rows=2 -->
+          <object class="GtkGrid" id="on_board_jetson_grid">
+            <property name="width-request">100</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">ON BOARD JETSON</property>
+                <style>
+                  <class name="monitored_node_name"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="on_board_jetson_status_label">
+                <property name="height-request">30</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">STATUS UNKNOWN!</property>
+                <style>
+                  <class name="computer_status_label"/>
+                </style>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkDrawingArea" id="on_board_jetson_heart_monitor">
+                <property name="height-request">20</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="hexpand">True</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="x">700</property>
+            <property name="y">173</property>
+          </packing>
+        </child>
+        <child>
           <!-- n-columns=3 n-rows=4 -->
           <object class="GtkGrid" id="ptz_grid">
             <property name="width-request">131</property>
