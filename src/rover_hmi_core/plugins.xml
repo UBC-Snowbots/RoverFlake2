@@ -95,6 +95,12 @@
     <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
   </class>
 
+  <!-- Cameras -->
+  <class name="rover_hmi_core/CameraModule"
+         type="CameraModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>FNAF-style camera viewer: single feed with selector list, or grid of all feeds</description>
+  </class>
 
   <class name="rover_hmi_core/SpectrometerModule"
          type="SpectrometerModule"

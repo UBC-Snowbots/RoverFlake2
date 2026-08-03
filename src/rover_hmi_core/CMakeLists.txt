@@ -76,6 +76,11 @@ add_library(rover_hmi_modules SHARED
     include/rover_hmi_core/science/spectrum_view.h
     # Drive
     src/drive/drive_module.cpp
+    # Cameras
+    src/cameras/camera_config.cpp
+    src/cameras/camera_viewport.cpp
+    src/cameras/camera_list_overlay.cpp
+    src/cameras/camera_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
@@ -85,6 +90,7 @@ target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/moveit
     include/rover_hmi_core/science
     include/rover_hmi_core/drive
+    include/rover_hmi_core/cameras
 )
 
 target_link_libraries(rover_hmi_modules
@@ -92,6 +98,8 @@ target_link_libraries(rover_hmi_modules
     Qt5::Widgets
 )
 ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp rover_arm_common)
+target_compile_definitions(rover_hmi_modules PRIVATE
+    ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
 
 # ---------------------------------------------------------------------------
@@ -121,5 +129,16 @@ install(DIRECTORY scripts/ DESTINATION share/${PROJECT_NAME}/scripts)
 
 ament_export_targets(rover_hmi_coreTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(rclcpp pluginlib Qt5Widgets rover_arm_common)
+
+if(BUILD_TESTING)
+    find_package(ament_cmake_gtest REQUIRED)
+    ament_add_gtest(test_camera_config
+        test/test_camera_config.cpp
+        src/cameras/camera_config.cpp)
+    target_link_libraries(test_camera_config Qt5::Core)
+    target_include_directories(test_camera_config PRIVATE include)
+    target_compile_definitions(test_camera_config PRIVATE
+        ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 
 ament_package()

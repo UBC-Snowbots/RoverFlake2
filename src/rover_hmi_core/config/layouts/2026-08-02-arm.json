@@ -1,6 +1,6 @@
 {
-    "name": "2026-08-01 03:42",
-    "saved_at": "2026-08-01 03:42",
+    "name": "2026-08-02 ARM",
+    "saved_at": "2026-08-02 10:12",
     "tree": {
         "children": [
             {
@@ -17,7 +17,7 @@
                             }
                         ],
                         "isNode": true,
-                        "splitRatio": 1,
+                        "splitRatio": 0.9599093794822693,
                         "splitTop": true
                     },
                     {
@@ -32,12 +32,12 @@
                             }
                         ],
                         "isNode": true,
-                        "splitRatio": 1,
+                        "splitRatio": 1.0221049785614014,
                         "splitTop": true
                     }
                 ],
                 "isNode": true,
-                "splitRatio": 1,
+                "splitRatio": 0.7925420999526978,
                 "splitTop": false
             },
             {
@@ -46,7 +46,7 @@
             }
         ],
         "isNode": true,
-        "splitRatio": 1.721964955329895,
+        "splitRatio": 1.7538166046142578,
         "splitTop": true
     },
     "visible": [
