@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QElapsedTimer>
+#include <QPixmap>
 #include <QTimer>
 #include <QWidget>
 #include <functional>
@@ -19,6 +20,8 @@ public:
     void setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg);
     void setNoSignal();
     void setError(const QString& msg);
+    // Shown instead of animated static when signal-less, caption underneath.
+    void setPlaceholder(const QPixmap& pm);
     bool hasFrame() const { return static_cast<bool>(msg_); }
 
 protected:
@@ -31,6 +34,7 @@ private:
     void drawOverlay(QPainter& p);
 
     sensor_msgs::msg::Image::ConstSharedPtr msg_;  // keeps the buffer alive for painting
+    QPixmap placeholder_;
     QString label_;
     QString error_;
     QTimer* static_timer_;   // repaints the noise at 10 Hz while signal-less

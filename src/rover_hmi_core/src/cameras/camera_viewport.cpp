@@ -45,7 +45,17 @@ void CameraViewport::setNoSignal()
     msg_.reset();
     fps_ = 0.0;
     frame_clock_.invalidate();
-    if (!static_timer_->isActive()) static_timer_->start(100);
+    // The noise animation only runs when there is no placeholder picture.
+    if (placeholder_.isNull() && !static_timer_->isActive()) static_timer_->start(100);
+    update();
+}
+
+void CameraViewport::setPlaceholder(const QPixmap& pm)
+{
+    placeholder_ = pm;
+    if (!placeholder_.isNull() && static_timer_->isActive()) static_timer_->stop();
+    else if (placeholder_.isNull() && !msg_ && !static_timer_->isActive())
+        static_timer_->start(100);
     update();
 }
 
@@ -97,6 +107,22 @@ void CameraViewport::drawFrame(QPainter& p)
 
 void CameraViewport::drawStatic(QPainter& p)
 {
+    QString text = error_.isEmpty()
+        ? QStringLiteral("NO SIGNAL — %1").arg(label_)
+        : error_;
+    if (!placeholder_.isNull()) {
+        int ch = theme::px(theme::FontSizeLg) + 14;  // caption strip height
+        QRect img_area = rect().adjusted(0, 0, 0, -ch);
+        QSize scaled = placeholder_.size().scaled(img_area.size(), Qt::KeepAspectRatio);
+        QRect target(QPoint((img_area.width() - scaled.width()) / 2,
+                            (img_area.height() - scaled.height()) / 2), scaled);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        p.drawPixmap(target, placeholder_);
+        p.setFont(QFont("monospace", theme::px(theme::FontSizeLg), QFont::Bold));
+        p.setPen(QColor(theme::Red));
+        p.drawText(QRect(0, height() - ch, width(), ch), Qt::AlignCenter, text);
+        return;
+    }
     auto* rng = QRandomGenerator::global();
     const int cell = 6;
     for (int y = 0; y < height(); y += cell)
@@ -106,9 +132,6 @@ void CameraViewport::drawStatic(QPainter& p)
         }
     p.setFont(QFont("monospace", theme::px(theme::FontSizeLg), QFont::Bold));
     p.setPen(QColor(theme::Red));
-    QString text = error_.isEmpty()
-        ? QStringLiteral("NO SIGNAL — %1").arg(label_)
-        : error_;
     p.drawText(rect(), Qt::AlignCenter | Qt::TextWordWrap, text);
 }
 

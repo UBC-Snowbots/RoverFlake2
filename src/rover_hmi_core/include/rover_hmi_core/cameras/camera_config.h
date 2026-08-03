@@ -22,4 +22,9 @@ std::vector<Camera> load(QString* err);
 
 QString topicFor(const Camera& cam);  // "/<name>/image_raw_decoded"
 
+// assets/cats/: NO SIGNAL placeholder pictures, sorted by name.
+// cat_square.png is the PTZ module's and is excluded here.
+QString catFor(int idx);  // camera idx → cat path (wraps); empty if none found
+QString catError();       // config-error tile cat (first spare past the cameras)
+
 }  // namespace rover_hmi_core::camera_config

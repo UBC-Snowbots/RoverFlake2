@@ -69,4 +69,36 @@ QString topicFor(const Camera& cam)
     return QStringLiteral("/%1/image_raw_decoded").arg(cam.name);
 }
 
+namespace {
+
+QStringList catList()
+{
+    QString root = packageRoot();
+    if (root.isEmpty()) return {};
+    QDir dir(root + "/assets/cats");
+    QStringList files = dir.entryList(
+        {QStringLiteral("cat_*.jpeg"), QStringLiteral("cat_*.jpg"),
+         QStringLiteral("cat_*.png")},
+        QDir::Files, QDir::Name);
+    files.removeAll(QStringLiteral("cat_square.png"));
+    for (QString& f : files) f = dir.filePath(f);
+    return files;
+}
+
+}  // namespace
+
+QString catFor(int idx)
+{
+    QStringList cats = catList();
+    if (cats.isEmpty() || idx < 0) return {};
+    return cats[idx % cats.size()];
+}
+
+QString catError()
+{
+    QStringList cats = catList();
+    if (cats.isEmpty()) return {};
+    return cats[qMin(6, int(cats.size()) - 1)];
+}
+
 }  // namespace rover_hmi_core::camera_config

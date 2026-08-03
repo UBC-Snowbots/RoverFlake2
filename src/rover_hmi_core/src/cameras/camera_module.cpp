@@ -42,6 +42,7 @@ QWidget* CameraModule::createWidget(QWidget* parent)
         auto* cell = new CameraViewport(grid_cells);
         cell->setMinimumSize(160, 120);
         cell->setLabel(cams_[size_t(i)].label);
+        cell->setPlaceholder(QPixmap(rover_hmi_core::camera_config::catFor(i)));
         cell->onClick = [this, i]() { setGrid(false); switchTo(i); };
         grid->addWidget(cell, i / 2, i % 2);
         cells_.push_back(cell);
@@ -61,6 +62,7 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     list_->raise();
 
     if (cams_.empty()) {
+        viewport_->setPlaceholder(QPixmap(rover_hmi_core::camera_config::catError()));
         viewport_->setError(QStringLiteral("camera_map.json: %1").arg(err));
         return widget;
     }
@@ -151,6 +153,8 @@ void CameraModule::resubscribe()
     } else if (active_ >= 0) {
         last_frames_[size_t(active_)].invalidate();
         viewport_->setLabel(cams_[size_t(active_)].label);
+        viewport_->setPlaceholder(
+            QPixmap(rover_hmi_core::camera_config::catFor(active_)));
         viewport_->setNoSignal();
         list_->setActive(active_);
         subs_[size_t(active_)] = makeSub(active_, viewport_);
