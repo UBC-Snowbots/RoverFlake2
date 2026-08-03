@@ -111,16 +111,20 @@ void CameraViewport::drawStatic(QPainter& p)
         ? QStringLiteral("NO SIGNAL — %1").arg(label_)
         : error_;
     if (!placeholder_.isNull()) {
-        int ch = theme::px(theme::FontSizeLg) + 14;  // caption strip height
-        QRect img_area = rect().adjusted(0, 0, 0, -ch);
-        QSize scaled = placeholder_.size().scaled(img_area.size(), Qt::KeepAspectRatio);
-        QRect target(QPoint((img_area.width() - scaled.width()) / 2,
-                            (img_area.height() - scaled.height()) / 2), scaled);
+        // Small centered square, PTZ-idle style: center-cropped, capped size,
+        // caption directly underneath.
+        int ch = theme::px(theme::FontSize) + 10;
+        int side = qMin(qMin(width(), height()) * 2 / 5, 300);
+        int top = (height() - side - ch) / 2;
+        QRect target((width() - side) / 2, top, side, side);
+        int s = qMin(placeholder_.width(), placeholder_.height());
+        QRect src((placeholder_.width() - s) / 2, (placeholder_.height() - s) / 2, s, s);
         p.setRenderHint(QPainter::SmoothPixmapTransform);
-        p.drawPixmap(target, placeholder_);
-        p.setFont(QFont("monospace", theme::px(theme::FontSizeLg), QFont::Bold));
+        p.drawPixmap(target, placeholder_, src);
+        p.setFont(QFont("monospace", theme::px(theme::FontSize), QFont::Bold));
         p.setPen(QColor(theme::Red));
-        p.drawText(QRect(0, height() - ch, width(), ch), Qt::AlignCenter, text);
+        p.drawText(QRect(0, top + side + 4, width(), ch),
+                   Qt::AlignHCenter | Qt::AlignTop, text);
         return;
     }
     auto* rng = QRandomGenerator::global();
