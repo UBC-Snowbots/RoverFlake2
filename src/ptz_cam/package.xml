@@ -12,14 +12,10 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
   <exec_depend>python3-serial</exec_depend>
-  <exec_depend>python3-requests</exec_depend>
-  <!-- IP camera RTSP feed (launch/ip_camera.launch.py) -->
-  <exec_depend>gscam</exec_depend>
 
   
 <!-- Rosdep fails with the following: -->
