@@ -56,6 +56,7 @@ SubsystemsModule::Row& SubsystemsModule::row(HostGroup& g, const std::string& na
     g.grid->addWidget(new QLabel(QString::fromStdString(name)), r, 0);
     rw.chip = new QLabel("—");
     rw.chip->setAlignment(Qt::AlignCenter);
+    rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
     g.grid->addWidget(rw.chip, r, 1);
     rw.uptime = new QLabel("");
     g.grid->addWidget(rw.uptime, r, 2);
@@ -145,14 +146,26 @@ void SubsystemsModule::loadExpectedHosts() {
         RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts", path.c_str(), e.what());
         return;
     }
+    // heart.yaml is hand-edited config: a structurally-wrong entry (e.g. a
+    // "/heart_x" key whose value isn't a map) must not be able to crash the
+    // HMI. Guard each entry individually; warn once and skip the bad entry
+    // so the rest of the file still pre-renders.
+    bool warned = false;
     for (const auto& top : root) {
-        const std::string key = top.first.as<std::string>();
-        if (key.rfind("/heart_", 0) != 0) continue;  // only heart nodes, e.g. skip /dashboard_hmi_node
-        const std::string host = key.substr(7);      // strip "/heart_"
-        const YAML::Node subsystems = top.second["ros__parameters"]["subsystems"];
-        if (!subsystems || !subsystems.IsMap()) continue;
-        HostGroup& g = hostGroup(host);
-        for (const auto& sub : subsystems) row(g, sub.first.as<std::string>());
+        try {
+            const std::string key = top.first.as<std::string>();
+            if (key.rfind("/heart_", 0) != 0) continue;  // only heart nodes, e.g. skip /dashboard_hmi_node
+            const std::string host = key.substr(7);      // strip "/heart_"
+            const YAML::Node subsystems = top.second["ros__parameters"]["subsystems"];
+            if (!subsystems || !subsystems.IsMap()) continue;
+            HostGroup& g = hostGroup(host);
+            for (const auto& sub : subsystems) row(g, sub.first.as<std::string>());
+        } catch (const std::exception& e) {
+            if (!warned) {
+                RCLCPP_WARN(node_->get_logger(), "Subsystems: malformed entry in %s (%s); skipping bad entries", path.c_str(), e.what());
+                warned = true;
+            }
+        }
     }
 }
 
