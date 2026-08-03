@@ -76,6 +76,11 @@ void DashboardHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest
         status_label = monitored_systems_control_base[subsys_name].status_label;
     }
     if(host == MONITORED_COMPUTER_ONBOARD_JETSON_STRING){
+
+        onboard_jetson_heart_monitor.time_of_last_heartbeat_ns = time_of_heartbeat_ns;
+        onboard_jetson_heart_monitor.time_of_last_heartbeat_s = time_of_heartbeat_s;
+        onboard_jetson_heart_monitor.time_of_heartbeat = heartbeat_time;
+
         subsys_context = monitored_systems_onboard_jetson[subsys_name].status_label->get_style_context();
         status_label = monitored_systems_onboard_jetson[subsys_name].status_label;
       
@@ -159,6 +164,9 @@ void DashboardHMINode::subsystemRequest(std::string subsystem_name, int request,
         case COMPUTER_ONBOARD_NUC:
         // onboard_nuc_heart_request_pub->publish(msg);
         break;
+        case COMPUTER_ONBOARD_JETSON:
+        // onboard_jetson_heart_request_pub->publish(msg);
+        break;
         case COMPUTER_GLOBAL: //? one topic for all computers. Just rely on subsystem names to ensure what runs where. Each computer knows what subsystems it should run in the params.
         global_heart_request_pub->publish(msg);
         break;
@@ -178,8 +186,10 @@ heart_monitor& DashboardHMINode::monitorLookUp(int computer){
         case onboard_nuc:
             return onboard_nuc_heart_monitor;
             break;
+        case onboard_jetson:
+            return onboard_jetson_heart_monitor;
+            break;
         default:
-            //no jetson
             break;
     }
     return null_heart_monitor;

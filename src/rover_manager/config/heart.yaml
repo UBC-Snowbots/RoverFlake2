@@ -23,6 +23,7 @@
     computer_control_base: "control_base" # must match with node name /heart_xxxx_xxxx (control_base -> /heart_control_base)
     computer_onboard_nuc: "onboard_nuc"
     computer_onboard_jetson: "onboard_jetson"
+    computer_comms_pi: "comms_pi"
     heart_request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     subsystems_control_base:
@@ -31,9 +32,12 @@
       - "drive_interface"
       - "arm_interface"
       - "gnss_interface"
-    subsystems_onboard_jetson: # Not implemented in the dashboard gui yet
-      - "yolo_detection"
-      - "aruco_detection"
+    subsystems_onboard_jetson:
+      - "camera_interface"
+    subsystems_comms_pi:
+      - "dish_rotation_interface"
+
+    # Unused
     camera_selection_topic: # topic name that takes an integer as the camera index
       - "campipe1/select"
       - "campipe2/select"
@@ -64,6 +68,22 @@
       # drive_control: "ros2 launch drive_control drive_the_rover.launch.py"
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
       gnss_interface: "ros2 run rover_gnss nmea_reader"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
+
+/heart_jetson:
+  ros__parameters:
+    subsystems:
+      camera_interface: "ros2 launch cameras_cpp jetson_compressor.launch.py"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
+
+/heart_comms_pi:
+  ros__parameters:
+    subsystems:
+      dish_rotation_interface: "ros2 run comms_base_control death_ray_motor_control"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline

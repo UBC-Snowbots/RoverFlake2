@@ -83,12 +83,15 @@ public:
           rclcpp::Parameter control_base_subsystems_param;
             this->get_parameter("subsystems_control_base", control_base_subsystems_param);
           rclcpp::Parameter onboard_nuc_subsystems_param;
-            this->get_parameter("subsystems_onboard_nuc", onboard_nuc_subsystems_param);     
+            this->get_parameter("subsystems_onboard_nuc", onboard_nuc_subsystems_param);  
+          rclcpp::Parameter onboard_jetson_subsystems_param;
+            this->get_parameter("subsystems_onboard_jetson", onboard_jetson_subsystems_param);   
           //rclcpp::Parameter onboard_nuc_subsystems_param;
             // this->get_parameter("subsystems_onboard_nuc", onboard_nuc_subsystems_param); //TODO add for jetson
 
               monitored_system_names_control_base = control_base_subsystems_param.as_string_array();
               monitored_system_names_onboard_nuc = onboard_nuc_subsystems_param.as_string_array();
+              monitored_system_names_onboard_jetson = onboard_jetson_subsystems_param.as_string_array();
 
         this->package_share_dir = ament_index_cpp::get_package_share_directory("rover_hmi");
         std::string glade_file_path = this->package_share_dir + "/glade_files/dashboard.glade";
@@ -170,6 +173,7 @@ heart_monitor& monitorLookUp(int computer);
 
     heart_monitor control_base_heart_monitor;
     heart_monitor onboard_nuc_heart_monitor;
+    heart_monitor onboard_jetson_heart_monitor;
     heart_monitor null_heart_monitor;
 
     //! Should be cleaned up. Like too many custom structs to do this setup
