@@ -54,8 +54,20 @@ void CameraModule::setNode(rclcpp::Node::SharedPtr node) { node_ = node; }
 
 void CameraModule::start()
 {
-    if (!cams_.empty()) switchTo(0);
+    if (!cams_.empty() && visible_) switchTo(0);
     if (liveness_timer_) liveness_timer_->start(500);
+}
+
+void CameraModule::onVisibility(bool on)
+{
+    visible_ = on;
+    if (!on) {
+        sub_.reset();
+        if (viewport_) viewport_->setNoSignal();
+        return;
+    }
+    // sub_ is null here, so switchTo re-subscribes even to the same index.
+    if (!cams_.empty() && node_) switchTo(active_ >= 0 ? active_ : 0);
 }
 
 void CameraModule::stop()

@@ -25,6 +25,11 @@ public:
     void     start() override;
     void     stop()  override;
 
+    // Drop the subscription while the tile is hidden; resubscribe on show.
+    std::function<void(bool)> toggleCallback() override {
+        return [this](bool on) { onVisibility(on); };
+    }
+
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
             { "1..9",  "Switch camera (module focused)" },
@@ -35,6 +40,7 @@ public:
 private:
     void switchTo(int idx);
     void onLivenessTick();
+    void onVisibility(bool on);
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
@@ -45,4 +51,5 @@ private:
     QTimer*         liveness_timer_ = nullptr;
     QElapsedTimer   last_frame_;
     int active_ = -1;
+    bool visible_ = true;
 };
