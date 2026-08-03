@@ -1194,7 +1194,7 @@
           </object>
           <packing>
             <property name="x">700</property>
-            <property name="y">173</property>
+            <property name="y">180</property>
           </packing>
         </child>
         <child>
@@ -1501,8 +1501,8 @@ DON"T USE THESE BUTTONS</property>
             </child>
           </object>
           <packing>
-            <property name="x">856</property>
-            <property name="y">173</property>
+            <property name="x">1100</property>
+            <property name="y">780</property>
           </packing>
         </child>
         <style>
