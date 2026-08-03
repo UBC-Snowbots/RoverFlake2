@@ -23,8 +23,8 @@ void styleBeacon(QLabel* beacon, const char* color) {
 // Subsystem chip: solid color block, dark text — mirrors the old GTK dashboard's
 // .subsys_ONLINE / .subsys_OFFLINE blocks, adapted to this theme's palette.
 QString chipStyle(const char* bg) {
-    return QString("background:%1; color:#1e1e2e; font-weight:bold; "
-                    "padding:3px 10px; border-radius:4px; min-width:96px;").arg(bg);
+    return QString("background:%1; color:%2; font-weight:bold; "
+                    "padding:3px 10px; border-radius:4px; min-width:96px;").arg(bg, theme::Bg);
 }
 }
 
