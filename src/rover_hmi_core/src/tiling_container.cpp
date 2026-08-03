@@ -1589,6 +1589,7 @@ void TilingContainer::showPanels(const std::vector<std::string>& titles) {
     for (auto& pi : panels_)
         if (pi.panel->isVisible()) { setFocusedPanel(pi.panel); break; }
 
+    hideLayoutManagerOverlay();
     QStringList shown;
     for (const auto& t : visible_titles) shown << QString::fromStdString(t);
     if (onLayoutChanged) onLayoutChanged(shown.join(" + "));

@@ -145,7 +145,10 @@ int main(int argc, char* argv[]) {
                 RCLCPP_WARN(node->get_logger(),
                             "show_panels: unknown panel '%s'", t.c_str());
         }
-        if (!known.empty()) tiling->showPanels(known);
+        if (known.empty())
+            RCLCPP_WARN(node->get_logger(), "show_panels: no valid panels in request");
+        else
+            tiling->showPanels(known);
     };
     auto applyLayout = [&node, tiling](const std::string& name) {
         if (tiling->loadLayoutByName(QString::fromStdString(name))) return;
@@ -165,6 +168,7 @@ int main(int argc, char* argv[]) {
 
     // Runtime control topics. Callbacks run on the Qt thread via the
     // spin_some timer, so they may touch widgets directly.
+    // Volatile QoS: commands arriving while the HMI is down are dropped.
     auto load_layout_sub = node->create_subscription<std_msgs::msg::String>(
         "/hmi/load_layout", 10,
         [applyLayout](const std_msgs::msg::String& msg) { applyLayout(msg.data); });
