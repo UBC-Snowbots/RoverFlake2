@@ -1,8 +1,11 @@
 // lighting_module.h — "Lighting"
 //
-// 4 lighting zone controls: Front, Back, Left, Right.
-// Publishes LightControl, subscribes LightStatus.
-// Section: Electricals. defaultVisible: false.
+// 5 LED boards: front-left(0), front-right(1), left(2), right(3), back(4).
+// Publishes the full desired-brightness array (5 floats, 0-100) as
+// std_msgs/Float64MultiArray to /lights/cmd; subscribes /lights/feedback
+// for hardware-confirmed brightness. The front pair is ganged behind one
+// control cluster by default, with a LINKED/SPLIT button to drive the two
+// floodlights independently. Section: Electricals. defaultVisible: false.
 
 #pragma once
 
@@ -11,10 +14,29 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QWidget>
+
+#include <array>
 
 #include "rclcpp/rclcpp.hpp"
-#include "rover_msgs/msg/light_control.hpp"
-#include "rover_msgs/msg/light_status.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
+
+class QTimer;
+
+// Top-down rover outline with five light glyphs whose glow intensity tracks
+// hardware-confirmed brightness. Renders dim outlines until feedback arrives.
+class RoverLightingView : public QWidget {
+public:
+    explicit RoverLightingView(QWidget* parent = nullptr);
+    void setPercents(const std::array<double, 5>& percents, bool have_feedback);
+
+protected:
+    void paintEvent(QPaintEvent*) override;
+
+private:
+    std::array<double, 5> percents_{};
+    bool have_feedback_ = false;
+};
 
 class LightingModule : public rover_hmi_core::GuiModule {
 public:
@@ -28,21 +50,54 @@ public:
     void     stop() override {}
 
 private:
-    void onLightStatus(const rover_msgs::msg::LightStatus::SharedPtr msg);
-    void publishControl(int zone, bool enabled, int brightness);
+    // Wire indices — must match firmware led_panel_index assignment.
+    static constexpr int BOARD_FRONT_LEFT  = 0;
+    static constexpr int BOARD_FRONT_RIGHT = 1;
+    static constexpr int BOARD_LEFT        = 2;
+    static constexpr int BOARD_RIGHT       = 3;
+    static constexpr int BOARD_BACK        = 4;
+    static constexpr int NUM_BOARDS        = 5;
 
-    static constexpr int NUM_ZONES = 4;
+    // UI clusters: 0=Front (gangs boards 0+1 when linked), 1=Left, 2=Right, 3=Back.
+    static constexpr int NUM_CLUSTERS = 4;
+    static const int CLUSTER_BOARDS[NUM_CLUSTERS][2];  // second entry -1 if none
 
-    QPushButton* toggle_btns_[NUM_ZONES] = {};
-    QSlider*     sliders_[NUM_ZONES]     = {};
-    QLabel*      value_lbls_[NUM_ZONES]  = {};
-    QLabel*      swatch_lbls_[NUM_ZONES] = {};
-    QLabel*      auto_lbls_[NUM_ZONES]   = {};
-    QLabel*      status_                 = nullptr;
+    QWidget* makeCluster(int cluster, const char* title, const char* accent);
+    void     applyToggleStyle(int cluster, bool on);
+    void     setClusterValue(int cluster, double pct);  // writes all cluster boards + publishes
+    void     setBoardValue(int board, double pct);      // split-mode: one board + publish
+    void     setFrontLinked(bool linked);
+    void     publishCmd();
+    void     onFeedback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
 
-    bool zone_enabled_[NUM_ZONES] = {};
+    double desired_[NUM_BOARDS] = {};                     // last commanded, 0-100
+    double remembered_[NUM_CLUSTERS] = {50, 50, 50, 50};  // restored on toggle-ON
+    bool   cluster_on_[NUM_CLUSTERS] = {};
+
+    // Front pair mode: linked = one control drives both floodlights;
+    // split = independent FL/FR sliders (FR gets its own row + memory).
+    bool   front_linked_  = true;
+    double remembered_fr_ = 50;
+
+    QPushButton* toggle_btns_[NUM_CLUSTERS] = {};
+    QSlider*     sliders_[NUM_CLUSTERS]     = {};   // front slider doubles as FL in split mode
+    QLabel*      value_lbls_[NUM_CLUSTERS]  = {};
+    QPushButton* link_btn_                  = nullptr;
+    QLabel*      fl_tag_                    = nullptr;  // "FL" marker, split mode only
+    QWidget*     fr_row_                    = nullptr;  // FR slider row, split mode only
+    QSlider*     fr_slider_                 = nullptr;
+    QLabel*      fr_lbl_                    = nullptr;
+    QSlider*     master_slider_             = nullptr;
+    QLabel*      master_lbl_                = nullptr;
+    QLabel*      status_                    = nullptr;
+    RoverLightingView* view_                = nullptr;
+
+    // Watchdog: armed on every publish, cancelled by feedback. If it fires,
+    // commands are going unanswered and the status line shows a warning.
+    static constexpr int FEEDBACK_TIMEOUT_MS = 1500;
+    QTimer* confirm_timer_ = nullptr;
 
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Publisher<rover_msgs::msg::LightControl>::SharedPtr    pub_;
-    rclcpp::Subscription<rover_msgs::msg::LightStatus>::SharedPtr  sub_;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr    pub_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sub_;
 };

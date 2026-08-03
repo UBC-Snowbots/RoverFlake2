@@ -8,6 +8,7 @@ find_package(rover_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rover_arm_common REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
@@ -76,11 +77,14 @@ add_library(rover_hmi_modules SHARED
     include/rover_hmi_core/science/spectrum_view.h
     # Drive
     src/drive/drive_module.cpp
+    # General
+    src/general/subsystems_module.cpp
     # Cameras
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
     src/cameras/camera_list_overlay.cpp
     src/cameras/camera_module.cpp
+    src/camera/ptz_camera_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files
@@ -91,13 +95,14 @@ target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/science
     include/rover_hmi_core/drive
     include/rover_hmi_core/cameras
+    include/rover_hmi_core/camera
 )
 
 target_link_libraries(rover_hmi_modules
     rover_hmi_core
     Qt5::Widgets
 )
-ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs pluginlib ament_index_cpp rover_arm_common)
+ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs std_srvs pluginlib ament_index_cpp rover_arm_common)
 target_compile_definitions(rover_hmi_modules PRIVATE
     ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)
@@ -124,6 +129,7 @@ install(TARGETS rover_hmi_modules
     RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY resources DESTINATION share/${PROJECT_NAME})
 install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY scripts/ DESTINATION share/${PROJECT_NAME}/scripts)
 

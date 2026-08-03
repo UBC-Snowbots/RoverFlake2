@@ -19,7 +19,7 @@
   <class name="rover_hmi_core/LightingModule"
          type="LightingModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+    <description>Five-board lighting control: spatial rover view with per-board brightness over /lights/cmd</description>
   </class>
   <class name="rover_hmi_core/VawTreeModule"
          type="VawTreeModule"
@@ -88,6 +88,13 @@
     <description>Mock /science/sensor_data publisher for desk-testing the pipeline and analysis panels</description>
   </class>
 
+  <!-- Cameras -->
+  <class name="rover_hmi_core/PtzCameraModule"
+         type="PtzCameraModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>PTZ camera panel: live feed, pan/tilt gimbal, Hi3510 zoom/focus, and panorama sweep capture</description>
+  </class>
+
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
          type="DriveModule"
@@ -106,5 +113,12 @@
          type="SpectrometerModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
+  </class>
+
+  <!-- General -->
+  <class name="rover_hmi_core/SubsystemsModule"
+         type="SubsystemsModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-computer heart supervisor status and subsystem start/stop/restart</description>
   </class>
 </library>

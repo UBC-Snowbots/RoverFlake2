@@ -1,0 +1,8 @@
+# Bench/desk test config — no hardware, safe anywhere.
+/heart_test_host:
+  ros__parameters:
+    subsystems:
+      sleeper: "sleep 300"
+      chatty: "ros2 run demo_nodes_cpp talker"
+      stubborn: 'trap "" INT TERM; sleep 300'
+    heartbeat_rate: 1.0

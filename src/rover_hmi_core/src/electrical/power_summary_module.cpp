@@ -71,9 +71,23 @@ QWidget* PowerSummaryModule::createWidget(QWidget* parent) {
 
     auto* widget = new QWidget();
     widget->setStyleSheet(QString("background: %1;").arg(theme::Bg));
-    auto* grid = new QGridLayout(widget);
+    auto* vbox = new QVBoxLayout(widget);
+    vbox->setSpacing(0);
+    vbox->setContentsMargins(0, 0, 0, 0);
+
+    banner_ = new QLabel();
+    banner_->setStyleSheet(
+        QString("background: #2a0d0d; color: %1; padding: 4px 6px; font-weight: bold;")
+        .arg(theme::Red));
+    banner_->setAlignment(Qt::AlignCenter);
+    banner_->setVisible(false);
+    vbox->addWidget(banner_);
+
+    auto* grid_container = new QWidget();
+    auto* grid = new QGridLayout(grid_container);
     grid->setSpacing(2);
     grid->setContentsMargins(4, 4, 4, 4);
+    vbox->addWidget(grid_container);
 
     QFont mono("monospace", theme::FontSize);
     QFont monoBold("monospace", theme::FontSize, QFont::Bold);
@@ -306,6 +320,14 @@ QWidget* PowerSummaryModule::createWidget(QWidget* parent) {
         scroll, 5, std::move(normal_ws), std::move(bold_ws));
     scroll->installEventFilter(scaler);
 
+    // /power/status is documented at ~10 Hz (rover_msgs/msg/PowerStatus.msg);
+    // 2.5x period (250 ms) is below the 1500 ms floor, so use the floor.
+    stale_.attach(widget, 1500, [this](bool stale) {
+        if (!banner_) return;
+        banner_->setText(stale ? "✖ POWER DATA STALE — /power/status stopped" : "");
+        banner_->setVisible(stale);
+    });
+
     scroll->setWidget(widget);
     return scroll;
 }
@@ -327,6 +349,7 @@ void PowerSummaryModule::stop() {
 }
 
 void PowerSummaryModule::onPowerStatus(const rover_msgs::msg::PowerStatus::SharedPtr msg) {
+    stale_.stamp();
     last_state_     = *msg;
     state_received_ = true;
 

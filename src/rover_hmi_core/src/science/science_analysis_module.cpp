@@ -239,6 +239,14 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     root->setContentsMargins(12, 8, 12, 12);
     root->setSpacing(12);
 
+    banner_ = new QLabel();
+    banner_->setStyleSheet(
+        QString("background: #2a0d0d; color: %1; padding: 4px 6px; font-weight: bold;")
+        .arg(theme::Red));
+    banner_->setAlignment(Qt::AlignCenter);
+    banner_->setVisible(false);
+    root->addWidget(banner_);
+
     // ── ROW 0: SPECTROPHOTOMETER ─────────────────────────────────────────────
     root->addWidget(makeSectionHdr("Spectrophotometer", theme::Cyan));
 
@@ -447,6 +455,12 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
 
     root->addStretch();
 
+    stale_.attach(container, 3000, [this](bool stale) {
+        if (!banner_) return;
+        banner_->setText(stale ? "✖ SENSOR DATA STALE — /science/sensor_data stopped" : "");
+        banner_->setVisible(stale);
+    });
+
     scroll->setWidget(container);
     return scroll;
 }
@@ -503,6 +517,8 @@ void ScienceAnalysisModule::stop()
 void ScienceAnalysisModule::onSensorData(
     const rover_msgs::msg::ScienceSensorData::SharedPtr msg)
 {
+    stale_.stamp();
+
     // ── Spectro ──────────────────────────────────────────────────────────────
     for (int i = 0; i < kNumVials; i++) {
         float val = msg->spectro_absorbance[i];

@@ -15,6 +15,7 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>ament_index_cpp</depend>
   <depend>rover_arm_common</depend>
 
