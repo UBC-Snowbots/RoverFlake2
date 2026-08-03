@@ -198,6 +198,19 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     });
     root->addLayout(cal_row);
 
+    // Bulk default sync — deliberately loud styling; the confirm dialog is the gate.
+    flash_all_btn_ = new QPushButton("Flash Defaults → All Motors");
+    flash_all_btn_->setFont(mono);
+    flash_all_btn_->setStyleSheet(QString(
+        "QPushButton { background: #1a0000; color: %1; border: 1px solid %1; padding: 5px 10px; }"
+        "QPushButton:hover { background: #2a0000; }").arg(theme::Red));
+    QObject::connect(flash_all_btn_, &QPushButton::clicked, [this]() { flashAllDefaults(); });
+    root->addWidget(flash_all_btn_);
+
+    flash_timer_ = new QTimer(w);
+    flash_timer_->setSingleShot(true);
+    QObject::connect(flash_timer_, &QTimer::timeout, [this]() { pumpFlashQueue(); });
+
     status_ = new QLabel("Actual column is read from the controllers — '?' means not read yet");
     status_->setFont(mono);
     status_->setWordWrap(true);
@@ -325,6 +338,99 @@ void MotorConfigModule::confirmAndApply(int r) {
         .arg(ARM_JOINTS[m].hardware_name).arg(REGS[r].reg).arg(fmtVal(nv))
         .arg(persist ? "flash" : "RAM only"));
     edits_[r]->clear();
+}
+
+// ── Flash Defaults → All Motors ─────────────────────────────────────────────
+// One register per tick (QoS depth 1 both ends — a burst would silently drop).
+// Registers go RAM-only except each motor's last, whose "conf write" persists
+// the whole config in one flash write. Verdict comes from the readback refresh.
+
+void MotorConfigModule::flashAllDefaults() {
+    if (!flash_queue_.empty()) { status_->setText("Flash sync already running"); return; }
+    if (!have_msg_) {
+        status_->setText("No driver feedback yet — start the driver and Refresh first");
+        return;
+    }
+    static const auto cfgs = get_arm_configuration();
+
+    QStringList included, skipped;
+    std::vector<int> motors;
+    for (int m = 0; m < NUM_MOTORS && m < (int)cfgs.size(); m++) {
+        const bool readable = m < (int)latest_.config.size()
+                              && !std::isnan(REGS[0].act(latest_.config[m]));
+        (readable ? included : skipped) << QString::fromUtf8(ARM_JOINTS[m].hardware_name);
+        if (readable) motors.push_back(m);
+    }
+    if (motors.empty()) {
+        status_->setText("No motor has flash readback — nothing safe to write");
+        return;
+    }
+
+    int editable = 0;
+    for (int r = 0; r < NUM_REGS; r++) if (REGS[r].reg[0]) editable++;
+
+    QMessageBox box(flash_all_btn_->window());
+    box.setWindowTitle("Flash defaults to all motors");
+    box.setText(QString(
+        "Write motor_config.h defaults to controller flash.\n\n"
+        "Motors: %1\nSkipped (no readback): %2\n\n"
+        "%3 registers per motor, one flash write each.\n"
+        "Arm powered and stationary; takes ~%4 s.")
+        .arg(included.join(", "))
+        .arg(skipped.isEmpty() ? QStringLiteral("none") : skipped.join(", "))
+        .arg(editable)
+        .arg((int(motors.size()) * editable * 400 + int(motors.size()) * 1600) / 1000));
+    auto* go = box.addButton("Write Flash", QMessageBox::DestructiveRole);
+    box.addButton(QMessageBox::Cancel);
+    box.exec();
+    if (box.clickedButton() != go) return;
+
+    QSettings repo(armParamsPath(), QSettings::IniFormat);
+    for (int m : motors) {
+        int last = -1;
+        for (int r = 0; r < NUM_REGS; r++) if (REGS[r].reg[0]) last = r;
+        for (int r = 0; r < NUM_REGS; r++) {
+            if (!REGS[r].reg[0]) continue;
+            rover_msgs::msg::MoteusConfigUpdate u;
+            u.motor_id = m;
+            u.register_name = REGS[r].reg;
+            u.value = REGS[r].def(cfgs[m]);
+            u.write_flash = (r == last);
+            flash_queue_.push_back(u);
+            repo.setValue(QString("A%1/%2").arg(m + 1).arg(REGS[r].reg), u.value);
+        }
+    }
+    repo.sync();
+    flash_total_ = (int)flash_queue_.size();
+    status_->setText(QString("Flashing defaults… 0/%1").arg(flash_total_));
+    pumpFlashQueue();
+}
+
+void MotorConfigModule::pumpFlashQueue() {
+    if (flash_queue_.empty()) return;
+    const auto msg = flash_queue_.front();
+    flash_queue_.erase(flash_queue_.begin());
+    if (pub_) pub_->publish(msg);
+
+    const int done = flash_total_ - (int)flash_queue_.size();
+    status_->setText(QString("Flashing defaults… %1/%2  (%3 %4)")
+        .arg(done).arg(flash_total_)
+        .arg(ARM_JOINTS[msg.motor_id].hardware_name)
+        .arg(QString::fromStdString(msg.register_name)));
+
+    if (flash_queue_.empty()) {
+        // Let the last conf write settle, then re-read flash — the Actual
+        // column (yellow = mismatch) is the verdict, not this status line.
+        QTimer::singleShot(2500, status_, [this]() {
+            if (refresh_pub_) refresh_pub_->publish(std_msgs::msg::Empty());
+            status_->setText(QString(
+                "Flash sync sent (%1 writes) — re-reading; yellow Actual = mismatch")
+                .arg(flash_total_));
+        });
+        return;
+    }
+    // Longer gap after a flash write: the driver holds the bus for conf write.
+    flash_timer_->start(msg.write_flash ? 2000 : 400);
 }
 
 PLUGINLIB_EXPORT_CLASS(MotorConfigModule, rover_hmi_core::GuiModule)
