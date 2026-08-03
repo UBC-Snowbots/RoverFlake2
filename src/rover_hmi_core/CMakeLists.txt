@@ -76,6 +76,8 @@ add_library(rover_hmi_modules SHARED
     include/rover_hmi_core/science/spectrum_view.h
     # Drive
     src/drive/drive_module.cpp
+    # General
+    src/general/subsystems_module.cpp
 )
 
 # Each subdirectory's headers are findable with bare names inside their own CPP files

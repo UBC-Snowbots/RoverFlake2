@@ -101,4 +101,11 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
   </class>
+
+  <!-- General -->
+  <class name="rover_hmi_core/SubsystemsModule"
+         type="SubsystemsModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-computer heart supervisor status and subsystem start/stop/restart</description>
+  </class>
 </library>
