@@ -138,6 +138,7 @@ campipe_2.index = 2;
       if(halfer){
         control_base_watch_grid.line_draw_area->queue_draw();
         on_board_nuc_watch_grid.line_draw_area->queue_draw();
+        on_board_jetson_watch_grid.line_draw_area->queue_draw();
       }
       halfer = !halfer;
     }

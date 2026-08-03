@@ -61,6 +61,10 @@
                 builder->get_widget("on_board_nuc_status_label", on_board_nuc_watch_grid.status_label);
                     on_board_nuc_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), on_board_nuc_watch_grid, onboard_nuc)); // TODO AHHH ON_BOARD NOT ONBOARD OR MAYBE ONBOARD MEOW
 
+
+                builder->get_widget("on_board_jetson_heart_monitor", on_board_jetson_watch_grid.line_draw_area);
+                builder->get_widget("on_board_jetson_status_label", on_board_jetson_watch_grid.status_label);
+                    on_board_jetson_watch_grid.line_draw_area->signal_draw().connect(sigc::bind(sigc::mem_fun(*this, &DashboardHMINode::handleSystemStatusGridDraw), on_board_jetson_watch_grid, onboard_jetson));
                 //* Onboard Nuc
                 system_health_onboard_nuc.system.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);
                 monitored_system_names_onboard_nuc.resize(NUM_MONITORED_SYSTEMS_ONBOARD_NUC);

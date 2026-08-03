@@ -13,6 +13,7 @@ struct ComputerWatchGrid
  };
 ComputerWatchGrid control_base_watch_grid;
 ComputerWatchGrid on_board_nuc_watch_grid;
+ComputerWatchGrid on_board_jetson_watch_grid;
 // ComputerWatchGrid* computer_watch_grids; //TODO change into array or smt
 
 struct PTZCameraControllerGrid
