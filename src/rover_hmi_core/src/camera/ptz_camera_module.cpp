@@ -135,7 +135,7 @@ QWidget* PtzCameraModule::createWidget(QWidget* parent) {
     // Installed by rover_hmi_core's CMake; missing file just leaves a black idle canvas.
     try {
         const auto share = ament_index_cpp::get_package_share_directory("rover_hmi_core");
-        preview_->setIdleImage(QImage(QString::fromStdString(share + "/resources/ptz_idle.png")));
+        preview_->setIdleImage(QImage(QString::fromStdString(share + "/assets/cats/cat_square.png")));
     } catch (const std::exception&) {}
     feed_col->addWidget(preview_, 1);
     feed_lbl_ = new QLabel("/ip_camera/image_raw — waiting for frames");

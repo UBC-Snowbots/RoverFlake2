@@ -129,7 +129,7 @@ install(TARGETS rover_hmi_modules
     RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY resources DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY assets DESTINATION share/${PROJECT_NAME})
 install(TARGETS rover_hmi DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY scripts/ DESTINATION share/${PROJECT_NAME}/scripts)
 
