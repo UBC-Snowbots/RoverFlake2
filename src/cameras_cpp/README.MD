@@ -19,6 +19,10 @@ They publish to /{camera_name}/image_raw_decoded
 
 Please do not access the image_raw or the image_raw/ffmpeg directly!!!
 
+#### Get id on jetson:
+
+ls /dev/v4l2/by-id/
+
 ### Dependencies on jetson
 
 I built ffmpeg from src on the jetson. Follow these steps to reproduce.
