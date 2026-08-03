@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QStringList>
 #include <algorithm>
 #include <cmath>
 
@@ -898,6 +899,56 @@ DwindleNode* TilingContainer::buildColumn(std::vector<TilePanel*>& panels, bool 
     return node;
 }
 
+DwindleNode* TilingContainer::buildHintTree(
+        const std::function<bool(const PanelInfo&)>& include) {
+    // Groups: hint=="main"|"left" → left column, "right" → right column,
+    //         anything else → bottom row
+    std::vector<TilePanel*> left_panels, right_panels, bottom_panels;
+    for (auto& pi : panels_) {
+        if (!include(pi)) continue;
+        if (pi.hint == "main" || pi.hint == "left")
+            left_panels.push_back(pi.panel);
+        else if (pi.hint == "right")
+            right_panels.push_back(pi.panel);
+        else
+            bottom_panels.push_back(pi.panel);
+    }
+
+    auto* left_tree   = buildColumn(left_panels,   true);   // vertical stack
+    auto* right_tree  = buildColumn(right_panels,  true);   // vertical stack
+    auto* bottom_tree = buildColumn(bottom_panels, false);  // horizontal row
+
+    DwindleNode* top_tree = nullptr;
+    if (left_tree && right_tree) {
+        auto* lr = new DwindleNode();
+        lr->isNode = true;
+        lr->splitTop = false;
+        lr->splitRatio = 1.0f;
+        lr->children[0] = left_tree;
+        lr->children[1] = right_tree;
+        left_tree->parent  = lr;
+        right_tree->parent = lr;
+        all_nodes_.push_back(lr);
+        top_tree = lr;
+    } else {
+        top_tree = left_tree ? left_tree : right_tree;
+    }
+
+    if (top_tree && bottom_tree) {
+        auto* tb = new DwindleNode();
+        tb->isNode = true;
+        tb->splitTop = true;
+        tb->splitRatio = TOP_BOTTOM_SPLIT_RATIO;
+        tb->children[0] = top_tree;
+        tb->children[1] = bottom_tree;
+        top_tree->parent    = tb;
+        bottom_tree->parent = tb;
+        all_nodes_.push_back(tb);
+        return tb;
+    }
+    return top_tree ? top_tree : bottom_tree;
+}
+
 void TilingContainer::finalize() {
     auto* outer_layout = new QHBoxLayout(this);
     outer_layout->setContentsMargins(0, 0, 0, 0);
@@ -945,59 +996,8 @@ void TilingContainer::finalize() {
         }
     }
 
-    // -----------------------------------------------------------------------
     // Build initial dwindle tree for default-visible panels.
-    // Groups: hint=="main"|"left" → left column
-    //         hint=="right"       → right column
-    //         anything else       → bottom row
-    // -----------------------------------------------------------------------
-    std::vector<TilePanel*> left_panels, right_panels, bottom_panels;
-    for (auto& pi : panels_) {
-        if (!pi.default_visible) continue;
-        if (pi.hint == "main" || pi.hint == "left")
-            left_panels.push_back(pi.panel);
-        else if (pi.hint == "right")
-            right_panels.push_back(pi.panel);
-        else
-            bottom_panels.push_back(pi.panel);
-    }
-
-    auto* left_tree   = buildColumn(left_panels,   true);   // vertical stack
-    auto* right_tree  = buildColumn(right_panels,  true);   // vertical stack
-    auto* bottom_tree = buildColumn(bottom_panels, false);  // horizontal row
-
-    // Combine left+right into a horizontal split
-    DwindleNode* top_tree = nullptr;
-    if (left_tree && right_tree) {
-        auto* lr = new DwindleNode();
-        lr->isNode = true;
-        lr->splitTop = false;   // left/right
-        lr->splitRatio = 1.0f;  // 50/50
-        lr->children[0] = left_tree;
-        lr->children[1] = right_tree;
-        left_tree->parent  = lr;
-        right_tree->parent = lr;
-        all_nodes_.push_back(lr);
-        top_tree = lr;
-    } else {
-        top_tree = left_tree ? left_tree : right_tree;
-    }
-
-    // Combine top+bottom into a vertical split
-    if (top_tree && bottom_tree) {
-        auto* tb = new DwindleNode();
-        tb->isNode = true;
-        tb->splitTop = true;    // top/bottom
-        tb->splitRatio = TOP_BOTTOM_SPLIT_RATIO;
-        tb->children[0] = top_tree;
-        tb->children[1] = bottom_tree;
-        top_tree->parent    = tb;
-        bottom_tree->parent = tb;
-        all_nodes_.push_back(tb);
-        root_ = tb;
-    } else {
-        root_ = top_tree ? top_tree : bottom_tree;
-    }
+    root_ = buildHintTree([](const PanelInfo& pi) { return pi.default_visible; });
 
     // Recalculate when tiling_area_ resizes
     tiling_area_->installEventFilter(this);
@@ -1563,6 +1563,35 @@ bool TilingContainer::loadLayoutByName(const QString& name) {
     for (int i = 0; i < (int)entries.size(); ++i)
         if (entries[i].name == name) { loadLayout(i); return true; }
     return false;
+}
+
+void TilingContainer::showPanels(const std::vector<std::string>& titles) {
+    for (auto* n : all_nodes_) delete n;
+    all_nodes_.clear();
+    root_          = nullptr;
+    focused_panel_ = nullptr;
+
+    std::vector<std::string> visible_titles;
+    for (auto& pi : panels_) {
+        bool vis = std::find(titles.begin(), titles.end(),
+                             pi.panel->title()) != titles.end();
+        pi.panel->setVisible(vis);
+        if (vis) visible_titles.push_back(pi.panel->title());
+    }
+    sidebar_->syncCheckboxes(visible_titles);
+
+    root_ = buildHintTree([&titles](const PanelInfo& pi) {
+        return std::find(titles.begin(), titles.end(),
+                         pi.panel->title()) != titles.end();
+    });
+    recalculate();
+
+    for (auto& pi : panels_)
+        if (pi.panel->isVisible()) { setFocusedPanel(pi.panel); break; }
+
+    QStringList shown;
+    for (const auto& t : visible_titles) shown << QString::fromStdString(t);
+    if (onLayoutChanged) onLayoutChanged(shown.join(" + "));
 }
 
 void TilingContainer::deleteLayout(int index) {

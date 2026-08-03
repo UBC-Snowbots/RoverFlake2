@@ -292,6 +292,9 @@ public:
     void saveCurrentLayout();
     void loadLayout(int index);
     bool loadLayoutByName(const QString& name);  // external callers bind to names, not indices
+    // Show exactly these panels (titles = GuiModule::name()); tree is rebuilt
+    // from layout hints. Unknown titles are ignored — callers pre-validate.
+    void showPanels(const std::vector<std::string>& titles);
     void deleteLayout(int index);
     void renameLayout(int index, const QString& name);
     LayoutStore& layoutStore() { return layout_store_; }
@@ -337,6 +340,10 @@ private:
         std::function<void(bool)> on_toggle;
         std::vector<std::pair<std::string,std::string>> module_keybinds;
     };
+
+    // Build the hint-partitioned initial tree (left/right/bottom) from panels
+    // selected by `include`. Shared by finalize() and showPanels().
+    DwindleNode* buildHintTree(const std::function<bool(const PanelInfo&)>& include);
 
     std::vector<PanelInfo> panels_;
     TilePanel* focused_panel_ = nullptr;
