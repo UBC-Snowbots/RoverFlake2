@@ -125,11 +125,11 @@ void CameraModule::unsubscribeAll()
 rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr
 CameraModule::makeSub(int idx, CameraViewport* target)
 {
-    // Reliable depth-100 per Aaron: no dropped frames; note the queue can
-    // replay a backlog after GUI stalls (latest-frame-wins was depth-1 BE).
+    // Reliable depth-5 (matches rviz): backlog bounded to ~5 frames so the
+    // view can never drift more than ~165 ms behind live.
     return node_->create_subscription<sensor_msgs::msg::Image>(
         topicFor(cams_[size_t(idx)]).toStdString(),
-        rclcpp::QoS(100),
+        rclcpp::QoS(5),
         [this, idx, target](sensor_msgs::msg::Image::ConstSharedPtr msg) {
             auto& clk = last_frames_[size_t(idx)];
             if (clk.isValid()) clk.restart();
