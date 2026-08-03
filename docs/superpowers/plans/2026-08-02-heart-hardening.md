@@ -374,6 +374,14 @@ git commit -m "feat(rover_manager): observed-state heart — reap, escalate, res
 
 ---
 
+#### Task 2 amendments (2026-08-02, approved by Aaron after review)
+
+1. `SubsystemState.msg` gains `uint8 STUCK=4` (rover_msgs amendment; branch unmerged so no compat concern).
+2. **SIGKILL sweep on reap:** when a child is reaped while `stop_stage >= 1`, fire one final `killpg(pgid, SIGKILL)` at the (captured-before-clear) group, ignoring errors (ESRCH = group already empty), so trap-immune grandchildren cannot outlive a STOPPED report.
+3. **waitpid error handling:** `waitpid < 0` (ECHILD etc.) is treated as "child gone": `pid = -1`, `exit_code = -1`, state STOPPED (if was STOPPING) else CRASHED, WARN log, `pending_restart` still honored.
+4. **Terminal escalation:** SIGKILL is sent once (stage 3). If still unreaped 3 s later, log ERROR once and set state STUCK (no further signals — likely D-state; the reap path still transitions out whenever the kernel releases it, sweep included). START/STOP guards treat STUCK like STOPPING; RESTART on STUCK is refused too.
+5. Task 3's `applyState` must render STUCK as a red `STUCK` chip (distinct from CRASHED).
+
 ### Task 3: rover_hmi_core — Subsystems panel
 
 **Files:**
