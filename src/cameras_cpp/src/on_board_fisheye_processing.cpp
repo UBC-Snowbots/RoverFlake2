@@ -7,14 +7,14 @@
 using std::placeholders::_1;
 
 // --- requires tuning
-constexpr int IMG_WIDTH = 1920;
-constexpr int IMG_HEIGHT = 1080;
+constexpr int IMG_WIDTH = 640;
+constexpr int IMG_HEIGHT = 480;
 static const cv::Mat K = (cv::Mat_<double>(3, 3) << 
-  611.0, 0.0,   960.0,
-  0.0,   611.0, 540.0,
+  600.0, 0.0,   320.0,
+  0.0,   600.0, 240.0,
   0.0,   0.0,   1.0);
-static const cv::Mat D = (cv::Mat_<double>(4, 1) << -0.35, 0.0, 0.0, 0.0);
-constexpr double BALANCE = 0.0;  // 0 = crop black borders, 1 = keep full FOV
+static const cv::Mat D = (cv::Mat_<double>(4, 1) << -0.50, 0.0, 0.0, 0.0);
+constexpr double BALANCE = 1.0;  // 0 = crop black borders, 1 = keep full FOV
 // ---
 
 class FisheyeUndistortNode : public rclcpp::Node
@@ -31,7 +31,7 @@ public:
       K, D, cv::Mat::eye(3, 3, CV_64F), new_K, size, CV_16SC2, map1_, map2_);
 
     sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "image_raw_decoded", rclcpp::SensorDataQoS(),
+      "realsense435i/image_raw_decoded", rclcpp::QoS(5),
       std::bind(&FisheyeUndistortNode::onImage, this, _1));
     pub_ = this->create_publisher<sensor_msgs::msg::Image>("image_rect", 10);
   }
@@ -41,7 +41,7 @@ private:
   {
     cv_bridge::CvImageConstPtr cv_ptr;
     try {
-      cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     } catch (const cv_bridge::Exception & e) {
       RCLCPP_ERROR(this->get_logger(), "cv_bridge conversion failed: %s", e.what());
       return;
