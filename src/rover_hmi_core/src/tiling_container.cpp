@@ -250,9 +250,7 @@ ModuleSidebar::ModuleSidebar(QWidget* parent) : QWidget(parent) {
     help_hint->setWordWrap(true);
     help_hint->setText(
         QString("<span style='color:%1;'>Alt+/</span>"
-                "&nbsp;&nbsp;<span style='color:%2;'>keybindings</span>"
-                "&nbsp;&nbsp;&nbsp;<span style='color:%1;'>Alt+C</span>"
-                "&nbsp;&nbsp;<span style='color:%2;'>clear panels</span>")
+                "&nbsp;&nbsp;<span style='color:%2;'>keybindings</span>")
         .arg(theme::Text).arg(theme::TextDim));
     help_hint->setStyleSheet("padding-top: 6px;");
     layout_->addWidget(help_hint);
