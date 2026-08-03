@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
+#include <rover_hmi_core/stale_monitor.h>
 #include <QLabel>
 #include <QPushButton>
 #include <QProgressBar>
@@ -63,6 +64,9 @@ private:
     std::deque<float> gas_history_;
 
     // Flow sensors
+
+    QLabel* banner_ = nullptr;
+    rover_hmi_core::StaleMonitor stale_;
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::ScienceSensorData>::SharedPtr sub_;
