@@ -181,8 +181,9 @@ void CameraModule::onLivenessTick()
         alive[i] = node_->count_publishers(topicFor(cams_[i]).toStdString()) > 0;
     list_->setAlive(alive);
 
+    // Hold the last frame through short dropouts; only admit NO SIGNAL after 5 s.
     auto stale = [this](size_t i) {
-        return last_frames_[i].isValid() && last_frames_[i].elapsed() > 1000;
+        return last_frames_[i].isValid() && last_frames_[i].elapsed() > 5000;
     };
     if (grid_) {
         for (size_t i = 0; i < cells_.size(); ++i)
