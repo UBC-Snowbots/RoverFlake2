@@ -125,11 +125,11 @@ void CameraModule::unsubscribeAll()
 rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr
 CameraModule::makeSub(int idx, CameraViewport* target)
 {
-    // depth-1 best-effort: DDS drops stale frames instead of queueing them
-    // behind the 20 ms spin_some() pump.
+    // Reliable depth-100 per Aaron: no dropped frames; note the queue can
+    // replay a backlog after GUI stalls (latest-frame-wins was depth-1 BE).
     return node_->create_subscription<sensor_msgs::msg::Image>(
         topicFor(cams_[size_t(idx)]).toStdString(),
-        rclcpp::SensorDataQoS().keep_last(1),
+        rclcpp::QoS(100),
         [this, idx, target](sensor_msgs::msg::Image::ConstSharedPtr msg) {
             auto& clk = last_frames_[size_t(idx)];
             if (clk.isValid()) clk.restart();
