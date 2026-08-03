@@ -4,6 +4,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <pluginlib/class_list_macros.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <yaml-cpp/yaml.h>
 
 namespace {
 QElapsedTimer g_steady;  // steady/monotonic arrival clock
@@ -27,6 +29,7 @@ QWidget* SubsystemsModule::createWidget(QWidget* parent) {
     hosts_layout_ = new QVBoxLayout();
     outer->addLayout(hosts_layout_);
     outer->addStretch();
+    loadExpectedHosts();
     auto* alive = new QTimer(root_);
     QObject::connect(alive, &QTimer::timeout, [this]() { checkHostsAlive(); });
     alive->start(500);
@@ -38,7 +41,8 @@ SubsystemsModule::HostGroup& SubsystemsModule::hostGroup(const std::string& host
     if (it != hosts_.end()) return it->second;
     waiting_->hide();
     HostGroup g;
-    g.box = new QGroupBox(QString::fromStdString(host));
+    g.box = new QGroupBox(QString("%1 — ⏳ no heartbeat yet").arg(QString::fromStdString(host)));
+    g.box->setStyleSheet(QString("QGroupBox{color:%1;}").arg(theme::TextDim));
     g.grid = new QGridLayout(g.box);
     hosts_layout_->addWidget(g.box);
     return hosts_.emplace(host, g).first->second;
@@ -52,6 +56,7 @@ SubsystemsModule::Row& SubsystemsModule::row(HostGroup& g, const std::string& na
     g.grid->addWidget(new QLabel(QString::fromStdString(name)), r, 0);
     rw.chip = new QLabel("—");
     rw.chip->setAlignment(Qt::AlignCenter);
+    rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
     g.grid->addWidget(rw.chip, r, 1);
     rw.uptime = new QLabel("");
     g.grid->addWidget(rw.uptime, r, 2);
@@ -112,6 +117,7 @@ void SubsystemsModule::onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg) {
 
 void SubsystemsModule::checkHostsAlive() {
     for (auto& [host, g] : hosts_) {
+        if (g.last_arrival_ms == 0) continue;  // pre-rendered, never seen: not offline, just waiting
         if (steadyMs() - g.last_arrival_ms <= HOST_TIMEOUT_MS) continue;
         if (!g.offline) {
             g.offline = true;
@@ -120,6 +126,44 @@ void SubsystemsModule::checkHostsAlive() {
             for (auto& [n, rw] : g.rows) {
                 rw.chip->setText("?");
                 rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+            }
+        }
+    }
+}
+
+void SubsystemsModule::loadExpectedHosts() {
+    std::string path;
+    try {
+        path = ament_index_cpp::get_package_share_directory("rover_manager") + "/config/heart.yaml";
+    } catch (const std::exception& e) {
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: rover_manager share dir not found (%s); no pre-rendered hosts", e.what());
+        return;
+    }
+    YAML::Node root;
+    try {
+        root = YAML::LoadFile(path);
+    } catch (const std::exception& e) {
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts", path.c_str(), e.what());
+        return;
+    }
+    // heart.yaml is hand-edited config: a structurally-wrong entry (e.g. a
+    // "/heart_x" key whose value isn't a map) must not be able to crash the
+    // HMI. Guard each entry individually; warn once and skip the bad entry
+    // so the rest of the file still pre-renders.
+    bool warned = false;
+    for (const auto& top : root) {
+        try {
+            const std::string key = top.first.as<std::string>();
+            if (key.rfind("/heart_", 0) != 0) continue;  // only heart nodes, e.g. skip /dashboard_hmi_node
+            const std::string host = key.substr(7);      // strip "/heart_"
+            const YAML::Node subsystems = top.second["ros__parameters"]["subsystems"];
+            if (!subsystems || !subsystems.IsMap()) continue;
+            HostGroup& g = hostGroup(host);
+            for (const auto& sub : subsystems) row(g, sub.first.as<std::string>());
+        } catch (const std::exception& e) {
+            if (!warned) {
+                RCLCPP_WARN(node_->get_logger(), "Subsystems: malformed entry in %s (%s); skipping bad entries", path.c_str(), e.what());
+                warned = true;
             }
         }
     }

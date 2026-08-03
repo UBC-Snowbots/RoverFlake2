@@ -38,6 +38,10 @@ private:
     Row& row(HostGroup& g, const std::string& subsystem);
     void applyState(Row& r, const rover_msgs::msg::SubsystemState& s);
     void checkHostsAlive();
+    // Pre-creates host/subsystem rows from rover_manager's heart.yaml so
+    // controls exist (and work) before any heartbeat arrives. Warns and
+    // no-ops on missing/unparsable file — falls back to dynamic-only.
+    void loadExpectedHosts();
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::HeartStatus>::SharedPtr sub_;
