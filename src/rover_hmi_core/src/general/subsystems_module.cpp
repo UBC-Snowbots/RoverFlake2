@@ -12,7 +12,23 @@ namespace {
 QElapsedTimer g_steady;  // steady/monotonic arrival clock
 qint64 steadyMs() { if (!g_steady.isValid()) g_steady.start(); return g_steady.elapsed(); }
 constexpr qint64 HOST_TIMEOUT_MS = 2500;  // 2.5 beats at 1 Hz
-constexpr const char* kBeaconDimGreen = "#145c34";  // dim phase between beats
+constexpr const char* kBeaconDimGreen = "#145c34";  // dim phase between beats (beacon logic untouched)
+
+// Literal colors lifted from the old GTK dashboard (src/rover_hmi/css_files/*.css,
+// src/rover_hmi/glade_files/dashboard.glade) — see task-7-report.md "derived from"
+// table for the exact class/line each one came from.
+constexpr const char* kOnlineBg   = "#3dfe3d";  // .subsys_ONLINE background: rgb(61,254,61)
+constexpr const char* kOnlineFg   = "#000000";  // .subsys_ONLINE color: black
+constexpr const char* kOfflineBg  = "#ff0000";  // .subsys_OFFLINE background: red
+constexpr const char* kOfflineFg  = "#f5f5f5";  // .subsys_OFFLINE color: whitesmoke
+constexpr const char* kUnknownBg  = "#808080";  // .dash_status_unknown background: grey
+constexpr const char* kUnknownFg  = "#000000";  // .dash_status_unknown color: black
+constexpr const char* kKillBg     = "#a52a2a";  // .subsys_button_KILL_OFFLINE background: brown
+constexpr const char* kKillFg     = "#f5f5f5";  // .subsys_button_KILL_OFFLINE color: whitesmoke
+constexpr const char* kRunBg      = "#adff2f";  // .subsys_button_RUN_ONLINE background: greenyellow
+constexpr const char* kRunFg      = "#000000";  // .subsys_button_RUN_ONLINE color: black
+constexpr const char* kHeaderBg   = "#f5f5f5";  // .monitored_node_name background: whitesmoke
+constexpr const char* kHeaderFg   = "#000000";  // .monitored_node_name color: black
 
 // Beacon: small solid-fill circle. Color alone carries the state so it reads
 // at a glance; only called on an actual state/phase change.
@@ -20,11 +36,20 @@ void styleBeacon(QLabel* beacon, const char* color) {
     beacon->setStyleSheet(QString("background:%1; border-radius:8px;").arg(color));
 }
 
-// Subsystem chip: solid color block, dark text — mirrors the old GTK dashboard's
-// .subsys_ONLINE / .subsys_OFFLINE blocks, adapted to this theme's palette.
-QString chipStyle(const char* bg) {
+// Subsystem chip: solid color block. Width is fixed by the widget itself
+// (see row()); min-width here is a fallback.
+QString chipStyle(const char* bg, const char* fg) {
     return QString("background:%1; color:%2; font-weight:bold; "
-                    "padding:3px 10px; border-radius:4px; min-width:96px;").arg(bg, theme::Bg);
+                    "padding:3px 10px; border-radius:4px; min-width:140px;").arg(bg, fg);
+}
+
+// KILL/RUN/RESTART: colored like the old dash's action columns. No fixed width —
+// buttons size to their own text (padding + font) so "RESTART" is never clipped.
+QString buttonStyle(const char* bg, const char* fg) {
+    return QString("QPushButton{background:%1;color:%2;font-weight:bold;"
+                    "border:1px solid %1;border-radius:4px;padding:4px 12px;font-size:%3px;}"
+                    "QPushButton:hover{border-color:%4;}")
+        .arg(bg).arg(fg).arg(theme::FontSizeSm).arg(theme::Border);
 }
 }
 
@@ -56,18 +81,27 @@ SubsystemsModule::HostGroup& SubsystemsModule::hostGroup(const std::string& host
     if (it != hosts_.end()) return it->second;
     waiting_->hide();
     HostGroup g;
-    g.box = new QGroupBox(QString::fromStdString(host));
+    g.box = new QGroupBox();  // no title text — GtkGroupBox title styling is unreliable under the app QSS
     g.grid = new QGridLayout(g.box);
+    // Host name title bar — mirrors the old dash's "<HOST> subsystem health"
+    // header, styled like .monitored_node_name (whitesmoke block, black text).
+    auto* host_label = new QLabel(QString::fromStdString(host).toUpper());
+    host_label->setStyleSheet(
+        QString("background:%1; color:%2; font-weight:bold; padding:4px 12px; "
+                "border-radius:4px; font-size:%3px;")
+            .arg(kHeaderBg, kHeaderFg).arg(theme::FontSizeLg));
     g.beacon = new QLabel();
     g.beacon->setFixedSize(16, 16);
     styleBeacon(g.beacon, theme::BorderDim);  // grey: never seen
     g.readout = new QLabel("NO HEARTBEAT DETECTED");
     g.readout->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
     auto* header = new QHBoxLayout();
+    header->addWidget(host_label);
     header->addWidget(g.beacon);
     header->addWidget(g.readout);
     header->addStretch();
-    g.grid->addLayout(header, 0, 0, 1, 5);  // row 0: beacon + readout, spans all columns
+    g.grid->addLayout(header, 0, 0, 1, 6);  // row 0: title + beacon + readout, spans all columns
+    g.grid->setColumnStretch(5, 1);         // trailing column absorbs leftover width, not the chip
     hosts_layout_->addWidget(g.box);
     return hosts_.emplace(host, g).first->second;
 }
@@ -80,17 +114,19 @@ SubsystemsModule::Row& SubsystemsModule::row(HostGroup& g, const std::string& na
     g.grid->addWidget(new QLabel(QString::fromStdString(name)), r, 0);
     rw.chip = new QLabel("—");
     rw.chip->setAlignment(Qt::AlignCenter);
-    rw.chip->setStyleSheet(chipStyle(theme::TextDim));
+    rw.chip->setFixedWidth(140);  // comfortable fixed width so the chip doesn't stretch into a bar
+    rw.chip->setStyleSheet(chipStyle(kUnknownBg, kUnknownFg));
     g.grid->addWidget(rw.chip, r, 1);
-    const struct { const char* label; uint8_t action; } btns[] = {
-        {"RUN", rover_msgs::msg::SubsystemCommand::ACTION_START},
-        {"KILL", rover_msgs::msg::SubsystemCommand::ACTION_STOP},
-        {"RESTART", rover_msgs::msg::SubsystemCommand::ACTION_RESTART},
+    // Order matches the old dash's glade layout: KILL before RUN; RESTART (no
+    // old equivalent) appended last.
+    const struct { const char* label; uint8_t action; const char* bg; const char* fg; } btns[] = {
+        {"KILL", rover_msgs::msg::SubsystemCommand::ACTION_STOP, kKillBg, kKillFg},
+        {"RUN", rover_msgs::msg::SubsystemCommand::ACTION_START, kRunBg, kRunFg},
+        {"RESTART", rover_msgs::msg::SubsystemCommand::ACTION_RESTART, theme::Yellow, theme::Bg},
     };
     for (int i = 0; i < 3; i++) {
         auto* b = new QPushButton(btns[i].label);
-        b->setFixedWidth(70);
-        b->setStyleSheet(QString("padding:2px 4px; font-size:%1px;").arg(theme::FontSizeSm));
+        b->setStyleSheet(buttonStyle(btns[i].bg, btns[i].fg));
         const uint8_t action = btns[i].action;
         QObject::connect(b, &QPushButton::clicked,
                          [this, name, action]() { sendCommand(name, action); });
@@ -104,23 +140,23 @@ void SubsystemsModule::applyState(Row& rw, const rover_msgs::msg::SubsystemState
     switch (s.state) {
     case St::RUNNING:
         rw.chip->setText(QString("ONLINE %1s").arg(s.uptime_s));
-        rw.chip->setStyleSheet(chipStyle(theme::Green));
+        rw.chip->setStyleSheet(chipStyle(kOnlineBg, kOnlineFg));
         break;
     case St::STOPPING:
         rw.chip->setText("STOPPING");
-        rw.chip->setStyleSheet(chipStyle(theme::Yellow));
+        rw.chip->setStyleSheet(chipStyle(theme::Yellow, theme::Bg));
         break;
     case St::CRASHED:
         rw.chip->setText(QString("CRASHED (%1)").arg(s.exit_code));
-        rw.chip->setStyleSheet(chipStyle(theme::Red));
+        rw.chip->setStyleSheet(chipStyle(theme::Red, theme::Bg));
         break;
     case St::STUCK:
         rw.chip->setText("STUCK");
-        rw.chip->setStyleSheet(chipStyle(theme::Red));
+        rw.chip->setStyleSheet(chipStyle(theme::Red, theme::Bg));
         break;
     default:  // STOPPED
         rw.chip->setText("OFFLINE");
-        rw.chip->setStyleSheet(chipStyle(theme::TextDim));
+        rw.chip->setStyleSheet(chipStyle(kOfflineBg, kOfflineFg));
     }
 }
 
