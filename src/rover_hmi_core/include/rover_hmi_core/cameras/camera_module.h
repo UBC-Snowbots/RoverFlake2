@@ -14,6 +14,7 @@
 
 class CameraViewport;
 class CameraListOverlay;
+class QGridLayout;
 class QStackedWidget;
 
 class CameraModule : public rover_hmi_core::GuiModule {
@@ -37,13 +38,20 @@ public:
             { "1..9",       "Switch camera (module focused)" },
             { "Up/Down",    "Prev/next camera (single view)" },
             { "G",          "Toggle grid view"               },
+            { "Shift+1..9", "Toggle camera in/out of grid"   },
             { "Click cell", "Zoom into camera (grid view)"   },
         };
     }
 
+    // Persisted in saved layouts: view mode, active camera, grid membership.
+    QJsonObject saveState() const override;
+    void restoreState(const QJsonObject& state) override;
+
 private:
     void switchTo(int idx);
     void setGrid(bool on);
+    void toggleInGrid(int idx);
+    void rebuildGrid();     // re-lay grid cells from in_grid_ membership
     void resubscribe();     // rebuild subscriptions for the current mode
     void unsubscribeAll();
     void onLivenessTick();
@@ -60,8 +68,10 @@ private:
     std::vector<CameraViewport*> cells_;        // grid view  (stack page 1)
     CameraListOverlay* list_ = nullptr;
     QStackedWidget* stack_ = nullptr;
+    QGridLayout*    grid_layout_ = nullptr;
     QTimer*         liveness_timer_ = nullptr;
     std::vector<QElapsedTimer> last_frames_;
+    std::vector<bool> in_grid_;   // grid membership per camera
     int  active_  = -1;
     bool grid_    = false;
     bool visible_ = true;

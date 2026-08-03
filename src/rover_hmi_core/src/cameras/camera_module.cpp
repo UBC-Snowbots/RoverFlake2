@@ -3,10 +3,13 @@
 #include "camera_viewport.h"
 
 #include <QGridLayout>
+#include <QJsonArray>
 #include <QLabel>
+#include <QSet>
 #include <QShortcut>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <algorithm>
 
 #include <rover_hmi_core/catppuccin.h>
 
@@ -35,18 +38,19 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     grid_col->setContentsMargins(0, 0, 0, 0);
     grid_col->setSpacing(2);
     auto* grid_cells = new QWidget(grid_page);
-    auto* grid = new QGridLayout(grid_cells);
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(4);
+    grid_layout_ = new QGridLayout(grid_cells);
+    grid_layout_->setContentsMargins(0, 0, 0, 0);
+    grid_layout_->setSpacing(4);
     for (int i = 0; i < int(cams_.size()); ++i) {
         auto* cell = new CameraViewport(grid_cells);
         cell->setMinimumSize(160, 120);
         cell->setLabel(cams_[size_t(i)].label);
         cell->setPlaceholder(QPixmap(rover_hmi_core::camera_config::catFor(i)));
         cell->onClick = [this, i]() { setGrid(false); switchTo(i); };
-        grid->addWidget(cell, i / 2, i % 2);
         cells_.push_back(cell);
     }
+    in_grid_.assign(cams_.size(), true);
+    rebuildGrid();
     grid_col->addWidget(grid_cells, 1);
     auto* grid_hint = new QLabel(
         QStringLiteral("G single view   ·   click a feed to zoom in"), grid_page);
@@ -76,9 +80,12 @@ QWidget* CameraModule::createWidget(QWidget* parent)
         sc->setContext(Qt::WidgetWithChildrenShortcut);
         QObject::connect(sc, &QShortcut::activated, fn);
     };
-    for (int i = 0; i < int(cams_.size()) && i < 9; ++i)
+    for (int i = 0; i < int(cams_.size()) && i < 9; ++i) {
         bind(QKeySequence(QString::number(i + 1)),
              [this, i]() { setGrid(false); switchTo(i); });
+        bind(QKeySequence(QStringLiteral("Shift+%1").arg(i + 1)),
+             [this, i]() { toggleInGrid(i); });
+    }
     const int n = int(cams_.size());
     bind(QKeySequence(Qt::Key_Up),
          [this, n]() { if (!grid_) switchTo((active_ + n - 1) % n); });
@@ -146,6 +153,7 @@ void CameraModule::resubscribe()
     if (!visible_ || !node_ || cams_.empty()) return;
     if (grid_) {
         for (int i = 0; i < int(cams_.size()); ++i) {
+            if (!in_grid_[size_t(i)]) continue;
             last_frames_[size_t(i)].invalidate();
             cells_[size_t(i)]->setNoSignal();
             subs_[size_t(i)] = makeSub(i, cells_[size_t(i)]);
@@ -177,6 +185,32 @@ void CameraModule::setGrid(bool on)
     resubscribe();
 }
 
+void CameraModule::toggleInGrid(int idx)
+{
+    if (idx < 0 || idx >= int(in_grid_.size())) return;
+    if (in_grid_[size_t(idx)]
+        && std::count(in_grid_.begin(), in_grid_.end(), true) <= 1)
+        return;  // never empty the grid
+    in_grid_[size_t(idx)] = !in_grid_[size_t(idx)];
+    rebuildGrid();
+    if (grid_) resubscribe();
+}
+
+void CameraModule::rebuildGrid()
+{
+    if (!grid_layout_) return;
+    while (grid_layout_->count()) grid_layout_->takeAt(0);
+    int slot = 0;
+    for (int i = 0; i < int(cells_.size()); ++i) {
+        bool in = in_grid_[size_t(i)];
+        cells_[size_t(i)]->setVisible(in);
+        if (in) {
+            grid_layout_->addWidget(cells_[size_t(i)], slot / 2, slot % 2);
+            ++slot;
+        }
+    }
+}
+
 void CameraModule::onLivenessTick()
 {
     if (!node_ || cams_.empty()) return;
@@ -195,6 +229,36 @@ void CameraModule::onLivenessTick()
     } else if (active_ >= 0 && viewport_->hasFrame() && stale(size_t(active_))) {
         viewport_->setNoSignal();
     }
+}
+
+QJsonObject CameraModule::saveState() const
+{
+    if (cams_.empty()) return {};
+    QJsonObject st;
+    st["grid"]   = grid_;
+    st["active"] = active_;
+    QJsonArray members;
+    for (size_t i = 0; i < cams_.size(); ++i)
+        if (in_grid_[i]) members.append(cams_[i].name);
+    st["grid_cams"] = members;
+    return st;
+}
+
+void CameraModule::restoreState(const QJsonObject& st)
+{
+    if (cams_.empty()) return;
+    if (st.contains(QStringLiteral("grid_cams"))) {
+        QSet<QString> members;
+        for (auto v : st["grid_cams"].toArray()) members.insert(v.toString());
+        if (!members.isEmpty())
+            for (size_t i = 0; i < cams_.size(); ++i)
+                in_grid_[i] = members.contains(cams_[i].name);
+    }
+    active_ = qBound(0, st["active"].toInt(0), int(cams_.size()) - 1);
+    rebuildGrid();
+    bool want_grid = st["grid"].toBool(false);
+    grid_ = !want_grid;           // force setGrid through its change path
+    setGrid(want_grid);           // sets the stack page and resubscribes
 }
 
 PLUGINLIB_EXPORT_CLASS(CameraModule, rover_hmi_core::GuiModule)
