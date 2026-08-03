@@ -1,62 +1,51 @@
-//Quick node to route commands from cbs panels
-
-// #include "sample_node.h"
-
+// hmi_router — maps CBS panel button presses to HMI layout switches.
+// Rising-edge detect on /cbs/left_panel_a buttons; button i publishes
+// button_layouts[i] on /hmi/load_layout. Empty/missing entry = unbound.
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/generic_panel.hpp"
+#include "std_msgs/msg/string.hpp"
 
-
-class RouterA : public rclcpp::Node {
+class HmiRouter : public rclcpp::Node {
 public:
-    RouterA() : Node("router_a") {
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-        //command_publisher_ = this->create_publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>("/control/command/control_cmd", qos);
-        //gear_publisher_ = this->create_publisher<autoware_auto_vehicle_msgs::msg::GearCommand>("/control/command/gear_cmd", qos);
-
-        // timer_ = this->create_wall_timer(
-        // std::chrono::duration<double>(period),std::bind(&ManualControlNode::test_send, this));
-        left_panel_a_sub = this->create_subscription<rover_msgs::msg::GenericPanel>(
-            "/cbs/left_panel_a", 10, std::bind(&RouterA::leftPanelACallback, this, std::placeholders::_1));
+    HmiRouter() : Node("hmi_router") {
+        button_layouts_ = declare_parameter<std::vector<std::string>>(
+            "button_layouts", std::vector<std::string>{});
+        layout_pub_ = create_publisher<std_msgs::msg::String>("/hmi/load_layout", 10);
+        panel_sub_  = create_subscription<rover_msgs::msg::GenericPanel>(
+            "/cbs/left_panel_a", 10,
+            std::bind(&HmiRouter::panelCallback, this, std::placeholders::_1));
     }
 
-
-
-    
-
-    // void test_send(){
-    //     send_command(0.5, 1.0, 1.0, 0.5);
-    //     // rclcpp::logger
-
-    // }
-
 private:
- 
-    // rclcpp::Publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr command_publisher_;
-   
-    void leftPanelACallback(const rover_msgs::msg::GenericPanel::SharedPtr msg);
+    void panelCallback(const rover_msgs::msg::GenericPanel::SharedPtr msg) {
+        // First message (or size change) only sets the baseline — a button
+        // already held at startup must not fire.
+        if (prev_buttons_.size() != msg->buttons.size()) {
+            prev_buttons_.assign(msg->buttons.begin(), msg->buttons.end());
+            return;
+        }
+        for (size_t i = 0; i < msg->buttons.size(); ++i) {
+            bool rising = msg->buttons[i] && !prev_buttons_[i];
+            prev_buttons_[i] = msg->buttons[i];
+            if (!rising || i >= button_layouts_.size() || button_layouts_[i].empty())
+                continue;
+            std_msgs::msg::String out;
+            out.data = button_layouts_[i];
+            layout_pub_->publish(out);
+            RCLCPP_INFO(get_logger(), "button %zu → layout '%s'", i, out.data.c_str());
+        }
+    }
 
-    rclcpp::Subscription<rover_msgs::msg::GenericPanel>::SharedPtr left_panel_a_sub;
-
-    rclcpp::TimerBase::SharedPtr timer_;
-
+    std::vector<std::string> button_layouts_;
+    std::vector<int16_t> prev_buttons_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr layout_pub_;
+    rclcpp::Subscription<rover_msgs::msg::GenericPanel>::SharedPtr panel_sub_;
 };
 
-void RouterA::leftPanelACallback(const rover_msgs::msg::GenericPanel::SharedPtr msg){
-    //decode and do whatnot here. This is where we decide what the buttons do, for the most part.
-    //We can also just use callbacks within certain nodes
-}
-
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<RouterA>();
-
-    // Example: send a command with a steering angle of 0.5 rad and speed of 1.0 m/s
-
-    
-    rclcpp::spin(node);
-    
+    rclcpp::spin(std::make_shared<HmiRouter>());
     rclcpp::shutdown();
     return 0;
 }

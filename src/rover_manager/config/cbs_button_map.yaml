@@ -1,0 +1,5 @@
+# CBS button → HMI layout map. Index = button index in /cbs/left_panel_a.
+# Empty string = button unbound. Names must exactly match saved layout names.
+hmi_router:
+  ros__parameters:
+    button_layouts: ["drive", "arm", "science", "", "", ""]

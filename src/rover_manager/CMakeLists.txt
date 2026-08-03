@@ -15,6 +15,7 @@ find_package(rclcpp REQUIRED)
 find_package(rover_utils REQUIRED)
 find_package(serial REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -35,7 +36,7 @@ add_executable(cbs_display_manager_node src/cbsDisplayManagerNode.cpp include/cb
 ament_target_dependencies(cbs_display_manager_node rclcpp rover_utils rover_msgs)
 
 add_executable(router_a src/router_A.cpp)
-ament_target_dependencies(router_a rclcpp rover_utils rover_msgs)
+ament_target_dependencies(router_a rclcpp rover_utils rover_msgs std_msgs)
 
 install(TARGETS
   # watchdog_node
@@ -43,6 +44,7 @@ install(TARGETS
   heart_node
   cbs_hardware_manager_node
   cbs_display_manager_node
+  router_a
   DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY
