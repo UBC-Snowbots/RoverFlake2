@@ -3,9 +3,12 @@
 #include "camera_viewport.h"
 
 #include <QGridLayout>
+#include <QLabel>
 #include <QShortcut>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+
+#include <rover_hmi_core/catppuccin.h>
 
 #include <pluginlib/class_list_macros.hpp>
 
@@ -28,17 +31,28 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     stack_->addWidget(viewport_);
 
     auto* grid_page = new QWidget(stack_);
-    auto* grid = new QGridLayout(grid_page);
+    auto* grid_col = new QVBoxLayout(grid_page);
+    grid_col->setContentsMargins(0, 0, 0, 0);
+    grid_col->setSpacing(2);
+    auto* grid_cells = new QWidget(grid_page);
+    auto* grid = new QGridLayout(grid_cells);
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setSpacing(4);
     for (int i = 0; i < int(cams_.size()); ++i) {
-        auto* cell = new CameraViewport(grid_page);
+        auto* cell = new CameraViewport(grid_cells);
         cell->setMinimumSize(160, 120);
         cell->setLabel(cams_[size_t(i)].label);
         cell->onClick = [this, i]() { setGrid(false); switchTo(i); };
         grid->addWidget(cell, i / 2, i % 2);
         cells_.push_back(cell);
     }
+    grid_col->addWidget(grid_cells, 1);
+    auto* grid_hint = new QLabel(
+        QStringLiteral("G single view   ·   click a feed to zoom in"), grid_page);
+    grid_hint->setStyleSheet(QStringLiteral("color: %1; padding: 2px 8px;")
+                                 .arg(theme::TextDim));
+    grid_hint->setAlignment(Qt::AlignRight);
+    grid_col->addWidget(grid_hint);
     stack_->addWidget(grid_page);
 
     std::vector<QString> labels;

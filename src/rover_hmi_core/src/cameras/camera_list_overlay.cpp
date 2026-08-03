@@ -5,6 +5,8 @@
 #include <QFontMetrics>
 #include <QPainter>
 
+namespace { const QString kHint = QStringLiteral("↑↓ switch   G grid"); }
+
 CameraListOverlay::CameraListOverlay(std::vector<QString> labels, QWidget* parent)
     : QWidget(parent), labels_(std::move(labels)), alive_(labels_.size(), false)
 {
@@ -35,11 +37,11 @@ int CameraListOverlay::rowHeight() const
 void CameraListOverlay::reposition()
 {
     QFontMetrics fm(QFont("monospace", theme::px(theme::FontSizeSm)));
-    int w = 0;
+    int w = fm.horizontalAdvance(kHint);
     for (size_t i = 0; i < labels_.size(); ++i)
         w = qMax(w, fm.horizontalAdvance(QStringLiteral("%1 %2").arg(i + 1).arg(labels_[i])));
     w += 36;
-    int h = rowHeight() * int(labels_.size()) + 12;
+    int h = rowHeight() * (int(labels_.size()) + 1) + 12;  // +1: hint footer
     resize(w, h);
     if (parentWidget())
         move(parentWidget()->width() - w - 12, parentWidget()->height() - h - 12);
@@ -75,4 +77,7 @@ void CameraListOverlay::paintEvent(QPaintEvent*)
         p.drawText(row.adjusted(8, 0, 0, 0), Qt::AlignVCenter,
                    QStringLiteral("%1 %2").arg(i + 1).arg(labels_[size_t(i)]));
     }
+    QRect footer(6, 6 + int(labels_.size()) * rh, width() - 12, rh);
+    p.setPen(QColor(theme::TextDim));
+    p.drawText(footer.adjusted(8, 0, 0, 0), Qt::AlignVCenter, kHint);
 }
