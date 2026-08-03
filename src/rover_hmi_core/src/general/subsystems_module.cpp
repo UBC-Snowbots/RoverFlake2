@@ -1,6 +1,7 @@
 #include "rover_hmi_core/general/subsystems_module.h"
 #include "rover_hmi_core/catppuccin.h"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <pluginlib/class_list_macros.hpp>
@@ -11,6 +12,20 @@ namespace {
 QElapsedTimer g_steady;  // steady/monotonic arrival clock
 qint64 steadyMs() { if (!g_steady.isValid()) g_steady.start(); return g_steady.elapsed(); }
 constexpr qint64 HOST_TIMEOUT_MS = 2500;  // 2.5 beats at 1 Hz
+constexpr const char* kBeaconDimGreen = "#145c34";  // dim phase between beats
+
+// Beacon: small solid-fill circle. Color alone carries the state so it reads
+// at a glance; only called on an actual state/phase change.
+void styleBeacon(QLabel* beacon, const char* color) {
+    beacon->setStyleSheet(QString("background:%1; border-radius:8px;").arg(color));
+}
+
+// Subsystem chip: solid color block, dark text — mirrors the old GTK dashboard's
+// .subsys_ONLINE / .subsys_OFFLINE blocks, adapted to this theme's palette.
+QString chipStyle(const char* bg) {
+    return QString("background:%1; color:#1e1e2e; font-weight:bold; "
+                    "padding:3px 10px; border-radius:4px; min-width:96px;").arg(bg);
+}
 }
 
 void SubsystemsModule::setNode(rclcpp::Node::SharedPtr node) {
@@ -32,7 +47,7 @@ QWidget* SubsystemsModule::createWidget(QWidget* parent) {
     loadExpectedHosts();
     auto* alive = new QTimer(root_);
     QObject::connect(alive, &QTimer::timeout, [this]() { checkHostsAlive(); });
-    alive->start(500);
+    alive->start(250);  // drives beacon dim-phase + live readout; beat rate is 1Hz
     return root_;
 }
 
@@ -41,9 +56,18 @@ SubsystemsModule::HostGroup& SubsystemsModule::hostGroup(const std::string& host
     if (it != hosts_.end()) return it->second;
     waiting_->hide();
     HostGroup g;
-    g.box = new QGroupBox(QString("%1 — ⏳ no heartbeat yet").arg(QString::fromStdString(host)));
-    g.box->setStyleSheet(QString("QGroupBox{color:%1;}").arg(theme::TextDim));
+    g.box = new QGroupBox(QString::fromStdString(host));
     g.grid = new QGridLayout(g.box);
+    g.beacon = new QLabel();
+    g.beacon->setFixedSize(16, 16);
+    styleBeacon(g.beacon, theme::BorderDim);  // grey: never seen
+    g.readout = new QLabel("NO HEARTBEAT DETECTED");
+    g.readout->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+    auto* header = new QHBoxLayout();
+    header->addWidget(g.beacon);
+    header->addWidget(g.readout);
+    header->addStretch();
+    g.grid->addLayout(header, 0, 0, 1, 5);  // row 0: beacon + readout, spans all columns
     hosts_layout_->addWidget(g.box);
     return hosts_.emplace(host, g).first->second;
 }
@@ -51,27 +75,26 @@ SubsystemsModule::HostGroup& SubsystemsModule::hostGroup(const std::string& host
 SubsystemsModule::Row& SubsystemsModule::row(HostGroup& g, const std::string& name) {
     auto it = g.rows.find(name);
     if (it != g.rows.end()) return it->second;
-    const int r = g.rows.size();
+    const int r = static_cast<int>(g.rows.size()) + 1;  // +1: row 0 is the header
     Row rw;
     g.grid->addWidget(new QLabel(QString::fromStdString(name)), r, 0);
     rw.chip = new QLabel("—");
     rw.chip->setAlignment(Qt::AlignCenter);
-    rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+    rw.chip->setStyleSheet(chipStyle(theme::TextDim));
     g.grid->addWidget(rw.chip, r, 1);
-    rw.uptime = new QLabel("");
-    g.grid->addWidget(rw.uptime, r, 2);
     const struct { const char* label; uint8_t action; } btns[] = {
-        {"▶", rover_msgs::msg::SubsystemCommand::ACTION_START},
-        {"■", rover_msgs::msg::SubsystemCommand::ACTION_STOP},
-        {"↻", rover_msgs::msg::SubsystemCommand::ACTION_RESTART},
+        {"RUN", rover_msgs::msg::SubsystemCommand::ACTION_START},
+        {"KILL", rover_msgs::msg::SubsystemCommand::ACTION_STOP},
+        {"RESTART", rover_msgs::msg::SubsystemCommand::ACTION_RESTART},
     };
     for (int i = 0; i < 3; i++) {
         auto* b = new QPushButton(btns[i].label);
-        b->setFixedWidth(32);
+        b->setFixedWidth(70);
+        b->setStyleSheet(QString("padding:2px 4px; font-size:%1px;").arg(theme::FontSizeSm));
         const uint8_t action = btns[i].action;
         QObject::connect(b, &QPushButton::clicked,
                          [this, name, action]() { sendCommand(name, action); });
-        g.grid->addWidget(b, r, 3 + i);
+        g.grid->addWidget(b, r, 2 + i);
     }
     return g.rows.emplace(name, rw).first->second;
 }
@@ -80,53 +103,75 @@ void SubsystemsModule::applyState(Row& rw, const rover_msgs::msg::SubsystemState
     using St = rover_msgs::msg::SubsystemState;
     switch (s.state) {
     case St::RUNNING:
-        rw.chip->setText("RUNNING");
-        rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Green));
-        rw.uptime->setText(QString("%1 s").arg(s.uptime_s));
+        rw.chip->setText(QString("ONLINE %1s").arg(s.uptime_s));
+        rw.chip->setStyleSheet(chipStyle(theme::Green));
         break;
     case St::STOPPING:
         rw.chip->setText("STOPPING");
-        rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Yellow));
-        rw.uptime->setText("");
+        rw.chip->setStyleSheet(chipStyle(theme::Yellow));
         break;
     case St::CRASHED:
         rw.chip->setText(QString("CRASHED (%1)").arg(s.exit_code));
-        rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
-        rw.uptime->setText("");
+        rw.chip->setStyleSheet(chipStyle(theme::Red));
         break;
     case St::STUCK:
         rw.chip->setText("STUCK");
-        rw.chip->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
-        rw.uptime->setText("");
+        rw.chip->setStyleSheet(chipStyle(theme::Red));
         break;
-    default:
-        rw.chip->setText("STOPPED");
-        rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
-        rw.uptime->setText("");
+    default:  // STOPPED
+        rw.chip->setText("OFFLINE");
+        rw.chip->setStyleSheet(chipStyle(theme::TextDim));
     }
 }
 
 void SubsystemsModule::onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg) {
     HostGroup& g = hostGroup(msg->host);
     g.last_arrival_ms = steadyMs();
-    g.offline = false;
-    g.box->setTitle(QString::fromStdString(msg->host));
-    g.box->setStyleSheet("");
+    styleBeacon(g.beacon, theme::Green);  // bright flash: a beat was just read
+    g.pending_dim = true;                 // next 250ms tick dims it, unless another beat wins first
     for (const auto& s : msg->subsystems) applyState(row(g, s.name), s);
 }
 
 void SubsystemsModule::checkHostsAlive() {
+    const qint64 now = steadyMs();
     for (auto& [host, g] : hosts_) {
-        if (g.last_arrival_ms == 0) continue;  // pre-rendered, never seen: not offline, just waiting
-        if (steadyMs() - g.last_arrival_ms <= HOST_TIMEOUT_MS) continue;
-        if (!g.offline) {
-            g.offline = true;
-            g.box->setTitle(QString("%1 — ✖ HEART OFFLINE").arg(QString::fromStdString(host)));
-            g.box->setStyleSheet(QString("QGroupBox{color:%1;}").arg(theme::Red));
-            for (auto& [n, rw] : g.rows) {
-                rw.chip->setText("?");
-                rw.chip->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+        const bool never_seen = (g.last_arrival_ms == 0);
+        const bool lost = !never_seen && (now - g.last_arrival_ms > HOST_TIMEOUT_MS);
+        const HeartPhase new_phase = never_seen ? HeartPhase::NeverSeen
+                                    : lost       ? HeartPhase::Lost
+                                                 : HeartPhase::Fresh;
+        if (new_phase != g.phase) {
+            g.phase = new_phase;
+            switch (new_phase) {
+            case HeartPhase::NeverSeen:
+                styleBeacon(g.beacon, theme::BorderDim);
+                g.readout->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
+                break;
+            case HeartPhase::Lost:
+                styleBeacon(g.beacon, theme::Red);
+                g.readout->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
+                break;
+            case HeartPhase::Fresh:
+                // beacon is already bright from onStatus; just recolor the text
+                g.readout->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Green));
+                break;
             }
+        }
+        // Text-only update every tick is cheap; widget restyle above only runs on change.
+        switch (new_phase) {
+        case HeartPhase::NeverSeen:
+            g.readout->setText("NO HEARTBEAT DETECTED");
+            break;
+        case HeartPhase::Fresh:
+            if (g.pending_dim) {
+                styleBeacon(g.beacon, kBeaconDimGreen);
+                g.pending_dim = false;
+            }
+            g.readout->setText(QString("HEALTHY! %1 ms").arg(now - g.last_arrival_ms));
+            break;
+        case HeartPhase::Lost:
+            g.readout->setText(QString("WATCHDOG EXCEEDED — %1 s silent").arg((now - g.last_arrival_ms) / 1000));
+            break;
         }
     }
 }

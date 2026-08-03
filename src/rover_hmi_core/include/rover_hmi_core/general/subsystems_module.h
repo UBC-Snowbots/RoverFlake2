@@ -23,14 +23,21 @@ public:
 
 private:
     struct Row {
-        QLabel *chip = nullptr, *uptime = nullptr;
+        QLabel* chip = nullptr;
     };
+    // NeverSeen: pre-rendered, no beat yet. Fresh: beat within HOST_TIMEOUT_MS.
+    // Lost: seen-then-lost. Tracked so the 250ms tick only restyles the
+    // beacon/readout on an actual state change (see checkHostsAlive).
+    enum class HeartPhase { NeverSeen, Fresh, Lost };
     struct HostGroup {
         QGroupBox* box = nullptr;
         QGridLayout* grid = nullptr;
+        QLabel* beacon = nullptr;     // flashes bright green per beat, dims next tick
+        QLabel* readout = nullptr;    // live status text, updated every tick
         std::map<std::string, Row> rows;
         qint64 last_arrival_ms = 0;   // steady clock, stamped on message arrival
-        bool offline = false;         // transition flag for one-shot offline styling
+        HeartPhase phase = HeartPhase::NeverSeen;
+        bool pending_dim = false;     // beacon flashed bright; dim on next tick
     };
     void onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg);
     void sendCommand(const std::string& name, uint8_t action);
