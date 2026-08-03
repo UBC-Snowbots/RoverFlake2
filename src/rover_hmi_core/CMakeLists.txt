@@ -79,7 +79,7 @@ add_library(rover_hmi_modules SHARED
     # Cameras
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
-    src/cameras/camera_map.cpp
+    src/cameras/camera_list_overlay.cpp
     src/cameras/camera_module.cpp
 )
 

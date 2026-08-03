@@ -6,20 +6,19 @@ using namespace rover_hmi_core;
 TEST(CameraConfig, ParsesValidJson) {
     QString err;
     auto cams = camera_config::parse(
-        R"({"cameras":[{"name":"logitech","label":"Rear","pos":[0.5,0.9]},
-                       {"name":"suyin","label":"Mast","pos":[0.3,0.3]}]})", &err);
+        R"({"cameras":[{"name":"logitech","label":"Rear"},
+                       {"name":"suyin","label":"Mast"}]})", &err);
     ASSERT_EQ(cams.size(), 2u) << err.toStdString();
     EXPECT_EQ(cams[0].name, "logitech");
     EXPECT_EQ(cams[0].label, "Rear");
-    EXPECT_DOUBLE_EQ(cams[0].pos.x(), 0.5);
-    EXPECT_DOUBLE_EQ(cams[0].pos.y(), 0.9);
+    EXPECT_EQ(cams[1].label, "Mast");
     EXPECT_EQ(camera_config::topicFor(cams[0]),
               QStringLiteral("/logitech/image_raw_decoded"));
 }
 
 TEST(CameraConfig, RejectsEntryMissingFields) {
     QString err;
-    auto cams = camera_config::parse(R"({"cameras":[{"label":"x","pos":[0,0]}]})", &err);
+    auto cams = camera_config::parse(R"({"cameras":[{"label":"x"}]})", &err);
     EXPECT_TRUE(cams.empty());
     EXPECT_FALSE(err.isEmpty());
 }

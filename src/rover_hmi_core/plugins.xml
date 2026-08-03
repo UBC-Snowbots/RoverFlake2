@@ -99,7 +99,7 @@
   <class name="rover_hmi_core/CameraModule"
          type="CameraModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>FNAF-style camera viewer: single feed viewport with rover-map selector</description>
+    <description>FNAF-style camera viewer: single feed with selector list, or grid of all feeds</description>
   </class>
 
   <class name="rover_hmi_core/SpectrometerModule"

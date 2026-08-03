@@ -1,10 +1,8 @@
 // camera_config.h — loads config/cameras/camera_map.json (in-repo, never ~/.config).
-// Names must match cameras.json on the jetson-ffmpeg branch; pos is normalized
-// [0-1]² on the rover silhouette.
+// Names must match cameras.json on the jetson-ffmpeg branch.
 #pragma once
 
 #include <QByteArray>
-#include <QPointF>
 #include <QString>
 #include <vector>
 
@@ -13,7 +11,6 @@ namespace rover_hmi_core::camera_config {
 struct Camera {
     QString name;   // topic stem, e.g. "logitech"
     QString label;  // human name shown in UI, e.g. "Rear"
-    QPointF pos;    // normalized position on the map
 };
 
 // Empty vector + err set on any problem (malformed json, missing field, no cameras).

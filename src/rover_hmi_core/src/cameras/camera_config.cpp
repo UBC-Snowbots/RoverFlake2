@@ -38,13 +38,11 @@ std::vector<Camera> parse(const QByteArray& json, QString* err)
     for (const auto& v : doc.object().value(QStringLiteral("cameras")).toArray()) {
         auto o = v.toObject();
         Camera c{o.value(QStringLiteral("name")).toString(),
-                 o.value(QStringLiteral("label")).toString(), {}};
-        auto pos = o.value(QStringLiteral("pos")).toArray();
-        if (c.name.isEmpty() || c.label.isEmpty() || pos.size() != 2) {
-            if (err) *err = QStringLiteral("camera entry needs name, label, pos[x,y]");
+                 o.value(QStringLiteral("label")).toString()};
+        if (c.name.isEmpty() || c.label.isEmpty()) {
+            if (err) *err = QStringLiteral("camera entry needs name, label");
             return {};
         }
-        c.pos = QPointF(pos[0].toDouble(), pos[1].toDouble());
         out.push_back(c);
     }
     if (out.empty() && err) *err = QStringLiteral("no cameras defined");
