@@ -78,8 +78,6 @@ add_executable(sim_helper src/sim_helper_node.cpp include/armControlParams.h)
 ament_target_dependencies(sim_helper std_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
 add_executable(cbs_arm_interface src/cbs_interface.cpp include/armControlParams.h include/cbs_interface.h)
 ament_target_dependencies(cbs_arm_interface std_msgs ${THIS_PACKAGE_INCLUDE_DEPENDS})
-add_executable(keyboard_servo_input src/keyboard_servo_input.cpp)
-ament_target_dependencies(keyboard_servo_input rclcpp geometry_msgs)
 
 install(
   DIRECTORY include/
@@ -90,7 +88,6 @@ install(
  #   old_arm_servo
     cbs_arm_interface
     joy_arm_control
-    keyboard_servo_input
     moveit_control
     sim_helper
     

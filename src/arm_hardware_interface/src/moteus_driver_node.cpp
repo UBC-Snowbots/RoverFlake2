@@ -717,23 +717,6 @@ void MoteusDriverNode::run() {
     feedback_pub_->publish(moteus_ros_msg);
     arm_feedback_pub->publish(arm_feedback_msg);
 
-    // /joint_states for MoveIt Servo / RViz: A1-A4 from telemetry (URDF names,
-    // radians via initial_pos_rad + direction); wrist + fingers static — their
-    // URDF joints need values for TF but have no matching hardware right now.
-    sensor_msgs::msg::JointState js;
-    js.header.stamp = this->get_clock()->now();
-    for (int a = AXIS_1_INDEX; a <= AXIS_4_INDEX; a++) {
-        js.name.push_back(ARM_JOINTS[a].urdf_joint_name);
-        js.position.push_back(motorRevToJointRad(a, axes[a].position));
-    }
-    js.name.push_back("a5_rotation");  js.position.push_back(0.0);
-    js.name.push_back("a6_rotation");  js.position.push_back(0.0);
-    for (int g = 0; g < NUM_GRIPPER_JOINTS; g++) {
-        js.name.push_back(GRIPPER_JOINT_NAMES[g]);
-        js.position.push_back(0.0);
-    }
-    joint_state_pub_->publish(js);
-
     // ── Stage 9: safety ─────────────────────────────────────────────────────
     checkFaults();   // was dead code — never called — since the pipeline rework
     checkAlerts();
