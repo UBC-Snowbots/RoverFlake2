@@ -11,3 +11,6 @@ sudo apt-get install -y libphidget22-dev
 
 # for libcamera
 sudo apt install -y libcamera-dev
+
+# for gscam
+sudo apt install ros-humble-gscam -y
