@@ -1,11 +1,11 @@
 // ptz_camera_module.cpp — "PTZ Camera"
 //
-// Control semantics follow the Hi3510 ptzctrl.cgi CGI protocol (continuous
-// -act moves until -act=stop; -speed 1..63), per the OEM "IP Camera CGI User
-// Guide" (Dericam/FDT editions, e.g. johnlose.de Dericam-Camera-CGI-RTSP-User-
-// Guide-v1.0.2.pdf), reached through the ptz_cam package's ROS services.
-// Panorama capture/stitching happens rover-side in ptz_cam's panorama_node;
-// this panel only starts/cancels it and displays the published result.
+// Control contract inherited from the old rover_hmi dashboard: pan, tilt AND
+// zoom all ride one geometry_msgs/Vector3 on /ptz/control (x=pan, y=tilt,
+// z=zoom; sign = direction, 0 = stop). Press starts a continuous move,
+// release stops it. Panorama capture/stitching happens rover-side in
+// ptz_cam's panorama_node; this panel only starts/cancels it and displays
+// the published result.
 
 #include "ptz_camera_module.h"
 #include <rover_hmi_core/catppuccin.h>
@@ -161,27 +161,36 @@ QWidget* PtzCameraModule::createWidget(QWidget* parent) {
         return b;
     };
 
-    // ── Pan/tilt D-pad (center = stop all) ──
+    // ── Pan/tilt pad — same arrangement as the old dashboard's ptz_grid:
+    //    pan buttons flank the stacked tilt pair ──
     auto* pad = new QGridLayout();
     pad->setSpacing(6);
     auto pt = [&](const QString& t, int dx, int dy) {
         return hold_btn(t, [this, dx, dy]() { panTiltEvent(dx, dy, true);  },
                            [this, dx, dy]() { panTiltEvent(dx, dy, false); });
     };
-    pad->addWidget(pt("▲",  0, +1), 0, 1);
-    pad->addWidget(pt("◀", -1,  0), 1, 0);
-    pad->addWidget(pt("▶", +1,  0), 1, 2);
-    pad->addWidget(pt("▼",  0, -1), 2, 1);
-    auto* stop_btn = new QPushButton("■", widget);
-    stop_btn->setFont(monoBold);
-    stop_btn->setMinimumHeight(48);
-    stop_btn->setFocusPolicy(Qt::NoFocus);
-    stop_btn->setStyleSheet(QString("color: %1; border-color: %1;").arg(theme::Red));
-    QObject::connect(stop_btn, &QPushButton::clicked, [this]() { stopAll(); });
-    pad->addWidget(stop_btn, 1, 1);
+    auto* pan_dec = pt("− PAN −", -1, 0);
+    auto* pan_inc = pt("+ PAN +", +1, 0);
+    // Buttons default to a Fixed vertical policy, which leaves the two-row pan
+    // cells half-empty; Expanding stretches them to the full span height.
+    pan_dec->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    pan_inc->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    pad->addWidget(pan_dec, 0, 0, 2, 1);
+    pad->addWidget(pt("+ TILT +",  0, +1), 0, 1);
+    pad->addWidget(pt("− TILT −",  0, -1), 1, 1);
+    pad->addWidget(pan_inc, 0, 2, 2, 1);
     ctl_col->addLayout(pad);
 
-    // ── Speed multiplier for /ptz/control (driver adds its own serial scaling) ──
+    // ── Zoom row — directly under the pad, as in the old dashboard ──
+    auto* zoom_row = new QHBoxLayout();
+    zoom_row->setSpacing(6);
+    zoom_row->addWidget(hold_btn("ZOOM OUT", [this]() { zoomEvent(-1, true);  },
+                                             [this]() { zoomEvent(-1, false); }));
+    zoom_row->addWidget(hold_btn("ZOOM IN",  [this]() { zoomEvent(+1, true);  },
+                                             [this]() { zoomEvent(+1, false); }));
+    ctl_col->addLayout(zoom_row);
+
+    // ── Speed multiplier for /ptz/control pan/tilt (driver adds its own serial scaling) ──
     auto* speed_row = new QHBoxLayout();
     auto* speed_lbl = new QLabel("Speed ×1");
     speed_lbl->setFont(mono);
@@ -191,47 +200,32 @@ QWidget* PtzCameraModule::createWidget(QWidget* parent) {
     QObject::connect(slider, &QSlider::valueChanged, [this, speed_lbl](int v) {
         speed_ = float(v);
         speed_lbl->setText(QString("Speed ×%1").arg(v));
-        if (pan_dir_ || tilt_dir_) publishPanTilt();  // live-update an in-progress move
+        if (pan_dir_ || tilt_dir_) publishControl();  // live-update an in-progress move
     });
     speed_row->addWidget(speed_lbl);
     speed_row->addWidget(slider, 1);
     ctl_col->addLayout(speed_row);
 
-    // ── Zoom / focus rockers (Hi3510 continuous moves; release fires *_stop,
-    //    taps < kMinPulseMs become fixed 200 ms steps via the pulse timer) ──
-    auto make_pulse = [&](Rocker& r, TriggerClient* halt, const QString& what) {
-        r.pulse = new QTimer(widget);
-        r.pulse->setSingleShot(true);
-        QObject::connect(r.pulse, &QTimer::timeout,
-                         [this, halt, what]() { callTrigger(*halt, what + " stop"); });
-    };
-    make_pulse(zoom_rocker_,  &zoom_stop_,  "zoom");
-    make_pulse(focus_rocker_, &focus_stop_, "focus");
-
-    auto rocker = [&](const QString& minus, const QString& plus,
-                      TriggerClient* out, TriggerClient* in, TriggerClient* halt,
-                      Rocker* r, const QString& what) {
-        auto* row = new QHBoxLayout();
-        row->setSpacing(6);
-        row->addWidget(hold_btn(minus, [this, out,  r, what]() { rockerPress(*out,    what + " out",  *r); },
-                                       [this, halt, r, what]() { rockerRelease(*halt, what + " stop", *r); }));
-        row->addWidget(hold_btn(plus,  [this, in,   r, what]() { rockerPress(*in,     what + " in",   *r); },
-                                       [this, halt, r, what]() { rockerRelease(*halt, what + " stop", *r); }));
-        return row;
-    };
-    ctl_col->addLayout(rocker("ZOOM −",  "ZOOM +",  &zoom_out_,  &zoom_in_,  &zoom_stop_,  &zoom_rocker_,  "zoom"));
-    ctl_col->addLayout(rocker("FOCUS −", "FOCUS +", &focus_out_, &focus_in_, &focus_stop_, &focus_rocker_, "focus"));
-
-    // ── Panorama: triggers the backend sweep in ptz_cam's panorama_node ──
-    pano_btn_ = new QPushButton("⛶ PANO", widget);
+    // ── Stop-all + panorama (backend sweep in ptz_cam's panorama_node) ──
+    auto* action_row = new QHBoxLayout();
+    action_row->setSpacing(6);
+    auto* stop_btn = new QPushButton("■ STOP", widget);
+    stop_btn->setFont(monoBold);
+    stop_btn->setMinimumHeight(48);
+    stop_btn->setFocusPolicy(Qt::NoFocus);
+    stop_btn->setStyleSheet(QString("color: %1; border-color: %1;").arg(theme::Red));
+    QObject::connect(stop_btn, &QPushButton::clicked, [this]() { stopAll(); });
+    action_row->addWidget(stop_btn);
+    pano_btn_ = new QPushButton("PANO", widget);
     pano_btn_->setFont(monoBold);
     pano_btn_->setMinimumHeight(48);
     pano_btn_->setFocusPolicy(Qt::NoFocus);
     QObject::connect(pano_btn_, &QPushButton::clicked, [this]() { panoToggle(); });
-    ctl_col->addWidget(pano_btn_);
+    action_row->addWidget(pano_btn_);
+    ctl_col->addLayout(action_row);
     ctl_col->addStretch(1);
 
-    // ── Keyboard: I/J/K/L pan-tilt, Z/X zoom, N/M focus — press/release ──
+    // ── Keyboard: I/J/K/L pan-tilt, Z/X zoom — press/release ──
     key_filter_ = new PtzKeyFilter(widget, [this](int key, bool pressed) {
         return onKey(key, pressed);
     });
@@ -264,13 +258,6 @@ void PtzCameraModule::setNode(rclcpp::Node::SharedPtr node) {
         });
     pano_start_  = node->create_client<std_srvs::srv::Trigger>("/ptz/panorama/start");
     pano_cancel_ = node->create_client<std_srvs::srv::Trigger>("/ptz/panorama/cancel");
-
-    zoom_in_    = node->create_client<std_srvs::srv::Trigger>("/ip_camera/zoom_in_start");
-    zoom_out_   = node->create_client<std_srvs::srv::Trigger>("/ip_camera/zoom_out_start");
-    zoom_stop_  = node->create_client<std_srvs::srv::Trigger>("/ip_camera/zoom_stop");
-    focus_in_   = node->create_client<std_srvs::srv::Trigger>("/ip_camera/focus_in_start");
-    focus_out_  = node->create_client<std_srvs::srv::Trigger>("/ip_camera/focus_out_start");
-    focus_stop_ = node->create_client<std_srvs::srv::Trigger>("/ip_camera/focus_stop");
 }
 
 void PtzCameraModule::start() {
@@ -283,15 +270,11 @@ void PtzCameraModule::stop() {
     enabled_ = false;
     if (key_filter_) qApp->removeEventFilter(key_filter_);
     if (health_timer_) health_timer_->stop();
-    if (zoom_rocker_.pulse)  zoom_rocker_.pulse->stop();
-    if (focus_rocker_.pulse) focus_rocker_.pulse->stop();
     if (pano_active_ && pano_cancel_ && pano_cancel_->service_is_ready())
         pano_cancel_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
-    // Leave the camera parked: zero the gimbal and halt any zoom/focus move.
-    pan_dir_ = tilt_dir_ = 0;
-    if (pt_pub_) publishPanTilt();
-    if (zoom_stop_ && zoom_stop_->service_is_ready())
-        zoom_stop_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
+    // Leave the camera parked: zero every axis (also stops any zoom move).
+    pan_dir_ = tilt_dir_ = zoom_dir_ = 0;
+    if (pt_pub_) publishControl();
 }
 
 // ── Video feed ──
@@ -343,14 +326,8 @@ bool PtzCameraModule::onKey(int key, bool pressed) {
         case Qt::Key_K: panTiltEvent(0, -1, pressed); return true;
         case Qt::Key_J: panTiltEvent(-1, 0, pressed); return true;
         case Qt::Key_L: panTiltEvent(+1, 0, pressed); return true;
-        case Qt::Key_Z: pressed ? rockerPress(zoom_in_,    "zoom in",    zoom_rocker_)
-                                : rockerRelease(zoom_stop_,  "zoom stop",  zoom_rocker_);  return true;
-        case Qt::Key_X: pressed ? rockerPress(zoom_out_,   "zoom out",   zoom_rocker_)
-                                : rockerRelease(zoom_stop_,  "zoom stop",  zoom_rocker_);  return true;
-        case Qt::Key_N: pressed ? rockerPress(focus_in_,   "focus in",   focus_rocker_)
-                                : rockerRelease(focus_stop_, "focus stop", focus_rocker_); return true;
-        case Qt::Key_M: pressed ? rockerPress(focus_out_,  "focus out",  focus_rocker_)
-                                : rockerRelease(focus_stop_, "focus stop", focus_rocker_); return true;
+        case Qt::Key_Z: zoomEvent(+1, pressed); return true;
+        case Qt::Key_X: zoomEvent(-1, pressed); return true;
         case Qt::Key_P: if (pressed) panoToggle(); return true;
         default: return false;
     }
@@ -361,16 +338,24 @@ void PtzCameraModule::panTiltEvent(int dx, int dy, bool pressed) {
     // releases (press J, press I, release J) behave correctly.
     if (pressed) { if (dx) pan_dir_ = dx;                  if (dy) tilt_dir_ = dy; }
     else         { if (dx && pan_dir_ == dx) pan_dir_ = 0; if (dy && tilt_dir_ == dy) tilt_dir_ = 0; }
-    publishPanTilt();
+    publishControl();
 }
 
-void PtzCameraModule::publishPanTilt() {
+void PtzCameraModule::zoomEvent(int dz, bool pressed) {
+    if (pressed) zoom_dir_ = dz;
+    else if (zoom_dir_ == dz) zoom_dir_ = 0;
+    publishControl();
+}
+
+void PtzCameraModule::publishControl() {
     if (!pt_pub_) return;
-    // pitch_tilt_node semantics: sign = direction, 0 = stop; the driver applies
-    // its own per-axis serial scaling (pan ×2, tilt ×15).
+    // sign = direction, 0 = stop; pitch_tilt_node applies its own per-axis
+    // serial scaling (pan ×2, tilt ×15). z stays at ±1 — the zoom node
+    // matches the exact value, so the speed slider must not scale it.
     geometry_msgs::msg::Vector3 msg;
     msg.x = pan_dir_  * speed_;
     msg.y = tilt_dir_ * speed_;
+    msg.z = zoom_dir_;
     pt_pub_->publish(msg);
 
     QString dir;
@@ -378,33 +363,16 @@ void PtzCameraModule::publishPanTilt() {
     else if (tilt_dir_ < 0) dir = "▼ tilt down";
     if      (pan_dir_ > 0)  dir += (dir.isEmpty() ? "" : " + ") + QString("▶ pan right");
     else if (pan_dir_ < 0)  dir += (dir.isEmpty() ? "" : " + ") + QString("◀ pan left");
-    setStatus(dir.isEmpty() ? "pan/tilt stopped" : dir,
+    if      (zoom_dir_ > 0) dir += (dir.isEmpty() ? "" : " + ") + QString("⊕ zoom in");
+    else if (zoom_dir_ < 0) dir += (dir.isEmpty() ? "" : " + ") + QString("⊖ zoom out");
+    setStatus(dir.isEmpty() ? "ptz stopped" : dir,
               dir.isEmpty() ? theme::TextDim : theme::Green);
-}
-
-// Tap vs hold: press always starts the move; a release within kMinPulseMs
-// defers the stop to the 200 ms mark, so every tap yields one fixed-width
-// incremental step, while a longer hold stays continuous and stops on release.
-// (The camera's native -step=1 auto-stop mode would time this in-camera and be
-// immune to link jitter, but that needs a ptz_cam driver change — see yaml's
-// zoom_step param.)
-void PtzCameraModule::rockerPress(const TriggerClient& start, const QString& label, Rocker& r) {
-    if (r.pulse) r.pulse->stop();  // re-press cancels a pending deferred stop
-    r.pressed_at = std::chrono::steady_clock::now();
-    callTrigger(start, label);
-}
-
-void PtzCameraModule::rockerRelease(const TriggerClient& halt, const QString& label, Rocker& r) {
-    const auto held_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - r.pressed_at).count();
-    if (held_ms >= kMinPulseMs) callTrigger(halt, label);
-    else if (r.pulse) r.pulse->start(int(kMinPulseMs - held_ms));
 }
 
 void PtzCameraModule::callTrigger(const TriggerClient& client, const QString& label) {
     if (!client) return;
     if (!client->service_is_ready()) {
-        setStatus(label + ": service unavailable — is ip_camera.launch.py up?", theme::Red);
+        setStatus(label + ": service unavailable — is it running on the rover?", theme::Red);
         return;
     }
     setStatus(label + "…", theme::Text);
@@ -422,13 +390,8 @@ void PtzCameraModule::callTrigger(const TriggerClient& client, const QString& la
 
 void PtzCameraModule::stopAll() {
     if (pano_active_) panoToggle();  // sends the backend cancel
-    pan_dir_ = tilt_dir_ = 0;
-    publishPanTilt();
-    if (zoom_rocker_.pulse)  zoom_rocker_.pulse->stop();   // stop now, not at pulse end
-    if (focus_rocker_.pulse) focus_rocker_.pulse->stop();
-    // One CGI stop halts whichever zoom/focus motor is moving (zoom_stop and
-    // focus_stop hit the same -act=stop), so a single call covers both.
-    callTrigger(zoom_stop_, "stop all");
+    pan_dir_ = tilt_dir_ = zoom_dir_ = 0;
+    publishControl();
 }
 
 // ── Panorama ──
@@ -451,7 +414,7 @@ void PtzCameraModule::panoToggle() {
 
 void PtzCameraModule::panoSetActive(bool active) {
     pano_active_ = active;
-    if (pano_btn_) pano_btn_->setText(active ? "■ CANCEL" : "⛶ PANO");
+    if (pano_btn_) pano_btn_->setText(active ? "■ CANCEL" : "PANO");
 }
 
 void PtzCameraModule::onPanoStatus(const std_msgs::msg::String::ConstSharedPtr& msg) {

@@ -133,14 +133,10 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     // --- Datasheet identity (bench notes / Maxon, 2026-08) ---
     // A2/A3 are 22-pole kv=134 — calibration flags MUST come from here, not
     // the old hardcoded 16/265 (that mis-commutates them).
-    // A4 corrected 2026-08-03: it is a 200142 (EC 45 flat 30 W, 12 V,
-    // 2.14 A nominal), not a 339281 — its 30 W power cap IS the motor's
-    // rating. kv ~364 derived from 4370 rpm @ 12 V nominal; verify against
-    // the datasheet speed constant before calibrating A4.
-    const char* parts[NUM_MOTORS] = {"339281","607942","515458","200142","651607","651607","339281"};
+    const char* parts[NUM_MOTORS] = {"339281","607942","515458","339281","651607","651607","339281"};
     const int   poles[NUM_MOTORS] = { 16,      22,      22,      16,      16,      16,      16     };
-    const float kvs  [NUM_MOTORS] = { 265,     134,     134,     364,     265,     265,     265    };
-    const float noms [NUM_MOTORS] = { 1.01f,   9.5f,    6.44f,   2.14f,   2.52f,   2.52f,   1.01f  };
+    const float kvs  [NUM_MOTORS] = { 265,     134,     134,     187,     265,     265,     265    };
+    const float noms [NUM_MOTORS] = { 1.01f,   9.5f,    6.44f,   1.01f,   2.52f,   2.52f,   1.01f  };
     for (int i = 0; i < NUM_MOTORS; i++) {
         motors[i].part_no = parts[i];
         motors[i].poles   = poles[i];
@@ -152,7 +148,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     motors[0].max_current_A =  2.0f;   // back to 2.0 (2026-08-03); was 3.0 after the 08-02 stall
     motors[1].max_current_A = 14.0f;
     motors[2].max_current_A = 14.0f;
-    motors[3].max_current_A =  2.0f;   // 200142 nominal 2.14 A; 0.3 starved it (bench 2026-08-03)
+    motors[3].max_current_A =  1.01f;   // 200142 nominal 2.14 A; 0.3 starved it (bench 2026-08-03)
     motors[4].max_current_A =  2.0f;
     motors[5].max_current_A =  2.0f;
 
@@ -166,12 +162,12 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     motors[5].max_voltage = 30.0f;  motors[5].max_power_W = fnan;
 
     // --- Motion profile ---
-    motors[0].max_acceleration = 1.0f;  motors[0].max_velocity = 0.15f;
+    motors[0].max_acceleration = 0.5f;  motors[0].max_velocity = 0.01f;
     motors[1].max_acceleration = 0.5f;  motors[1].max_velocity = 0.03f;
     motors[2].max_acceleration = 0.5f;  motors[2].max_velocity = 0.05f;
     motors[3].max_acceleration = 0.5f;  motors[3].max_velocity = 0.10f;
-    motors[4].max_acceleration = 2.0f;  motors[4].max_velocity = 0.15f;
-    motors[5].max_acceleration = 2.0f;  motors[5].max_velocity = 0.15f;
+    motors[4].max_acceleration = 1.0f;  motors[4].max_velocity = 0.05f;
+    motors[5].max_acceleration = 1.0f;  motors[5].max_velocity = 0.05f;
 
     // --- Position limits (output-shaft revolutions) ---
     //     Flash has servopos unbounded (nan) everywhere except A4 — adopted
