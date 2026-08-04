@@ -13,6 +13,9 @@ def generate_launch_description():
         actions.append(DeclareLaunchArgument(
             inst, default_value='',
             description=f'Startup layout for the {inst} window ("" = default tiling)'))
+    actions.append(DeclareLaunchArgument(
+        'wall', default_value='',
+        description='Wall snapshot to restore on startup ("" = none)'))
     for inst in instances:
         actions.append(Node(
             package='rover_hmi_core',
@@ -21,6 +24,7 @@ def generate_launch_description():
             parameters=[{
                 'instance': inst,
                 'layout': LaunchConfiguration(inst),
+                'wall': LaunchConfiguration('wall'),
             }],
         ))
     return LaunchDescription(actions)
