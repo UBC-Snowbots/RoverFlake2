@@ -16,6 +16,11 @@ public:
     HmiRouter() : Node("hmi_router") {
         button_layouts_ = declare_parameter<std::vector<std::string>>(
             "button_layouts", std::vector<std::string>{});
+        // Warm the publisher cache: DDS matching completes before the first
+        // press, and YAML typos fail fast here instead of mid-callback.
+        for (const auto& entry : button_layouts_)
+            for (const auto& pair : parseSceneEntry(entry))
+                pubFor(pair.first);
         panel_sub_ = create_subscription<rover_msgs::msg::GenericPanel>(
             "/cbs/left_panel_a", 10,
             std::bind(&HmiRouter::panelCallback, this, std::placeholders::_1));
