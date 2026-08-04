@@ -169,12 +169,6 @@ int main(int argc, char* argv[]) {
                     name.c_str(), names.c_str());
     };
 
-    // Startup selection: layout name wins over explicit panel list.
-    const auto layout_param = node->declare_parameter<std::string>("layout", "");
-    const auto panels_param = node->declare_parameter<std::string>("panels", "");
-    if (!layout_param.empty())      applyLayout(layout_param);
-    else if (!panels_param.empty()) applyPanels(panels_param);
-
     // Runtime control topics. Callbacks run on the Qt thread via the
     // spin_some timer, so they may touch widgets directly.
     // Volatile QoS: commands arriving while the HMI is down are dropped.
@@ -196,6 +190,60 @@ int main(int argc, char* argv[]) {
             "/hmi/" + instance + "/show_panels", 10,
             [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
     }
+
+    // Wall snapshots: broadcast save/load — every instance persists/applies
+    // its OWN state file, sender included (DDS loops messages back).
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr wall_save_pub, wall_load_pub;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr wall_save_sub, wall_load_sub;
+    auto applyWall = [&node, &window, tiling, instance, title_base](const std::string& name) {
+        QJsonObject json = tiling->layoutStore().loadWallInstance(
+            QString::fromStdString(name), QString::fromStdString(instance));
+        if (json.isEmpty()) {
+            std::string known;
+            for (const auto& w : tiling->layoutStore().listWalls())
+                known += (known.empty() ? "" : ", ") + w.name.toStdString();
+            RCLCPP_WARN(node->get_logger(),
+                        "wall '%s': no state for instance '%s' (known walls: %s)",
+                        name.c_str(), instance.c_str(), known.c_str());
+            return;
+        }
+        tiling->applyLayoutJson(json);
+        window.setWindowTitle(title_base + " — " + QString::fromStdString(name));
+    };
+    if (!instance.empty()) {
+        wall_save_pub = node->create_publisher<std_msgs::msg::String>("/hmi/wall/save", 10);
+        wall_load_pub = node->create_publisher<std_msgs::msg::String>("/hmi/wall/load", 10);
+        tiling->onWallSaveRequested = [wall_save_pub](const QString& name) {
+            std_msgs::msg::String m; m.data = name.toStdString(); wall_save_pub->publish(m);
+        };
+        tiling->onWallLoadRequested = [wall_load_pub](const QString& name) {
+            std_msgs::msg::String m; m.data = name.toStdString(); wall_load_pub->publish(m);
+        };
+        wall_save_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/wall/save", 10, [&node, tiling, instance](const std_msgs::msg::String& msg) {
+                bool ok = tiling->layoutStore().saveWallInstance(
+                    QString::fromStdString(msg.data), QString::fromStdString(instance),
+                    tiling->currentLayoutJson());
+                if (ok) RCLCPP_INFO(node->get_logger(), "wall '%s': instance state saved", msg.data.c_str());
+                else    RCLCPP_WARN(node->get_logger(), "wall '%s': save failed — %s", msg.data.c_str(),
+                                    tiling->layoutStore().statusMessage().toStdString().c_str());
+            });
+        wall_load_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/wall/load", 10,
+            [applyWall](const std_msgs::msg::String& msg) { applyWall(msg.data); });
+    }
+
+    // Startup selection: wall name wins over layout, layout over panels.
+    const auto wall_param   = node->declare_parameter<std::string>("wall", "");
+    const auto layout_param = node->declare_parameter<std::string>("layout", "");
+    const auto panels_param = node->declare_parameter<std::string>("panels", "");
+    if (!wall_param.empty()) {
+        if (instance.empty())
+            RCLCPP_WARN(node->get_logger(), "wall param requires an instance name — ignored");
+        else applyWall(wall_param);
+    }
+    else if (!layout_param.empty())  applyLayout(layout_param);
+    else if (!panels_param.empty())  applyPanels(panels_param);
 
     window.setCentralWidget(tiling);
     window.resize(1600, 1000);
