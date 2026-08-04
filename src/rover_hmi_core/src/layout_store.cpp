@@ -137,8 +137,11 @@ QString LayoutStore::wallDirFor(const QString& wall_name) const {
 
     QString slug = slugify(wall_name, "wall");
     QString candidate = slug;
-    for (int i = 2; walls.exists(candidate) &&
-                    wallDisplayName(walls.absoluteFilePath(candidate)) != wall_name; ++i)
+    for (int i = 2;
+         walls.exists(candidate) &&
+         !QDir(walls.absoluteFilePath(candidate)).entryInfoList({"*.json"}, QDir::Files).isEmpty() &&
+         wallDisplayName(walls.absoluteFilePath(candidate)) != wall_name;
+         ++i)
         candidate = slug + "-" + QString::number(i);
     return walls.absoluteFilePath(candidate);
 }
@@ -148,6 +151,8 @@ std::vector<LayoutStore::WallEntry> LayoutStore::listWalls() const {
     if (dir_.isEmpty()) return out;
     for (const QFileInfo& fi : QDir(dir_ + "/" + WALLS_SUBDIR)
              .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name)) {
+        if (QDir(fi.absoluteFilePath()).entryInfoList({"*.json"}, QDir::Files).isEmpty())
+            continue;
         WallEntry e;
         e.dir_path = fi.absoluteFilePath();
         e.name     = wallDisplayName(e.dir_path);

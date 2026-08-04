@@ -11,6 +11,7 @@
 #include <QJsonArray>
 #include <QDateTime>
 #include <QStringList>
+#include <QTimer>
 #include <algorithm>
 #include <cmath>
 
@@ -655,10 +656,12 @@ void LayoutManagerOverlay::cancelRename() {
     }
 }
 
-// Wall mode is on when the host wired a save hook (both hooks null in
-// single-window mode). Rows are laid out as [layouts...][walls...]; a
-// non-focusable header band separates the two groups when walls are shown.
-bool LayoutManagerOverlay::wallMode() const { return (bool)tc_->onWallSaveRequested; }
+// Wall mode is on when the host wired both hooks (null in single-window
+// mode). Rows are laid out as [layouts...][walls...]; a non-focusable
+// header band separates the two groups when walls are shown.
+bool LayoutManagerOverlay::wallMode() const {
+    return tc_->onWallSaveRequested && tc_->onWallLoadRequested;
+}
 int  LayoutManagerOverlay::rowCount() const {
     return (int)snapshots_.size() + (wallMode() ? (int)walls_.size() : 0);
 }
@@ -853,8 +856,8 @@ void LayoutManagerOverlay::keyPressEvent(QKeyEvent* ke) {
     } else if (ke->key() == Qt::Key_W) {
         if (wallMode()) {
             tc_->onWallSaveRequested(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm"));
-            refresh();
-            update();
+            // Own save lands via topic loopback on the next spin tick — refresh after it.
+            QTimer::singleShot(100, this, [this] { refresh(); update(); });
         }
     } else if (ke->key() == Qt::Key_R) {
         if (rowCount() > 0) {
