@@ -1,0 +1,7 @@
+# Generated per-run: captures, plots and results logs. Models (*.json) are
+# tracked — they are the calibration a result depends on.
+capture_*.csv
+spectrum_*.csv
+*.png
+*_results.csv
+predictions_log.csv

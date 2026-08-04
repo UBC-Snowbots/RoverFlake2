@@ -25,13 +25,32 @@
 #include <pluginlib/class_loader.hpp>
 
 #include <QApplication>
+#include <QFile>
 #include <QMainWindow>
+#include <QShortcut>
+#include <QTextStream>
 #include <QTimer>
 
 #include <memory>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+
+// Font-scale cache: survives HMI restarts within a session, deleted on clean
+// shutdown (and cleared by the OS on reboot) so a scale never becomes sticky.
+static const char* kFontScaleCache = "/tmp/rover_hmi_fontscale";
+
+// Application-wide filter: when a module rewrites a widget's stylesheet at
+// runtime (button state changes), re-apply the current font scale to it.
+class FontScaleFilter : public QObject {
+public:
+    bool eventFilter(QObject* obj, QEvent* ev) override {
+        if (ev->type() == QEvent::StyleChange && theme::FontScale != 1.0)
+            if (auto* w = qobject_cast<QWidget*>(obj))
+                theme::rescaleWidget(w);
+        return false;
+    }
+};
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
@@ -95,7 +114,41 @@ int main(int argc, char* argv[]) {
     // start timers or subscriptions that trigger immediate repaints.
     for (auto& m : modules) m->start();
 
+    // ── Runtime font zoom: Ctrl+= / Ctrl+- adjust, Ctrl+0 resets ────────────
+    FontScaleFilter scale_filter;
+    app.installEventFilter(&scale_filter);
+
+    auto setScale = [&app](double s) {
+        theme::applyFontScale(app, s);
+        QFile f(kFontScaleCache);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+            QTextStream(&f) << theme::FontScale;
+    };
+    const std::pair<QKeySequence, double> zoom_keys[] = {
+        { QKeySequence::ZoomIn,       +0.1 },
+        { QKeySequence("Ctrl+="),     +0.1 },
+        { QKeySequence::ZoomOut,      -0.1 },
+        { QKeySequence("Ctrl+0"),      0.0 },  // 0 = reset
+    };
+    for (const auto& [seq, delta] : zoom_keys) {
+        auto* sc = new QShortcut(seq, &window);
+        sc->setContext(Qt::ApplicationShortcut);
+        QObject::connect(sc, &QShortcut::activated, [setScale, delta]() {
+            setScale(delta == 0.0 ? 1.0 : theme::FontScale + delta);
+        });
+    }
+
+    // Restore a scale left by a previous run this session, if any.
+    {
+        QFile f(kFontScaleCache);
+        if (f.open(QIODevice::ReadOnly)) {
+            double s = QTextStream(&f).readAll().trimmed().toDouble();
+            if (s > 0.0 && s != 1.0) theme::applyFontScale(app, s);
+        }
+    }
+
     int ret = app.exec();
+    QFile::remove(kFontScaleCache);
 
     // stop() gives modules a chance to cancel timers and clean up before the
     // node is shut down and shared libraries are unloaded.

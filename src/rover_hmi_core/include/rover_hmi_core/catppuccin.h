@@ -1,7 +1,10 @@
 #pragma once
 
 #include <QApplication>
+#include <QRegularExpression>
 #include <QString>
+#include <QVariant>
+#include <QWidget>
 
 // Pure black terminal aesthetic with white borders
 namespace theme {
@@ -20,9 +23,16 @@ constexpr const char* Cyan       = "#44ddcc";
 
 constexpr int BorderRadius = 12;
 constexpr int BorderWidth  = 2;
-constexpr int FontSize     = 15;
-constexpr int FontSizeLg   = 18;
-constexpr int FontSizeSm   = 13;
+constexpr int FontSize     = 20;   // app-wide baseline (px in stylesheets)
+constexpr int FontSizeLg   = 26;
+constexpr int FontSizeSm   = 16;
+constexpr int FontSizeXl    = 40;  // big touch-target control buttons
+constexpr int FontSizeTitle = 44;  // panel titles — largest text in any panel
+
+// Runtime font zoom (Ctrl+= / Ctrl+- in the host). All font sizes above are
+// base values; use px() wherever a size is consumed at paint/style time.
+inline double FontScale = 1.0;
+inline int px(int base) { return qMax(6, qRound(base * FontScale)); }
 
 // Per-motor colors (indexed 0-5)
 constexpr const char* MotorColors[] = {
@@ -80,7 +90,62 @@ inline void applyGlobalStylesheet(QApplication& app) {
             selection-background-color: #333333;
         }
     )")
-    .arg(FontSize).arg(Bg).arg(Text).arg(BgPanel).arg(BorderDim).arg(FontSizeSm));
+    .arg(px(FontSize)).arg(Bg).arg(Text).arg(BgPanel).arg(BorderDim).arg(px(FontSizeSm)));
+}
+
+// Rewrite every "font-size:NNpx" in a stylesheet to the current scale.
+inline QString scaleStyleSheet(const QString& base)
+{
+    static const QRegularExpression re("font-size\\s*:\\s*(\\d+)px");
+    QString out;
+    out.reserve(base.size());
+    int last = 0;
+    auto it = re.globalMatch(base);
+    while (it.hasNext()) {
+        auto m = it.next();
+        out += base.mid(last, m.capturedStart() - last);
+        out += QString("font-size:%1px").arg(px(m.captured(1).toInt()));
+        last = m.capturedEnd();
+    }
+    out += base.mid(last);
+    return out;
+}
+
+// Rescale one widget's stylesheet fonts (and explicitly-set QFonts) in place.
+// Modules always author styles at base scale; the unscaled original is kept in
+// a "ssBase" property so repeated zooms never compound. "ssApplied" tracks the
+// last sheet we wrote, so a module overwriting its style is detected as a new
+// base rather than re-scaled.
+inline void rescaleWidget(QWidget* w)
+{
+    const QString cur = w->styleSheet();
+    if (cur.contains("font-size")) {
+        if (cur != w->property("ssApplied").toString())
+            w->setProperty("ssBase", cur);
+        const QString scaled = scaleStyleSheet(w->property("ssBase").toString());
+        w->setProperty("ssApplied", scaled);
+        if (scaled != cur) w->setStyleSheet(scaled);
+    }
+    if (w->testAttribute(Qt::WA_SetFont)) {
+        QVariant base_pt = w->property("fontBasePt");
+        if (!base_pt.isValid()) {
+            base_pt = w->font().pointSize();
+            w->setProperty("fontBasePt", base_pt);
+        }
+        if (base_pt.toInt() > 0) {
+            QFont f = w->font();
+            f.setPointSize(qMax(6, qRound(base_pt.toInt() * FontScale)));
+            w->setFont(f);
+        }
+    }
+}
+
+inline void applyFontScale(QApplication& app, double scale)
+{
+    FontScale = qBound(0.5, scale, 2.0);
+    applyGlobalStylesheet(app);
+    for (QWidget* w : app.allWidgets()) rescaleWidget(w);
+    for (QWidget* w : app.topLevelWidgets()) w->update();
 }
 
 } // namespace theme
