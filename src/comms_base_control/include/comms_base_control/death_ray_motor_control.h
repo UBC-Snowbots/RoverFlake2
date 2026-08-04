@@ -1,5 +1,4 @@
-#ifndef DRIVE_CONTROL_H
-#define DRIVE_CONTROL_H
+#pragma once
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/empty.hpp"
@@ -60,7 +59,7 @@ enum DeathRayControlMode {
 #define ROS_SUBSCRIBER_QOS 1
 
 /**
- * @brief MotorControlNode controls the stepper motor to rotate the comms dish
+ * @brief DeathRayMotorControlNode controls the stepper motor to rotate the comms dish
  * 
  * Acts as an interface between the rotation commands and the GPIO output
  */
@@ -87,5 +86,3 @@ private:
     int position = 0;
     int steps = 0;
 };
-
-#endif
