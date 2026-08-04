@@ -10,6 +10,7 @@ find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED)
 
 # Where comms.h / device_ids.h live. Only the header is needed (we use the
@@ -39,6 +40,9 @@ add_executable(generic_can_hardware_interface src/generic_can_hardware_interface
 # target_link_libraries(generic_can_hardware_interface )?
 ament_target_dependencies(generic_can_hardware_interface rclcpp rover_msgs)
 
+add_executable(ptz_translator src/ptz_translator.cpp ${COMMS_DIR}/comms.c)
+ament_target_dependencies(ptz_translator rclcpp rover_msgs geometry_msgs)
+
 add_executable(lighting_translator
   src/lighting_translator.cpp
   ${COMMS_DIR}/comms.c
@@ -53,7 +57,8 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include/)
 
 #? Not too sure about this...
@@ -65,6 +70,7 @@ install(TARGETS
     moteus_driver
     generic_can_hardware_interface
     lighting_translator
+    ptz_translator
     DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(include)

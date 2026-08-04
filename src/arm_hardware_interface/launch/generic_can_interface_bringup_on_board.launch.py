@@ -56,14 +56,14 @@ def launch_setup(context, *args, **kwargs):
 
     if bring_up_interface:
         script_path = os.path.join(
-            get_package_share_directory("rover_can"), "launch", "can_bringup.sh")
+            get_package_share_directory("arm_hardware_interface"), "launch", "can_bringup.sh")
         actions.append(ExecuteProcess(
             cmd=build_can_setup_command(script_path, can_interface, config),
             output="screen"))
 
     actions.append(Node(
-        package="rover_can",
-        executable="can_node",
+        package="arm_hardware_interface",
+        executable="generic_can_hardware_interface",
         # Node name is unique per loop so two loops can run side by side.
         name="can_node_" + loop_name,
         output="screen",
@@ -83,7 +83,7 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
     default_config = os.path.join(
-        get_package_share_directory("rover_can"), "config", "can_loop.yaml")
+        get_package_share_directory("arm_hardware_interface"), "config", "can_loop_on_board.yaml")
 
     return LaunchDescription([
         DeclareLaunchArgument(

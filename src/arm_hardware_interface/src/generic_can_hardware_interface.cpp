@@ -22,6 +22,10 @@ CanNode::CanNode() : Node("generic_can_hardware_interface")
     const int qos_depth          = this->declare_parameter<int>("qos_depth", 15);
 
     if(can_interface == UNSET_CAN_NODE)
+    {
+            RCLCPP_FATAL(this->get_logger(), "You must launch me from a file and set my can node name");
+
+    }
 
     max_payload_bytes = enable_can_fd ? CANFD_MAX_DLEN : CAN_MAX_DLEN;
     topic_base = "/can/" + loop_name + "/";
