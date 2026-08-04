@@ -1584,14 +1584,6 @@ QJsonObject TilingContainer::currentLayoutJson() const {
         if (pi.panel->isVisible())
             visible.append(QString::fromStdString(pi.panel->title()));
     layout["visible"] = visible;
-    return layout;
-}
-
-void TilingContainer::saveCurrentLayout() {
-    QJsonObject layout = currentLayoutJson();
-    QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
-    layout["name"]     = ts;  // renameable later
-    layout["saved_at"] = ts;
 
     // Module-specific state (e.g. camera grid membership), keyed by title.
     QJsonObject modules;
@@ -1603,6 +1595,14 @@ void TilingContainer::saveCurrentLayout() {
     }
     if (!modules.isEmpty()) layout["modules"] = modules;
 
+    return layout;
+}
+
+void TilingContainer::saveCurrentLayout() {
+    QJsonObject layout = currentLayoutJson();
+    QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
+    layout["name"]     = ts;  // renameable later
+    layout["saved_at"] = ts;
     layout_store_.save(layout);
 }
 
