@@ -11,6 +11,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rover_utils REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -22,6 +24,9 @@ ament_target_dependencies(camera_pipeline_node rclcpp sensor_msgs)
 
 add_executable(dyn_cam_pipeline_node src/dyn_cam_pipeline_node.cpp)
 ament_target_dependencies(dyn_cam_pipeline_node rclcpp sensor_msgs)
+
+add_executable(fisheye_undistort_node src/on_board_fisheye_processing.cpp)
+ament_target_dependencies(fisheye_undistort_node rclcpp sensor_msgs cv_bridge OpenCV)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -47,6 +52,7 @@ install(
   TARGETS 
   camera_pipeline_node
   dyn_cam_pipeline_node
+  fisheye_undistort_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

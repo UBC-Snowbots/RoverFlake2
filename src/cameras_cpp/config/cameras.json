@@ -1,0 +1,20 @@
+{
+    "cameras": [
+        {
+            "name": "realsense415",
+            "params_file": "realsense415.yaml"
+        },
+        {
+            "name": "realsense435i",
+            "params_file": "realsense435i.yaml"
+        },
+        {
+            "name": "logitech",
+            "params_file": "logitech.yaml"
+        },
+        {
+            "name": "suyin",
+            "params_file": "suyin.yaml"
+        }
+    ]
+}

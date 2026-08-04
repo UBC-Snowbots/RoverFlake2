@@ -7,3 +7,9 @@
 [submodule "src/external_pkgs/moteus"]
 	path = src/external_pkgs/moteus
 	url = https://github.com/mjbots/moteus.git
+[submodule "src/external_pkgs/ffmpeg_image_transport"]
+	path = src/external_pkgs/ffmpeg_image_transport
+	url = https://github.com/ros-misc-utilities/ffmpeg_image_transport.git
+[submodule "src/external_pkgs/ffmpeg_encoder_decoder"]
+	path = src/external_pkgs/ffmpeg_encoder_decoder
+	url = https://github.com/ros-misc-utilities/ffmpeg_encoder_decoder.git
