@@ -127,10 +127,17 @@ int main(int argc, char* argv[]) {
     // and must be called before the window is shown.
     tiling->finalize();
 
+    // Wall identity: instance names this window (title prefix + topic scope).
+    const auto instance = node->declare_parameter<std::string>("instance", "");
+    const QString title_base = instance.empty()
+        ? QString("Rover HMI")
+        : QString("Rover HMI [%1]").arg(QString::fromStdString(instance));
+    window.setWindowTitle(title_base);
+
     // Window title follows the active layout / panel set.
-    tiling->onLayoutChanged = [&window](const QString& name) {
-        window.setWindowTitle(name.isEmpty() ? QString("Rover HMI")
-                                             : "Rover HMI — " + name);
+    tiling->onLayoutChanged = [&window, title_base](const QString& name) {
+        window.setWindowTitle(name.isEmpty() ? title_base
+                                             : title_base + " — " + name);
     };
 
     // Known panel titles, for validating panel-set requests.
@@ -177,6 +184,18 @@ int main(int argc, char* argv[]) {
     auto show_panels_sub = node->create_subscription<std_msgs::msg::String>(
         "/hmi/show_panels", 10,
         [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
+
+    // Per-instance control topics (wall mode): global topics above still apply
+    // to every window; these address just this one.
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr inst_layout_sub, inst_panels_sub;
+    if (!instance.empty()) {
+        inst_layout_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/" + instance + "/load_layout", 10,
+            [applyLayout](const std_msgs::msg::String& msg) { applyLayout(msg.data); });
+        inst_panels_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/" + instance + "/show_panels", 10,
+            [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
+    }
 
     window.setCentralWidget(tiling);
     window.resize(1600, 1000);
