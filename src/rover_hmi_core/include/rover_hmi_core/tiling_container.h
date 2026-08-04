@@ -177,11 +177,16 @@ protected:
 private:
     TilingContainer* tc_;
     std::vector<LayoutStore::Entry> snapshots_;
+    std::vector<LayoutStore::WallEntry> walls_;
     int focused_idx_   = 0;
     int scroll_offset_ = 0;
 
     bool    renaming_    = false;
     QString rename_buf_;
+
+    bool wallMode() const;
+    int  rowCount() const;
+    bool isWallRow(int idx) const;
 };
 
 
@@ -306,6 +311,16 @@ public:
 
     // Fired with the layout name after every successful layout load.
     std::function<void(const QString&)> onLayoutChanged;
+
+    // Wall mode (host sets these when an instance name is configured; both
+    // null in single-window mode — the overlay then shows no WALLS section).
+    std::function<void(const QString&)> onWallSaveRequested;
+    std::function<void(const QString&)> onWallLoadRequested;
+
+    // Current tree+visible state / apply a saved state. applyLayoutJson never
+    // fires onLayoutChanged — naming is the caller's concern.
+    QJsonObject currentLayoutJson() const;
+    void applyLayoutJson(const QJsonObject& layout);
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 
