@@ -24,8 +24,8 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
-    src/spectro_paths.cpp
     src/layout_store.cpp
+    src/spectro_paths.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
     include/rover_hmi_core/spectro_paths.h
@@ -68,6 +68,7 @@ add_library(rover_hmi_modules SHARED
     src/science/science_module.cpp
     src/science/science_pipeline_module.cpp
     src/science/science_analysis_module.cpp
+    src/science/science_sim_module.cpp
     src/science/python_runner.cpp
     src/science/spectrum_view.cpp
     src/science/spectrometer_module.cpp
