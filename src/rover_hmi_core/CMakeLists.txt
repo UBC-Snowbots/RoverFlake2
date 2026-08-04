@@ -147,6 +147,27 @@ if(BUILD_TESTING)
     target_include_directories(test_camera_config PRIVATE include)
     target_compile_definitions(test_camera_config PRIVATE
         ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
+    ament_add_gtest(motor_config_display_test
+        test/motor_config_display_test.cpp
+        src/arm/motor_config_module.cpp)
+    target_link_libraries(motor_config_display_test Qt5::Widgets)
+    target_include_directories(motor_config_display_test PRIVATE
+        include include/rover_hmi_core/arm)
+    ament_target_dependencies(motor_config_display_test
+        rclcpp rover_msgs std_msgs pluginlib rover_arm_common)
+    target_compile_definitions(motor_config_display_test PRIVATE
+        ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
+    ament_add_gtest(motor_status_display_test
+        test/motor_status_display_test.cpp
+        src/arm/motor_status_module.cpp
+        src/arm/driver_process.cpp)
+    target_link_libraries(motor_status_display_test Qt5::Widgets)
+    target_include_directories(motor_status_display_test PRIVATE
+        include include/rover_hmi_core/arm)
+    ament_target_dependencies(motor_status_display_test
+        rclcpp rover_msgs std_msgs pluginlib ament_index_cpp rover_arm_common)
 endif()
 
 ament_package()

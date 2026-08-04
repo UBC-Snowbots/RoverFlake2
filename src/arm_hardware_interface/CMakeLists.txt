@@ -31,6 +31,18 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  # Hardware-free conf-get regression test: drives the vendored moteus client
+  # against a scripted fdcanusb emulator on a pty (test/fdcanusb_emulator.py).
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(conf_get_path_test test/conf_get_path_test.cpp)
+  target_link_libraries(conf_get_path_test moteus::cpp)
+  ament_target_dependencies(conf_get_path_test rover_arm_common)
+  target_compile_definitions(conf_get_path_test PRIVATE
+    EMULATOR_PATH="${CMAKE_CURRENT_SOURCE_DIR}/test/fdcanusb_emulator.py")
+
+  # Pure-math test for the axis 5/6 differential wrist mapping.
+  ament_add_gtest(wrist_math_test test/wrist_math_test.cpp)
 endif()
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)

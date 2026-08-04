@@ -129,7 +129,15 @@ private:
     // Read the MotorConfig register set from one controller's flash/RAM via
     // "conf get" (guarded).  Fills flash_cfg_[m]; published in config[] so the
     // HMI Motor Params panel shows actual values, not assumed ones.
-    void readFlashConfig(int m);
+    // Read-only bus traffic (SetQuery + conf get) — never writes config.
+    // Returns true when a full register set was read.
+    bool readFlashConfig(int m);
+
+    // Service one pending flash-config read per interval, from run().  Reads
+    // are staggered (one motor at a time, only motors currently replying) so a
+    // full refresh never freezes the poll loop the way the old 7-motor
+    // blocking sweep did.
+    void serviceConfigReads();
 
 
     // Runs fn on a detached thread, waiting at most timeout_ms.  fn must only
@@ -172,6 +180,19 @@ private:
     std::string can_device_path_;        // resolved /dev/ttyACM* we opened
     std::array<std::map<std::string, float>, NUM_MOTORS> flash_cfg_;  // conf get results
     bool flash_cfg_valid_[NUM_MOTORS] = {};
+    // Staggered config reads (see serviceConfigReads): wanted = explicit
+    // refresh request; motors with !flash_cfg_valid_ are re-read automatically
+    // once they reply, so power-up order no longer matters.
+    std::array<bool, NUM_MOTORS>    cfg_read_wanted_{};
+    std::array<int64_t, NUM_MOTORS> cfg_read_last_ms_{};  // per-motor retry limiter
+    std::array<int, NUM_MOTORS>     cfg_read_fails_{};    // give up after 3; Refresh resets
+    int64_t cfg_read_gate_ms_ = 0;                        // global stagger gate
+    int     cfg_read_next_    = 0;                        // round-robin cursor
+    // In-flight sliced read: ONE register per poll tick so the 100 Hz loop
+    // (and therefore telemetry) never stalls more than a single conf get.
+    int         cfg_read_motor_ = -1;                     // -1 = idle
+    size_t      cfg_read_reg_   = 0;
+    std::map<std::string, float> cfg_read_accum_;
     int         silent_cycles_   = 0;    // consecutive polls with zero CAN replies
     int64_t     last_redetect_ns_ = 0;   // rate-limits re-detection attempts
 

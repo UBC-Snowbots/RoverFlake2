@@ -1,13 +1,43 @@
-# joint_limits.yaml allows the dynamics properties specified in the URDF to be overwritten or augmented as needed
+# Velocity/acceleration limits used by MoveIt for trajectory time-
+# parameterization.  Synced 2026-08-02 from the real arm's canonized caps in
+# rover_arm_common/motor_config.h (rev/s x 2pi -> rad/s), so simulated
+# trajectory timing matches what the hardware can actually follow.
+# Scaling factors are 1.0 because these ARE the real limits — downscale per
+# motion request if you want slower.
+default_velocity_scaling_factor: 1.0
+default_acceleration_scaling_factor: 1.0
 
-# For beginners, we downscale velocity and acceleration limits.
-# You can always specify higher scaling factors (<= 1.0) in your motion requests.  # Increase the values below to 1.0 to always move at maximum speed.
-default_velocity_scaling_factor: 0.1
-default_acceleration_scaling_factor: 0.1
-
-# Specific joint properties can be changed with the keys [max_position, min_position, max_velocity, max_acceleration]
-# Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
+  shoulder_joint:          # A1: 0.15 rev/s, 1.0 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.94
+    has_acceleration_limits: true
+    max_acceleration: 6.28
+  link_1_joint:            # A2: 0.03 rev/s, 0.5 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.19
+    has_acceleration_limits: true
+    max_acceleration: 3.14
+  link1_link2:             # A3: 0.05 rev/s, 0.5 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.31
+    has_acceleration_limits: true
+    max_acceleration: 3.14
+  a4_rotation:             # A4: 0.10 rev/s, 0.5 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.63
+    has_acceleration_limits: true
+    max_acceleration: 3.14
+  a5_rotation:             # A5: 0.15 rev/s, 2.0 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.94
+    has_acceleration_limits: true
+    max_acceleration: 12.57
+  a6_rotation:             # A6: 0.15 rev/s, 2.0 rev/s^2
+    has_velocity_limits: true
+    max_velocity: 0.94
+    has_acceleration_limits: true
+    max_acceleration: 12.57
   finger_left_joint:
     has_velocity_limits: true
     max_velocity: 1
@@ -16,35 +46,5 @@ joint_limits:
   finger_right_joint:
     has_velocity_limits: true
     max_velocity: 1
-    has_acceleration_limits: false
-    max_acceleration: 0
-  shoulder_joint:
-    has_velocity_limits: true
-    max_velocity: 1
-    has_acceleration_limits: false
-    max_acceleration: 0
-  link_1_joint:
-    has_velocity_limits: true
-    max_velocity: 1
-    has_acceleration_limits: false
-    max_acceleration: 0
-  link1_link2:
-    has_velocity_limits: true
-    max_velocity: 0.8
-    has_acceleration_limits: false
-    max_acceleration: 0
-  a4_rotation:
-    has_velocity_limits: true
-    max_velocity: 0.8
-    has_acceleration_limits: false
-    max_acceleration: 0
-  a5_rotation:
-    has_velocity_limits: true
-    max_velocity: 5
-    has_acceleration_limits: false
-    max_acceleration: 0
-  a6_rotation:
-    has_velocity_limits: true
-    max_velocity: 40
     has_acceleration_limits: false
     max_acceleration: 0

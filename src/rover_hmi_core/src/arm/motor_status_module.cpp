@@ -113,8 +113,11 @@ static const char* MODE_NAMES[] = {
     "Position",       // 10
     "TIMEOUT",        // 11
     "ZeroVelocity",   // 12
+    "Within",         // 13 stay_within_bounds
+    "MeasureInd",     // 14
+    "Brake",          // 15
 };
-static constexpr int NUM_MODES = 13;
+static constexpr int NUM_MODES = 16;
 
 QWidget* MotorStatusModule::createWidget(QWidget* parent) {
     auto* scroll = new QScrollArea(parent);
@@ -129,6 +132,9 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
 
     auto* widget = new QWidget();
     widget->setStyleSheet(QString("background: %1;").arg(theme::Bg));
+    dim_ = new QGraphicsOpacityEffect(widget);   // dims table when feedback stops
+    dim_->setOpacity(1.0);
+    widget->setGraphicsEffect(dim_);
     auto* grid = new QGridLayout(widget);
     grid->setSpacing(1);
     grid->setContentsMargins(2, 2, 2, 2);
@@ -165,7 +171,8 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
     }
 
     for (int r = 0; r < NUM_MOTORS; r++) {
-        row_labels_[r] = new QLabel(ARM_JOINTS[r].hardware_name);
+        // Telemetry rows are MOTORS (one CAN id each), not axes.
+        row_labels_[r] = new QLabel(QString("M%1").arg(r + 1));
         row_labels_[r]->setFont(monoBold);
         row_labels_[r]->setStyleSheet(
             QString("background: %1; color: %2; padding: 4px 6px; border: 1px solid %3;")
@@ -204,17 +211,25 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
     normal_ws.push_back(status_);
     setBanner("⏳ WAITING FOR ARM DRIVER — no telemetry yet", theme::TextDim, "#1a1a1a");
 
-    // Staleness watchdog: the CAN-health banner is only trustworthy while
-    // messages arrive; if they stop entirely the driver itself is down.
+    // Staleness watchdog: values on screen must never look fresher than they
+    // are — after 600 ms of silence the whole table dims and the banner says
+    // so; after 1.5 s the driver itself is presumed down.
     auto* stale = new QTimer(status_);
     QObject::connect(stale, &QTimer::timeout, [this]() {
-        if (last_msg_ms_ != 0 &&
-            QDateTime::currentMSecsSinceEpoch() - last_msg_ms_ > 1500)
+        const qint64 age = QDateTime::currentMSecsSinceEpoch() - last_msg_ms_;
+        if (last_msg_ms_ != 0 && age > 1500) {
+            if (dim_) dim_->setOpacity(0.35);
             setBanner("✖ ARM DRIVER OFFLINE — /arm/moteus_feedback stopped",
                       theme::Red, "#2a0d0d");
+        } else if (last_msg_ms_ != 0 && age > 600) {
+            if (dim_) dim_->setOpacity(0.35);
+            setBanner(QString("⚠ TELEMETRY STALE — last update %1 s ago, values frozen")
+                          .arg(age / 1000.0, 0, 'f', 1),
+                      theme::Yellow, "#2a2208");
+        }
         updateDriverBtn();
     });
-    stale->start(500);
+    stale->start(250);
     updateDriverBtn();
 
     // All columns equal stretch
@@ -250,6 +265,7 @@ static inline QString fmtF(float v, int prec, const char* nan_str = "--") {
 
 void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg) {
     if (!cells_[0][0]) return;
+    if (dim_) dim_->setOpacity(1.0);   // fresh data — undim
 
     int active = 0;
     for (int i = 0; i < NUM_MOTORS && i < (int)msg->status.size(); i++) {
@@ -298,11 +314,16 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
             {100, "FET TEMP"}, {101, "MTR TEMP"}, {102, "TRQ CAP"},
             {103, "POS BOUND"}, {104, "FLUX BRK"},
         };
+        // Stale rows keep their last-known text but never vivid colors — a
+        // dead motor must not display a bright green "OK".
+        const QString ok_fg  = s.connected ? QString(theme::Green)  : QString("#444444");
+        const QString lim_fg = s.connected ? QString(theme::Yellow) : QString("#444444");
+        const QString err_fg = s.connected ? QString(theme::Red)    : QString("#444444");
         if (s.moteus_fault == 0) {
             cells_[i][COL_FAULT]->setText("OK");
             cells_[i][COL_FAULT]->setStyleSheet(
                 QString("background: %1; color: %2; padding: 6px 10px; border: 1px solid %3;")
-                .arg(rowBg).arg(theme::Green).arg(theme::BorderDim));
+                .arg(rowBg).arg(ok_fg).arg(theme::BorderDim));
         } else if (limit_flag) {
             auto it = LIMIT_NAMES.find(s.moteus_fault);
             cells_[i][COL_FAULT]->setText(
@@ -310,19 +331,19 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
                                         : QString("LIM %1").arg(s.moteus_fault));
             cells_[i][COL_FAULT]->setStyleSheet(
                 QString("background: %1; color: %2; padding: 6px 10px; border: 1px solid %3;")
-                .arg(rowBg).arg(theme::Yellow).arg(theme::BorderDim));
+                .arg(rowBg).arg(lim_fg).arg(theme::BorderDim));
         } else {
             cells_[i][COL_FAULT]->setText(QString("ERR %1").arg(s.moteus_fault));
             cells_[i][COL_FAULT]->setStyleSheet(
                 QString("background: %1; color: %2; padding: 6px 10px;"
                         " border: 1px solid %3; font-weight: bold;")
-                .arg(rowBg).arg(theme::Red).arg(theme::BorderDim));
+                .arg(rowBg).arg(err_fg).arg(theme::BorderDim));
         }
 
         // ── Limit switch ─────────────────────────────────────────────────────
         bool lim = i < (int)msg->limit_switches.size() && msg->limit_switches[i];
         cells_[i][COL_LIMIT]->setText(lim ? "LIM" : "—");
-        cells_[i][COL_LIMIT]->setStyleSheet(lim
+        cells_[i][COL_LIMIT]->setStyleSheet(lim && s.connected
             ? QString("background: %1; color: %2; padding: 6px 10px;"
                       " border: 1px solid %3; font-weight: bold;")
                 .arg(rowBg).arg(theme::Red).arg(theme::BorderDim)
@@ -387,7 +408,7 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
     // missing, adapter present but bus silent, and partial replies.
     last_msg_ms_ = QDateTime::currentMSecsSinceEpoch();
     const QString dev = QString::fromStdString(msg->can_device);
-    const int expected = NUM_MOTORS - 1;  // A4 disabled
+    const int expected = NUM_MOTORS;   // all 7: M1-M6 + EE (stale "A4 disabled" -1 removed)
     (void)active;
     if (dev.isEmpty()) {
         setBanner("✖ NO FDCANUSB — USB adapter not found (check cable/port)",

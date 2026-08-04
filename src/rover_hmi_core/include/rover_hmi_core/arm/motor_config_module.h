@@ -51,18 +51,18 @@ public:
             { "Enter (New col)", "Confirm dialog: RAM / flash / cancel"   },
             { "Refresh",         "Re-read all values from controllers"    },
             { "Calibrate",       "Run Hall calibration for this motor"    },
-            { "Flash Defaults",  "Write motor_config.h defaults to all connected motors" },
         };
     }
 
     static constexpr int NUM_REGS = 12;   // 11 editable + gear (read-only)
 
+    static QString fmtVal(float v);       // table formatting; '?' for NaN
+
 private:
+    friend struct MotorConfigTestAccess;  // test seam (test/motor_config_display_test.cpp)
     void onFeedback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg);
     void refreshDisplay();                // repaint Default/Actual for selected motor
     void confirmAndApply(int reg_row);    // dialog + publish
-    void flashAllDefaults();              // confirm + queue defaults for connected motors
-    void pumpFlashQueue();                // paced sender: one register per tick
 
     QComboBox*   motor_sel_   = nullptr;
     QLabel*      defaults_[NUM_REGS] = {};
@@ -70,13 +70,7 @@ private:
     QLineEdit*   edits_[NUM_REGS]    = {};
     QPushButton* calib_btn_   = nullptr;
     QPushButton* calib_all_btn_ = nullptr;
-    QPushButton* flash_all_btn_ = nullptr;
     QLabel*      status_      = nullptr;
-
-    // Paced write queue for Flash Defaults (QoS depth is 1 — bursts drop).
-    std::vector<rover_msgs::msg::MoteusConfigUpdate> flash_queue_;
-    QTimer* flash_timer_ = nullptr;
-    int     flash_total_ = 0;
 
     rover_msgs::msg::MoteusArmStatus latest_;   // last feedback (config + connected)
     bool have_msg_ = false;

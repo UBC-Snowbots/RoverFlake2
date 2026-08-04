@@ -64,6 +64,14 @@ struct MotorConfig {
     // Stored here so the HMI can display it in the Motor Config panel.
     float gear_reduction = 1.0f;
 
+    // Datasheet identity (Maxon).  poles/kv feed calibration flags — these are
+    // PER MOTOR: calibrating with the wrong pole count mis-commutates the
+    // motor (low torque at max current, siren whine, angle-dependent gains).
+    int         poles             = 16;    // pole count (pole pairs x 2)
+    float       kv                = 265.0f;
+    float       nominal_current_A = 1.0f;  // continuous thermal rating
+    const char* part_no           = "?";
+
     // -------------------------------------------------------------------------
     // Helpers used by configureMotor()
     // -------------------------------------------------------------------------
@@ -120,12 +128,31 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     motors[3].gear_reduction = 1.0f / 190.0f;
     motors[4].gear_reduction = 1.0f /  66.0f;
     motors[5].gear_reduction = 1.0f /  66.0f;
+    motors[6].gear_reduction = 1.0f / 190.0f;   // EE
+
+    // --- Datasheet identity (bench notes / Maxon, 2026-08) ---
+    // A2/A3 are 22-pole kv=134 — calibration flags MUST come from here, not
+    // the old hardcoded 16/265 (that mis-commutates them).
+    // A4 corrected 2026-08-03: it is a 200142 (EC 45 flat 30 W, 12 V,
+    // 2.14 A nominal), not a 339281 — its 30 W power cap IS the motor's
+    // rating. kv ~364 derived from 4370 rpm @ 12 V nominal; verify against
+    // the datasheet speed constant before calibrating A4.
+    const char* parts[NUM_MOTORS] = {"339281","607942","515458","200142","651607","651607","339281"};
+    const int   poles[NUM_MOTORS] = { 16,      22,      22,      16,      16,      16,      16     };
+    const float kvs  [NUM_MOTORS] = { 265,     134,     134,     364,     265,     265,     265    };
+    const float noms [NUM_MOTORS] = { 1.01f,   9.5f,    6.44f,   2.14f,   2.52f,   2.52f,   1.01f  };
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        motors[i].part_no = parts[i];
+        motors[i].poles   = poles[i];
+        motors[i].kv      = kvs[i];
+        motors[i].nominal_current_A = noms[i];
+    }
 
     // --- Current limits (A) ---
-    motors[0].max_current_A =  3.0f;   // raised from 2.0 on bench 2026-08-02: A1 stalled at 2 A
+    motors[0].max_current_A =  2.0f;   // back to 2.0 (2026-08-03); was 3.0 after the 08-02 stall
     motors[1].max_current_A = 14.0f;
     motors[2].max_current_A = 14.0f;
-    motors[3].max_current_A =  0.3f;
+    motors[3].max_current_A =  2.0f;   // 200142 nominal 2.14 A; 0.3 starved it (bench 2026-08-03)
     motors[4].max_current_A =  2.0f;
     motors[5].max_current_A =  2.0f;
 

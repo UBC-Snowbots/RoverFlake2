@@ -102,7 +102,14 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     config_refresh_sub_ = this->create_subscription<std_msgs::msg::Empty>(
         "/arm/config_refresh", qos,
         [this](const std_msgs::msg::Empty::SharedPtr) {
-            for (int m = 0; m < NUM_MOTORS; m++) readFlashConfig(m);
+            // Enqueue only — run() services one motor at a time so a refresh
+            // never freezes the poll loop (the old inline 7-motor sweep here
+            // starved the feedback heartbeat and read as "driver offline").
+            for (int m = 0; m < NUM_MOTORS; m++) {
+                cfg_read_wanted_[m]  = true;
+                cfg_read_last_ms_[m] = 0;   // bypass the retry limiter
+                cfg_read_fails_[m]   = 0;   // give given-up motors another chance
+            }
         });
         
         // TODO Calibration in a future PR
@@ -199,10 +206,19 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     std::lock_guard<std::mutex> lock(cmd_mutex_);
     char cmd_type = msg->cmd_type;
 
+    const bool motor_space = (msg->cmd_value == CMD_SPACE_MOTOR);
+
     if (cmd_type == CMD_STOP) {
-        for (int a = 0; a < NUM_AXES; a++) { pending_axis_cmds_[a].active = true;
-                                             pending_axis_cmds_[a].is_stop = true; }
-        RCLCPP_INFO(this->get_logger(), "Command: STOP ALL");
+        // positions[] empty = stop all (legacy); else non-NaN entries select.
+        const bool masked = !msg->positions.empty();
+        for (int a = 0; a < NUM_AXES; a++) {
+            if (masked && (a >= (int)msg->positions.size()
+                           || std::isnan(msg->positions[a]))) continue;
+            pending_axis_cmds_[a].active = true;
+            pending_axis_cmds_[a].is_stop = true;
+            pending_axis_cmds_[a].motor_space = motor_space;
+        }
+        RCLCPP_INFO(this->get_logger(), "Command: STOP %s", masked ? "selected" : "ALL");
         return;
     }
 
@@ -213,6 +229,7 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             if (std::isnan(pos) && std::isnan(vd)) continue;
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
+            p.motor_space = motor_space;
             p.position = pos;
             const double cap = (double)AxisConfig::max_running_speed[a];
             if (std::isnan(pos)) {
@@ -237,6 +254,7 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
             if (std::isnan(vd)) continue; // Was breaking?
             auto& p = pending_axis_cmds_[a];
             p.active = true; p.is_stop = false; p.is_zero = false;
+            p.motor_space = motor_space;
             p.position = NAN;
             // Clamp INTO the per-frame velocity_limit we send alongside —
             // commanding past it makes the firmware chase an impossible
@@ -327,10 +345,18 @@ void MoteusDriverNode::run() {
     heartbeat_ms_ = steadyMs();
     if (calibrating_.load()) return;
     if (!transport_) {
-        // No fdcanusb — still publish so the HMI can show the link state
+        // No fdcanusb — still publish so the HMI can show the link state.
+        // Config must be NaN, not default zeros: zeros render as confident
+        // "kp=0" readings in the HMI (audit finding).
         rover_msgs::msg::MoteusArmStatus msg;
         msg.status.resize(NUM_AXES);
         msg.config.resize(NUM_AXES);
+        for (auto& fc : msg.config) {
+            fc.max_acceleration = fc.max_velocity = fc.min_position =
+            fc.max_position = fc.kp = fc.ki = fc.kd = fc.max_current_amps =
+            fc.max_voltage_volts = fc.max_power_watts = fc.cmd_timeout_s =
+            fc.gear_reduction = NAN;
+        }
         msg.limit_switches.resize(NUM_AXES);
         msg.can_device = "";
         msg.motors_replying = 0;
@@ -348,27 +374,27 @@ void MoteusDriverNode::run() {
         return;
     }
 
-    // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
-    for (auto& c : axis_cmds_) c.active = false;
+    // ── Stage 0: fresh axis_cmds_ every cycle — FULL reset, not just active:
+    //    a lingering is_stop on the idle wrist axis would make the coherence
+    //    stage turn every later wrist command back into a stop.
+    for (auto& c : axis_cmds_) c = MotorCommand{};
 
     // ── Stage 1: intake — ROS -> axis_cmds_ (only for axes the SM doesn't own)
-    bool stop_all = false;
+    // A stop always lands, per axis: it aborts that axis's homing if the SM
+    // owns it. A stop-all from the wire arrives as a stop on every axis.
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
         for (int a = 0; a < NUM_AXES; a++) {
             auto& p = pending_axis_cmds_[a];
             if (!p.active) continue;
-            if (p.is_stop)                              stop_all = true;
+            if (p.is_stop) {
+                axis_cmds_[a] = p;
+                if (stateMachineOwns(axes[a].state)) axes[a].state = AxisState::RUNNING_OK; // abort homing
+                homing_group_[a] = false;
+            }
             else if (!stateMachineOwns(axes[a].state))  axis_cmds_[a] = p;
         }
         pending_axis_cmds_ = {};
-    }
-    if (stop_all) {
-        for (int a = 0; a < NUM_AXES; a++) {
-            axis_cmds_[a].active = true; axis_cmds_[a].is_stop = true;
-            if (stateMachineOwns(axes[a].state)) axes[a].state = AxisState::RUNNING_OK; // abort homing
-            homing_group_[a] = false;
-        }
     }
 
     // ── Stage 1.5: limit switch soft-block — clamp intake motion toward a
@@ -403,7 +429,8 @@ void MoteusDriverNode::run() {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
                 homing_group_[i] = false;
-            } else if (!telem_[i].connected || telem_[i].fault != 0) {
+            } else if (!telem_[i].connected
+                       || (telem_[i].fault != 0 && telem_[i].fault < 96)) {  // limit codes aren't faults
                 RCLCPP_WARN(this->get_logger(),
                     "Axis %d motor %s — homing denied (would stall the group)",
                     i + 1, telem_[i].connected ? "faulted" : "not replying");
@@ -503,10 +530,14 @@ void MoteusDriverNode::run() {
 
     // ── Stage 3: wrist coherence — make axes 4&5 same mode + shared limits ──
     // Physically the two motors always move as a pair, so one shared vel/accel.
+    // Motor-space commands (bench use) bypass coherence + transform entirely.
+    const bool raw_wrist =
+        (axis_cmds_[AXIS_5_INDEX].active && axis_cmds_[AXIS_5_INDEX].motor_space)
+     || (axis_cmds_[AXIS_6_INDEX].active && axis_cmds_[AXIS_6_INDEX].motor_space);
     {
         auto& a5 = axis_cmds_[AXIS_5_INDEX];
         auto& a6 = axis_cmds_[AXIS_6_INDEX];
-        if (a5.active || a6.active) {
+        if (!raw_wrist && (a5.active || a6.active)) {
             if (a5.is_stop || a6.is_stop) {
                 a5.active = a6.active = true; 
                 a5.is_stop = a6.is_stop = true;
@@ -542,17 +573,17 @@ void MoteusDriverNode::run() {
 
     // ── Stage 4: THE transform — axis_cmds_ -> motor_cmds_ (only crossing point)
     for (int m = 0; m < NUM_MOTORS; m++)
-    {
-
         if (m != AXIS_5_INDEX && m != AXIS_6_INDEX)
-        {
             motor_cmds_[m] = axis_cmds_[m];   // straight-through
-            continue;
-        } 
-    combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
-
-    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
-    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
+    if (raw_wrist) {
+        motor_cmds_[AXIS_5_INDEX] = axis_cmds_[AXIS_5_INDEX];   // raw motor commands
+        motor_cmds_[AXIS_6_INDEX] = axis_cmds_[AXIS_6_INDEX];
+    } else {
+        combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
+        if (motor_cmds_[AXIS_5_INDEX].active)
+            RCLCPP_INFO(this->get_logger(), "Axis 5/6 -> motor space  VEL: %0.3f %0.3f -> %0.3f %0.3f  POS: %0.3f %0.3f -> %0.3f %0.3f",
+                axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity,
+                axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
     }
     // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
     for (int m = 0; m < NUM_MOTORS; m++) {
@@ -704,7 +735,11 @@ void MoteusDriverNode::run() {
     joint_state_pub_->publish(js);
 
     // ── Stage 9: safety ─────────────────────────────────────────────────────
+    checkFaults();   // was dead code — never called — since the pipeline rework
     checkAlerts();
+
+    // ── Stage 10: at most one staggered flash-config read (conf get only) ───
+    serviceConfigReads();
 }
 
 
@@ -718,14 +753,23 @@ void MoteusDriverNode::checkFaults() {
         if (!t.connected) continue;
 
         if (t.fault != last_fault_[i]) {
-            if (t.fault != 0) {
+            // Codes >=96 are per-cycle limit indications (self-clear when the
+            // limiter stops clamping) — not latched faults; they flicker, so
+            // throttle and never claim commands are blocked.
+            const bool limit_now  = t.fault >= 96;
+            const bool limit_prev = last_fault_[i] >= 96;
+            if (t.fault != 0 && !limit_now) {
                 RCLCPP_ERROR(this->get_logger(),
                     "Motor %d (%s) FAULT! Code: %d — commands blocked until STOP sent",
                     i + 1, ARM_JOINTS[i].hardware_name, t.fault);
                 publishLog("# FAULT motor " + std::to_string(i + 1)
                     + " (" + ARM_JOINTS[i].hardware_name
                     + ") code=" + std::to_string(t.fault));
-            } else if (last_fault_[i] != 0) {
+            } else if (limit_now) {
+                RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                    "Motor %d (%s) output limited (code %d) — self-clears when demand drops",
+                    i + 1, ARM_JOINTS[i].hardware_name, t.fault);
+            } else if (last_fault_[i] != 0 && !limit_prev) {
                 RCLCPP_INFO(this->get_logger(),
                     "Motor %d (%s) fault cleared", i + 1, ARM_JOINTS[i].hardware_name);
                 publishLog("# Motor " + std::to_string(i + 1)
@@ -861,7 +905,10 @@ void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, floa
 //   2. Wait 50 ms for any in-flight BlockingCycle to finish
 //   3. Release transport_ and controllers_ so the CAN socket is closed
 //   4. Run: python3 -m moteus.moteus_tool -t <id>
-//              --calibrate --cal-motor-poles 16 --cal-force-kv 265 --cal-hal
+//              --calibrate --cal-motor-poles <configs_[id-1].poles>
+//              --cal-force-kv <configs_[id-1].kv> [--cal-hal for hall motors]
+//      PER MOTOR from MotorConfig — A2/A3 are 22-pole kv=134; the old
+//      hardcoded 16/265 mis-commutated them (low torque at max current).
 //   5. Re-create transport_ + controllers_
 //   6. conf set motor_position.sources.0.type type.hall:4
 //   7. conf save
@@ -915,11 +962,14 @@ void MoteusDriverNode::reInitTransport() {
         opts.position_format.accel_limit    = mot::kFloat;  
         controllers_.push_back(std::make_shared<mot::Controller>(opts));
     }
-    for (int m = 0; m < NUM_MOTORS; m++) { flash_cfg_valid_[m] = false; readFlashConfig(m); }
+    // No blocking config sweep here — mark everything wanted and let
+    // serviceConfigReads() repopulate one motor at a time. Displayed values
+    // stay (they belong to the motors, not the link that just reopened).
+    for (int m = 0; m < NUM_MOTORS; m++) cfg_read_wanted_[m] = true;
 }
 
-void MoteusDriverNode::readFlashConfig(int m) {
-    if (m >= (int)controllers_.size()) return;
+bool MoteusDriverNode::readFlashConfig(int m) {
+    if (m >= (int)controllers_.size()) return false;
     auto ctrl = controllers_[m];
     auto regs = std::make_shared<std::vector<std::string>>();
     for (const auto& [reg, val] : configs_[m].get_configs()) regs->push_back(reg);
@@ -929,20 +979,116 @@ void MoteusDriverNode::readFlashConfig(int m) {
         // SetQuery gates on liveness: DiagnosticCommand to an absent motor
         // would hang and cost us the whole transport via the guard.
         if (!ctrl->SetQuery()) return;
+        ctrl->DiagnosticCommand("tel stop");  // kill tview stream leftovers
         ctrl->DiagnosticFlush();   // drop stale lines or every reply shifts by one
         for (const auto& reg : *regs) {
             // conf get answers a bare value line with no trailing OK
             const std::string raw = ctrl->DiagnosticCommand(
                 "conf get " + reg, mot::Controller::kExpectSingleLine);
-            (*out)[reg] = std::strtof(raw.c_str(), nullptr);
+            // Empty = timed out (its late reply would shift every later
+            // register); non-numeric/ERR = garbled. Abort — half-read sets
+            // must never be published as valid.
+            char* end = nullptr;
+            const float v = std::strtof(raw.c_str(), &end);
+            if (raw.empty() || end == raw.c_str() || raw.rfind("ERR", 0) == 0) {
+                out->clear();
+                ctrl->DiagnosticFlush(1, 0.1);
+                return;
+            }
+            (*out)[reg] = v;
             if (dbg_raw) *dbg_raw = raw;   // last raw reply, for the debug log
         }
     }, 4000);
-    if (!ok || out->empty()) return;
+    if (!ok || out->empty()) return false;
     RCLCPP_DEBUG(this->get_logger(), "M%d conf get raw sample: '%s'",
                  m + 1, dbg_raw ? dbg_raw->c_str() : "");
     flash_cfg_[m] = *out;
     flash_cfg_valid_[m] = true;
+    return true;
+}
+
+// Sliced flash-config reader — called from run() after the telemetry decode.
+// Does at most ONE bus transaction per poll tick (liveness+flush to start a
+// motor, then a single conf get per tick), so telemetry never freezes: the
+// old whole-motor read blocked the loop up to 4 s and the HMI kept painting
+// stale values as live. conf get only; this path never writes to a motor.
+void MoteusDriverNode::serviceConfigReads() {
+    const int64_t now = steadyMs();
+
+    if (cfg_read_motor_ < 0) {   // idle — pick the next motor that needs a read
+        if (now < cfg_read_gate_ms_) return;
+        for (int i = 0; i < NUM_MOTORS; i++) {
+            const int m = (cfg_read_next_ + i) % NUM_MOTORS;
+            if (!(cfg_read_wanted_[m] || !flash_cfg_valid_[m])) continue;
+            if (!telem_[m].connected) continue;                  // never wait on ghosts
+            if (now - cfg_read_last_ms_[m] < 5000) continue;     // failed read: retry later
+            if (cfg_read_fails_[m] >= 3 && !cfg_read_wanted_[m]) continue;  // gave up; Refresh resets
+            cfg_read_last_ms_[m] = now;
+            auto ctrl  = controllers_[m];
+            auto alive = std::make_shared<bool>(false);
+            if (!guardTransport([ctrl, alive]() {
+                    try {
+                        *alive = !!ctrl->SetQuery();
+                        if (*alive) {
+                            ctrl->DiagnosticCommand("tel stop");     // kill tview stream leftovers
+                            ctrl->DiagnosticFlush(1, 0.05);          // drain stale lines
+                        }
+                    } catch (...) {}
+                }, 1000)) return;                                // transport abandoned
+            if (!*alive) { cfg_read_gate_ms_ = steadyMs() + 250; return; }
+            cfg_read_motor_ = m; cfg_read_reg_ = 0; cfg_read_accum_.clear();
+            cfg_read_next_  = m + 1;
+            return;
+        }
+        return;
+    }
+
+    // Mid-read: one register this tick.
+    const int  m    = cfg_read_motor_;
+    const auto regs = configs_[m].get_configs();
+    if (cfg_read_reg_ < regs.size()) {
+        auto ctrl = controllers_[m];
+        const std::string reg = regs[cfg_read_reg_].first;
+        auto out = std::make_shared<std::pair<bool, float>>(false, NAN);
+        if (!guardTransport([ctrl, reg, out]() {
+                try {
+                    const std::string raw = ctrl->DiagnosticCommand(
+                        "conf get " + reg, mot::Controller::kExpectSingleLine);
+                    // Validate hard (test-proven failure modes): a timed-out
+                    // command returns "" (strtof would fake 0.0), and its LATE
+                    // reply then shifts every later register by one. Reject
+                    // empty/non-numeric/ERR lines and drain the stragglers so
+                    // the retry starts clean.
+                    char* end = nullptr;
+                    const float v = std::strtof(raw.c_str(), &end);
+                    if (!raw.empty() && end != raw.c_str() && raw.rfind("ERR", 0) != 0)
+                        *out = {true, v};
+                    else
+                        ctrl->DiagnosticFlush(1, 0.1);
+                } catch (...) {}
+            }, 1000)) { cfg_read_motor_ = -1; return; }
+        if (!out->first) {   // register read failed — abort this motor's pass
+            cfg_read_motor_ = -1;
+            cfg_read_gate_ms_ = steadyMs() + 250;
+            if (++cfg_read_fails_[m] >= 3) {
+                cfg_read_wanted_[m] = false;
+                RCLCPP_WARN(this->get_logger(),
+                    "M%d flash-config read failed 3x — giving up until next refresh", m + 1);
+            }
+            return;
+        }
+        cfg_read_accum_[reg] = out->second;
+        cfg_read_reg_++;
+        return;
+    }
+
+    // All registers in — commit atomically (never publish a half-read set).
+    flash_cfg_[m]       = cfg_read_accum_;
+    flash_cfg_valid_[m] = true;
+    cfg_read_wanted_[m] = false;
+    cfg_read_fails_[m]  = 0;
+    cfg_read_motor_     = -1;
+    cfg_read_gate_ms_   = now + 250;
 }
 
 bool MoteusDriverNode::guardTransport(std::function<void()> fn, int timeout_ms) {
@@ -1055,9 +1201,9 @@ void MoteusDriverNode::runCalibration(int motor_can_id) {
     //     "python3 -u -m moteus.moteus_tool"
     //     " -t " + std::to_string(motor_can_id) +
     //     " --calibrate"
-    //     " --cal-motor-poles 16"
-    //     " --cal-force-kv 265"
-    //     " --cal-hal"
+    //     " --cal-motor-poles " + std::to_string(configs_[motor_can_id - 1].poles) +
+    //     " --cal-force-kv "    + std::to_string(configs_[motor_can_id - 1].kv) +
+    //     " --cal-hal"   // only for hall motors (A5/A6); magnetic-encoder motors omit
     //     " 2>&1";  // merge stderr so we see errors too
 
     // publishCalibStatus(motor_can_id, 1,

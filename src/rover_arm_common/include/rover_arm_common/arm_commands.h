@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cmath>  // NAN
+#include <cmath>    // NAN
+#include <cstdint>  // int16_t
 
 // =============================================================================
 // Arm Command Types  (arm_commands.h)
@@ -28,10 +29,13 @@
 // Command codes — carried in rover_msgs::msg::ArmCommand::cmd_type
 // -----------------------------------------------------------------------------
 //TODO deshittify this into an enumerator or smt. Or static assert that none can equal eachother
-// Stop all motors immediately.
+// Stop motors immediately ("d stop" — a real moteus stop frame).
 //   - Motor enters kStopped mode → no torque, no position hold (goes limp).
 //   - Always accepted, even when a fault is active.
 //   - Clears fault-blocking so motion commands can resume afterwards.
+//   Selection: positions[] empty → stop ALL motors (legacy senders unchanged).
+//   positions[] present → stop only motors whose entry is non-NaN; others
+//   keep whatever they were doing.
 constexpr char CMD_STOP    = 'S';
 
 // Absolute position command.
@@ -60,6 +64,14 @@ constexpr char CMD_FORCE_HOME = 'F';
 
 constexpr char CMD_COMMS = 'C';
 
+// Command space selector — carried in ArmCommand::cmd_value for P/V/S commands.
+// Axes 5/6 are a coupled differential wrist: in axis space (the default) the
+// driver mixes their commands through the differential transform. Motor space
+// bypasses the transform so indices 5/6 address the raw motors — bench use
+// only. Indices 1-4 and 7 are 1:1 either way.
+constexpr int16_t CMD_SPACE_AXIS  = 0;   // default — wire value when unset
+constexpr int16_t CMD_SPACE_MOTOR = 1;
+
 #define HOME_VALUE_ALL_AXES_EXCEPT_EE 0xAA
 #define HOME_VALUE_ALL_AXES_AND_EE    0xAE
 // Home a chosen set of axes: positions[] lists 0-based axis indices, e.g. [0, 1, 2]
@@ -76,6 +88,7 @@ constexpr char CMD_COMMS = 'C';
 struct MotorCommand {
     bool   active     = false;  // true → there is something to send this cycle
     bool   is_stop    = false;  // true → send MakeStop; overrides everything
+    bool   motor_space = false; // true → indices 5/6 bypass the wrist transform
     bool   is_zero    = false;  // true → send "d exact 0" (re-home in place); one-shot
     double position   = 0.0;   // output-shaft revolutions  (NaN = no position target)
     double velocity   = 0.0;   // output-shaft rev/s        (NaN = use motion profile)
