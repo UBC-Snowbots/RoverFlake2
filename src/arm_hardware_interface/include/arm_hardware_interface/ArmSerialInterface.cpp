@@ -25,7 +25,6 @@
 
 using std::string;
 
-//! OLD AND CURRENTLY UNUSED. THIS IS FOR THE OLD ARM.
 class ArmSerial : public rclcpp::Node {
 public:
   ArmSerial();

@@ -5,9 +5,6 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "controller_config.h"
-#include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
-#include <rover_arm_common/motor_config.h>
-#include <rover_arm_common/motor_addressing.h>
 
 #include <unordered_map>
 #include <string>
@@ -51,7 +48,7 @@ static bool btnPressed(const sensor_msgs::msg::Joy::SharedPtr& msg, int idx);
 
 
 bool fk = true; // Decides if joystick outputs forward kinematics or inverse
-ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::PS4_JOY_LINUX_ANDRES;
+ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::SWITCH_PRO_CONTROLLER;
 ArmControllerConfig::ArmControlInput last_control_input = {};
 
 
@@ -60,19 +57,17 @@ ArmControllerConfig::ArmControlInput last_control_input = {};
 bool gripper_open_ = false;
 bool prev_gripper_btn_ = false;
 
-bool prev_home_btn_ = false;
-
 // ========== Servo → Physical Arm Bridge ==========
 // Maps URDF joint names (from MoveIt Servo) to firmware axis indices (0-5).
 std::unordered_map<std::string, int> urdf_to_axis_;
 // Axis direction multipliers matching armControlParams.h ArmConstants::axis_dirs.
 // Needed to convert between MoveIt (rad/s) and firmware (deg/s) frames.
-static constexpr int AXIS_DIR[NUM_AXES - 1] = {1, 1, 1, 1, -1, -1}; // AXIS EE IDK
+static constexpr int AXIS_DIR[NUM_JOINTS] = {1, 1, 1, 1, -1, -1};
 
 struct Axis{
     float position = 00.00;
     float velocity = 00.00;
     bool homed = 0;
 };
-Axis axes[NUM_AXES];
+Axis axes[NUM_JOINTS];
 };

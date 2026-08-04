@@ -1,5 +1,5 @@
 #include <RoverHMI.h>
-#include <rover_arm_common/arm_commands.h>
+
 
 int main(int argc, char* argv[]){
 
@@ -43,7 +43,6 @@ void MainHMINode::moteusDebugFeedbackCallback(const rover_msgs::msg::MoteusArmSt
         
         this->axis_torque_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_torque, 1));
         this->axis_driver_temp_label[i]->set_label(floatToStringTruncate(msg->status[i].driver_temp_degreesc, 1));
-        this->axis_limit_switch_label[i]->set_label((msg->limit_switches[i] ? "OPEN" : "CLOSED"));
         this->axis_current_label[i]->set_label(floatToStringTruncate(msg->status[i].curr_current_amps, 2));
 
     }
@@ -153,8 +152,8 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
 
 void MainHMINode::handleHomeAllButtonClick(){
     rover_msgs::msg::ArmCommand home_msg;
-    home_msg.cmd_type = CMD_HOME;
-    home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
+    home_msg.cmd_type = 'h';
+    home_msg.cmd_value = HOME_ALL_ID;
     arm_cmd_pub->publish(home_msg);
     RCLCPP_WARN(this->get_logger(), "Home all button clicked!");
     // RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
@@ -163,9 +162,9 @@ void MainHMINode::handleHomeAllButtonClick(){
 
 void MainHMINode::handleIncAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = CMD_ABS_VEL;
-    vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+    vel_msg.cmd_type = ABS_VEL_CMD;
+    vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
@@ -182,9 +181,9 @@ void MainHMINode::handleIncAxisButtonClick(int index){
 
 void MainHMINode::handleAxisButtonRelease(){
     rover_msgs::msg::ArmCommand vel_msg;
-    vel_msg.cmd_type = CMD_ABS_VEL;
-    vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+    vel_msg.cmd_type = ABS_VEL_CMD;
+    vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
         vel_msg.velocities[i] = 0;
     }
     arm_cmd_pub->publish(vel_msg);
@@ -291,22 +290,20 @@ void MainHMINode::handleIKButtonRelease(){
 void MainHMINode::handleDecEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+        vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0;
     }
-    vel_msg.velocities[6] = -40;
     vel_msg.end_effector = ee_speed * -1;
     arm_cmd_pub->publish(vel_msg);
 }
 void MainHMINode::handleIncEEButtonClick(){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+        vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0;
     }
-    vel_msg.velocities[6] = 40;
     vel_msg.end_effector = ee_speed;
     arm_cmd_pub->publish(vel_msg);
 }
@@ -316,8 +313,8 @@ void MainHMINode::handleIncEEButtonClick(){
 void MainHMINode::handleDecAxisButtonClick(int index){
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-        vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+        vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
         if(index != i){
             vel_msg.velocities[i] = 0;
         }else{
@@ -349,8 +346,8 @@ void MainHMINode::handleIKSpeedUpdate(int i) {
 void MainHMINode::handleArmAbortButtonClick(){ //! abort arm logic
     rover_msgs::msg::ArmCommand vel_msg;
     vel_msg.cmd_type = 'V';
-            vel_msg.velocities.resize(7);
-    for(int i = 0; i < 7; i++){
+            vel_msg.velocities.resize(6);
+    for(int i = 0; i < 6; i++){
             vel_msg.velocities[i] = 0; //just zero velocity for now. in the future firmware should have a specific call if we need like an abort sequence
     }
     vel_msg.end_effector = 0;
