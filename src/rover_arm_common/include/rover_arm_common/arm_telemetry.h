@@ -58,5 +58,6 @@ struct MotorTelem {
                             //   33 = CalibrationFault
                             //   (full list in mjbots/moteus documentation)
 
+    bool  limit_switch = false; // Limit switch state (1 = pressed / wire broken)
     bool  connected   = false; // Did we receive a reply this poll cycle?
 };
