@@ -1,5 +1,6 @@
 #include <rover_hmi_core/layout_store.h>
 
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -24,8 +25,8 @@ static QString resolvePackageDir() {
     return {};
 }
 
-// "Arm Teleop" → "arm-teleop"; appends -2, -3… on collision (except `keep`)
-static QString slugFor(const QString& name, const QDir& dir, const QString& keep = {}) {
+// "Arm Teleop" → "arm-teleop"
+static QString slugify(const QString& name, const QString& fallback) {
     QString slug;
     for (QChar c : name.toLower()) {
         if (c.isLetterOrNumber()) slug += c;
@@ -33,7 +34,12 @@ static QString slugFor(const QString& name, const QDir& dir, const QString& keep
     }
     while (slug.endsWith('-')) slug.chop(1);
     while (slug.startsWith('-')) slug.remove(0, 1);
-    if (slug.isEmpty()) slug = "layout";
+    return slug.isEmpty() ? fallback : slug;
+}
+
+// "Arm Teleop" → "arm-teleop"; appends -2, -3… on collision (except `keep`)
+static QString slugFor(const QString& name, const QDir& dir, const QString& keep = {}) {
+    QString slug = slugify(name, "layout");
 
     QString candidate = slug;
     for (int i = 2; dir.exists(candidate + ".json") && candidate + ".json" != keep; ++i)
@@ -102,5 +108,103 @@ bool LayoutStore::rename(const QString& file_path, const QString& new_name) {
     QString new_path = dir_ + "/" + slugFor(new_name, QDir(dir_), old_file) + ".json";
     if (!writeJson(new_path, obj)) return false;
     if (new_path != file_path) QFile::remove(file_path);
+    return true;
+}
+
+static const char* WALLS_SUBDIR = "walls";
+
+// Display name of a wall dir: "wall" field of any member, else dir basename.
+static QString wallDisplayName(const QString& wall_dir) {
+    for (const QFileInfo& fi : QDir(wall_dir).entryInfoList({"*.json"}, QDir::Files, QDir::Name)) {
+        QFile f(fi.absoluteFilePath());
+        if (!f.open(QIODevice::ReadOnly)) continue;
+        QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+        if (doc.isObject() && doc.object().contains("wall"))
+            return doc.object()["wall"].toString();
+    }
+    return QFileInfo(wall_dir).fileName();
+}
+
+// Deterministic name→dir: racing instances must all resolve one wall name to
+// one directory. An existing wall with the name wins; else the plain slug,
+// suffixed only while a differently-named wall occupies it.
+QString LayoutStore::wallDirFor(const QString& wall_name) const {
+    if (dir_.isEmpty()) return {};
+    QDir walls(dir_ + "/" + WALLS_SUBDIR);
+    for (const QFileInfo& fi : walls.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name))
+        if (wallDisplayName(fi.absoluteFilePath()) == wall_name)
+            return fi.absoluteFilePath();
+
+    QString slug = slugify(wall_name, "wall");
+    QString candidate = slug;
+    for (int i = 2; walls.exists(candidate) &&
+                    wallDisplayName(walls.absoluteFilePath(candidate)) != wall_name; ++i)
+        candidate = slug + "-" + QString::number(i);
+    return walls.absoluteFilePath(candidate);
+}
+
+std::vector<LayoutStore::WallEntry> LayoutStore::listWalls() const {
+    std::vector<WallEntry> out;
+    if (dir_.isEmpty()) return out;
+    for (const QFileInfo& fi : QDir(dir_ + "/" + WALLS_SUBDIR)
+             .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name)) {
+        WallEntry e;
+        e.dir_path = fi.absoluteFilePath();
+        e.name     = wallDisplayName(e.dir_path);
+        for (const QFileInfo& mf : QDir(e.dir_path).entryInfoList({"*.json"}, QDir::Files)) {
+            QFile f(mf.absoluteFilePath());
+            if (!f.open(QIODevice::ReadOnly)) continue;
+            QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+            if (doc.isObject())
+                e.saved_at = std::max(e.saved_at, doc.object()["saved_at"].toString());
+        }
+        out.push_back(std::move(e));
+    }
+    std::stable_sort(out.begin(), out.end(),
+                     [](const WallEntry& a, const WallEntry& b) { return a.saved_at < b.saved_at; });
+    return out;
+}
+
+bool LayoutStore::saveWallInstance(const QString& wall_name, const QString& instance,
+                                   const QJsonObject& layout) {
+    if (!writable()) return false;
+    QString wdir = wallDirFor(wall_name);
+    if (wdir.isEmpty() || !QDir().mkpath(wdir)) return false;
+    QJsonObject obj = layout;
+    obj["wall"]     = wall_name;
+    obj["saved_at"] = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm");
+    return writeJson(wdir + "/" + instance + ".json", obj);
+}
+
+QJsonObject LayoutStore::loadWallInstance(const QString& wall_name,
+                                          const QString& instance) const {
+    QString wdir = wallDirFor(wall_name);
+    if (wdir.isEmpty()) return {};
+    QFile f(wdir + "/" + instance + ".json");
+    if (!f.open(QIODevice::ReadOnly)) return {};
+    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    return doc.isObject() ? doc.object() : QJsonObject{};
+}
+
+bool LayoutStore::removeWall(const QString& wall_name) {
+    if (!writable()) return false;
+    QDir wdir(wallDirFor(wall_name));
+    return wdir.exists() && wdir.removeRecursively();
+}
+
+bool LayoutStore::renameWall(const QString& old_name, const QString& new_name) {
+    if (!writable()) return false;
+    QDir wdir(wallDirFor(old_name));
+    if (!wdir.exists()) return false;
+    for (const QFileInfo& fi : wdir.entryInfoList({"*.json"}, QDir::Files)) {
+        QFile f(fi.absoluteFilePath());
+        if (!f.open(QIODevice::ReadOnly)) return false;
+        QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+        f.close();
+        if (!doc.isObject()) continue;
+        QJsonObject obj = doc.object();
+        obj["wall"] = new_name;
+        if (!writeJson(fi.absoluteFilePath(), obj)) return false;
+    }
     return true;
 }
