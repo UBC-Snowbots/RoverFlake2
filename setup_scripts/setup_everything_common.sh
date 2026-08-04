@@ -46,8 +46,10 @@ apt_packages_to_install=(
     "libgtkmm-3.0-dev" # GUI Package
     "python3-rosdep"
     "libsfml-dev"
-    "rviz_common"
+    "ros-humble-rviz-common"
+    "ros-humble-gscam"
     "libgpiod-dev"
+    ""
 )
 
 # Loop through the package list and install missing packages
