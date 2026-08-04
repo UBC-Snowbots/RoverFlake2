@@ -13,4 +13,5 @@ sudo apt-get install -y libphidget22-dev
 sudo apt install -y libcamera-dev
 
 # for gscam
-sudo apt install ros-humble-gscam -y
+# sudo apt-get install gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev -y
+sudo apt -y install ros-humble-gscam 
