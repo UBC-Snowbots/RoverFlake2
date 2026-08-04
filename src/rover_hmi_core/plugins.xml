@@ -19,7 +19,7 @@
   <class name="rover_hmi_core/LightingModule"
          type="LightingModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+    <description>Five-board lighting control: spatial rover view with per-board brightness over /lights/cmd</description>
   </class>
   <class name="rover_hmi_core/VawTreeModule"
          type="VawTreeModule"
@@ -82,6 +82,11 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Science instrument readouts: spectrophotometer chart, NPK probe, fluorometer, gas sensor</description>
   </class>
+  <class name="rover_hmi_core/ScienceSimModule"
+         type="ScienceSimModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Mock /science/sensor_data publisher for desk-testing the pipeline and analysis panels</description>
+  </class>
 
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
@@ -90,4 +95,10 @@
     <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
   </class>
 
+
+  <class name="rover_hmi_core/SpectrometerModule"
+         type="SpectrometerModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
+  </class>
 </library>

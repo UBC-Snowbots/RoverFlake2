@@ -1,0 +1,2 @@
+# Spectrometer models, captures and results are written here by the HMI module.
+# Kept in-repo (never ~/.config) so runs are reproducible and reviewable.

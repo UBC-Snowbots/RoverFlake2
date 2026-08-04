@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rover_msgs/msg/science_module.hpp"
 #include "rover_msgs/msg/science_sensor_data.hpp"
 
 class SciencePipelineModule : public rover_hmi_core::GuiModule
@@ -26,10 +27,11 @@ public:
 
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
-            { "Mark Done (btn)", "Advance to next pipeline step" },
-            { "Back (btn)",      "Return to previous step"       },
-            { "Reset (btn)",     "Reset pipeline to step 0"      },
-            { "Vial circles",    "Toggle vial filled state"      },
+            { "Checklist items", "Click to toggle; auto-check from telemetry" },
+            { "Mark Done (btn)", "Manual override: advance a step"  },
+            { "Back (btn)",      "Return to previous step"          },
+            { "Reset (btn)",     "Reset pipeline to step 0"         },
+            { "Vial circles",    "Toggle vial filled state"         },
         };
     }
 
@@ -39,10 +41,23 @@ private:
     void retreatStep();
     void resetPipeline();
     void onSensorData(const rover_msgs::msg::ScienceSensorData::SharedPtr msg);
+    void onCommand(const rover_msgs::msg::ScienceModule::SharedPtr msg);
+
+    // Live checklist: 3 items per step, auto-checked from telemetry and
+    // clickable as a manual override. All checked → step auto-advances.
+    QPushButton* makeCheck(int step, int idx, const QString& text);
+    void setCheck(int step, int idx, bool on);
+    void setVial(int idx, bool filled);
+    bool stepSatisfied(int s) const;
+    void evalAdvance();
 
     int  current_step_    = 0;
     bool steps_done_[4]   = {};
     bool vials_filled_[6] = {};
+    bool flow_seen_       = false;   // flow observed during COLLECT
+    bool flow_now_        = false;
+
+    QPushButton* checks_[4][3] = {};
 
     // Step bar frames (top)
     QFrame*  step_frames_[4]    = {};
@@ -69,4 +84,5 @@ private:
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::ScienceSensorData>::SharedPtr sensor_sub_;
+    rclcpp::Subscription<rover_msgs::msg::ScienceModule>::SharedPtr cmd_sub_;
 };
