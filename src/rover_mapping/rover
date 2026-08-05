@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+#
+# rover — thin convenience wrapper over the ROS interfaces of
+# rover_mapping. Everything it does is a `ros2 launch` or a service call
+# on the mission_manager node, so any node (HMI, autonomy) can do the
+# same directly. Run with no arguments for help.
+#
+# A typical day:
+#   ./rover view drumheller           # bring the stack up, leave it up
+#   ./rover start run1                # /mission/start  (begins recording)
+#   ./rover tag site "rock outcrop"   # /tag_point
+#   ./rover stop                      # /mission/stop   (finalizes the bag)
+#   ./rover replay last               # watch it back over imagery
+#   ./rover export last               # render report/route_map.png
+set -eo pipefail   # no -u: ROS setup.bash reads unset vars
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WS="$(cd "$ROOT/../.." && pwd)"
+IMAGERY="$ROOT/imagery_pipeline/imagery"
+MISSIONS="$ROOT/missions"
+ESRI_URL='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+ESRI_ATTR='Imagery © Esri, Maxar, Earthstar Geographics'
+
+usage() {
+    cat <<'EOF'
+usage: rover <command> [args]
+
+imagery
+  fetch <name> <lat> <lon> [radius_km] [max_zoom]
+                          download satellite tiles around a point
+                          (defaults: radius 1.2 km, zoom 19; get lat/lon by
+                          right-clicking the spot in Google Maps)
+  sites                   list downloaded tile sets
+
+field day  (view first — start/tag/stop are service calls against it)
+  view  [site]            bring up the live stack: mapviz + tiles + GPS
+                          path + markers + mission_manager
+  start <name>            /mission/start — begin recording a mission
+  tag   <category> [label] [-n notes]
+                          /tag_point — save the current GPS position;
+                          category: start site sample obstacle landmark
+  seg   start [name] | seg end
+                          /segment_start | /segment_end — mark a route leg
+  stop                    /mission/stop — finalize the bag
+
+afterwards
+  ls                      list recorded missions
+  replay <mission> [rate] replay over imagery (mission = name/path/"last")
+  replay-seg <mission> <segment> [rate]
+                          replay one named leg only
+  export <mission>        render the report map -> report/route_map.png
+EOF
+    exit 1
+}
+
+die() { echo "rover: $*" >&2; exit 1; }
+
+# Source ROS + this workspace once, only if not already done.
+ensure_env() {
+    if [[ ":${AMENT_PREFIX_PATH:-}:" != *"$WS/install/rover_mapping:"* ]]; then
+        source /opt/ros/humble/setup.bash
+        [[ -f "$WS/install/setup.bash" ]] || die "workspace not built — run: colcon build --symlink-install --packages-select rover_mapping_interfaces rover_mapping tile_map"
+        source "$WS/install/setup.bash"
+    fi
+}
+
+# Call a mission_manager service and print its message. $1 srv name,
+# $2 srv type, $3 request yaml. Fails loudly if the service is down or
+# the node rejected the request.
+call() {
+    local out
+    out=$(timeout 8 ros2 service call "$1" "$2" "$3" 2>/dev/null) \
+        || die "$1 unavailable — is the stack up? (rover view <site>)"
+    echo "$out" | sed -n "s/.*message='\([^']*\)'.*/\1/p"
+    [[ "$out" != *"ok=False"* && "$out" != *"success=False"* ]] \
+        || exit 1
+}
+
+# Highest zoom level actually present in a tile set (dirs are named by zoom).
+site_max_zoom() { ls "$IMAGERY/$1/tiles" | sort -n | tail -1; }
+
+check_site() {
+    [[ -d "$IMAGERY/$1/tiles" ]] \
+        || die "no tile set '$1' — have: $(ls "$IMAGERY" 2>/dev/null | xargs echo), or run: rover fetch"
+}
+
+# Accept a mission name, a path, or "last"; echo the resolved directory.
+resolve_mission() {
+    local m="$1"
+    if [[ "$m" == "last" ]]; then
+        m=$(ls -1dt "$MISSIONS"/*/ 2>/dev/null | head -1)   # newest mtime
+        [[ -n "$m" ]] || die "no missions recorded yet"
+    elif [[ ! -d "$m" ]]; then
+        if [[ -d "$MISSIONS/$m" ]]; then
+            m="$MISSIONS/$m"
+        else   # bare name without the date prefix: newest match wins
+            m=$(ls -1dt "$MISSIONS"/*_"$m"/ 2>/dev/null | head -1)
+            [[ -n "$m" ]] || die "no mission '$1' — see: rover ls"
+        fi
+    fi
+    cd "$m" && pwd
+}
+
+# Site a mission was recorded with (stored in its mission.yaml).
+mission_site() { awk '/^site:/{print $2}' "$1/mission.yaml" 2>/dev/null; }
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+
+fetch)
+    [[ $# -ge 3 ]] || usage
+    name="$1" lat="$2" lon="$3" radius="${4:-1.2}" maxz="${5:-19}"
+    # Esri serves gray "Map data not yet available" tiles above its real
+    # coverage in rural areas — step down until the center tile is real,
+    # so the mosaic (built from max zoom) is never blank.
+    maxz=$(python3 - "$lat" "$lon" "$maxz" <<'PYEOF'
+import io, math, sys, urllib.request
+import numpy as np
+from PIL import Image
+lat, lon, z = float(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3])
+while z > 13:
+    n = 2 ** z
+    x = int((lon + 180) / 360 * n)
+    y = int((1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n)
+    url = ('https://server.arcgisonline.com/ArcGIS/rest/services/'
+           f'World_Imagery/MapServer/tile/{z}/{y}/{x}')
+    tile = np.asarray(Image.open(io.BytesIO(
+        urllib.request.urlopen(url, timeout=10).read())).convert('L'))
+    if tile.std() > 15:      # placeholder tiles are near-uniform gray
+        break
+    print(f'zoom {z} has no imagery here, trying {z - 1}',
+          file=sys.stderr)
+    z -= 1
+print(z)
+PYEOF
+)
+    echo "==> max zoom with real imagery: $maxz"
+    bbox=$(python3 -c "
+import math
+lat, lon, r = $lat, $lon, $radius
+dlat = r / 111.32
+dlon = r / (111.32 * math.cos(math.radians(lat)))
+print(f'{lat-dlat:.4f},{lon-dlon:.4f},{lat+dlat:.4f},{lon+dlon:.4f}')")
+    python3 "$ROOT/imagery_pipeline/scripts/fetch_tiles.py" \
+        --name "$name" --bbox "$bbox" --zoom 13 "$maxz" --url "$ESRI_URL"
+    echo "==> try it:  ./rover view $name"
+    ;;
+
+sites)
+    for d in "$IMAGERY"/*/tiles; do
+        [[ -d "$d" ]] || continue
+        s=$(basename "$(dirname "$d")")
+        printf '%-14s max zoom %-3s %s\n' "$s" "$(site_max_zoom "$s")" \
+               "$(du -sh "$(dirname "$d")" | cut -f1)"
+    done
+    ;;
+
+view)
+    site="${1:-ubc_test}"; check_site "$site"; ensure_env
+    echo "==> stack for '$site' — GPS: ros2 run rover_mapping fake_gps (or the real receiver)"
+    echo "==> then: rover start <name> / rover tag ... / rover stop"
+    exec ros2 launch rover_mapping mapviz_offline.launch.py \
+        "site:=$site" "max_zoom:=$(site_max_zoom "$site")"
+    ;;
+
+start)
+    [[ $# -ge 1 ]] || usage
+    ensure_env
+    call /mission/start rover_mapping_interfaces/srv/StartMission \
+         "{name: '$1'}"
+    cat <<'EOF'
+While recording:
+  rover tag start | site "label" | sample | obstacle "label" | landmark
+  rover seg start <name>  /  rover seg end
+  rover stop              when done
+EOF
+    ;;
+
+stop)
+    ensure_env
+    call /mission/stop std_srvs/srv/Trigger "{}"
+    ;;
+
+tag)
+    [[ $# -ge 1 ]] || usage
+    ensure_env
+    exec ros2 run rover_mapping tag "$@"
+    ;;
+
+seg)
+    [[ $# -ge 1 ]] || usage
+    ensure_env
+    exec ros2 run rover_mapping tag seg "$@"
+    ;;
+
+ls)
+    for d in "$MISSIONS"/*/; do
+        [[ -d "$d" ]] || { echo "no missions yet — rover view, then rover start <name>"; break; }
+        n=$(grep -c '^- id:' "$d/waypoints.yaml" 2>/dev/null || echo 0)
+        printf '%-40s %s waypoints  site=%s\n' \
+               "$(basename "$d")" "$n" "$(mission_site "$d")"
+    done
+    ;;
+
+replay)
+    [[ $# -ge 1 ]] || usage
+    dir=$(resolve_mission "$1"); rate="${2:-1.0}"
+    site=$(mission_site "$dir"); site="${site:-ubc_test}"; check_site "$site"
+    ensure_env
+    exec ros2 launch rover_mapping replay.launch.py \
+        "mission_dir:=$dir" "site:=$site" "rate:=$rate" \
+        "max_zoom:=$(site_max_zoom "$site")"
+    ;;
+
+replay-seg)
+    [[ $# -ge 2 ]] || usage
+    dir=$(resolve_mission "$1"); seg="$2"; rate="${3:-1.0}"
+    site=$(mission_site "$dir"); site="${site:-ubc_test}"; check_site "$site"
+    ensure_env
+    exec ros2 launch rover_mapping replay.launch.py \
+        "mission_dir:=$dir" "site:=$site" "rate:=$rate" \
+        "segment:=$seg" "max_zoom:=$(site_max_zoom "$site")"
+    ;;
+
+export)
+    [[ $# -ge 1 ]] || usage
+    dir=$(resolve_mission "$1")
+    site=$(mission_site "$dir"); site="${site:-ubc_test}"; check_site "$site"
+    ensure_env
+    ros2 run rover_mapping export_report_map -- \
+        --mission "$dir" \
+        --imagery "$IMAGERY/$site/mosaic.tif" \
+        --attribution "$ESRI_ATTR"
+    ;;
+
+*) usage ;;
+esac
