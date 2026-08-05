@@ -81,7 +81,7 @@ add_library(rover_hmi_modules SHARED
     # Tasks
     src/tasks/seven_seg_widget.cpp
     src/tasks/vending_decoder_module.cpp
-    src/tasks/morse_module.cpp
+    src/tasks/morse_viewer_module.cpp
     src/tasks/task_timers_module.cpp
     src/tasks/task_reference_module.cpp
     # General
