@@ -1,0 +1,12 @@
+# Dev-bench heart — runs the arm driver on YOUR machine instead of the HMI
+# owning the process (see PR #187 review). Start it alongside the HMI:
+#   ros2 run rover_manager heart_node --ros-args -r __node:=heart_dev \
+#     --params-file src/rover_manager/config/heart_dev.yaml
+# Control/monitor it from the HMI's Subsystems panel (host shows as DEV).
+/heart_dev:
+  ros__parameters:
+    subsystems:
+      moteus_driver: "ros2 run arm_hardware_interface moteus_driver"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0

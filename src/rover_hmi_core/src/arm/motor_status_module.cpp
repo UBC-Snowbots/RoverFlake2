@@ -192,22 +192,12 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
         }
     }
 
-    // Bench-only local driver control; disabled when the fdcanusb lives on
-    // the rover (remote driver is bringup/systemd's job, not the HMI's).
-    drv_btn_ = new QPushButton();
-    drv_btn_->setFont(mono);
-    QObject::connect(drv_btn_, &QPushButton::clicked, [this]() {
-        if (drv_.running()) drv_.stop();
-        else if (!drv_.start())
-            setBanner("✖ FAILED TO START DRIVER — is arm_hardware_interface built?",
-                      theme::Red, "#2a0d0d");
-        updateDriverBtn();
-    });
-    grid->addWidget(drv_btn_, NUM_MOTORS + 1, 0);
-
+    // The driver process itself is a heart-managed subsystem (heart.yaml on
+    // the rover, heart_dev.yaml on a bench machine) — the HMI only watches
+    // its telemetry. Start/stop lives in the Subsystems panel.
     status_ = new QLabel();
     status_->setFont(mono);
-    grid->addWidget(status_, NUM_MOTORS + 1, 1, 1, NUM_COLS);
+    grid->addWidget(status_, NUM_MOTORS + 1, 0, 1, NUM_COLS + 1);
     normal_ws.push_back(status_);
     setBanner("⏳ WAITING FOR ARM DRIVER — no telemetry yet", theme::TextDim, "#1a1a1a");
 
@@ -227,10 +217,8 @@ QWidget* MotorStatusModule::createWidget(QWidget* parent) {
                           .arg(age / 1000.0, 0, 'f', 1),
                       theme::Yellow, "#2a2208");
         }
-        updateDriverBtn();
     });
     stale->start(250);
-    updateDriverBtn();
 
     // All columns equal stretch
     for (int c = 0; c <= NUM_COLS; c++)
@@ -425,33 +413,6 @@ void MotorStatusModule::onFeedback(const rover_msgs::msg::MoteusArmStatus::Share
         setBanner(QString("● CAN LIVE on %1 — %2/%3 motors")
                   .arg(dev).arg(msg->motors_replying).arg(expected),
                   theme::Green, "#0d2a17", false);
-    }
-}
-
-void MotorStatusModule::updateDriverBtn()
-{
-    if (!drv_btn_) return;
-    const bool fresh = last_msg_ms_ != 0 &&
-        QDateTime::currentMSecsSinceEpoch() - last_msg_ms_ <= 1500;
-    if (drv_.running()) {
-        drv_btn_->setText("■ Stop Driver");
-        drv_btn_->setEnabled(true);
-        drv_btn_->setToolTip("Stops the HMI-owned driver (frees the CAN port for tview)");
-    } else if (fresh) {
-        drv_btn_->setText("Driver: external");
-        drv_btn_->setEnabled(false);
-        drv_btn_->setToolTip("Telemetry is coming from a driver this HMI didn't start "
-                             "(terminal or rover bringup) — stop it where it was started");
-    } else if (DriverProcess::localAdapterPresent()) {
-        drv_btn_->setText("▶ Start Driver");
-        drv_btn_->setEnabled(true);
-        drv_btn_->setToolTip("Starts moteus_driver on this machine, tied to the HMI's "
-                             "lifetime — it dies with the HMI, even on a crash-close");
-    } else {
-        drv_btn_->setText("▶ Start Driver");
-        drv_btn_->setEnabled(false);
-        drv_btn_->setToolTip("No local fdcanusb — on the rover the driver runs on the "
-                             "NUC via bringup, not from the HMI");
     }
 }
 
