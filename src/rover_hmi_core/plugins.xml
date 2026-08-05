@@ -131,10 +131,15 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Named countdown timers plus Snack Run credit-tap and double-tap cadence helpers</description>
   </class>
-  <class name="rover_hmi_core/TaskReferenceModule"
-         type="TaskReferenceModule"
+  <class name="rover_hmi_core/TaskScoringModule"
+         type="TaskScoringModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>Competition task cheat sheets rendered from config/tasks/reference markdown</description>
+    <description>Interactive CIRC score tracker — checkable rubric from config/tasks/scoring.json with live totals</description>
+  </class>
+  <class name="rover_hmi_core/GnssMissionModule"
+         type="GnssMissionModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Mission control for rover_mapping's mission_manager — start/stop recording, tag waypoints, route segments, live /gnss_fix</description>
   </class>
 
   <!-- General -->

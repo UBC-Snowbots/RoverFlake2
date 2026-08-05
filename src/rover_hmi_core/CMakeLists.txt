@@ -11,6 +11,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rover_arm_common REQUIRED)
+find_package(rover_mapping_interfaces REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
@@ -83,7 +84,8 @@ add_library(rover_hmi_modules SHARED
     src/tasks/vending_decoder_module.cpp
     src/tasks/morse_viewer_module.cpp
     src/tasks/task_timers_module.cpp
-    src/tasks/task_reference_module.cpp
+    src/tasks/task_scoring_module.cpp
+    src/tasks/gnss_mission_module.cpp
     # General
     src/general/subsystems_module.cpp
     # Cameras
@@ -111,7 +113,7 @@ target_link_libraries(rover_hmi_modules
     Qt5::Widgets
     ${YAML_CPP_LIBRARIES}
 )
-ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs std_srvs pluginlib ament_index_cpp rover_arm_common)
+ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs std_srvs pluginlib ament_index_cpp rover_arm_common rover_mapping_interfaces)
 target_compile_definitions(rover_hmi_modules PRIVATE
     ROVER_HMI_CORE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 pluginlib_export_plugin_description_file(rover_hmi_core plugins.xml)

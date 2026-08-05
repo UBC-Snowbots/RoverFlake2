@@ -1,0 +1,7 @@
+# Start or end a named sub-path (timestamp range into the bag).
+# For /segment_end the name may be empty: closes the currently-open segment.
+string name
+---
+bool ok
+string message
+string name          # actual segment name acted on

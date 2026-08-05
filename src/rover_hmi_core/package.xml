@@ -18,6 +18,7 @@
   <depend>std_srvs</depend>
   <depend>ament_index_cpp</depend>
   <depend>rover_arm_common</depend>
+  <depend>rover_mapping_interfaces</depend>
   <depend>yaml-cpp</depend>
   <exec_depend>rover_manager</exec_depend>
 

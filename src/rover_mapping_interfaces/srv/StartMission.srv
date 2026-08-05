@@ -1,0 +1,7 @@
+# Begin a recorded mission: creates the mission directory and starts
+# bag recording. Stop with std_srvs/Trigger on /mission/stop.
+string name          # mission name; directory becomes missions/<date>_<name>
+---
+bool ok
+string message
+string mission_dir   # absolute path of the created mission directory
