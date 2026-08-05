@@ -20,8 +20,6 @@ constexpr qint64 HOST_TIMEOUT_MS = 2500;  // 2.5 beats at 1 Hz
 constexpr const char* kBeaconDim      = "#0d5533";  // dim phase between beats (beacon logic untouched)
 constexpr const char* kBeaconNeverSeen = "#444444";
 constexpr const char* kOnlineTint      = "#0d2a1a";
-constexpr const char* kStoppingTint    = "#2a230d";
-constexpr const char* kAlarmTint       = "#2a0d0d";  // CRASHED / STUCK
 
 // Beacon: small solid-fill circle. Color alone carries the state so it reads
 // at a glance; only called on an actual state/phase change.
@@ -48,16 +46,16 @@ QString buttonStyle(const char* accent) {
 
 void SubsystemsModule::setNode(rclcpp::Node::SharedPtr node) {
     node_ = node;
-    sub_ = node_->create_subscription<rover_msgs::msg::HeartStatus>(
-        "/heart/status", 10,
-        std::bind(&SubsystemsModule::onStatus, this, std::placeholders::_1));
-    pub_ = node_->create_publisher<rover_msgs::msg::SubsystemCommand>("/heart/command", 10);
+    sub_ = node_->create_subscription<rover_msgs::msg::HeartRequest>(
+        "/heart/running_subsystems", 10,
+        std::bind(&SubsystemsModule::onFeedback, this, std::placeholders::_1));
+    pub_ = node_->create_publisher<rover_msgs::msg::HeartRequest>("/heart/request", 10);
 }
 
 QWidget* SubsystemsModule::createWidget(QWidget* parent) {
     root_ = new QWidget(parent);
     auto* outer = new QVBoxLayout(root_);
-    waiting_ = new QLabel("⏳ waiting for hearts on /heart/status");
+    waiting_ = new QLabel("⏳ waiting for hearts on /heart/running_subsystems");
     outer->addWidget(waiting_);
     hosts_layout_ = new QVBoxLayout();
     outer->addLayout(hosts_layout_);
@@ -130,53 +128,46 @@ SubsystemsModule::Row& SubsystemsModule::row(HostGroup& g, const std::string& na
     rw.chip->setFixedWidth(150);
     rw.chip->setStyleSheet(chipStyle(theme::BgPanel, theme::TextDim, theme::BorderDim));
     g.grid->addWidget(rw.chip, r, 1);
-    const struct { const char* label; uint8_t action; const char* accent; } btns[] = {
-        {"KILL", rover_msgs::msg::SubsystemCommand::ACTION_STOP, theme::Red},
-        {"RUN", rover_msgs::msg::SubsystemCommand::ACTION_START, theme::Green},
-        {"RESTART", rover_msgs::msg::SubsystemCommand::ACTION_RESTART, theme::Yellow},
+    // The heart's protocol is a bool: running true/false. RESTART is a UI
+    // convenience — kill then run, same as the two clicks it replaces (the
+    // heart marks a subsystem offline synchronously in its kill handler, so
+    // in-order delivery makes the follow-up run valid).
+    const struct { const char* label; int mode; const char* accent; } btns[] = {
+        {"KILL", 0, theme::Red},
+        {"RUN", 1, theme::Green},
+        {"RESTART", 2, theme::Yellow},
     };
     for (int i = 0; i < 3; i++) {
         auto* b = new QPushButton(btns[i].label);
         b->setStyleSheet(buttonStyle(btns[i].accent));
-        const uint8_t action = btns[i].action;
-        QObject::connect(b, &QPushButton::clicked,
-                         [this, name, action]() { sendCommand(name, action); });
+        const int mode = btns[i].mode;
+        QObject::connect(b, &QPushButton::clicked, [this, name, mode]() {
+            if (mode != 1) sendRequest(name, false);
+            if (mode != 0) sendRequest(name, true);
+        });
         g.grid->addWidget(b, r, 2 + i);
     }
     return g.rows.emplace(name, rw).first->second;
 }
 
-void SubsystemsModule::applyState(Row& rw, const rover_msgs::msg::SubsystemState& s) {
-    using St = rover_msgs::msg::SubsystemState;
-    switch (s.state) {
-    case St::RUNNING:
-        rw.chip->setText(QString("ONLINE %1s").arg(s.uptime_s));
+void SubsystemsModule::applyRunning(Row& rw, bool running) {
+    if (running) {
+        rw.chip->setText("ONLINE");
         rw.chip->setStyleSheet(chipStyle(kOnlineTint, theme::Green, theme::Green));
-        break;
-    case St::STOPPING:
-        rw.chip->setText("STOPPING");
-        rw.chip->setStyleSheet(chipStyle(kStoppingTint, theme::Yellow, theme::Yellow));
-        break;
-    case St::CRASHED:
-        rw.chip->setText(QString("CRASHED (%1)").arg(s.exit_code));
-        rw.chip->setStyleSheet(chipStyle(kAlarmTint, theme::Red, theme::Red));
-        break;
-    case St::STUCK:
-        rw.chip->setText("STUCK");
-        rw.chip->setStyleSheet(chipStyle(kAlarmTint, theme::Red, theme::Red));
-        break;
-    default:  // STOPPED
+    } else {
         rw.chip->setText("OFFLINE");
         rw.chip->setStyleSheet(chipStyle(theme::BgPanel, theme::TextDim, theme::BorderDim));
     }
 }
 
-void SubsystemsModule::onStatus(rover_msgs::msg::HeartStatus::SharedPtr msg) {
-    HostGroup& g = hostGroup(msg->host);
+// Old-protocol beat: each heart publishes one HeartRequest per subsystem per
+// beat on the shared feedback topic; the host name rides in subsystem_host.
+void SubsystemsModule::onFeedback(rover_msgs::msg::HeartRequest::SharedPtr msg) {
+    HostGroup& g = hostGroup(msg->subsystem_host);
     g.last_arrival_ms = steadyMs();
     styleBeacon(g.beacon, theme::Green);  // bright flash: a beat was just read
     g.pending_dim = true;                 // next 250ms tick dims it, unless another beat wins first
-    for (const auto& s : msg->subsystems) applyState(row(g, s.name), s);
+    applyRunning(row(g, msg->subsystem_name), msg->running);
 }
 
 void SubsystemsModule::checkHostsAlive() {
@@ -199,7 +190,7 @@ void SubsystemsModule::checkHostsAlive() {
                 g.readout->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Red));
                 break;
             case HeartPhase::Fresh:
-                // beacon is already bright from onStatus; just recolor the text
+                // beacon is already bright from onFeedback; just recolor the text
                 g.readout->setStyleSheet(QString("color:%1;font-weight:bold;").arg(theme::Green));
                 break;
             }
@@ -261,11 +252,12 @@ void SubsystemsModule::loadExpectedHosts() {
     }
 }
 
-void SubsystemsModule::sendCommand(const std::string& name, uint8_t action) {
-    rover_msgs::msg::SubsystemCommand cmd;
-    cmd.subsystem_name = name;
-    cmd.action = action;
-    pub_->publish(cmd);
+void SubsystemsModule::sendRequest(const std::string& name, bool running) {
+    rover_msgs::msg::HeartRequest msg;
+    msg.header.stamp = node_->get_clock()->now();
+    msg.subsystem_name = name;
+    msg.running = running;
+    pub_->publish(msg);
 }
 
 PLUGINLIB_EXPORT_CLASS(SubsystemsModule, rover_hmi_core::GuiModule)

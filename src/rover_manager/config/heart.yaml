@@ -50,19 +50,25 @@
   ros__parameters:
     subsystems:
       drive_control: "ros2 run joy joy_node"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0
-      
+
 /heart_onboard_nuc:
   ros__parameters:
     subsystems:
       drive_interface: "ros2 launch drive_control drive_control_launch.launch.py"
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
       gnss_interface: "ros2 run rover_gnss nmea_reader"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0
 
 /heart_jetson:
   ros__parameters:
     subsystems:
       camera: "ros2 launch cameras_cpp jetson_compressor.launch.py"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0
 

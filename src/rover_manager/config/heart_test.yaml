@@ -5,4 +5,6 @@
       sleeper: "sleep 300"
       chatty: "ros2 run demo_nodes_cpp talker"
       stubborn: 'trap "" INT TERM; sleep 300'
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0

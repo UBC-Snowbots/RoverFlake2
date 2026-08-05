@@ -115,6 +115,28 @@
     <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
   </class>
 
+  <!-- Tasks -->
+  <class name="rover_hmi_core/VendingDecoderModule"
+         type="VendingDecoderModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Snack Run Err2 helper: 7-seg pattern decode, column-XOR switch sequence, binary/text converter</description>
+  </class>
+  <class name="rover_hmi_core/MorseModule"
+         type="MorseModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Heist morse console: live rover_vision decode view, manual decode, and text-to-morse encode</description>
+  </class>
+  <class name="rover_hmi_core/TaskTimersModule"
+         type="TaskTimersModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Named countdown timers plus Snack Run credit-tap and double-tap cadence helpers</description>
+  </class>
+  <class name="rover_hmi_core/TaskReferenceModule"
+         type="TaskReferenceModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Competition task cheat sheets rendered from config/tasks/reference markdown</description>
+  </class>
+
   <!-- General -->
   <class name="rover_hmi_core/SubsystemsModule"
          type="SubsystemsModule"

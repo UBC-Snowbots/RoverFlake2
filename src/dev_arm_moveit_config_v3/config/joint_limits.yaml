@@ -1,16 +1,16 @@
 # Velocity/acceleration limits used by MoveIt for trajectory time-
-# parameterization.  Synced 2026-08-02 from the real arm's canonized caps in
-# rover_arm_common/motor_config.h (rev/s x 2pi -> rad/s), so simulated
-# trajectory timing matches what the hardware can actually follow.
+# parameterization.  Per joint: min(motor cap in motor_config.h MotorConfig,
+# driver clamp AxisConfig::max_running_speed 0.1 rev/s) x 2pi -> rad/s, so
+# planned trajectories never outrun what moteus_driver will actually send.
 # Scaling factors are 1.0 because these ARE the real limits — downscale per
 # motion request if you want slower.
 default_velocity_scaling_factor: 1.0
 default_acceleration_scaling_factor: 1.0
 
 joint_limits:
-  shoulder_joint:          # A1: 0.15 rev/s, 1.0 rev/s^2
+  shoulder_joint:          # A1: motor 0.15 rev/s, driver clamp 0.10; 1.0 rev/s^2
     has_velocity_limits: true
-    max_velocity: 0.94
+    max_velocity: 0.63
     has_acceleration_limits: true
     max_acceleration: 6.28
   link_1_joint:            # A2: 0.03 rev/s, 0.5 rev/s^2
@@ -28,14 +28,14 @@ joint_limits:
     max_velocity: 0.63
     has_acceleration_limits: true
     max_acceleration: 3.14
-  a5_rotation:             # A5: 0.15 rev/s, 2.0 rev/s^2
+  a5_rotation:             # A5: motor 0.15 rev/s, driver clamp 0.10; 2.0 rev/s^2
     has_velocity_limits: true
-    max_velocity: 0.94
+    max_velocity: 0.63
     has_acceleration_limits: true
     max_acceleration: 12.57
-  a6_rotation:             # A6: 0.15 rev/s, 2.0 rev/s^2
+  a6_rotation:             # A6: motor 0.15 rev/s, driver clamp 0.10; 2.0 rev/s^2
     has_velocity_limits: true
-    max_velocity: 0.94
+    max_velocity: 0.63
     has_acceleration_limits: true
     max_acceleration: 12.57
   finger_left_joint:

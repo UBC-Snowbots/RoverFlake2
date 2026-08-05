@@ -79,6 +79,12 @@ add_library(rover_hmi_modules SHARED
     include/rover_hmi_core/science/spectrum_view.h
     # Drive
     src/drive/drive_module.cpp
+    # Tasks
+    src/tasks/seven_seg_widget.cpp
+    src/tasks/vending_decoder_module.cpp
+    src/tasks/morse_module.cpp
+    src/tasks/task_timers_module.cpp
+    src/tasks/task_reference_module.cpp
     # General
     src/general/subsystems_module.cpp
     # Cameras
@@ -98,6 +104,7 @@ target_include_directories(rover_hmi_modules PRIVATE
     include/rover_hmi_core/drive
     include/rover_hmi_core/cameras
     include/rover_hmi_core/camera
+    include/rover_hmi_core/tasks
 )
 
 target_link_libraries(rover_hmi_modules
