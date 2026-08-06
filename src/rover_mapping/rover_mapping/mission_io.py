@@ -14,7 +14,7 @@ import yaml
 
 CATEGORIES = ('start', 'site', 'sample', 'obstacle', 'landmark')
 
-# Marker color map (RGBA 0-1) — used by mapviz markers AND the report map.
+# Category color map (RGBA 0-1) — used by the report-map exporter.
 CATEGORY_COLORS = {
     'start':    (0.13, 0.75, 0.13, 1.0),   # green
     'site':     (0.90, 0.10, 0.10, 1.0),   # red

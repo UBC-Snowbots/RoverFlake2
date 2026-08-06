@@ -8,6 +8,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/TagPoint.srv"
   "srv/Segment.srv"
   "srv/StartMission.srv"
+  "srv/ExportMap.srv"
 )
 
 ament_package()

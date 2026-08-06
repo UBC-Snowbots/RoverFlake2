@@ -24,7 +24,7 @@ TIMEOUT = 5.0
 def _call(node: Node, srv_type, srv_name: str, request):
     client = node.create_client(srv_type, srv_name)
     if not client.wait_for_service(timeout_sec=TIMEOUT):
-        print(f'ERROR: {srv_name} unavailable — is the stack up? (rover view)',
+        print(f'ERROR: {srv_name} unavailable — is mission_manager running?',
               file=sys.stderr)
         return None
     future = client.call_async(request)

@@ -1,5 +1,0 @@
-# pip deps for export_report_map.py only (nodes need ROS debs, not these)
-rasterio
-matplotlib
-pyproj
-pyyaml

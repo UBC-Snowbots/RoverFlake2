@@ -1,42 +1,43 @@
 """Mission manager: the one node that owns a run's lifecycle.
 
-Services (all usable from other nodes — HMI, autonomy — or `rover`):
-  /mission/start   StartMission  create mission dir, start bag recording
+Services (the whole interface — HMI, tag CLI, and autonomy all use these):
+  /mission/start   StartMission  create mission dir, start bag + track log
   /mission/stop    Trigger       finalize the bag, close the mission
   /tag_point       TagPoint      save current GPS position as a waypoint
   /segment_start   Segment       open a named route leg
   /segment_end     Segment       close a leg (empty name = last open)
+  /mission/export  ExportMap     render report/route_map.png (Pillow)
 
-State lives on disk, not in the node: every tag is an atomic YAML write
-into the mission directory, and the bag is recorded in-process with
-rosbag2_py — a crash or Ctrl-C never loses data. /waypoints markers are
-published latched so mapviz shows them whenever it joins.
+Publishes the active mission name latched on /mission/active so late-joining
+UIs recover state. State lives on disk: waypoints/segments are atomic YAML
+writes, the fix track is appended to track.csv as it streams, and the bag is
+recorded in-process with rosbag2_py — a crash never loses data.
 """
 from __future__ import annotations
 
 import datetime
 import os
 import threading
-from typing import List, Optional
+from typing import List, Optional, TextIO
 
 import rclpy
 import rosbag2_py
-from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
 from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import String
 from std_srvs.srv import Trigger
-from visualization_msgs.msg import Marker, MarkerArray
 
-from rover_mapping_interfaces.srv import Segment, StartMission, TagPoint
+from rover_mapping_interfaces.srv import (ExportMap, Segment, StartMission,
+                                          TagPoint)
 
-from rover_mapping import mission_io
-from rover_mapping.launch_helpers import source_root
-from rover_mapping.local_xy import wgs84_to_local_xy
-from rover_mapping.mission_io import CATEGORIES, CATEGORY_COLORS
+from rover_mapping import mission_io, paths
+from rover_mapping.exporter import export_mission
+from rover_mapping.mission_io import CATEGORIES
 
 LATCHED = QoSProfile(depth=1,
                      durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
+TRACK_MIN_SEC = 0.5    # track.csv sample interval
 
 
 def stamp_to_float(stamp) -> float:
@@ -72,64 +73,64 @@ class MissionManager(Node):
         self._site = self._str_param('site')
         self._fix_topic = self._str_param('fix_topic')
         self._missions_root = (self._str_param('missions_root')
-                               or os.path.join(source_root(), 'missions'))
+                               or paths.missions_root())
         self._stale_sec = (self.get_parameter('stale_fix_sec')
                            .get_parameter_value().double_value)
 
         self._fix: Optional[NavSatFix] = None
-        self._origin: Optional[PoseStamped] = None
         self._mission_dir: Optional[str] = None
         self._waypoints: List[dict] = []
         self._recorder: Optional[BagRecorder] = None
+        self._track: Optional[TextIO] = None
+        self._track_last = 0.0
 
         self.create_subscription(NavSatFix, self._fix_topic,
                                  self._on_fix, 10)
-        self.create_subscription(PoseStamped, '/local_xy_origin',
-                                 self._on_origin, LATCHED)
-        self._marker_pub = self.create_publisher(MarkerArray, '/waypoints',
+        self._active_pub = self.create_publisher(String, '/mission/active',
                                                  LATCHED)
+        self._publish_active()
 
         self.create_service(StartMission, '/mission/start', self._on_start)
         self.create_service(Trigger, '/mission/stop', self._on_stop)
         self.create_service(TagPoint, '/tag_point', self._on_tag_point)
         self.create_service(Segment, '/segment_start', self._on_seg_start)
         self.create_service(Segment, '/segment_end', self._on_seg_end)
+        self.create_service(ExportMap, '/mission/export', self._on_export)
 
         self.get_logger().info(
-            f'ready — site "{self._site}", fix topic {self._fix_topic}, '
+            f'ready — fix topic {self._fix_topic}, '
             f'missions in {self._missions_root}')
 
     def _str_param(self, name: str) -> str:
         return self.get_parameter(name).get_parameter_value().string_value
 
-    # ------------------------------------------------------------ mission dir
     def _sidecar(self, name: str) -> str:
         assert self._mission_dir is not None
         return os.path.join(self._mission_dir, name)
 
     def _require_mission(self) -> Optional[str]:
-        """Error text if no mission is active, else None."""
         if self._mission_dir is None:
             return 'no active mission — call /mission/start first'
         return None
 
-    # ---------------------------------------------------------- subscriptions
+    def _publish_active(self) -> None:
+        msg = String()
+        msg.data = (os.path.basename(self._mission_dir)
+                    if self._mission_dir else '')
+        self._active_pub.publish(msg)
+
+    # ---------------------------------------------------------- fix + track
     def _on_fix(self, msg: NavSatFix) -> None:
         self._fix = msg
-
-    def _on_origin(self, msg: PoseStamped) -> None:
-        self._origin = msg
-        if self._mission_dir is not None:
-            self._write_origin_yaml()
-        self._publish_markers()
-
-    def _write_origin_yaml(self) -> None:
-        assert self._origin is not None
-        mission_io.atomic_dump_yaml(self._sidecar('origin.yaml'), [{
-            'lat': self._origin.pose.position.y,
-            'lon': self._origin.pose.position.x,
-            'alt': self._origin.pose.position.z,
-        }])
+        if self._track is None or msg.status.status < 0:
+            return
+        stamp = stamp_to_float(msg.header.stamp)
+        if stamp - self._track_last < TRACK_MIN_SEC:
+            return
+        self._track_last = stamp
+        self._track.write(f'{stamp:.3f},{msg.latitude:.8f},'
+                          f'{msg.longitude:.8f},{msg.altitude:.2f}\n')
+        self._track.flush()
 
     def _fresh_fix(self) -> Optional[NavSatFix]:
         if self._fix is None:
@@ -160,7 +161,7 @@ class MissionManager(Node):
             res.message = f'{mission_dir} already recorded — pick a new name'
             return res
 
-        os.makedirs(os.path.join(mission_dir, 'report'), exist_ok=True)
+        os.makedirs(mission_dir, exist_ok=True)
         self._mission_dir = mission_dir
         self._waypoints = []
         mission_io.atomic_dump_yaml(self._sidecar('waypoints.yaml'), [])
@@ -168,14 +169,12 @@ class MissionManager(Node):
         with open(self._sidecar('mission.yaml'), 'w') as f:
             f.write(f'name: {name}\nsite: {self._site}\n'
                     f'date: {datetime.datetime.now().isoformat()}\n')
-        if self._origin is not None:
-            self._write_origin_yaml()
-
-        self._recorder = BagRecorder(
-            os.path.join(mission_dir, 'rosbag2'),
-            [self._fix_topic, '/waypoints', '/tf', '/tf_static',
-             '/local_xy_origin', '/diagnostics'])
-        self._publish_markers()   # clear leftovers from a previous mission
+        self._track = open(self._sidecar('track.csv'), 'w')
+        self._track.write('stamp,lat,lon,alt\n')
+        self._track_last = 0.0
+        self._recorder = BagRecorder(os.path.join(mission_dir, 'rosbag2'),
+                                     [self._fix_topic])
+        self._publish_active()
 
         self.get_logger().info(f'mission started: {mission_dir}')
         res.ok = True
@@ -192,6 +191,7 @@ class MissionManager(Node):
         mission_dir = self._mission_dir
         self._stop_recording()
         self._mission_dir = None
+        self._publish_active()
         self.get_logger().info(f'mission stopped: {mission_dir}')
         res.success = True
         res.message = (f'saved {mission_dir} '
@@ -202,6 +202,9 @@ class MissionManager(Node):
         if self._recorder is not None:
             self._recorder.stop()
             self._recorder = None
+        if self._track is not None:
+            self._track.close()
+            self._track = None
 
     # ---------------------------------------------------------------- tagging
     def _on_tag_point(self, req: TagPoint.Request,
@@ -235,7 +238,6 @@ class MissionManager(Node):
         }
         self._waypoints = mission_io.append_waypoint(
             self._sidecar('waypoints.yaml'), waypoint)
-        self._publish_markers()
         self.get_logger().info(
             f'tagged {wp_id} "{label}" at '
             f'({waypoint["lat"]:.6f}, {waypoint["lon"]:.6f})')
@@ -292,54 +294,19 @@ class MissionManager(Node):
         res.name = closed
         return res
 
-    # ---------------------------------------------------------------- markers
-    def _publish_markers(self) -> None:
-        if self._origin is None:
-            return
-        arr = MarkerArray()
-        wipe = Marker()
-        wipe.header.frame_id = 'map'
-        wipe.action = Marker.DELETEALL
-        arr.markers.append(wipe)
-
-        now = self.get_clock().now().to_msg()
-        for i, wp in enumerate(self._waypoints):
-            x, y = wgs84_to_local_xy(self._origin, wp['lat'], wp['lon'])
-            r, g, b, a = CATEGORY_COLORS[wp['category']]
-
-            sphere = Marker()
-            sphere.header.frame_id = 'map'
-            sphere.header.stamp = now
-            sphere.ns = 'waypoints'
-            sphere.id = 2 * i
-            sphere.type = Marker.SPHERE
-            sphere.action = Marker.ADD
-            sphere.pose.position.x = x
-            sphere.pose.position.y = y
-            sphere.pose.orientation.w = 1.0
-            sphere.scale.x = sphere.scale.y = sphere.scale.z = 1.5
-            sphere.color.r, sphere.color.g = r, g
-            sphere.color.b, sphere.color.a = b, a
-            arr.markers.append(sphere)
-
-            text = Marker()
-            text.header.frame_id = 'map'
-            text.header.stamp = now
-            text.ns = 'labels'
-            text.id = 2 * i + 1
-            text.type = Marker.TEXT_VIEW_FACING
-            text.action = Marker.ADD
-            text.pose.position.x = x
-            text.pose.position.y = y
-            text.pose.position.z = 1.5
-            text.pose.orientation.w = 1.0
-            text.scale.z = 1.2
-            text.color.r, text.color.g = r, g
-            text.color.b, text.color.a = b, a
-            text.text = wp['label']
-            arr.markers.append(text)
-
-        self._marker_pub.publish(arr)
+    # ----------------------------------------------------------------- export
+    def _on_export(self, req: ExportMap.Request,
+                   res: ExportMap.Response) -> ExportMap.Response:
+        try:
+            mission = paths.resolve_mission(req.mission.strip())
+            res.path = export_mission(mission, site=self._site or None)
+            res.ok = True
+            res.message = f'wrote {res.path}'
+            self.get_logger().info(res.message)
+        except (FileNotFoundError, ValueError, OSError) as e:
+            res.ok = False
+            res.message = str(e)
+        return res
 
 
 def main(args=None) -> None:

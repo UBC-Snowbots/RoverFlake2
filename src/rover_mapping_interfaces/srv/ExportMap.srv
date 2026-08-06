@@ -1,0 +1,6 @@
+# Render a mission's report map (tiles + track + waypoints) to PNG.
+string mission       # mission name, dir name, path, or ""/"last" = newest
+---
+bool ok
+string message
+string path          # absolute path of the written route_map.png

@@ -86,6 +86,7 @@ add_library(rover_hmi_modules SHARED
     src/tasks/task_timers_module.cpp
     src/tasks/task_scoring_module.cpp
     src/tasks/gnss_mission_module.cpp
+    src/tasks/gnss_map_widget.cpp
     # General
     src/general/subsystems_module.cpp
     # Cameras

@@ -241,11 +241,11 @@ namespace AxisConfig {
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
         /*AXIS 4 */   0.1,
-        /*AXIS 5 */   -0.1,
+        /*AXIS 5 */   0.1,
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.1 };
 
-    // Limit switches — AUX2 digital input, see setup_limit_switches.py.
+    // Limit switches — AUX2 digital input.
     // mask: aux2 GPIO status bitfield, bit0 = aux2.pins.0 (ABS connector pin 2).
     // inverted=false: NC switch to GND (hard 2k pullup) -> pin HIGH = pressed.
     bool has_limit_switch[NUM_AXES] = {

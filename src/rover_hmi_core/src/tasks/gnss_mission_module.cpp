@@ -3,12 +3,17 @@
 #include "rover_hmi_core/tasks/gnss_mission_module.h"
 #include <rover_hmi_core/catppuccin.h>
 
+#include <QDateTime>
+#include <QDesktopServices>
+#include <QDir>
+#include <QDirIterator>
 #include <QFileInfo>
-#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
+#include <cstdlib>
 
 #include <pluginlib/class_list_macros.hpp>
 
@@ -16,6 +21,22 @@ namespace {
 
 // mission_manager rejects tags on a fix older than this (stale_fix_sec).
 constexpr double kStaleSec = 2.0;
+
+// src/rover_mapping in the source tree ($ROVERFLAKE_ROOT first, then the
+// baked sibling of rover_hmi_core) — imagery, missions, and the rover CLI
+// live there, not in the install space.
+QString mappingRoot() {
+    if (const char* root = std::getenv("ROVERFLAKE_ROOT")) {
+        const QString c = QString::fromLocal8Bit(root) + "/src/rover_mapping";
+        if (QFileInfo::exists(c)) return c;
+    }
+#ifdef ROVER_HMI_CORE_SOURCE_DIR
+    const QString baked =
+        QFileInfo(QStringLiteral(ROVER_HMI_CORE_SOURCE_DIR)).path() + "/rover_mapping";
+    if (QFileInfo::exists(baked)) return baked;
+#endif
+    return {};
+}
 
 QPushButton* button(const QString& text, const QString& color) {
     auto* b = new QPushButton(text);
@@ -36,12 +57,26 @@ void GnssMissionModule::setNode(rclcpp::Node::SharedPtr node) {
         "/gnss_fix", 10, [this](sensor_msgs::msg::NavSatFix::SharedPtr msg) {
             fix_ = msg;
             fix_stamp_ = node_->now();
+            if (map_ && msg->status.status >= 0)
+                map_->addFix(msg->latitude, msg->longitude);
+        });
+    // Latched by mission_manager — recovers the active mission after an HMI
+    // restart mid-run.
+    active_sub_ = node->create_subscription<std_msgs::msg::String>(
+        "/mission/active", rclcpp::QoS(1).transient_local(),
+        [this](std_msgs::msg::String::SharedPtr msg) {
+            if (!mission_label_) return;
+            const QString name = QString::fromStdString(msg->data);
+            mission_label_->setText(name.isEmpty() ? "—" : name);
+            mission_label_->setStyleSheet(QString("color:%1;").arg(
+                name.isEmpty() ? theme::TextDim : theme::Green));
         });
     start_cli_     = node->create_client<StartMission>("/mission/start");
     stop_cli_      = node->create_client<Trigger>("/mission/stop");
     tag_cli_       = node->create_client<TagPoint>("/tag_point");
     seg_start_cli_ = node->create_client<Segment>("/segment_start");
     seg_end_cli_   = node->create_client<Segment>("/segment_end");
+    export_cli_    = node->create_client<ExportMap>("/mission/export");
 }
 
 QWidget* GnssMissionModule::createWidget(QWidget* parent) {
@@ -109,11 +144,31 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
     seg_row->addWidget(seg_close);
     col->addLayout(seg_row);
 
+    map_ = new GnssMapWidget();
+    map_->setImageryRoot(mappingRoot() + "/imagery");
+    col->addWidget(map_, 1);
+
+    auto* map_row = new QHBoxLayout();
+    map_row->addStretch();
+    auto* center = button("Center", theme::Cyan);
+    QObject::connect(center, &QPushButton::clicked, [this]() {
+        map_->centerOnFix();
+        report(bool(fix_), fix_ ? "following the rover"
+                                : "no GPS fix yet — nothing to center on");
+    });
+    map_row->addWidget(center);
+    auto* exp = button("Export report", theme::Green);
+    QObject::connect(exp, &QPushButton::clicked, [this]() { exportReport(); });
+    map_row->addWidget(exp);
+    auto* open = button("Open report", theme::Text);
+    QObject::connect(open, &QPushButton::clicked, [this]() { openReport(); });
+    map_row->addWidget(open);
+    col->addLayout(map_row);
+
     status_ = new QLabel();
     status_->setFont(QFont("monospace", theme::FontSize - 2));
     status_->setWordWrap(true);
     col->addWidget(status_);
-    col->addStretch();
 
     auto* timer = new QTimer(root);
     QObject::connect(timer, &QTimer::timeout, [this]() { refreshFix(); });
@@ -152,13 +207,11 @@ void GnssMissionModule::startMission() {
         return report(false, "mission_manager not running");
     auto req = std::make_shared<StartMission::Request>();
     req->name = mission_name_->text().trimmed().toStdString();
+    // mission_label_ follows the latched /mission/active topic.
     start_cli_->async_send_request(req, [this](rclcpp::Client<StartMission>::SharedFuture f) {
         const auto r = f.get();
         report(r->ok, QString::fromStdString(r->message));
-        if (r->ok) {
-            mission_label_->setText(QFileInfo(QString::fromStdString(r->mission_dir)).fileName());
-            mission_label_->setStyleSheet(QString("color:%1;").arg(theme::Green));
-        }
+        if (r->ok) map_->clearRun();
     });
 }
 
@@ -169,10 +222,6 @@ void GnssMissionModule::stopMission() {
                                   [this](rclcpp::Client<Trigger>::SharedFuture f) {
         const auto r = f.get();
         report(r->success, QString::fromStdString(r->message));
-        if (r->success) {
-            mission_label_->setText("—");
-            mission_label_->setStyleSheet(QString("color:%1;").arg(theme::TextDim));
-        }
     });
 }
 
@@ -182,14 +231,18 @@ void GnssMissionModule::tag(const QString& category) {
     auto req = std::make_shared<TagPoint::Request>();
     req->category = category.toStdString();
     req->label = tag_label_->text().trimmed().toStdString();
-    tag_cli_->async_send_request(req, [this](rclcpp::Client<TagPoint>::SharedFuture f) {
+    tag_cli_->async_send_request(req, [this, category](rclcpp::Client<TagPoint>::SharedFuture f) {
         const auto r = f.get();
         report(r->ok, r->ok ? QString("%1 @ %2, %3")
                                   .arg(QString::fromStdString(r->id))
                                   .arg(r->lat, 0, 'f', 6)
                                   .arg(r->lon, 0, 'f', 6)
                             : QString::fromStdString(r->message));
-        if (r->ok) tag_label_->clear();
+        if (r->ok) {
+            map_->addWaypoint(r->lat, r->lon, category,
+                              QString::fromStdString(r->id));
+            tag_label_->clear();
+        }
     });
 }
 
@@ -207,6 +260,40 @@ void GnssMissionModule::segment(bool open) {
                             : QString::fromStdString(r->message));
         if (r->ok && !open) seg_name_->clear();
     });
+}
+
+// Rendered by mission_manager's /mission/export (Pillow, tiles + track).
+void GnssMissionModule::exportReport() {
+    if (!export_cli_->service_is_ready())
+        return report(false, "mission_manager not running");
+    auto req = std::make_shared<ExportMap::Request>();
+    req->mission = "last";
+    report(true, "exporting…");
+    export_cli_->async_send_request(req, [this](rclcpp::Client<ExportMap>::SharedFuture f) {
+        const auto r = f.get();
+        report(r->ok, QString::fromStdString(r->message));
+        if (r->ok) last_report_ = QString::fromStdString(r->path);
+    });
+}
+
+// Opens the last-exported report/route_map.png in the system viewer;
+// falls back to the newest one on disk (e.g. exported from the CLI).
+void GnssMissionModule::openReport() {
+    QString target = last_report_;
+    if (target.isEmpty()) {
+        QDateTime newest_time;
+        QDirIterator it(mappingRoot() + "/missions", {"route_map.png"},
+                        QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            const QString f = it.next();
+            const QDateTime t = it.fileInfo().lastModified();
+            if (target.isEmpty() || t > newest_time) { target = f; newest_time = t; }
+        }
+    }
+    if (target.isEmpty())
+        return report(false, "no exported report found — Export first");
+    QDesktopServices::openUrl(QUrl::fromLocalFile(target));
+    report(true, target);
 }
 
 PLUGINLIB_EXPORT_CLASS(GnssMissionModule, rover_hmi_core::GuiModule)

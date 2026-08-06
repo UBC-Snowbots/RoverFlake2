@@ -192,9 +192,12 @@ class NMEAReader(Node):
         # pynmea doesnt apply the sign
         lat_sign = -1.0 if msg.lat_dir == 'S' else 1.0
         lon_sign = -1.0 if msg.lon_dir == 'W' else 1.0
-        
-        navsat_fix.latitude = float(msg.lat) * lat_sign
-        navsat_fix.longitude = float(msg.lon) * lon_sign
+
+        # msg.lat/lon are raw NMEA ddmm.mmmm strings — convert to decimal deg
+        raw_lat = float(msg.lat)
+        raw_lon = float(msg.lon)
+        navsat_fix.latitude = (raw_lat // 100 + (raw_lat % 100) / 60.0) * lat_sign
+        navsat_fix.longitude = (raw_lon // 100 + (raw_lon % 100) / 60.0) * lon_sign
 
         navsat_fix.altitude = float(msg.altitude) if isinstance(msg.altitude, (int, float)) else 0.0
 

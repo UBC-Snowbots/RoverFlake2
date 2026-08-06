@@ -17,5 +17,5 @@ sudo apt install -y libunwind-dev
 sudo apt-get install -y gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
 sudo apt install -y ros-humble-gscam
 
-# for rover_mapping (mission_manager wgs84 -> local xy)
-sudo apt install -y ros-humble-swri-transform-util
+# for rover_mapping (report-map exporter)
+sudo apt install -y python3-pil
