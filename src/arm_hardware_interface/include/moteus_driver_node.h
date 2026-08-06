@@ -128,6 +128,7 @@ private:
 
 
     // Safety monitoring (called inside poll, only logs on state changes)
+    void checkFaults();
     void checkAlerts();
 
     // Publish a string to /arm/config_log (shown in the HMI command log panel)
@@ -195,6 +196,7 @@ private:
     // -------------------------------------------------------------------------
     // State tracking for edge-triggered logging (prevents log spam)
     // -------------------------------------------------------------------------
+    std::array<int,  NUM_MOTORS> last_fault_{};
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
 

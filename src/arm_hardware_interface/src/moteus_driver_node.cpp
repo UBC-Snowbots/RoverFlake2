@@ -586,6 +586,7 @@ void MoteusDriverNode::run() {
     arm_feedback_pub->publish(arm_feedback_msg);
 
     // ── Stage 9: safety ─────────────────────────────────────────────────────
+    checkFaults();
     checkAlerts();
 
     // ── Stage 10: at most one staggered flash-config read (conf get only) ───
@@ -595,6 +596,40 @@ void MoteusDriverNode::run() {
 // ---------------------------------------------------------------------------
 // Position limit alerts — warns when approaching configured bounds
 // ---------------------------------------------------------------------------
+
+void MoteusDriverNode::checkFaults() {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        auto& t = telem_[i];
+        if (!t.connected) continue;
+
+        if (t.fault != last_fault_[i]) {
+            if (t.fault != 0) {
+                RCLCPP_ERROR(this->get_logger(),
+                    "Motor %d (%s) FAULT! Code: %d — commands blocked until STOP sent",
+                    i + 1, ARM_JOINTS[i].hardware_name, t.fault);
+                publishLog("# FAULT motor " + std::to_string(i + 1)
+                    + " (" + ARM_JOINTS[i].hardware_name
+                    + ") code=" + std::to_string(t.fault));
+            } else if (last_fault_[i] != 0) {
+                RCLCPP_INFO(this->get_logger(),
+                    "Motor %d (%s) fault cleared", i + 1, ARM_JOINTS[i].hardware_name);
+                publishLog("# Motor " + std::to_string(i + 1)
+                    + " (" + ARM_JOINTS[i].hardware_name + ") fault cleared");
+            }
+            last_fault_[i] = t.fault;
+        }
+
+        if (t.mode != last_mode_[i]) {
+            if (t.mode == 1)
+                RCLCPP_ERROR(this->get_logger(),
+                    "Motor %d (%s) entered FAULT mode", i + 1, ARM_JOINTS[i].hardware_name);
+            else if (t.mode == 0 && last_mode_[i] != 0)
+                RCLCPP_WARN(this->get_logger(),
+                    "Motor %d (%s) is STOPPED (driver disabled)", i + 1, ARM_JOINTS[i].hardware_name);
+            last_mode_[i] = t.mode;
+        }
+    }
+}
 
 void MoteusDriverNode::checkAlerts() {
     for (int i = 0; i < NUM_MOTORS; i++) {
