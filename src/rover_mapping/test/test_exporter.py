@@ -34,3 +34,11 @@ def test_export_without_imagery(tmp_path, monkeypatch):
     assert os.path.exists(out)
     assert out.endswith('report/route_map.png')
     assert os.path.getsize(out) > 1000
+
+    poi = os.path.join(os.path.dirname(out), 'poi.csv')
+    with open(poi) as f:
+        rows = f.read().splitlines()
+    assert rows[0].startswith('id,label,category')
+    assert rows[1].startswith('track_start')
+    assert rows[-1].startswith('track_end')
+    assert any(r.startswith('site_1') for r in rows)

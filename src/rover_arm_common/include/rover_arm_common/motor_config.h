@@ -117,9 +117,10 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     motors[0].kp =  4000.0f;  motors[0].kd =  600.0f;   // A1
     motors[1].kp = 30000.0f;  motors[1].kd = 6000.0f;   // A2
     motors[2].kp = 40000.0f;  motors[2].kd = 2000.0f;   // A3
-    motors[3].kp =   550.0f;  motors[3].kd =   10.0f;   // A4
+    motors[3].kp = 9000.0f;  motors[3].kd = 1000.0f;   // A4
     motors[4].kp = 17000.0f;  motors[4].kd = 3500.0f;   // A5
     motors[5].kp = 17000.0f;  motors[5].kd = 3500.0f;   // A6
+    motors[6].kp = 1400.0f;  motors[6].kd = 30.0f;   // A7
 
     // --- Gear reductions (for display in HMI only — firmware holds the real value) ---
     motors[0].gear_reduction = 1.0f / 190.0f;
@@ -253,16 +254,19 @@ namespace AxisConfig {
         /*AXIS 2 */   true,
         /*AXIS 3 */   true,
         /*AXIS 4 */   true,
-        /*AXIS 5 */   false,
-        /*AXIS 6 */   false,
+        /*AXIS 5 */   true,   // added 2026-08-05
+        /*AXIS 6 */   true,   // added 2026-08-05
         /*AXIS EE */  false };
 
     // Per-axis, measured with DEBUG_LIMIT_SWITCH_RAW_REPLY (2026-08-02).
-    // All four: pressed = HIGH; only the pin differs (A1/A3 pin 0, A2/A4 pin 1).
+    // All four: pressed = HIGH; only the pin differs (A1/A3/A4 pin 0, A2 pin 1).
+    // A4 was first captured as pin 1 — wrong pin, feedback read inverted;
+    // corrected to pin 0 on the bench (2026-08-05).
     // A1's first capture was misread as inverted — the arm was resting on its
     // switch, so the observed transitions were releases, not presses.
     // A3's pin has no pull; if it flakes: conf set aux2.pins.0.pull 2 on motor 3.
-    uint8_t limit_switch_mask[NUM_AXES]     = {1, 2, 1, 2, 0, 0, 0};
+    // A5/A6 (wrist): switch on each motor's own aux2 pin 0 (Aaron, 2026-08-05).
+    uint8_t limit_switch_mask[NUM_AXES]     = {1, 2, 1, 1, 1, 1, 0};
     bool    limit_switch_inverted[NUM_AXES] = {false, false, false, false, false, false, false};
 
 };

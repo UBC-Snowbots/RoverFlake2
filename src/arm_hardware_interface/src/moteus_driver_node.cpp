@@ -22,7 +22,6 @@ constexpr float kHomingStepRev = 0.05f;
 inline bool stateMachineOwns(AxisState s) {
     return s == AxisState::REQUESTING_HOMING
         || s == AxisState::HOMING
-        || s == AxisState::HOMED_WAITING
         || s == AxisState::GOING_TO_PRESET_POSITION;
 }
 
@@ -320,12 +319,31 @@ void MoteusDriverNode::set_position(uint8_t index, float position_revs)
   guardTransport([ctrl, cmd = std::string(cmd)]() { ctrl->DiagnosticCommand(cmd); }, 1000);
 }
 
+// Stamp an AXIS-space position. Plain axes map 1:1 to their motor; the wrist
+// pair is differential (m5 = a5+a6, m6 = a6-a5, see differential_drive_inverse),
+// so stamping one wrist axis rewrites BOTH motor counters, preserving the
+// sibling axis's value. axes[].position is updated in place so the same-cycle
+// state machine never acts on the stale pre-stamp telemetry.
+void MoteusDriverNode::set_axis_position(uint8_t axis, float value)
+{
+    if (axis == AXIS_5_INDEX || axis == AXIS_6_INDEX) {
+        const float a5 = (axis == AXIS_5_INDEX) ? value : axes[AXIS_5_INDEX].position;
+        const float a6 = (axis == AXIS_6_INDEX) ? value : axes[AXIS_6_INDEX].position;
+        set_position(AXIS_5_INDEX, a5 + a6);
+        set_position(AXIS_6_INDEX, a6 - a5);
+        axes[AXIS_5_INDEX].position = a5;
+        axes[AXIS_6_INDEX].position = a6;
+    } else {
+        set_position(axis, value);
+        axes[axis].position = value;
+    }
+}
+
 void MoteusDriverNode::home_axis(uint8_t index)
 {
-    // Request homing; axes requested in the same session form a group that
-    // waits at the switches and retreats to idle together (old-arm behavior).
+    // Each axis homes independently: zero at the switch, then park at idle.
+    // (The wrist pair is additionally sequenced one at a time in Stage 2.)
     this->axes[index].state = AxisState::REQUESTING_HOMING;
-    homing_group_[index] = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +408,6 @@ void MoteusDriverNode::run() {
             if (p.is_stop) {
                 axis_cmds_[a] = p;
                 if (stateMachineOwns(axes[a].state)) axes[a].state = AxisState::RUNNING_OK; // abort homing
-                homing_group_[a] = false;
             }
             else if (!stateMachineOwns(axes[a].state))  axis_cmds_[a] = p;
         }
@@ -420,49 +437,51 @@ void MoteusDriverNode::run() {
     for (auto& ax : axes) {
         const int i = ax.index;
         switch (ax.state) {
-        case AxisState::REQUESTING_HOMING:
+        case AxisState::REQUESTING_HOMING: {
+            // Wrist axes share the differential: homing both at once would
+            // cross-stamp each other's counters mid-motion. Hold this one in
+            // REQUESTING (silently) until its sibling leaves the state machine.
+            const int sib = (i == AXIS_5_INDEX) ? AXIS_6_INDEX
+                          : (i == AXIS_6_INDEX) ? AXIS_5_INDEX : -1;
+            if (sib >= 0 && axes[sib].state != AxisState::REQUESTING_HOMING
+                         && stateMachineOwns(axes[sib].state)) break;
             if (!AxisConfig::has_limit_switch[i]) {
                 RCLCPP_WARN(this->get_logger(), "Axis %d has no limit switch — homing denied", i + 1);
                 ax.state = AxisState::RUNNING_OK;
-                homing_group_[i] = false;   // don't make the group wait for a denied axis
             } else if (ax.limit_switch) {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch stuck/pressed. Homing denied", i + 1);
                 ax.state = AxisState::ERROR;
-                homing_group_[i] = false;
             } else if (!telem_[i].connected
                        || (telem_[i].fault != 0 && telem_[i].fault < 96)) {  // limit codes aren't faults
                 RCLCPP_WARN(this->get_logger(),
-                    "Axis %d motor %s — homing denied (would stall the group)",
+                    "Axis %d motor %s — homing denied",
                     i + 1, telem_[i].connected ? "faulted" : "not replying");
                 ax.state = AxisState::RUNNING_OK;
-                homing_group_[i] = false;
             } else {
                 RCLCPP_INFO(this->get_logger(), "Axis %d switch healthy. Homing accepted", i + 1);
-                set_position(i, AxisConfig::max_position_rev[i] - 0.01f);  // seed so soft limits can't block travel
+                // Seed at the end OPPOSITE the homing direction so soft limits
+                // can't block travel and the overtravel guard has a full span.
+                set_axis_position(i, ax.homing_direction < 0
+                    ? AxisConfig::max_position_rev[i] - 0.01f
+                    : AxisConfig::min_position_rev[i] + 0.01f);
                 ax.state = AxisState::HOMING;
             }
             break;
+        }
 
         case AxisState::HOMING:
             if (ax.limit_switch) {
-                // Travel from seed = distance from the start pose (where the seed was
-                // stamped) to the switch. Stamp the switch as -travel so the pose the
-                // user started homing from becomes exactly 0.
-                const float travel = (AxisConfig::max_position_rev[i] - 0.01f) - axes[i].position;
-                ax.switch_position = -travel;
-                ax.return_position = (travel >= 0.02f) ? 0.0f : (0.02f - travel); // never park on the switch
-                set_position(i, ax.switch_position);
-                RCLCPP_INFO(this->get_logger(),
-                    "Axis %d homed — switch at %.3f, holding for group (returning to %.3f)",
-                    i + 1, ax.switch_position, ax.return_position);
-                ax.state = AxisState::HOMED_WAITING;
-            } else if (axes[i].position < ax.min_position_rev - 0.05f) {
+                set_axis_position(i, 0.0f);   // the switch IS zero (wrist-aware stamp)
+                RCLCPP_INFO(this->get_logger(), "Axis %d homed — zeroed at switch, going to idle", i + 1);
+                ax.state = AxisState::GOING_TO_PRESET_POSITION;
+            } else if (ax.homing_direction < 0
+                           ? axes[i].position < ax.min_position_rev - 0.05f
+                           : axes[i].position > AxisConfig::max_position_rev[i] + 0.05f) {
                 RCLCPP_ERROR(this->get_logger(),
                     "Axis %d homing overtravel — no switch contact (aux2 input not configured?). Stopping.", i + 1);
                 auto& c = axis_cmds_[i];
                 c.active = true; c.is_stop = true;
                 ax.state = AxisState::ERROR;
-                homing_group_[i] = false;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
                 c.active = true; c.is_stop = false; c.is_zero = false;
@@ -473,23 +492,15 @@ void MoteusDriverNode::run() {
             }
             break;
 
-        case AxisState::HOMED_WAITING: {   // hold at the switch until every group member arrives
-            auto& c = axis_cmds_[i];
-            c.active = true; c.is_stop = false; c.is_zero = false;
-            c.position = ax.switch_position;
-            c.velocity = NAN;
-            c.max_velocity = AxisConfig::homing_speed_revps[i];
-            c.max_acceleration = 0.1f; c.max_torque = NAN;
-            break;
-        }
-
         case AxisState::GOING_TO_PRESET_POSITION: {
             auto& c = axis_cmds_[i];
             c.active = true; c.is_stop = false; c.is_zero = false;
-            c.position = ax.return_position;            // back to the pre-homing pose (axis space)
+            // Back off the switch opposite the approach direction (axis space).
+            const float idle = -ax.homing_direction * AxisConfig::idle_position[i];
+            c.position = idle;
             c.velocity = NAN;
-            c.max_velocity = ax.retreat_velocity; c.max_acceleration = 0.1f; c.max_torque = NAN;
-            if (std::fabs(axes[i].position - ax.return_position) < 0.01f)
+            c.max_velocity = 0.1f; c.max_acceleration = 0.1f; c.max_torque = NAN;
+            if (std::fabs(axes[i].position - idle) < 0.01f)
             {
                 ax.state = AxisState::RUNNING_OK;
             }
@@ -497,34 +508,6 @@ void MoteusDriverNode::run() {
         }
         default:
             break;
-        }
-    }
-
-    // ── Stage 2.5: group retreat — when every grouped axis is holding at its
-    //    switch, release them all toward idle_position in the same cycle.
-    {
-        bool group_active = false, all_waiting = true;
-        for (int a = 0; a < NUM_AXES; a++) {
-            if (!homing_group_[a]) continue;
-            group_active = true;
-            if (axes[a].state != AxisState::HOMED_WAITING) all_waiting = false;
-        }
-        if (group_active && all_waiting) {
-            // Scale each axis's speed to its distance so they depart AND arrive together.
-            float d_max = 0.0f;
-            for (int a = 0; a < NUM_AXES; a++)
-                if (homing_group_[a])
-                    d_max = std::max(d_max, std::fabs(axes[a].return_position - axes[a].switch_position));
-            const float T = std::max(1.0f, d_max / 0.1f);   // slowest axis runs at 0.1 rev/s
-            RCLCPP_INFO(this->get_logger(),
-                "Homing group complete — returning to start together (~%.1f s)", T);
-            for (int a = 0; a < NUM_AXES; a++) {
-                if (!homing_group_[a]) continue;
-                axes[a].retreat_velocity = std::max(0.005f,
-                    std::fabs(axes[a].return_position - axes[a].switch_position) / T);
-                axes[a].state = AxisState::GOING_TO_PRESET_POSITION;
-                homing_group_[a] = false;
-            }
         }
     }
 

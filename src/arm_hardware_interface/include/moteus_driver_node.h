@@ -64,7 +64,6 @@ enum class AxisState
     INIT,
     REQUESTING_HOMING,
     HOMING,
-    HOMED_WAITING,            // zeroed at switch, holding until the whole homing group is done
     GOING_TO_PRESET_POSITION,
     RUNNING_OK,
     ERROR
@@ -72,9 +71,6 @@ enum class AxisState
 
 struct Axis {
         int index; // Starts at 0
-        float switch_position = 0;   // counter value stamped at switch contact (= -travel, so start pose = 0)
-        float return_position = 0;   // where to go after the group homes (normally 0 = the start pose)
-        float retreat_velocity = 0.1f; // per-axis cap so grouped retreats arrive together
         float position = 0;
         bool limit_switch = 0;
         bool homed = false;
@@ -166,6 +162,7 @@ private:
     void publishLog(const std::string& msg);
 
     void zero_position(uint8_t index);
+    void set_axis_position(uint8_t axis, float value);  // axis-space; wrist-aware (stamps both motors)
     void set_position(uint8_t index, float position_revs);
     
     void home_axis(uint8_t index);
@@ -248,7 +245,6 @@ private:
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
     std::array<bool, NUM_AXES> limit_block_logged_{};  // edge log for stage 1.5 soft-block
-    std::array<bool, NUM_AXES> homing_group_{};        // axes homing together; retreat starts when all are HOMED_WAITING
 
 
 

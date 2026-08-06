@@ -224,7 +224,10 @@ class MissionManager(Node):
             return res
         assert fix is not None
 
-        wp_id = mission_io.next_waypoint_id(self._waypoints, category)
+        # id from the file, not the in-memory cache — stays collision-free
+        # even if another writer (CLI, stray node) appended since our last tag
+        wp_id = mission_io.next_waypoint_id(
+            mission_io.load_yaml_list(self._sidecar('waypoints.yaml')), category)
         label = req.label.strip() or mission_io.default_label(wp_id)
         waypoint = {
             'id': wp_id,

@@ -119,6 +119,8 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
     if(this->last_control_input.kinematics_mode_switch != control_input.kinematics_mode_switch && control_input.kinematics_mode_switch == 1)
     {
         this->fk = !this->fk; // Flip it
+        RCLCPP_INFO(this->get_logger(), "Kinematics mode: %s",
+            this->fk ? "FK (joint velocities)" : "IK (servo twists)");
     }
 
     if(this->fk)

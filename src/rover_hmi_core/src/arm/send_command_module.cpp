@@ -380,15 +380,15 @@ void SendCommandModule::sendStopAll() {
     logCmd("A> d stop");
 }
 
-// Safe-pose homing: the Zero Axes checkboxes select which axes home (switch-
-// equipped axes 1-4 only). The prompt gives the operator time to pose the arm;
-// on confirm, the current pose is stamped 0 and the group homes — each axis
-// creeps to its switch, holds, then all return to this pose (= 0) together.
+// Switch homing: the Zero Axes checkboxes select which axes home (switch-
+// equipped axes 1-6; EE has no switch and the driver denies it anyway).
+// Each axis creeps to its switch, zeroes THERE, and parks just off it —
+// independent per axis; the wrist pair (A5/A6) homes one at a time.
 void SendCommandModule::homeChecked() {
     if (!cmd_pub_) return;
     QStringList names;
     std::vector<double> selected;
-    for (int i = 0; i < NUM_ZERO_AXES && i <= AXIS_4_INDEX; i++) {
+    for (int i = 0; i < NUM_ZERO_AXES && i <= AXIS_6_INDEX; i++) {
         if (!zero_checks_[i]->isChecked()) continue;
         selected.push_back((double)i);
         names << QString("A%1").arg(i + 1);
@@ -397,9 +397,10 @@ void SendCommandModule::homeChecked() {
 
     QMessageBox box;
     box.setWindowTitle("Home arm");
-    box.setText(QString("Move the arm to a safe starting position now.\n\n"
-                        "On confirm, that pose becomes 0 for %1, each axis creeps "
-                        "to its limit switch, and they all return here together.")
+    box.setText(QString("Make sure the path to each limit switch is clear.\n\n"
+                        "On confirm, %1 will each creep to their limit switch, "
+                        "zero there, and park just off the switch. A5/A6 home "
+                        "one at a time.")
                     .arg(names.join(", ")));
     box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
     box.setDefaultButton(QMessageBox::Cancel);
@@ -412,15 +413,13 @@ void SendCommandModule::homeChecked() {
         .arg(theme::Bg).arg(theme::Text).arg(theme::Border));
     if (box.exec() != QMessageBox::Ok) return;
 
-    // No CMD_ZERO needed: the driver stamps the switch as -travel at contact,
-    // which makes the pose homing started from (this one) exactly 0.
     rover_msgs::msg::ArmCommand home;
     home.cmd_type = CMD_HOME;
     home.cmd_value = HOME_VALUE_SELECTED;
     home.positions = selected;
     cmd_pub_->publish(home);
 
-    logCmd(QString("%1> group home (safe pose becomes 0)").arg(names.join(",")));
+    logCmd(QString("%1> home (switch = 0)").arg(names.join(",")));
 }
 
 // One message for all selected axes: per-axis publishes on this KeepLast(1)

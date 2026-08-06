@@ -38,13 +38,13 @@ joint_limits:
     max_velocity: 0.63
     has_acceleration_limits: true
     max_acceleration: 12.57
-  finger_left_joint:
+  finger_left_joint:           # bare ints crash move_group: params must be doubles
     has_velocity_limits: true
-    max_velocity: 1
+    max_velocity: 1.0
     has_acceleration_limits: false
-    max_acceleration: 0
+    max_acceleration: 0.0
   finger_right_joint:
     has_velocity_limits: true
-    max_velocity: 1
+    max_velocity: 1.0
     has_acceleration_limits: false
-    max_acceleration: 0
+    max_acceleration: 0.0

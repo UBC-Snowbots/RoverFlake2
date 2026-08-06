@@ -154,6 +154,17 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
                   joint='curve')
 
     font = _font(16)
+    if track:
+        sx, sy = cpx(track[0][1], track[0][2])
+        ex, ey = cpx(track[-1][1], track[-1][2])
+        draw.ellipse((sx - 6, sy - 6, sx + 6, sy + 6),
+                     outline=(255, 255, 255), width=3)
+        draw.text((sx + 10, sy - 20), 'start', fill=(255, 255, 255),
+                  font=font, stroke_width=2, stroke_fill=(0, 0, 0))
+        draw.rectangle((ex - 6, ey - 6, ex + 6, ey + 6),
+                       fill=(255, 255, 255), outline=(0, 0, 0), width=2)
+        draw.text((ex + 10, ey + 4), 'end', fill=(255, 255, 255),
+                  font=font, stroke_width=2, stroke_fill=(0, 0, 0))
     for w in waypoints:
         x, y = cpx(w['lat'], w['lon'])
         col = _rgb(w['category'])
@@ -206,10 +217,30 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     out = out or os.path.join(mission_dir, 'report', 'route_map.png')
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
+    write_poi_csv(os.path.join(os.path.dirname(out), 'poi.csv'),
+                  waypoints, track)
     if missing and zooms:
         print(f'warning: {missing} tiles missing (site imagery incomplete)',
               file=sys.stderr)
     return out
+
+
+def write_poi_csv(path: str, waypoints: List[dict], track) -> str:
+    """Report-ready POI table: every waypoint plus the track endpoints."""
+    with open(path, 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['id', 'label', 'category', 'lat', 'lon', 'alt', 'notes'])
+        if track:
+            w.writerow(['track_start', 'Track start', 'track',
+                        f'{track[0][1]:.8f}', f'{track[0][2]:.8f}', '', ''])
+        for wp in waypoints:
+            w.writerow([wp.get('id'), wp.get('label'), wp.get('category'),
+                        f"{wp['lat']:.8f}", f"{wp['lon']:.8f}",
+                        wp.get('alt', ''), wp.get('notes', '')])
+        if track:
+            w.writerow(['track_end', 'Track end', 'track',
+                        f'{track[-1][1]:.8f}', f'{track[-1][2]:.8f}', '', ''])
+    return path
 
 
 def main(argv=None) -> int:
