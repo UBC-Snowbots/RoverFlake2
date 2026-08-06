@@ -25,7 +25,7 @@ ament_target_dependencies(comms_relay
 
 
 target_link_libraries(death_ray_motor_control_node gpiod)
-target_link_libraries(comms_relay pigpio)
+target_link_libraries(comms_relay gpiod)
 
 target_include_directories(death_ray_motor_control_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

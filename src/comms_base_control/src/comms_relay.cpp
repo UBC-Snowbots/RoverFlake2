@@ -1,14 +1,46 @@
-#include "servo_control_node.h"
+#include "comms_relay.h"
 #include <algorithm>
 #include <cmath>
 
 ServoControlNode::ServoControlNode() : Node("servo_control_node") {
-    if (gpioInitialise() < 0) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to initialize pigpio");
+    chip_ = gpiod_chip_open(GPIO_CHIP_NAME);
+    if (!chip_) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to open GPIO chip: %s", GPIO_CHIP_NAME);
         return;
     }
-    pigpio_ready_ = true;
-    RCLCPP_INFO(this->get_logger(), "pigpio initialized successfully");
+
+    servo1_line_ = gpiod_chip_get_line(chip_, SERVO1_GPIO_PIN);
+    servo2_line_ = gpiod_chip_get_line(chip_, SERVO2_GPIO_PIN);
+
+    if (!servo1_line_ || !servo2_line_) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to get one or more servo GPIO lines");
+        if (chip_) {
+            gpiod_chip_close(chip_);
+            chip_ = nullptr;
+        }
+        return;
+    }
+
+    if (gpiod_line_request_output(servo1_line_, "comms_relay_servo1", 0) < 0 ||
+        gpiod_line_request_output(servo2_line_, "comms_relay_servo2", 0) < 0) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to request servo GPIO lines as outputs");
+        if (servo1_line_) {
+            gpiod_line_release(servo1_line_);
+            servo1_line_ = nullptr;
+        }
+        if (servo2_line_) {
+            gpiod_line_release(servo2_line_);
+            servo2_line_ = nullptr;
+        }
+        if (chip_) {
+            gpiod_chip_close(chip_);
+            chip_ = nullptr;
+        }
+        return;
+    }
+
+    gpiod_ready_ = true;
+    RCLCPP_INFO(this->get_logger(), "gpiod initialized successfully");
 
     // On power-up: immediately drive PWM to a known-safe starting state
     // (servo1 at MIN, servo2 in catch position) before anything else runs.
@@ -28,6 +60,11 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
         std::chrono::milliseconds(STATE_MACHINE_TICK_MS),
         std::bind(&ServoControlNode::tick, this));
 
+    pwm_cycle_start_ = std::chrono::steady_clock::now();
+    pwm_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(1),
+        std::bind(&ServoControlNode::updatePwm, this));
+
     position_feedback_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&ServoControlNode::publishPositions, this));
@@ -36,23 +73,63 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
 }
 
 ServoControlNode::~ServoControlNode() {
-    if (pigpio_ready_) {
-        gpioServo(SERVO1_GPIO_PIN, 0);
-        gpioServo(SERVO2_GPIO_PIN, 0);
-        gpioTerminate();
+    if (gpiod_ready_) {
+        gpiod_line_set_value(servo1_line_, 0);
+        gpiod_line_set_value(servo2_line_, 0);
+    }
+
+    if (servo1_line_) {
+        gpiod_line_release(servo1_line_);
+        servo1_line_ = nullptr;
+    }
+    if (servo2_line_) {
+        gpiod_line_release(servo2_line_);
+        servo2_line_ = nullptr;
+    }
+    if (chip_) {
+        gpiod_chip_close(chip_);
+        chip_ = nullptr;
     }
 }
 
 /**
  * Maps a commanded angle in [-90, 90] degrees to a pulse width in
- * microseconds and writes it to the given GPIO pin via pigpio.
+ * microseconds and updates the software PWM target pulse width.
  * Out-of-range values are clamped rather than rejected.
  */
 void ServoControlNode::setServoAngle(int gpio_pin, float angle_deg) {
     float clamped = std::clamp(angle_deg, SERVO1_MIN_ANGLE, SERVO1_MAX_ANGLE);
     float t = (clamped - SERVO1_MIN_ANGLE) / (SERVO1_MAX_ANGLE - SERVO1_MIN_ANGLE);
     int pulse_us = SERVO_MIN_PULSE_US + static_cast<int>(t * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US));
-    gpioServo(gpio_pin, pulse_us);
+
+    if (gpio_pin == SERVO1_GPIO_PIN) {
+        servo1_pulse_us_ = pulse_us;
+    } else if (gpio_pin == SERVO2_GPIO_PIN) {
+        servo2_pulse_us_ = pulse_us;
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Unknown servo GPIO pin: %d", gpio_pin);
+    }
+}
+
+void ServoControlNode::updatePwm() {
+    if (!gpiod_ready_ || !servo1_line_ || !servo2_line_) {
+        return;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    int elapsed_us = static_cast<int>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - pwm_cycle_start_).count());
+
+    if (elapsed_us >= SERVO_PWM_PERIOD_US) {
+        pwm_cycle_start_ = now;
+        elapsed_us = 0;
+    }
+
+    int servo1_level = (elapsed_us < servo1_pulse_us_) ? 1 : 0;
+    int servo2_level = (elapsed_us < servo2_pulse_us_) ? 1 : 0;
+
+    gpiod_line_set_value(servo1_line_, servo1_level);
+    gpiod_line_set_value(servo2_line_, servo2_level);
 }
 
 const char* ServoControlNode::stateName(RackState s) {
