@@ -54,6 +54,7 @@ add_library(rover_hmi_modules SHARED
     src/electrical/vaw_tree_module.cpp
     src/electrical/power_timeline_module.cpp
     # Arm
+    src/arm/driver_process.cpp
     src/arm/motor_status_module.cpp
     src/arm/motor_config_module.cpp
     src/arm/plotting_module.cpp
@@ -171,7 +172,8 @@ if(BUILD_TESTING)
 
     ament_add_gtest(motor_status_display_test
         test/motor_status_display_test.cpp
-        src/arm/motor_status_module.cpp)
+        src/arm/motor_status_module.cpp
+        src/arm/driver_process.cpp)
     target_link_libraries(motor_status_display_test Qt5::Widgets)
     target_include_directories(motor_status_display_test PRIVATE
         include include/rover_hmi_core/arm)
