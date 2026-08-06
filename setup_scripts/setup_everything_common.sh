@@ -48,6 +48,8 @@ apt_packages_to_install=(
     "libsfml-dev"
     "rviz_common"
     "libgpiod-dev"
+    "pigpio"
+    "pigpiod"
 )
 
 # Loop through the package list and install missing packages
