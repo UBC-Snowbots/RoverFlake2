@@ -38,7 +38,6 @@
 #include <thread>
 #include <vector>
 #include <array>
-#include <map>
 #include <bitset> // for printing out debug bitmasks
 
 #include "rclcpp/rclcpp.hpp"
@@ -47,8 +46,9 @@
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
+#include "rover_msgs/msg/moteus_calibration_request.hpp"
+#include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/empty.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
 // #include <rover_arm_common/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
@@ -110,22 +110,18 @@ private:
     // Keeps configs_[] consistent so subsequent feedback messages reflect edits.
     void applyConfigToMemory(int idx, const std::string& reg, float val);
 
-    // (Re-)create transport_ and controllers_ from fdcanusb detection.
+    // Calibration: receives a MoteusCalibrationRequest and spawns a background thread.
+    void calibrationCallback(const rover_msgs::msg::MoteusCalibrationRequest::SharedPtr msg);
+
+    // Runs in background thread.  Pauses poll, releases CAN, runs moteus_tool,
+    // sets hall sensor type, saves config, re-initialises transport + controllers.
+    void runCalibration(int motor_can_id);
+
+    // Re-create transport_ and controllers_ (called after moteus_tool exits).
     void reInitTransport();
 
-    // Read the MotorConfig register set from one controller's flash/RAM via
-    // "conf get".  Fills flash_cfg_[m]; published in config[] so the
-    // HMI Motor Params panel shows actual values, not assumed ones.
-    // Read-only bus traffic (SetQuery + conf get) — never writes config.
-    // Returns true when a full register set was read.
-    bool readFlashConfig(int m);
-
-    // Service one pending flash-config read per interval, from run().  Reads
-    // are staggered (one motor at a time, only motors currently replying) so a
-    // full refresh never freezes the poll loop the way the old 7-motor
-    // blocking sweep did.
-    void serviceConfigReads();
-
+    // Publish a calibration status update.
+    void publishCalibStatus(int motor_id, int state, const std::string& message);
 
     // Safety monitoring (called inside poll, only logs on state changes)
     void checkFaults();
@@ -146,22 +142,6 @@ private:
     // -------------------------------------------------------------------------
     std::shared_ptr<mot::Transport>              transport_;
     std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor_id - 1
-    std::string can_device_path_;        // resolved /dev/ttyACM* we opened
-    std::array<std::map<std::string, float>, NUM_MOTORS> flash_cfg_;  // conf get results
-    bool flash_cfg_valid_[NUM_MOTORS] = {};
-    // Staggered config reads (see serviceConfigReads): wanted = explicit
-    // refresh request; motors with !flash_cfg_valid_ are re-read automatically
-    // once they reply, so power-up order no longer matters.
-    std::array<bool, NUM_MOTORS>    cfg_read_wanted_{};
-    std::array<int64_t, NUM_MOTORS> cfg_read_last_ms_{};  // per-motor retry limiter
-    std::array<int, NUM_MOTORS>     cfg_read_fails_{};    // give up after 3; Refresh resets
-    int64_t cfg_read_gate_ms_ = 0;                        // global stagger gate
-    int     cfg_read_next_    = 0;                        // round-robin cursor
-    // In-flight sliced read: ONE register per poll tick so the 100 Hz loop
-    // (and therefore telemetry) never stalls more than a single conf get.
-    int         cfg_read_motor_ = -1;                     // -1 = idle
-    size_t      cfg_read_reg_   = 0;
-    std::map<std::string, float> cfg_read_accum_;
 
     // -------------------------------------------------------------------------
     // ROS interfaces
@@ -173,7 +153,9 @@ private:
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr           arm_feedback_pub;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
-    rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr                      config_refresh_sub_;
+    //TODO Calibration in future PR
+    // rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
+    // rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
 
     // -------------------------------------------------------------------------
     // Configuration (loaded from motor_config.h at construction)
@@ -192,6 +174,13 @@ private:
     // Updated each poll cycle from CAN reply frames.
     // -------------------------------------------------------------------------
     std::array<MotorTelem, NUM_MOTORS> telem_{};
+
+    // -------------------------------------------------------------------------
+    // Calibration state
+    // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
+    // -------------------------------------------------------------------------
+    std::atomic<bool> calibrating_{false};
+    std::mutex        calib_mutex_;   // prevents concurrent calibrations
 
     // -------------------------------------------------------------------------
     // State tracking for edge-triggered logging (prevents log spam)
