@@ -47,8 +47,6 @@
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
-#include "rover_msgs/msg/moteus_calibration_request.hpp"
-#include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/empty.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -112,18 +110,11 @@ private:
     // Keeps configs_[] consistent so subsequent feedback messages reflect edits.
     void applyConfigToMemory(int idx, const std::string& reg, float val);
 
-    // Calibration: receives a MoteusCalibrationRequest and spawns a background thread.
-    void calibrationCallback(const rover_msgs::msg::MoteusCalibrationRequest::SharedPtr msg);
-
-    // Runs in background thread.  Pauses poll, releases CAN, runs moteus_tool,
-    // sets hall sensor type, saves config, re-initialises transport + controllers.
-    void runCalibration(int motor_can_id);
-
-    // Re-create transport_ and controllers_ (called after moteus_tool exits).
+    // (Re-)create transport_ and controllers_ from fdcanusb detection.
     void reInitTransport();
 
     // Read the MotorConfig register set from one controller's flash/RAM via
-    // "conf get" (guarded).  Fills flash_cfg_[m]; published in config[] so the
+    // "conf get".  Fills flash_cfg_[m]; published in config[] so the
     // HMI Motor Params panel shows actual values, not assumed ones.
     // Read-only bus traffic (SetQuery + conf get) — never writes config.
     // Returns true when a full register set was read.
@@ -136,33 +127,13 @@ private:
     void serviceConfigReads();
 
 
-    // Runs fn on a detached thread, waiting at most timeout_ms.  fn must only
-    // touch heap state it owns (captured shared_ptrs), never members.  On
-    // timeout the transport is abandoned to a leaked graveyard and false is
-    // returned: the vendored moteus event loop executes callbacks while
-    // holding its mutex, so once a cycle spins on a dead fd, EVERY transport
-    // call (Cycle, Post, DiagnosticCommand) blocks forever — joining or
-    // destroying the transport would hang too.
-    bool guardTransport(std::function<void()> fn, int timeout_ms);
-
-    // Called each poll with whether the cycle produced any CAN replies.
-    // A sustained silent bus triggers fdcanusb re-detection: the device
-    // re-enumerates on replug (ttyACM0 -> ttyACM1) and a stale fd reads
-    // EOF forever while we'd otherwise publish zeros with no error.
-    void checkBusHealth(bool got_replies);
-
-    // Publish a calibration status update.
-    void publishCalibStatus(int motor_id, int state, const std::string& message);
-
     // Safety monitoring (called inside poll, only logs on state changes)
-    void checkFaults();
     void checkAlerts();
 
     // Publish a string to /arm/config_log (shown in the HMI command log panel)
     void publishLog(const std::string& msg);
 
     void zero_position(uint8_t index);
-    void set_axis_position(uint8_t axis, float value);  // axis-space; wrist-aware (stamps both motors)
     void set_position(uint8_t index, float position_revs);
     
     void home_axis(uint8_t index);
@@ -190,8 +161,6 @@ private:
     int         cfg_read_motor_ = -1;                     // -1 = idle
     size_t      cfg_read_reg_   = 0;
     std::map<std::string, float> cfg_read_accum_;
-    int         silent_cycles_   = 0;    // consecutive polls with zero CAN replies
-    int64_t     last_redetect_ns_ = 0;   // rate-limits re-detection attempts
 
     // -------------------------------------------------------------------------
     // ROS interfaces
@@ -204,9 +173,6 @@ private:
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
     rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
     rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr                      config_refresh_sub_;
-    //TODO Calibration in future PR
-    // rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
-    // rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
 
     // -------------------------------------------------------------------------
     // Configuration (loaded from motor_config.h at construction)
@@ -227,24 +193,10 @@ private:
     std::array<MotorTelem, NUM_MOTORS> telem_{};
 
     // -------------------------------------------------------------------------
-    // Calibration state
-    // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
-    // -------------------------------------------------------------------------
-    std::atomic<bool> calibrating_{false};
-
-    // Watchdog: run() stamps this each cycle; a side thread exits the process
-    // if the loop stalls (BlockingCycle hangs forever on a dead/re-enumerated
-    // fdcanusb fd, leaving a silent zombie node). Exit + respawn re-detects.
-    std::atomic<int64_t> heartbeat_ms_{0};
-    std::mutex        calib_mutex_;   // prevents concurrent calibrations
-
-    // -------------------------------------------------------------------------
     // State tracking for edge-triggered logging (prevents log spam)
     // -------------------------------------------------------------------------
-    std::array<int,  NUM_MOTORS> last_fault_{};
     std::array<int,  NUM_MOTORS> last_mode_{};
     std::array<bool, NUM_MOTORS> position_alert_raised_{};
-    std::array<bool, NUM_AXES> limit_block_logged_{};  // edge log for stage 1.5 soft-block
 
 
 

@@ -5,16 +5,12 @@
 //   Default — compile-time motor_config.h value (read-only)
 //   Actual  — value read back from the controller by the driver via
 //             "conf get" (MoteusArmStatus.config[]); '?' until read
-//   New     — edit box; Enter opens a confirm dialog:
-//             [Apply (RAM)] [Apply & Write Flash] [Cancel]
+//   New     — edit box; Enter opens a confirm dialog: [Apply (RAM)] [Cancel]
 //
-// Persistence: controller flash is the persistence (write_flash=true adds
-// "conf write").  Apply & Write Flash also records the value in the
-// repo-tracked config/arm_params.ini (same path resolution as config/layout)
-// so intentional changes are reviewable; the Actual column highlights drift
-// against that file.  There is no hidden re-apply at startup.
-//
-// Calibration buttons unchanged (moteus_tool hall calibration flow).
+// RAM-only by design: the HMI never writes flash and never calibrates —
+// persistence and calibration are bench jobs (tview / moteus_tool). The
+// repo-tracked config/arm_params.ini holds blessed values; the Actual
+// column highlights drift against it. No hidden re-apply at startup.
 
 #pragma once
 
@@ -30,8 +26,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/moteus_arm_status.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
-#include "rover_msgs/msg/moteus_calibration_request.hpp"
-#include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "std_msgs/msg/empty.hpp"
 
 class MotorConfigModule : public rover_hmi_core::GuiModule {
@@ -48,9 +42,8 @@ public:
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
             { "Motor selector",  "Choose which motor to view/edit"        },
-            { "Enter (New col)", "Confirm dialog: RAM / flash / cancel"   },
+            { "Enter (New col)", "Confirm dialog: apply to RAM / cancel"  },
             { "Refresh",         "Re-read all values from controllers"    },
-            { "Calibrate",       "Run Hall calibration for this motor"    },
         };
     }
 
@@ -68,8 +61,6 @@ private:
     QLabel*      defaults_[NUM_REGS] = {};
     QLabel*      actuals_[NUM_REGS]  = {};
     QLineEdit*   edits_[NUM_REGS]    = {};
-    QPushButton* calib_btn_   = nullptr;
-    QPushButton* calib_all_btn_ = nullptr;
     QLabel*      status_      = nullptr;
 
     rover_msgs::msg::MoteusArmStatus latest_;   // last feedback (config + connected)
@@ -78,6 +69,4 @@ private:
     rclcpp::Subscription<rover_msgs::msg::MoteusArmStatus>::SharedPtr        sub_;
     rclcpp::Publisher<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr        pub_;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr                       refresh_pub_;
-    rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr calib_status_sub_;
-    rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr  calib_pub_;
 };

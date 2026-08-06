@@ -177,29 +177,6 @@ QWidget* MotorConfigModule::createWidget(QWidget* parent) {
     for (int c = 1; c < 4; c++) grid->setColumnStretch(c, 1);
     root->addLayout(grid);
 
-    // Calibration (same request topic/flow as before)
-    auto* cal_row = new QHBoxLayout();
-    calib_btn_ = new QPushButton("Calibrate");
-    calib_all_btn_ = new QPushButton("Calibrate All (Sequential)");
-    for (auto* b : { calib_btn_, calib_all_btn_ }) {
-        b->setFont(mono);
-        b->setStyleSheet(QString(
-            "QPushButton { background: #1a1400; color: %1; border: 1px solid %1; padding: 5px 10px; }"
-            "QPushButton:hover { background: #2a2000; }").arg(theme::Yellow));
-        cal_row->addWidget(b);
-    }
-    QObject::connect(calib_btn_, &QPushButton::clicked, [this]() {
-        rover_msgs::msg::MoteusCalibrationRequest req;
-        req.motor_id = motor_sel_->currentIndex() + 1;
-        if (calib_pub_) calib_pub_->publish(req);
-    });
-    QObject::connect(calib_all_btn_, &QPushButton::clicked, [this]() {
-        rover_msgs::msg::MoteusCalibrationRequest req;
-        req.motor_id = 0;
-        if (calib_pub_) calib_pub_->publish(req);
-    });
-    root->addLayout(cal_row);
-
     status_ = new QLabel("Actual column is read from the controllers — '?' means not read yet");
     status_->setFont(mono);
     status_->setWordWrap(true);
@@ -223,8 +200,6 @@ void MotorConfigModule::setNode(rclcpp::Node::SharedPtr node) {
     auto qos = rclcpp::QoS(1).reliable().durability_volatile();
     pub_ = node->create_publisher<rover_msgs::msg::MoteusConfigUpdate>("/arm/config_update", qos);
     refresh_pub_ = node->create_publisher<std_msgs::msg::Empty>("/arm/config_refresh", qos);
-    calib_pub_ = node->create_publisher<rover_msgs::msg::MoteusCalibrationRequest>(
-        "/arm/calibration_request", qos);
     sub_ = node->create_subscription<rover_msgs::msg::MoteusArmStatus>(
         "/arm/moteus_feedback", qos,
         [this](const rover_msgs::msg::MoteusArmStatus::SharedPtr msg) { onFeedback(msg); });
@@ -309,29 +284,19 @@ void MotorConfigModule::confirmAndApply(int r) {
     box.setText(QString("M%1 · %2\n\n    %3  →  %4")
         .arg(m + 1).arg(REGS[r].reg)
         .arg(fmtVal(av)).arg(fmtVal(nv)));
-    auto* ram   = box.addButton("Apply (RAM — reverts on power-off)", QMessageBox::AcceptRole);
-    auto* flash = box.addButton("Apply && Write Flash", QMessageBox::DestructiveRole);
+    auto* ram = box.addButton("Apply (RAM — reverts on power-off)", QMessageBox::AcceptRole);
     box.addButton(QMessageBox::Cancel);
     box.exec();
-
-    const bool persist = box.clickedButton() == flash;
-    if (box.clickedButton() != ram && !persist) { edits_[r]->clear(); return; }
+    if (box.clickedButton() != ram) { edits_[r]->clear(); return; }
 
     rover_msgs::msg::MoteusConfigUpdate msg;
     msg.motor_id = m;
     msg.register_name = REGS[r].reg;
     msg.value = nv;
-    msg.write_flash = persist;
     if (pub_) pub_->publish(msg);
 
-    if (persist) {
-        QSettings repo(armParamsPath(), QSettings::IniFormat);
-        repo.setValue(QString("A%1/%2").arg(m + 1).arg(REGS[r].reg), nv);
-        repo.sync();
-    }
-    status_->setText(QString("M%1 %2 = %3 sent (%4) — watch Actual for confirmation")
-        .arg(m + 1).arg(REGS[r].reg).arg(fmtVal(nv))
-        .arg(persist ? "flash" : "RAM only"));
+    status_->setText(QString("M%1 %2 = %3 sent (RAM only) — watch Actual for confirmation")
+        .arg(m + 1).arg(REGS[r].reg).arg(fmtVal(nv)));
     edits_[r]->clear();
 }
 
