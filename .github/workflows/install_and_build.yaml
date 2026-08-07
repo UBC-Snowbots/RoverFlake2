@@ -11,6 +11,7 @@ jobs:
       - name: Github setup
         run: |
           echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
       - name: Setup Everything
         run: |
           ./setup_scripts/setup_everything_common.sh

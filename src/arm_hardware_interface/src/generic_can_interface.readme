@@ -1,0 +1,97 @@
+# rover_can
+
+Generic SocketCAN hardware interface for the rover comms library. One node per
+CAN loop. It moves raw frames between the bus and ROS2 topics and does not
+encode or decode payloads — that stays in the comms library, on whichever node
+owns the topic.
+
+## Topics
+
+| Topic | Direction | Contents |
+|---|---|---|
+| `/can/<loop_name>/incoming` | node → you | every frame that has no typed topic |
+| `/can/<loop_name>/<message_type>` | node → you | optional per-type topics |
+| `/can/<loop_name>/outgoing` | you → node | anything published here is written to the bus |
+
+All topics use `rover_msgs/msg/GenericCommsMsg`.
+
+## Layout
+
+```
+rover_comms/CMakeLists.txt           ament wrapper around the comms C library
+rover_msgs/msg/GenericCommsMsg.msg   the message
+rover_can/src/socket_can.{h,cpp}     raw socket, no ROS2 in it
+rover_can/src/can_topic_routing.h    the switch case: type -> topic name
+rover_can/src/can_node.{h,cpp}       the node
+rover_can/config/can_loop.yaml       node params + link settings
+rover_can/launch/can_loop.launch.py  one loop
+rover_can/scripts/can_setup.sh       ip link bring up
+```
+
+## Build
+
+`rover_comms` is a thin ament wrapper that builds the shared comms C library and
+exports `comms.h` on the include path. `rover_can` just depends on it, so id
+packing and CAN frame conversion go through the library rather than being
+reimplemented in the node.
+
+Point `rover_comms` at the comms sources — default is a submodule or symlink at
+`rover_comms/comms`:
+
+```bash
+colcon build --packages-select rover_comms rover_msgs rover_can \
+  --cmake-args -DCOMMS_DIR=/abs/path/to/comms
+```
+
+This requires `comms_id_helpers.patch` to be applied first — `comms.c` does not
+currently compile, and `comms.h` does not compile as C.
+
+## Run
+
+Bring the interface up once after plugging in the CANable:
+
+```bash
+./can_setup.sh --interface can0 --bitrate 500000 --sample-point 0.875 --restart-ms 100
+```
+
+Then:
+
+```bash
+ros2 launch rover_can can_loop.launch.py loop_name:=main can_interface:=can0
+```
+
+Or let the launch file do the bring-up (needs passwordless sudo for `ip`):
+
+```bash
+ros2 launch rover_can can_loop.launch.py loop_name:=main bring_up_interface:=true
+```
+
+Multiple loops: include `can_loop.launch.py` once per loop with a different
+`loop_name`, `can_interface`, and optionally `config_file`.
+
+## Adding a typed topic
+
+Add a case to `type_to_topic_suffix()` in `can_topic_routing.h`. That is the
+only edit — the node walks every message type at startup and creates a
+publisher for anything that returns a name.
+
+## Gotchas
+
+- The interface is a udev-level thing. If the CANable is unplugged the node
+  dies; the launch file sets `respawn=True` so it comes back once the interface
+  returns (though you will need to re-run `can_setup.sh`, since a re-enumerated
+  interface comes back down).
+- `ENOBUFS` on write means the tx queue filled up. Usually that means nothing
+  else on the bus is ACKing frames — check termination and that another node is
+  actually powered.
+- The node only accepts 29-bit extended ids, because that is what comms uses.
+  Standard-id traffic is logged (throttled) and dropped.
+- If a message type you expected on its own topic keeps landing in `incoming`,
+  look for the throttled "no typed topic" warning. It prints the type id that
+  actually came off the bus, which is almost always a `msg_type_t` mismatch
+  between the sender's firmware and this build.
+- CAN FD frames longer than `MAX_MESSAGE_PAYLOAD_SIZE_BYTES` are dropped, since
+  comms' `can_msg_t` cannot hold them.
+- `sender_id` on the outgoing topic is ignored. The node stamps its own
+  `device_id` parameter on everything it transmits. If `device_id` is left at
+  the invalid default the node still receives, but refuses to send.
