@@ -2,8 +2,6 @@
 # Published at ~10 Hz by the science embedded node
 
 float32 ultrasonic_distance_in   # drill depth feedback [0, 12] inches
-float32 flow_sensor_1_v          # OSF1 voltage (>threshold = flowing)
-float32 flow_sensor_2_v          # OSF2 voltage
 float32 npk_nitrogen             # N value mg/kg
 float32 npk_phosphorus           # P value mg/kg
 float32 npk_potassium            # K value mg/kg

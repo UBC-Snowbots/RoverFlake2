@@ -177,11 +177,16 @@ protected:
 private:
     TilingContainer* tc_;
     std::vector<LayoutStore::Entry> snapshots_;
+    std::vector<LayoutStore::WallEntry> walls_;
     int focused_idx_   = 0;
     int scroll_offset_ = 0;
 
     bool    renaming_    = false;
     QString rename_buf_;
+
+    bool wallMode() const;
+    int  rowCount() const;
+    bool isWallRow(int idx) const;
 };
 
 
@@ -270,7 +275,12 @@ public:
                   bool default_visible = true,
                   std::function<void(bool)> on_toggle = nullptr,
                   std::vector<std::pair<std::string,std::string>> module_keybinds = {},
-                  const std::string& section = "General");
+                  const std::string& section = "General",
+                  std::function<QJsonObject()> save_state = nullptr,
+                  std::function<void(const QJsonObject&)> restore_state = nullptr);
+
+    // Hide every visible panel (Alt+C), notifying modules via their toggles.
+    void clearAllPanels();
 
     // Build the initial layout (call after all addPanel calls)
     void finalize();
@@ -291,9 +301,26 @@ public:
     // Layout persistence (called by LayoutManagerOverlay)
     void saveCurrentLayout();
     void loadLayout(int index);
+    bool loadLayoutByName(const QString& name);  // external callers bind to names, not indices
+    // Show exactly these panels (titles = GuiModule::name()); tree is rebuilt
+    // from layout hints. Unknown titles are ignored — callers pre-validate.
+    void showPanels(const std::vector<std::string>& titles);
     void deleteLayout(int index);
     void renameLayout(int index, const QString& name);
     LayoutStore& layoutStore() { return layout_store_; }
+
+    // Fired with the layout name after every successful layout load.
+    std::function<void(const QString&)> onLayoutChanged;
+
+    // Wall mode (host sets these when an instance name is configured; both
+    // null in single-window mode — the overlay then shows no WALLS section).
+    std::function<void(const QString&)> onWallSaveRequested;
+    std::function<void(const QString&)> onWallLoadRequested;
+
+    // Current tree+visible state / apply a saved state. applyLayoutJson never
+    // fires onLayoutChanged — naming is the caller's concern.
+    QJsonObject currentLayoutJson() const;
+    void applyLayoutJson(const QJsonObject& layout);
 
     ModuleSidebar* sidebar() const { return sidebar_; }
 
@@ -331,8 +358,14 @@ private:
         std::string section;
         bool default_visible = true;
         std::function<void(bool)> on_toggle;
+        std::function<QJsonObject()> save_state;
+        std::function<void(const QJsonObject&)> restore_state;
         std::vector<std::pair<std::string,std::string>> module_keybinds;
     };
+
+    // Build the hint-partitioned initial tree (left/right/bottom) from panels
+    // selected by `include`. Shared by finalize() and showPanels().
+    DwindleNode* buildHintTree(const std::function<bool(const PanelInfo&)>& include);
 
     std::vector<PanelInfo> panels_;
     TilePanel* focused_panel_ = nullptr;

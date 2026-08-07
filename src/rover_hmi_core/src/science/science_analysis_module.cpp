@@ -18,6 +18,8 @@
 #include <limits>
 
 #include <pluginlib/class_list_macros.hpp>
+
+namespace { constexpr int kNumVials = 3; }
 #include <rover_hmi_core/catppuccin.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,7 +39,7 @@ public:
         setStyleSheet("background: #000000;");
     }
 
-    void setValues(const std::array<float,6>& vals)
+    void setValues(const std::array<float,kNumVials>& vals)
     {
         values_ = vals;
         update();
@@ -95,8 +97,8 @@ protected:
         p.drawText(-15, -2, 30, 14, Qt::AlignCenter, "AU");
         p.restore();
 
-        // 6 bars
-        int bar_area_w = plot_w / 6;
+        // one bar per vial
+        int bar_area_w = plot_w / kNumVials;
         int bar_pad = qMax(2, bar_area_w / 6);
 
         const char* colors[] = {
@@ -104,7 +106,7 @@ protected:
             "#ff9944", "#ff4466", "#44ddcc"
         };
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             int x0 = margin_left + i * bar_area_w;
             int bar_x = x0 + bar_pad;
             int bar_w = bar_area_w - 2 * bar_pad;
@@ -152,7 +154,7 @@ protected:
     }
 
 private:
-    std::array<float,6> values_;
+    std::array<float,kNumVials> values_;
 };
 
 // Include the moc-generated code for SpectroPaint (since it's in a .cpp file)
@@ -201,13 +203,6 @@ static const char* kDataCellGreen =
 static const char* kDataCellDim =
     "QLabel { color: #777777; padding: 4px 6px; border: 1px solid #222222;"
     " background: #050505; }";
-static const char* kFlowGreen =
-    "QLabel { color: #00ff88; font-weight: bold; padding: 4px 8px;"
-    " border: 1px solid #00ff88; background: #001a0a; }";
-static const char* kFlowDim =
-    "QLabel { color: #555555; padding: 4px 8px;"
-    " border: 1px solid #222222; background: #050505; }";
-
 static QLabel* makeSectionHdr(const QString& text, const char* color)
 {
     auto* lbl = new QLabel(text);
@@ -244,17 +239,25 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     root->setContentsMargins(12, 8, 12, 12);
     root->setSpacing(12);
 
+    banner_ = new QLabel();
+    banner_->setStyleSheet(
+        QString("background: #2a0d0d; color: %1; padding: 4px 6px; font-weight: bold;")
+        .arg(theme::Red));
+    banner_->setAlignment(Qt::AlignCenter);
+    banner_->setVisible(false);
+    root->addWidget(banner_);
+
     // ── ROW 0: SPECTROPHOTOMETER ─────────────────────────────────────────────
     root->addWidget(makeSectionHdr("Spectrophotometer", theme::Cyan));
 
-    // 6 readout cells in 2 rows x 3 cols
+    // one readout cell per vial, single row
     auto* spectro_grid = new QGridLayout();
     spectro_grid->setSpacing(4);
     for (int c = 0; c < 3; c++) spectro_grid->setColumnStretch(c, 1);
     spectro_grid->setRowStretch(0, 1);
     spectro_grid->setRowStretch(1, 1);
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < kNumVials; i++) {
         auto* cell = new QFrame();
         cell->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         cell->setStyleSheet(
@@ -301,7 +304,7 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     QObject::connect(clear_btn, &QPushButton::clicked, [this]() {
         spectro_vals_.fill(std::numeric_limits<float>::quiet_NaN());
         if (spectro_chart_) spectro_chart_->clearAll();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < kNumVials; i++) {
             if (spectro_lbls_[i]) {
                 spectro_lbls_[i]->setText("--");
                 spectro_lbls_[i]->setStyleSheet(kDataCellDim);
@@ -450,50 +453,13 @@ QWidget* ScienceAnalysisModule::createWidget(QWidget* parent)
     fg_row->addWidget(gas_frame, 1);
     root->addLayout(fg_row);
 
-    // ── ROW 3: FLOW SENSORS ───────────────────────────────────────────────────
-    root->addWidget(makeSectionHdr("Flow Sensors", theme::TextDim));
-
-    auto* flow_row = new QHBoxLayout();
-    flow_row->setSpacing(8);
-
-    auto* flow1_frame = new QFrame();
-    flow1_frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    flow1_frame->setStyleSheet(
-        "QFrame { border: 1px solid #222222; background: #050505; border-radius: 4px; }");
-    auto* f1l = new QHBoxLayout(flow1_frame);
-    f1l->setContentsMargins(8, 6, 8, 6);
-    auto* f1_name = new QLabel("OSF1:");
-    f1_name->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-    f1_name->setStyleSheet("color: #ffffff; border: none;");
-    f1_name->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    f1l->addWidget(f1_name);
-    flow1_lbl_ = new QLabel("NO DATA ○");
-    flow1_lbl_->setFont(QFont("monospace", theme::FontSize));
-    flow1_lbl_->setStyleSheet(kFlowDim);
-    flow1_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    f1l->addWidget(flow1_lbl_);
-    flow_row->addWidget(flow1_frame, 1);
-
-    auto* flow2_frame = new QFrame();
-    flow2_frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    flow2_frame->setStyleSheet(
-        "QFrame { border: 1px solid #222222; background: #050505; border-radius: 4px; }");
-    auto* f2l = new QHBoxLayout(flow2_frame);
-    f2l->setContentsMargins(8, 6, 8, 6);
-    auto* f2_name = new QLabel("OSF2:");
-    f2_name->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-    f2_name->setStyleSheet("color: #ffffff; border: none;");
-    f2_name->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    f2l->addWidget(f2_name);
-    flow2_lbl_ = new QLabel("NO DATA ○");
-    flow2_lbl_->setFont(QFont("monospace", theme::FontSize));
-    flow2_lbl_->setStyleSheet(kFlowDim);
-    flow2_lbl_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    f2l->addWidget(flow2_lbl_);
-    flow_row->addWidget(flow2_frame, 1);
-
-    root->addLayout(flow_row);
     root->addStretch();
+
+    stale_.attach(container, 3000, [this](bool stale) {
+        if (!banner_) return;
+        banner_->setText(stale ? "✖ SENSOR DATA STALE — /science/sensor_data stopped" : "");
+        banner_->setVisible(stale);
+    });
 
     scroll->setWidget(container);
     return scroll;
@@ -551,8 +517,10 @@ void ScienceAnalysisModule::stop()
 void ScienceAnalysisModule::onSensorData(
     const rover_msgs::msg::ScienceSensorData::SharedPtr msg)
 {
+    stale_.stamp();
+
     // ── Spectro ──────────────────────────────────────────────────────────────
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < kNumVials; i++) {
         float val = msg->spectro_absorbance[i];
         if (msg->spectro_ready) {
             spectro_vals_[i] = val;
@@ -622,28 +590,6 @@ void ScienceAnalysisModule::onSensorData(
             .arg(static_cast<double>(avg), 0, 'f', 1));
     }
 
-    // ── Flow sensors ─────────────────────────────────────────────────────────
-    bool flow1 = msg->flow_sensor_1_v > 0.5f;
-    bool flow2 = msg->flow_sensor_2_v > 0.5f;
-
-    if (flow1_lbl_) {
-        flow1_lbl_->setText(
-            flow1
-            ? QString("FLOWING ●  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_1_v), 0, 'f', 2)
-            : QString("NO FLOW ○  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_1_v), 0, 'f', 2));
-        flow1_lbl_->setStyleSheet(flow1 ? kFlowGreen : kFlowDim);
-    }
-    if (flow2_lbl_) {
-        flow2_lbl_->setText(
-            flow2
-            ? QString("FLOWING ●  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_2_v), 0, 'f', 2)
-            : QString("NO FLOW ○  (%1 V)")
-              .arg(static_cast<double>(msg->flow_sensor_2_v), 0, 'f', 2));
-        flow2_lbl_->setStyleSheet(flow2 ? kFlowGreen : kFlowDim);
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

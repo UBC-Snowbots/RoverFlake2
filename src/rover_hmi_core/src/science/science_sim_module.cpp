@@ -85,12 +85,10 @@ QWidget* ScienceSimModule::createWidget(QWidget* parent)
     grid->setSpacing(12);
     struct ToggleDef { QPushButton** btn; bool* flag; const char* label; };
     const ToggleDef toggles[] = {
-        { &flow1_btn_,   &flow1_,   "OSF1 Flow" },
-        { &flow2_btn_,   &flow2_,   "OSF2 Flow" },
         { &sample_btn_,  &sample_,  "Sample Loaded" },
         { &spectro_btn_, &spectro_, "Spectro Ready" },
     };
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         auto* b = *toggles[i].btn = new QPushButton(toggles[i].label);
         auto* flag = toggles[i].flag;
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -132,8 +130,6 @@ void ScienceSimModule::onTick()
 
     rover_msgs::msg::ScienceSensorData msg;
     msg.ultrasonic_distance_in = depth_in_;
-    msg.flow_sensor_1_v = flow1_ ? 3.0f + jitter(0.2f, 0) : 0.05f;
-    msg.flow_sensor_2_v = flow2_ ? 3.0f + jitter(0.2f, 1) : 0.05f;
     msg.npk_nitrogen    = sample_ ? 42.0f  + jitter(1.5f, 2) : 0.0f;
     msg.npk_phosphorus  = sample_ ? 13.0f  + jitter(0.8f, 3) : 0.0f;
     msg.npk_potassium   = sample_ ? 31.0f  + jitter(1.2f, 4) : 0.0f;
@@ -155,8 +151,6 @@ void ScienceSimModule::updateBtns()
     lower_btn_->setStyleSheet(drill_dir_ == 1  ? kOn  : kOff);
     hold_btn_ ->setStyleSheet(drill_dir_ == 0  ? kOn  : kOff);
     raise_btn_->setStyleSheet(drill_dir_ == -1 ? kOn  : kOff);
-    flow1_btn_  ->setStyleSheet(flow1_   ? kOn : kOff);
-    flow2_btn_  ->setStyleSheet(flow2_   ? kOn : kOff);
     sample_btn_ ->setStyleSheet(sample_  ? kOn : kOff);
     spectro_btn_->setStyleSheet(spectro_ ? kOn : kOff);
 }

@@ -1,0 +1,339 @@
+{
+  "tasks": [
+    {
+      "name": "Snack Run",
+      "max": 100,
+      "stages": [
+        {
+          "name": "Prepare for retrieval",
+          "actions": [
+            { "pts": 5, "text": "Credit cube tapped (5 first tap, -0.5 per unused credit)" },
+            { "pts": 5, "text": "Transport box placed under vending machine" }
+          ]
+        },
+        {
+          "name": "Retrieval & maintenance",
+          "actions": [
+            { "pts": 5, "text": "Snack selection button pressed" },
+            { "pts": 5, "text": "Percussive maintenance frees stuck item (gently!)" },
+            { "pts": 5, "text": "Manufacturer bypass code entered" },
+            { "pts": 10, "text": "Timed button sequence entered to dispense" },
+            { "pts": 5, "text": "Service panel opened" },
+            { "pts": 10, "text": "Service switches re-activate dispensing (1 per switch, 6 for all)" },
+            { "pts": 10, "text": "Loose machine component reattached" },
+            { "pts": 20, "text": "Ring game: connector moved, no shorts (5 per mark, -2 per short)" }
+          ]
+        },
+        {
+          "name": "Transport snacks",
+          "actions": [
+            { "pts": 4, "text": "Transport box back at start" },
+            { "pts": 16, "text": "Box contains snacks (2 per item, x8)" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Heist Mission",
+      "max": 100,
+      "stages": [
+        {
+          "name": "Approach camera controls",
+          "actions": [
+            { "pts": 4, "text": "Avoid tripwires" },
+            { "pts": 4, "text": "Avoid camera" },
+            { "pts": 8, "text": "Avoid lighting the camera's viewed area" },
+            { "pts": 8, "text": "Reach camera controls" }
+          ]
+        },
+        {
+          "name": "Disable cameras",
+          "actions": [
+            { "pts": 3, "text": "Identify correct wire to cut" },
+            { "pts": 6, "text": "Cut a wire" },
+            { "pts": 3, "text": "Cut the correct wire" }
+          ]
+        },
+        {
+          "name": "Identify vault code",
+          "actions": [
+            { "pts": 5, "text": "Approach security console" },
+            { "pts": 6, "text": "Attempt to decode console password" },
+            { "pts": 4, "text": "Correctly decode console password" },
+            { "pts": 6, "text": "Physically interface with console" },
+            { "pts": 6, "text": "Correctly find vault code" }
+          ]
+        },
+        {
+          "name": "Open vault",
+          "actions": [
+            { "pts": 4, "text": "Approach morse key" },
+            { "pts": 6, "text": "Interact with morse key" },
+            { "pts": 6, "text": "Enter the vault code" },
+            { "pts": 6, "text": "Enter the vault code fast enough" },
+            { "pts": 5, "text": "Open the vault door" },
+            { "pts": 5, "text": "Remove artifact from vault" },
+            { "pts": 5, "text": "Return to extraction point with artifact" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RoverCooked",
+      "max": 101,
+      "stages": [
+        {
+          "name": "Order 1",
+          "max": 21,
+          "actions": [
+            { "pts": 1, "text": "Rover leaves start line" },
+            { "pts": 1, "text": "Ingredient 1 touched" },
+            { "pts": 3, "text": "Ingredient 1 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 2 touched" },
+            { "pts": 3, "text": "Ingredient 2 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 3 touched" },
+            { "pts": 3, "text": "Ingredient 3 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 4 touched" },
+            { "pts": 3, "text": "Ingredient 4 prepared correctly" },
+            { "pts": 5, "text": "Delivered without dropping anything" },
+            { "pts": 1, "text": "Delivered early" },
+            { "pts": -2, "text": "Delivered late" }
+          ]
+        },
+        {
+          "name": "Order 2",
+          "max": 20,
+          "actions": [
+            { "pts": 1, "text": "Ingredient 1 touched" },
+            { "pts": 3, "text": "Ingredient 1 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 2 touched" },
+            { "pts": 3, "text": "Ingredient 2 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 3 touched" },
+            { "pts": 3, "text": "Ingredient 3 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 4 touched" },
+            { "pts": 3, "text": "Ingredient 4 prepared correctly" },
+            { "pts": 5, "text": "Delivered without dropping anything" },
+            { "pts": 1, "text": "Delivered early" },
+            { "pts": -2, "text": "Delivered late" }
+          ]
+        },
+        {
+          "name": "Order 3",
+          "max": 20,
+          "actions": [
+            { "pts": 1, "text": "Ingredient 1 touched" },
+            { "pts": 3, "text": "Ingredient 1 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 2 touched" },
+            { "pts": 3, "text": "Ingredient 2 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 3 touched" },
+            { "pts": 3, "text": "Ingredient 3 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 4 touched" },
+            { "pts": 3, "text": "Ingredient 4 prepared correctly" },
+            { "pts": 5, "text": "Delivered without dropping anything" },
+            { "pts": 1, "text": "Delivered early" },
+            { "pts": -2, "text": "Delivered late" }
+          ]
+        },
+        {
+          "name": "Order 4",
+          "max": 20,
+          "actions": [
+            { "pts": 1, "text": "Ingredient 1 touched" },
+            { "pts": 3, "text": "Ingredient 1 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 2 touched" },
+            { "pts": 3, "text": "Ingredient 2 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 3 touched" },
+            { "pts": 3, "text": "Ingredient 3 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 4 touched" },
+            { "pts": 3, "text": "Ingredient 4 prepared correctly" },
+            { "pts": 5, "text": "Delivered without dropping anything" },
+            { "pts": 1, "text": "Delivered early" },
+            { "pts": -2, "text": "Delivered late" }
+          ]
+        },
+        {
+          "name": "Order 5",
+          "max": 20,
+          "actions": [
+            { "pts": 1, "text": "Ingredient 1 touched" },
+            { "pts": 3, "text": "Ingredient 1 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 2 touched" },
+            { "pts": 3, "text": "Ingredient 2 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 3 touched" },
+            { "pts": 3, "text": "Ingredient 3 prepared correctly" },
+            { "pts": 1, "text": "Ingredient 4 touched" },
+            { "pts": 3, "text": "Ingredient 4 prepared correctly" },
+            { "pts": 5, "text": "Delivered without dropping anything" },
+            { "pts": 1, "text": "Delivered early" },
+            { "pts": -2, "text": "Delivered late" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Refreshment Delivery",
+      "max": 100,
+      "stages": [
+        {
+          "name": "Gate 1",
+          "actions": [
+            { "pts": 7, "text": "Fully traverse the gate" },
+            { "pts": 3, "text": "No shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 2",
+          "actions": [
+            { "pts": 8, "text": "Fully traverse the gate" },
+            { "pts": 3, "text": "No shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 3",
+          "actions": [
+            { "pts": 9, "text": "Fully traverse the gate" },
+            { "pts": 4, "text": "No shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 4",
+          "actions": [
+            { "pts": 10, "text": "Fully traverse the gate" },
+            { "pts": 4, "text": "No shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 5 (pick ONE drop)",
+          "max": 20,
+          "actions": [
+            { "pts": 12, "text": "LARGE drop: fully traverse" },
+            { "pts": 8, "text": "LARGE drop: no shock sensor trip" },
+            { "pts": 7, "text": "small drop: fully traverse" },
+            { "pts": 3, "text": "small drop: no shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 6",
+          "actions": [
+            { "pts": 12, "text": "Fully traverse the gate" },
+            { "pts": 4, "text": "No shock sensor trip" }
+          ]
+        },
+        {
+          "name": "Gate 7",
+          "actions": [
+            { "pts": 12, "text": "Fully traverse the gate" },
+            { "pts": 4, "text": "No shock sensor trip" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Exploration Proposal",
+      "max": 100,
+      "stages": [
+        {
+          "name": "Site 1 exploration",
+          "actions": [
+            { "pts": 2, "text": "Travel to site" },
+            { "pts": 2, "text": "Panorama photo of site" },
+            { "pts": 1, "text": "GPS coordinates of panorama recorded" },
+            { "pts": 4, "text": "Features documented & photographed" },
+            { "pts": 5, "text": "Soil sample collected (5-100 g)" }
+          ]
+        },
+        {
+          "name": "Site 2 exploration",
+          "actions": [
+            { "pts": 2, "text": "Travel to site" },
+            { "pts": 2, "text": "Panorama photo of site" },
+            { "pts": 1, "text": "GPS coordinates of panorama recorded" },
+            { "pts": 4, "text": "Features documented & photographed" },
+            { "pts": 5, "text": "Soil sample collected (5-100 g)" }
+          ]
+        },
+        {
+          "name": "Site 3 exploration",
+          "actions": [
+            { "pts": 2, "text": "Travel to site" },
+            { "pts": 2, "text": "Panorama photo of site" },
+            { "pts": 1, "text": "GPS coordinates of panorama recorded" },
+            { "pts": 4, "text": "Features documented & photographed" },
+            { "pts": 5, "text": "Soil sample collected (5-100 g)" }
+          ]
+        },
+        {
+          "name": "Field experiment",
+          "actions": [
+            { "pts": 8, "text": "Experiment completed on board the rover" }
+          ]
+        },
+        {
+          "name": "Report: introduction",
+          "actions": [
+            { "pts": 1, "text": "Team, institution, and rover named" },
+            { "pts": 1, "text": "Goal of exploration" }
+          ]
+        },
+        {
+          "name": "Report: exploration",
+          "actions": [
+            { "pts": 2, "text": "Planned approach described" },
+            { "pts": 3, "text": "Map of actual route" },
+            { "pts": 1, "text": "Route rationale + changes explained" }
+          ]
+        },
+        {
+          "name": "Report: site 1",
+          "actions": [
+            { "pts": 2, "text": "Why was the site chosen?" },
+            { "pts": 1, "text": "Site coordinates" },
+            { "pts": 3, "text": "Notable features (ref images/panorama)" },
+            { "pts": 1, "text": "Sample location and identity" }
+          ]
+        },
+        {
+          "name": "Report: site 2",
+          "actions": [
+            { "pts": 2, "text": "Why was the site chosen?" },
+            { "pts": 1, "text": "Site coordinates" },
+            { "pts": 3, "text": "Notable features (ref images/panorama)" },
+            { "pts": 1, "text": "Sample location and identity" }
+          ]
+        },
+        {
+          "name": "Report: site 3",
+          "actions": [
+            { "pts": 2, "text": "Why was the site chosen?" },
+            { "pts": 1, "text": "Site coordinates" },
+            { "pts": 3, "text": "Notable features (ref images/panorama)" },
+            { "pts": 1, "text": "Sample location and identity" }
+          ]
+        },
+        {
+          "name": "Report: experiment",
+          "actions": [
+            { "pts": 2, "text": "Procedure and materials explained" },
+            { "pts": 2, "text": "Potential significance explained" },
+            { "pts": 1, "text": "Mass of each sample stated" },
+            { "pts": 3, "text": "Physical characteristics of samples" },
+            { "pts": 3, "text": "Observations from the experiment" },
+            { "pts": 1, "text": "Experimental results described" },
+            { "pts": 3, "text": "Significance of results explained" }
+          ]
+        },
+        {
+          "name": "Report: conclusion",
+          "actions": [
+            { "pts": 1, "text": "Mobility and endurance capabilities" },
+            { "pts": 1, "text": "Sensor payload capabilities" },
+            { "pts": 1, "text": "Sample collection and testing capabilities" },
+            { "pts": 1, "text": "Value of the team's experiment" },
+            { "pts": 1, "text": "Business strategy and next steps" },
+            { "pts": 1, "text": "Sum up the pitch" }
+          ]
+        }
+      ]
+    }
+  ]
+}

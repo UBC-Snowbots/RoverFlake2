@@ -7,6 +7,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
+#include <rover_hmi_core/stale_monitor.h>
 
 #include <QLabel>
 #include <QScrollArea>
@@ -35,6 +36,8 @@ private:
     QLabel* row_labels_[NUM_WHEELS]         = {};
     QLabel* cells_[NUM_WHEELS][NUM_COLS]    = {};
     QLabel* status_                         = nullptr;
+    QLabel* banner_                         = nullptr;
 
+    rover_hmi_core::StaleMonitor stale_;
     rclcpp::Subscription<rover_msgs::msg::WheelStates>::SharedPtr sub_;
 };

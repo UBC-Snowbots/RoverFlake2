@@ -31,10 +31,28 @@
 #include <QTextStream>
 #include <QTimer>
 
+#include <algorithm>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+#include <std_msgs/msg/string.hpp>
+
+// "A, B ,C" → {"A","B","C"} (trimmed, empties dropped)
+static std::vector<std::string> splitPanelList(const std::string& csv) {
+    std::vector<std::string> out;
+    std::stringstream ss(csv);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        size_t a = item.find_first_not_of(" \t");
+        if (a == std::string::npos) continue;
+        size_t b = item.find_last_not_of(" \t");
+        out.push_back(item.substr(a, b - a + 1));
+    }
+    return out;
+}
 
 // Font-scale cache: survives HMI restarts within a session, deleted on clean
 // shutdown (and cleared by the OS on reboot) so a scale never becomes sticky.
@@ -94,7 +112,9 @@ int main(int argc, char* argv[]) {
             auto* widget = module->createWidget(tiling);
             tiling->addPanel(module->name(), widget, module->layoutHint(),
                              module->defaultVisible(), module->toggleCallback(),
-                             module->keybindings(), module->sectionName());
+                             module->keybindings(), module->sectionName(),
+                             [module]() { return module->saveState(); },
+                             [module](const QJsonObject& st) { module->restoreState(st); });
             modules.push_back(module);
         } catch (const pluginlib::PluginlibException& ex) {
             RCLCPP_WARN(node->get_logger(),
@@ -106,6 +126,125 @@ int main(int argc, char* argv[]) {
     // finalize() builds the initial dwindle tree from the accumulated panels
     // and must be called before the window is shown.
     tiling->finalize();
+
+    // Wall identity: instance names this window (title prefix + topic scope).
+    const auto instance = node->declare_parameter<std::string>("instance", "");
+    const QString title_base = instance.empty()
+        ? QString("Rover HMI")
+        : QString("Rover HMI [%1]").arg(QString::fromStdString(instance));
+    window.setWindowTitle(title_base);
+
+    // Window title follows the active layout / panel set.
+    tiling->onLayoutChanged = [&window, title_base](const QString& name) {
+        window.setWindowTitle(name.isEmpty() ? title_base
+                                             : title_base + " — " + name);
+    };
+
+    // Known panel titles, for validating panel-set requests.
+    std::vector<std::string> module_names;
+    for (auto& m : modules) module_names.push_back(m->name());
+
+    auto applyPanels = [&node, &module_names, tiling](const std::string& csv) {
+        std::vector<std::string> known;
+        for (const auto& t : splitPanelList(csv)) {
+            if (std::find(module_names.begin(), module_names.end(), t)
+                    != module_names.end())
+                known.push_back(t);
+            else
+                RCLCPP_WARN(node->get_logger(),
+                            "show_panels: unknown panel '%s'", t.c_str());
+        }
+        if (known.empty())
+            RCLCPP_WARN(node->get_logger(), "show_panels: no valid panels in request");
+        else
+            tiling->showPanels(known);
+    };
+    auto applyLayout = [&node, tiling](const std::string& name) {
+        if (tiling->loadLayoutByName(QString::fromStdString(name))) return;
+        std::string names;
+        for (const auto& e : tiling->layoutStore().list())
+            names += (names.empty() ? "" : ", ") + e.name.toStdString();
+        RCLCPP_WARN(node->get_logger(),
+                    "load_layout: unknown layout '%s' (known: %s)",
+                    name.c_str(), names.c_str());
+    };
+
+    // Runtime control topics. Callbacks run on the Qt thread via the
+    // spin_some timer, so they may touch widgets directly.
+    // Volatile QoS: commands arriving while the HMI is down are dropped.
+    auto load_layout_sub = node->create_subscription<std_msgs::msg::String>(
+        "/hmi/load_layout", 10,
+        [applyLayout](const std_msgs::msg::String& msg) { applyLayout(msg.data); });
+    auto show_panels_sub = node->create_subscription<std_msgs::msg::String>(
+        "/hmi/show_panels", 10,
+        [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
+
+    // Per-instance control topics (wall mode): global topics above still apply
+    // to every window; these address just this one.
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr inst_layout_sub, inst_panels_sub;
+    if (!instance.empty()) {
+        inst_layout_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/" + instance + "/load_layout", 10,
+            [applyLayout](const std_msgs::msg::String& msg) { applyLayout(msg.data); });
+        inst_panels_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/" + instance + "/show_panels", 10,
+            [applyPanels](const std_msgs::msg::String& msg) { applyPanels(msg.data); });
+    }
+
+    // Wall snapshots: broadcast save/load — every instance persists/applies
+    // its OWN state file, sender included (DDS loops messages back).
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr wall_save_pub, wall_load_pub;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr wall_save_sub, wall_load_sub;
+    auto applyWall = [&node, &window, tiling, instance, title_base](const std::string& name) {
+        QJsonObject json = tiling->layoutStore().loadWallInstance(
+            QString::fromStdString(name), QString::fromStdString(instance));
+        if (json.isEmpty()) {
+            std::string known;
+            for (const auto& w : tiling->layoutStore().listWalls())
+                known += (known.empty() ? "" : ", ") + w.name.toStdString();
+            RCLCPP_WARN(node->get_logger(),
+                        "wall '%s': no state for instance '%s' (known walls: %s)",
+                        name.c_str(), instance.c_str(), known.c_str());
+            return;
+        }
+        tiling->applyLayoutJson(json);
+        window.setWindowTitle(title_base + " — " + QString::fromStdString(name));
+    };
+    if (!instance.empty()) {
+        wall_save_pub = node->create_publisher<std_msgs::msg::String>("/hmi/wall/save", 10);
+        wall_load_pub = node->create_publisher<std_msgs::msg::String>("/hmi/wall/load", 10);
+        tiling->onWallSaveRequested = [wall_save_pub](const QString& name) {
+            std_msgs::msg::String m; m.data = name.toStdString(); wall_save_pub->publish(m);
+        };
+        tiling->onWallLoadRequested = [wall_load_pub](const QString& name) {
+            std_msgs::msg::String m; m.data = name.toStdString(); wall_load_pub->publish(m);
+        };
+        wall_save_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/wall/save", 10, [&node, tiling, instance](const std_msgs::msg::String& msg) {
+                bool ok = tiling->layoutStore().saveWallInstance(
+                    QString::fromStdString(msg.data), QString::fromStdString(instance),
+                    tiling->currentLayoutJson());
+                if (ok) RCLCPP_INFO(node->get_logger(), "wall '%s': instance state saved", msg.data.c_str());
+                else    RCLCPP_WARN(node->get_logger(), "wall '%s': save failed — %s", msg.data.c_str(),
+                                    tiling->layoutStore().statusMessage().toStdString().c_str());
+            });
+        wall_load_sub = node->create_subscription<std_msgs::msg::String>(
+            "/hmi/wall/load", 10,
+            [applyWall](const std_msgs::msg::String& msg) { applyWall(msg.data); });
+    }
+
+    // Startup selection: wall name wins over layout, layout over panels.
+    const auto wall_param   = node->declare_parameter<std::string>("wall", "");
+    const auto layout_param = node->declare_parameter<std::string>("layout", "");
+    const auto panels_param = node->declare_parameter<std::string>("panels", "");
+    if (!wall_param.empty()) {
+        if (instance.empty())
+            RCLCPP_WARN(node->get_logger(), "wall param requires an instance name — ignored");
+        else applyWall(wall_param);
+    }
+    else if (!layout_param.empty())  applyLayout(layout_param);
+    else if (!panels_param.empty())  applyPanels(panels_param);
+
     window.setCentralWidget(tiling);
     window.resize(1600, 1000);
     window.showMaximized();

@@ -2,12 +2,13 @@
 //
 // HMI plugin that embeds a live RViz viewport into the arm HMI sidebar.
 //
-// Lives in dev_arm_moveit_config_v3 because that is where all
-// simulation/visualization config lives. Lazily launches RViz and
-// robot_state_publisher as subprocesses when the user enables it in the
-// sidebar. Uses xdotool to find the RViz window by title and embed it into
-// the Qt widget container. The rviz config (arm_embedded.rviz) is also in
-// this package's config directory.
+// Lazily launches RViz and robot_state_publisher as subprocesses when the
+// user enables it in the sidebar. Uses xdotool to find the RViz window by
+// title and embed it into the Qt widget container. The URDF comes from
+// dev_arm_description_v2, the rviz config (arm_embedded.rviz) from
+// dev_arm_moveit_config_v3 (both via ament_index, no package.xml dep).
+// The arm only renders when something publishes /joint_states —
+// moteus_driver does when running; otherwise only base_link has TF.
 
 #include "rviz_module.h"
 #include <rover_hmi_core/catppuccin.h>

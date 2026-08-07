@@ -8,6 +8,7 @@
 #include <rover_hmi_core/catppuccin.h>
 
 #include <QGridLayout>
+#include <QVBoxLayout>
 #include <QScrollArea>
 #include <QFont>
 #include <QSizePolicy>
@@ -67,9 +68,23 @@ QWidget* WheelTelemetryModule::createWidget(QWidget* parent) {
 
     auto* widget = new QWidget();
     widget->setStyleSheet(QString("background: %1;").arg(theme::Bg));
-    auto* grid = new QGridLayout(widget);
+    auto* vbox = new QVBoxLayout(widget);
+    vbox->setSpacing(0);
+    vbox->setContentsMargins(0, 0, 0, 0);
+
+    banner_ = new QLabel();
+    banner_->setStyleSheet(
+        QString("background: #2a0d0d; color: %1; padding: 4px 6px; font-weight: bold;")
+        .arg(theme::Red));
+    banner_->setAlignment(Qt::AlignCenter);
+    banner_->setVisible(false);
+    vbox->addWidget(banner_);
+
+    auto* grid_container = new QWidget();
+    auto* grid = new QGridLayout(grid_container);
     grid->setSpacing(1);
     grid->setContentsMargins(2, 2, 2, 2);
+    vbox->addWidget(grid_container);
 
     QFont mono("monospace", theme::FontSize);
     QFont monoBold("monospace", theme::FontSize, QFont::Bold);
@@ -145,6 +160,12 @@ QWidget* WheelTelemetryModule::createWidget(QWidget* parent) {
         scroll, NUM_WHEELS + 2, std::move(normal_ws), std::move(bold_ws));
     scroll->installEventFilter(scaler);
 
+    stale_.attach(widget, 1500, [this](bool stale) {
+        if (!banner_) return;
+        banner_->setText(stale ? "✖ WHEEL TELEMETRY STALE — /drivetrain/wheel_states stopped" : "");
+        banner_->setVisible(stale);
+    });
+
     scroll->setWidget(widget);
     return scroll;
 }
@@ -159,6 +180,7 @@ void WheelTelemetryModule::setNode(rclcpp::Node::SharedPtr node) {
 }
 
 void WheelTelemetryModule::onWheelStates(const rover_msgs::msg::WheelStates::SharedPtr msg) {
+    stale_.stamp();
     if (!cells_[0][0]) return;
 
     for (int i = 0; i < NUM_WHEELS; i++) {

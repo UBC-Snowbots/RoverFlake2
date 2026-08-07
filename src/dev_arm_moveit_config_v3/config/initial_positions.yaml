@@ -1,4 +1,6 @@
-# Default initial positions for dev_arm's ros2_control fake system
+# Default initial positions for dev_arm's ros2_control fake system.
+# Must match the real arm's power-on pose: ARM_JOINTS boot angles in
+# rover_arm_common/motor_addressing.h (a5_rotation<->A5 straight mapping).
 
 initial_positions:
   finger_left_joint: 0
@@ -6,6 +8,6 @@ initial_positions:
   shoulder_joint: -1.57
   link_1_joint: -1.57
   link1_link2: 0.9
-  a4_rotation: 0
-  a5_rotation: 1.2
-  a6_rotation: 0.0
+  a4_rotation: 0.9
+  a5_rotation: 0.0
+  a6_rotation: 1.2

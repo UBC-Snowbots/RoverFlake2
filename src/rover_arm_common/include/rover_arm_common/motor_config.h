@@ -3,6 +3,7 @@
 #include "motor_addressing.h"  // NUM_MOTORS
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
@@ -63,6 +64,14 @@ struct MotorConfig {
     // Stored here so the HMI can display it in the Motor Config panel.
     float gear_reduction = 1.0f;
 
+    // Datasheet identity (Maxon).  poles/kv feed calibration flags — these are
+    // PER MOTOR: calibrating with the wrong pole count mis-commutates the
+    // motor (low torque at max current, siren whine, angle-dependent gains).
+    int         poles             = 16;    // pole count (pole pairs x 2)
+    float       kv                = 265.0f;
+    float       nominal_current_A = 1.0f;  // continuous thermal rating
+    const char* part_no           = "?";
+
     // -------------------------------------------------------------------------
     // Helpers used by configureMotor()
     // -------------------------------------------------------------------------
@@ -99,14 +108,19 @@ struct MotorConfig {
 inline std::vector<MotorConfig> get_arm_configuration() {
     std::vector<MotorConfig> motors(NUM_MOTORS);
 
+    // --- Synced from controller flash 2026-08-02 (conf get readback) so the
+    //     repo matches the bench tuning.  A7/EE was not replying; it keeps
+    //     struct defaults until it can be read.
+
     // --- PID gains (hand-tuned per axis) ---
     //     Higher kp = stiffer.  Add kd to dampen oscillation.
-    motors[0].kp = 180.0f;   motors[0].kd =  40.0f;   // Base
-    motors[1].kp = 2100.0f;  motors[1].kd = 100.0f;   // Shoulder
-    motors[2].kp = 4000.0f;  motors[2].kd = 750.0f;   // Elbow
-    motors[3].kp =  50.0f;   motors[3].kd =   0.0f;   // Wrist Pitch
-    motors[4].kp = 600.0f;   motors[4].kd = 100.0f;   // Wrist Roll
-    motors[5].kp = 600.0f;   motors[5].kd = 100.0f;   // End Effector
+    motors[0].kp =  4000.0f;  motors[0].kd =  600.0f;   // A1
+    motors[1].kp = 30000.0f;  motors[1].kd = 6000.0f;   // A2
+    motors[2].kp = 40000.0f;  motors[2].kd = 2000.0f;   // A3
+    motors[3].kp = 9000.0f;  motors[3].kd = 1000.0f;   // A4
+    motors[4].kp = 17000.0f;  motors[4].kd = 3500.0f;   // A5
+    motors[5].kp = 17000.0f;  motors[5].kd = 3500.0f;   // A6
+    motors[6].kp = 1400.0f;  motors[6].kd = 30.0f;   // A7
 
     // --- Gear reductions (for display in HMI only — firmware holds the real value) ---
     motors[0].gear_reduction = 1.0f / 190.0f;
@@ -115,23 +129,56 @@ inline std::vector<MotorConfig> get_arm_configuration() {
     motors[3].gear_reduction = 1.0f / 190.0f;
     motors[4].gear_reduction = 1.0f /  66.0f;
     motors[5].gear_reduction = 1.0f /  66.0f;
+    motors[6].gear_reduction = 1.0f / 190.0f;   // EE
+
+    // --- Datasheet identity (bench notes / Maxon, 2026-08) ---
+    // A2/A3 are 22-pole kv=134 — calibration flags MUST come from here, not
+    // the old hardcoded 16/265 (that mis-commutates them).
+    const char* parts[NUM_MOTORS] = {"339281","607942","515458","339281","651607","651607","339281"};
+    const int   poles[NUM_MOTORS] = { 16,      22,      22,      16,      16,      16,      16     };
+    const float kvs  [NUM_MOTORS] = { 265,     134,     134,     187,     265,     265,     265    };
+    const float noms [NUM_MOTORS] = { 1.01f,   9.5f,    6.44f,   1.01f,   2.52f,   2.52f,   1.01f  };
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        motors[i].part_no = parts[i];
+        motors[i].poles   = poles[i];
+        motors[i].kv      = kvs[i];
+        motors[i].nominal_current_A = noms[i];
+    }
 
     // --- Current limits (A) ---
-    motors[0].max_current_A = 1.0f;
-    motors[1].max_current_A = 8.0f;
-    motors[2].max_current_A = 5.5f;
-    motors[3].max_current_A = 0.5f;
-    motors[4].max_current_A = 2.5f;
-    motors[5].max_current_A = 2.5f;
+    motors[0].max_current_A =  2.0f;   // back to 2.0 (2026-08-03); was 3.0 after the 08-02 stall
+    motors[1].max_current_A = 14.0f;
+    motors[2].max_current_A = 14.0f;
+    motors[3].max_current_A =  1.01f;   // 200142 nominal 2.14 A; 0.3 starved it (bench 2026-08-03)
+    motors[4].max_current_A =  2.0f;
+    motors[5].max_current_A =  2.0f;
 
-    // --- Software position limits (output-shaft revolutions) ---
-    motors[0].position_min = -0.3f;     motors[0].position_max =   0.3f;
-    motors[1].position_min = -0.47f;    motors[1].position_max =  -0.05f;
-    motors[2].position_min =  0.01f;    motors[2].position_max =   0.4f;
-    // motors[3]: uses default (-1.0, 1.0)
-    //TODO this is positions for motors, not motors
-    motors[4].position_min = -999.01f;  motors[4].position_max = 999.4f;  // continuous
-    motors[5].position_min = -999.01f;  motors[5].position_max = 999.4f;  // continuous
+    // --- Voltage / power limits ---
+    const float fnan = std::numeric_limits<float>::quiet_NaN();
+    motors[0].max_voltage = 30.0f;  motors[0].max_power_W = 200.0f;
+    motors[1].max_voltage = 30.0f;  motors[1].max_power_W = fnan;
+    motors[2].max_voltage = 32.0f;  motors[2].max_power_W = 250.0f;
+    motors[3].max_voltage = 24.0f;  motors[3].max_power_W = 30.0f;
+    motors[4].max_voltage = 30.0f;  motors[4].max_power_W = fnan;
+    motors[5].max_voltage = 30.0f;  motors[5].max_power_W = fnan;
+
+    // --- Motion profile ---
+    motors[0].max_acceleration = 0.5f;  motors[0].max_velocity = 0.01f;
+    motors[1].max_acceleration = 0.5f;  motors[1].max_velocity = 0.03f;
+    motors[2].max_acceleration = 0.5f;  motors[2].max_velocity = 0.05f;
+    motors[3].max_acceleration = 0.5f;  motors[3].max_velocity = 0.10f;
+    motors[4].max_acceleration = 1.0f;  motors[4].max_velocity = 0.05f;
+    motors[5].max_acceleration = 1.0f;  motors[5].max_velocity = 0.05f;
+
+    // --- Position limits (output-shaft revolutions) ---
+    //     Flash has servopos unbounded (nan) everywhere except A4 — adopted
+    //     as-is; homing/soft-stop bounds live in AxisConfig, not here.
+    for (int i : {0, 1, 2, 4, 5}) {
+        motors[i].position_min = fnan;
+        motors[i].position_max = fnan;
+    }
+    motors[3].position_min = -0.5f;  motors[3].position_max = 0.5f;
+    motors[3].def_timeout  = 0.1f;
 
     return motors;
 }
@@ -176,7 +223,7 @@ namespace AxisConfig {
         /*AXIS 1 */   0.1,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
-        /*AXIS 4 */   0.1, // DISABLED
+        /*AXIS 4 */   0.1,
         /*AXIS 5 */   0.1,
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.5 };
@@ -190,14 +237,36 @@ namespace AxisConfig {
         /*AXIS 6 */   0.5,
         /*AXIS EE */  0.5 };
     
-    float idle_position[NUM_AXES] = { // Rev/s Direction Independent. 
+    float idle_position[NUM_AXES] = { // Rev/s Direction Independent.
         /*AXIS 1 */   0.1,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
         /*AXIS 4 */   0.1,
-        /*AXIS 5 */   -0.1,
+        /*AXIS 5 */   0.1,
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.1 };
-    
+
+    // Limit switches — AUX2 digital input.
+    // mask: aux2 GPIO status bitfield, bit0 = aux2.pins.0 (ABS connector pin 2).
+    // inverted=false: NC switch to GND (hard 2k pullup) -> pin HIGH = pressed.
+    bool has_limit_switch[NUM_AXES] = {
+        /*AXIS 1 */   true,
+        /*AXIS 2 */   true,
+        /*AXIS 3 */   true,
+        /*AXIS 4 */   true,
+        /*AXIS 5 */   true,   // added 2026-08-05
+        /*AXIS 6 */   true,   // added 2026-08-05
+        /*AXIS EE */  false };
+
+    // Per-axis, measured with DEBUG_LIMIT_SWITCH_RAW_REPLY (2026-08-02).
+    // All four: pressed = HIGH; only the pin differs (A1/A3/A4 pin 0, A2 pin 1).
+    // A4 was first captured as pin 1 — wrong pin, feedback read inverted;
+    // corrected to pin 0 on the bench (2026-08-05).
+    // A1's first capture was misread as inverted — the arm was resting on its
+    // switch, so the observed transitions were releases, not presses.
+    // A3's pin has no pull; if it flakes: conf set aux2.pins.0.pull 2 on motor 3.
+    // A5/A6 (wrist): switch on each motor's own aux2 pin 0 (Aaron, 2026-08-05).
+    uint8_t limit_switch_mask[NUM_AXES]     = {1, 2, 1, 1, 1, 1, 0};
+    bool    limit_switch_inverted[NUM_AXES] = {false, false, false, false, false, false, false};
 
 };

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
+#include <rover_hmi_core/stale_monitor.h>
 
 #include <QLabel>
 #include <QPushButton>
@@ -48,6 +49,9 @@ private:
     // Record button + status
     QPushButton* record_btn_ = nullptr;
     QLabel*      status_lbl_ = nullptr;
+    QLabel*      banner_     = nullptr;
+
+    rover_hmi_core::StaleMonitor stale_;
 
     // Current power state (for enable publish)
     rover_msgs::msg::PowerStatus last_state_{};

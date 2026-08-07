@@ -30,6 +30,22 @@ public:
     bool remove(const QString& file_path);
     bool rename(const QString& file_path, const QString& new_name);
 
+    // ── Walls: one dir per wall, one file per instance ──────────────────────
+    struct WallEntry {
+        QString name;      // display name ("wall" field of member files)
+        QString dir_path;  // absolute walls/<slug>/ directory
+        QString saved_at;  // newest member's timestamp
+    };
+    std::vector<WallEntry> listWalls() const;      // sorted by saved_at
+    bool saveWallInstance(const QString& wall_name, const QString& instance,
+                          const QJsonObject& layout);
+    QJsonObject loadWallInstance(const QString& wall_name,
+                                 const QString& instance) const;
+    bool removeWall(const QString& wall_name);
+    // Rewrites members' "wall" field; dir keeps its slug (name is authoritative).
+    bool renameWall(const QString& old_name, const QString& new_name);
+
 private:
     QString dir_;  // absolute layouts dir; empty when unresolved
+    QString wallDirFor(const QString& wall_name) const;
 };

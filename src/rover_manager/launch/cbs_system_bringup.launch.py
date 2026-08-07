@@ -1,3 +1,4 @@
+import os
 import launch
 import launch_ros
 from launch import LaunchDescription
@@ -36,6 +37,15 @@ def generate_launch_description():
         name='cyborg_joystick_interface'
     )
 
+    hmi_router = Node(
+        package='rover_manager',
+        executable='router_a',
+        name='hmi_router',
+        parameters=[os.path.join(
+            get_package_share_directory('rover_manager'),
+            'config', 'cbs_button_map.yaml')]
+    )
+
     # navigation_launch = IncludeLaunchDescription(
     #     PythonLaunchDescriptionSource([
     #         get_package_share_directory('my_robot_package'),
@@ -46,7 +56,8 @@ def generate_launch_description():
     return LaunchDescription([
         speaker,
         cbs_device_hardware_manager,
-        cyborg_joystick_node
+        cyborg_joystick_node,
+        hmi_router
         # sensor_launch,
         # navigation_launch
     ])
