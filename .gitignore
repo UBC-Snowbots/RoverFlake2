@@ -72,3 +72,4 @@ log/
 
 .vscode/settings.json
 .venv
+test_files/

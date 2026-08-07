@@ -34,6 +34,8 @@ setup(
             'waypoint_node = rover_vision.waypoint_node:main',
             'morse_camera_pub_node = rover_vision.morse_camera_pub_node:main',
             'morse_decoder_node = rover_vision.morse_decoder_node:main',
+            'camera_enhancer = rover_vision.camera_enhancer:main',
+            'roi_selector = rover_vision.roi_selector:main',
         ],
     },
 )
