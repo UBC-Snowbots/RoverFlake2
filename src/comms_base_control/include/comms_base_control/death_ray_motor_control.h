@@ -55,6 +55,7 @@ static inline float DISH_PULSES_PER_REVOLUTION = (STEPPER_PULSES_PER_REVOLUTION 
 static inline float DISH_PULSES_PER_DEGREE = (DISH_PULSES_PER_REVOLUTION / 360.0f);
 
 #define POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS 200
+// #define RUN_DELAY 200
 
 #define ROS_SUBSCRIBER_QOS 1
 
@@ -76,13 +77,20 @@ private:
     void deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg);
 
     rclcpp::TimerBase::SharedPtr death_ray_position_feedback_timer_;
+    rclcpp::TimerBase::SharedPtr run_timer;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr death_ray_position_pub_;
     void publishDeathRayPosition();
+    void run();
 
     gpiod_chip* chip;
     gpiod_line* dir_line;
     gpiod_line* step_line;
 
-    int position = 0;
+    int dir = 0;
+
+    float position = 0;
+    int curr_position_steps = 0;
     int steps = 0;
+
+    int last_step = 0;
 };

@@ -42,6 +42,10 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
         std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
         std::bind(&DeathRayMotorControlNode::publishDeathRayPosition, this)
     );
+    run_timer = this->create_wall_timer(
+        std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS),
+        std::bind(&DeathRayMotorControlNode::run, this)
+    );
 
     RCLCPP_INFO(this->get_logger(), "DeathRayMotorControlNode initialization complete.");
 }
@@ -72,7 +76,6 @@ DeathRayMotorControlNode::~DeathRayMotorControlNode() {
  * transmits it to the GPIO pins.
  */
 void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float32::SharedPtr msg) {
-    int steps;
 
     if (DEATH_RAY_CONTROL_MODE == DeathRayControlMode::ABS) {
         float cmd = msg->data;
@@ -88,15 +91,17 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
 
         if (cmd > position) {
             gpiod_line_set_value(dir_line, STEPPER_CLOCKWISE_DIRECTION);
+            dir = STEPPER_CLOCKWISE_DIRECTION;
         }
         else if (cmd < position) {
             gpiod_line_set_value(dir_line, !STEPPER_CLOCKWISE_DIRECTION);
+            dir = !STEPPER_CLOCKWISE_DIRECTION;
         }
 
         float degrees = std::abs(cmd - position);
         steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
 
-        position = cmd;
+        // position = cmd;
     }
     else { // Relative mode
         float cmd = msg->data;
@@ -108,7 +113,7 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
         }
 
         float degrees = std::abs(cmd);
-        steps = std::round(degrees * DISH_PULSES_PER_DEGREE);
+        steps += std::round(degrees * DISH_PULSES_PER_DEGREE);
     }
 
     /**
@@ -118,13 +123,7 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
      * Without this, ctrl+C would not be registered until the loop finshed
      * running.
      */
-    for (int i = 0; i < steps && rclcpp::ok(); i++) {
-        gpiod_line_set_value(step_line, 1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
-        gpiod_line_set_value(step_line, 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
-        rclcpp::spin_some(this->get_node_base_interface());
-    }
+
 }
 
 /**
@@ -143,6 +142,22 @@ void DeathRayMotorControlNode::deathRayZeroCallback(const std_msgs::msg::Empty::
     (void) msg;
 
     position = 0;
+}
+
+// Handle Position control. Steps if there are steps left
+void DeathRayMotorControlNode::run() {
+    // for (int i = 0; i < steps && rclcpp::ok(); i++) {
+    if(steps > 0)
+    {
+        last_step = !last_step;
+        gpiod_line_set_value(step_line, last_step);
+        steps--;
+        // std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
+        // gpiod_line_set_value(step_line, 0);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
+        // rclcpp::spin_some(this->get_node_base_interface());
+        // publishDeathRayPosition();
+    }
 }
 
 /**
