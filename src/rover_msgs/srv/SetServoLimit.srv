@@ -1,0 +1,14 @@
+# Drive one servo to a hard limit of its calibrated pulse-width range.
+
+uint8 SERVO_RP=0     # rack-and-pinion drive servo
+uint8 SERVO_CLAW=1   # catch/release latch servo
+
+uint8 LIMIT_MIN=0
+uint8 LIMIT_MAX=1
+
+uint8 servo
+uint8 limit
+---
+bool success
+float32 pwm_us       # pulse width actually applied, in microseconds
+string message

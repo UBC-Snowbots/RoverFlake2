@@ -51,6 +51,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AckAlert.msg"
   "msg/ActiveAlert.msg"
 
+  "srv/SetServoLimit.srv"
+  "srv/SetServoPwm.srv"
+
   DEPENDENCIES std_msgs
  )
 

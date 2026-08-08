@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(rover_msgs REQUIRED)
 
 # comms_relay talks to pigpiod over a socket, so it only needs the client
 # library (pigpiod_if2), not the root-only in-process pigpio library.
@@ -46,7 +47,7 @@ if(PIGPIOD_IF2_INCLUDE_DIR AND PIGPIOD_IF2_LIBRARY)
   )
   target_include_directories(comms_relay PRIVATE ${PIGPIOD_IF2_INCLUDE_DIR})
   target_link_libraries(comms_relay ${PIGPIOD_IF2_LIBRARY} Threads::Threads rt)
-  ament_target_dependencies(comms_relay rclcpp std_msgs)
+  ament_target_dependencies(comms_relay rclcpp std_msgs rover_msgs)
   install(TARGETS comms_relay DESTINATION lib/${PROJECT_NAME})
 else()
   message(WARNING "pigpiod_if2 not found; skipping comms_relay target")

@@ -2,6 +2,9 @@
 #include <algorithm>
 #include <cmath>
 
+using SetServoLimit = rover_msgs::srv::SetServoLimit;
+using SetServoPwm = rover_msgs::srv::SetServoPwm;
+
 ServoControlNode::ServoControlNode() : Node("servo_control_node") {
     // Connect to an already-running pigpiod rather than driving the hardware
     // directly, so this node does not need root. Passing nulls means
@@ -10,139 +13,141 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
     if (pi_ < 0) {
         RCLCPP_ERROR(this->get_logger(),
                      "Failed to connect to pigpio daemon (%d); is pigpiod running?", pi_);
-        return;
+    } else {
+        RCLCPP_INFO(this->get_logger(), "Connected to pigpio daemon (handle %d)", pi_);
+
+        setServoPWM(SERVO_RP_GPIO_PIN, SERVO_RP_MIN_PWM);
+        setServoPWM(SERVO_CLAW_GPIO_PIN, SERVO_CLAW_MIN_PWM);
     }
-    RCLCPP_INFO(this->get_logger(), "Connected to pigpio daemon (handle %d)", pi_);
 
-    // On power-up: immediately drive PWM to a known-safe starting state
-    // (servo1 at MIN, servo2 in catch position) before anything else runs.
-    setServoAngle(SERVO1_GPIO_PIN, SERVO1_MIN_ANGLE);
-    setServoAngle(SERVO2_GPIO_PIN, SERVO2_CATCH_ANGLE);
-    servo1_position_ = SERVO1_MIN_ANGLE;
-    servo2_position_ = SERVO2_CATCH_ANGLE;
-    state_ = RackState::CATCH;
-    dwell_ticks_remaining_ = ENDPOINT_DWELL_MS / STATE_MACHINE_TICK_MS;
-
-    auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
-    servo1_position_pub_ = this->create_publisher<std_msgs::msg::Float32>("servo/servo1_position", qos);
-    servo2_position_pub_ = this->create_publisher<std_msgs::msg::Float32>("servo/servo2_position", qos);
-    state_pub_ = this->create_publisher<std_msgs::msg::String>("servo/rack_state", qos);
-
-    state_machine_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(STATE_MACHINE_TICK_MS),
-        std::bind(&ServoControlNode::tick, this));
-
-    position_feedback_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS),
-        std::bind(&ServoControlNode::publishPositions, this));
+    // Advertised even when pigpiod is unreachable, so callers get an explicit
+    // failure response instead of a service that never appears.
+    set_servo_limit_srv_ = this->create_service<SetServoLimit>(
+        "~/set_servo_limit",
+        std::bind(&ServoControlNode::handleSetServoLimit, this,
+                  std::placeholders::_1, std::placeholders::_2));
+    set_servo_pwm_srv_ = this->create_service<SetServoPwm>(
+        "~/set_servo_pwm",
+        std::bind(&ServoControlNode::handleSetServoPwm, this,
+                  std::placeholders::_1, std::placeholders::_2));
 
     RCLCPP_INFO(this->get_logger(), "ServoControlNode initialization complete. Starting in CATCH state.");
 }
 
 ServoControlNode::~ServoControlNode() {
     if (pi_ >= 0) {
-        set_servo_pulsewidth(pi_, SERVO1_GPIO_PIN, 0);
-        set_servo_pulsewidth(pi_, SERVO2_GPIO_PIN, 0);
+        set_servo_pulsewidth(pi_, SERVO_RP_GPIO_PIN, 0);
+        set_servo_pulsewidth(pi_, SERVO_CLAW_GPIO_PIN, 0);
         pigpio_stop(pi_);
     }
 }
 
-/**
- * Maps a commanded angle in [-90, 90] degrees to a pulse width in
- * microseconds and writes it to the given GPIO pin via the pigpio daemon.
- * Out-of-range values are clamped rather than rejected.
- */
-void ServoControlNode::setServoAngle(int gpio_pin, float angle_deg) {
+bool ServoControlNode::lookupServo(uint8_t servo, ServoSpec& spec) const {
+    switch (servo) {
+        case SetServoLimit::SERVO_RP:
+            spec = {"RP", SERVO_RP_GPIO_PIN, SERVO_RP_MIN_PWM, SERVO_RP_MAX_PWM};
+            return true;
+        case SetServoLimit::SERVO_CLAW:
+            spec = {"CLAW", SERVO_CLAW_GPIO_PIN, SERVO_CLAW_MIN_PWM, SERVO_CLAW_MAX_PWM};
+            return true;
+        default:
+            return false;
+    }
+}
+
+void ServoControlNode::setServoPWM(int gpio_pin, float PWM) {
     if (pi_ < 0) {
         return;
     }
-    float clamped = std::clamp(angle_deg, SERVO1_MIN_ANGLE, SERVO1_MAX_ANGLE);
-    float t = (clamped - SERVO1_MIN_ANGLE) / (SERVO1_MAX_ANGLE - SERVO1_MIN_ANGLE);
-    int pulse_us = SERVO_MIN_PULSE_US + static_cast<int>(t * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US));
-    set_servo_pulsewidth(pi_, gpio_pin, pulse_us);
+    set_servo_pulsewidth(pi_, gpio_pin, PWM);
 }
 
-const char* ServoControlNode::stateName(RackState s) {
-    switch (s) {
-        case RackState::CATCH:        return "CATCH";
-        case RackState::SWEEP_TO_MAX: return "SWEEP_TO_MAX";
-        case RackState::RELEASE:      return "RELEASE";
-        case RackState::SWEEP_TO_MIN: return "SWEEP_TO_MIN";
-        case RackState::DONE:         return "DONE";
+void ServoControlNode::handleSetServoLimit(
+    const std::shared_ptr<SetServoLimit::Request> request,
+    std::shared_ptr<SetServoLimit::Response> response) {
+    response->success = false;
+    response->pwm_us = 0.0f;
+
+    if (pi_ < 0) {
+        response->message = "not connected to pigpio daemon";
+        RCLCPP_ERROR(this->get_logger(), "set_servo_limit rejected: %s", response->message.c_str());
+        return;
     }
-    return "UNKNOWN";
-}
 
-/**
- * Advances the state machine by one tick. Drives servo1 incrementally
- * during sweep states, snaps servo2 to catch/release at the appropriate
- * endpoint states, and stops the state machine after exactly one full
- * cycle (CATCH -> SWEEP_TO_MAX -> RELEASE -> SWEEP_TO_MIN -> DONE).
- */
-void ServoControlNode::tick() {
-    float step = SWEEP_DEG_PER_SEC * (STATE_MACHINE_TICK_MS / 1000.0f);
-
-    switch (state_) {
-        case RackState::CATCH:
-            if (--dwell_ticks_remaining_ <= 0) {
-                state_ = RackState::SWEEP_TO_MAX;
-            }
-            break;
-
-        case RackState::SWEEP_TO_MAX:
-            servo1_position_ += step;
-            if (servo1_position_ >= SERVO1_MAX_ANGLE) {
-                servo1_position_ = SERVO1_MAX_ANGLE;
-                setServoAngle(SERVO1_GPIO_PIN, servo1_position_);
-                state_ = RackState::RELEASE;
-                setServoAngle(SERVO2_GPIO_PIN, SERVO2_RELEASE_ANGLE);
-                servo2_position_ = SERVO2_RELEASE_ANGLE;
-                dwell_ticks_remaining_ = ENDPOINT_DWELL_MS / STATE_MACHINE_TICK_MS;
-                return;
-            }
-            setServoAngle(SERVO1_GPIO_PIN, servo1_position_);
-            break;
-
-        case RackState::RELEASE:
-            if (--dwell_ticks_remaining_ <= 0) {
-                state_ = RackState::SWEEP_TO_MIN;
-            }
-            break;
-
-        case RackState::SWEEP_TO_MIN:
-            servo1_position_ -= step;
-            if (servo1_position_ <= SERVO1_MIN_ANGLE) {
-                servo1_position_ = SERVO1_MIN_ANGLE;
-                setServoAngle(SERVO1_GPIO_PIN, servo1_position_);
-                state_ = RackState::CATCH;
-                setServoAngle(SERVO2_GPIO_PIN, SERVO2_CATCH_ANGLE);
-                servo2_position_ = SERVO2_CATCH_ANGLE;
-                RCLCPP_INFO(this->get_logger(), "Cycle complete. Stopping state machine.");
-                state_ = RackState::DONE;
-                state_machine_timer_->cancel();
-                return;
-            }
-            setServoAngle(SERVO1_GPIO_PIN, servo1_position_);
-            break;
-
-        case RackState::DONE:
-            // Nothing to do; timer is cancelled so this shouldn't fire again.
-            break;
+    ServoSpec spec;
+    if (!lookupServo(request->servo, spec)) {
+        response->message = "unknown servo " + std::to_string(request->servo) +
+                            " (expected 0=RP or 1=CLAW)";
+        RCLCPP_ERROR(this->get_logger(), "set_servo_limit rejected: %s", response->message.c_str());
+        return;
     }
+
+    float pwm;
+    switch (request->limit) {
+        case SetServoLimit::LIMIT_MIN:
+            pwm = spec.min_pwm;
+            break;
+        case SetServoLimit::LIMIT_MAX:
+            pwm = spec.max_pwm;
+            break;
+        default:
+            response->message = "unknown limit " + std::to_string(request->limit) +
+                                " (expected 0=MIN or 1=MAX)";
+            RCLCPP_ERROR(this->get_logger(), "set_servo_limit rejected: %s", response->message.c_str());
+            return;
+    }
+
+    setServoPWM(spec.gpio_pin, pwm);
+    response->success = true;
+    response->pwm_us = pwm;
+    response->message = std::string(spec.name) +
+                        (request->limit == SetServoLimit::LIMIT_MAX ? " at MAX" : " at MIN");
+    RCLCPP_INFO(this->get_logger(), "%s servo -> %s (%.0f us)", spec.name,
+                request->limit == SetServoLimit::LIMIT_MAX ? "MAX" : "MIN", pwm);
 }
 
-void ServoControlNode::publishPositions() {
-    std_msgs::msg::Float32 msg1;
-    msg1.data = servo1_position_;
-    servo1_position_pub_->publish(msg1);
+void ServoControlNode::handleSetServoPwm(
+    const std::shared_ptr<SetServoPwm::Request> request,
+    std::shared_ptr<SetServoPwm::Response> response) {
+    response->success = false;
+    response->pwm_us = 0.0f;
 
-    std_msgs::msg::Float32 msg2;
-    msg2.data = servo2_position_;
-    servo2_position_pub_->publish(msg2);
+    if (pi_ < 0) {
+        response->message = "not connected to pigpio daemon";
+        RCLCPP_ERROR(this->get_logger(), "set_servo_pwm rejected: %s", response->message.c_str());
+        return;
+    }
 
-    std_msgs::msg::String state_msg;
-    state_msg.data = stateName(state_);
-    state_pub_->publish(state_msg);
+    ServoSpec spec;
+    if (!lookupServo(request->servo, spec)) {
+        response->message = "unknown servo " + std::to_string(request->servo) +
+                            " (expected 0=RP or 1=CLAW)";
+        RCLCPP_ERROR(this->get_logger(), "set_servo_pwm rejected: %s", response->message.c_str());
+        return;
+    }
+
+    if (!std::isfinite(request->pwm_us)) {
+        response->message = "requested pulse width is not a finite number";
+        RCLCPP_ERROR(this->get_logger(), "set_servo_pwm rejected: %s", response->message.c_str());
+        return;
+    }
+
+    // Clamp rather than reject, so a slightly out-of-range command still moves
+    // the servo to the nearest safe endpoint instead of doing nothing.
+    const float pwm = std::clamp(request->pwm_us, spec.min_pwm, spec.max_pwm);
+
+    setServoPWM(spec.gpio_pin, pwm);
+    response->success = true;
+    response->pwm_us = pwm;
+    if (pwm != request->pwm_us) {
+        response->message = "clamped to [" + std::to_string(static_cast<int>(spec.min_pwm)) + ", " +
+                            std::to_string(static_cast<int>(spec.max_pwm)) + "] us";
+        RCLCPP_WARN(this->get_logger(), "%s servo: %.0f us clamped to %.0f us", spec.name,
+                    request->pwm_us, pwm);
+    } else {
+        response->message = std::string(spec.name) + " at requested pulse width";
+        RCLCPP_INFO(this->get_logger(), "%s servo -> %.0f us", spec.name, pwm);
+    }
 }
 
 int main(int argc, char* argv[]) {
