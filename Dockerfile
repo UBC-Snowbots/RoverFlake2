@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV ROVERFLAKE_ROOT=/RoverFlake2
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV ROS_DOMAIN_ID=101
 
 # install base dependencies (recommend not to change if you want to add niche deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
