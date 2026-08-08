@@ -1,6 +1,6 @@
 """Bring up the Hi3510 IP camera: gscam RTSP feed + zoom services.
 
-Feed  : gscam decodes the camera's H.264 RTSP stream to /ip_camera/image_raw (+ camera_info),
+Feed  : gscam decodes the camera's H.264 RTSP stream to /ip_camera/camera/image_raw (+ camera_info),
         for on-Jetson consumers (e.g. vision). See the network-transport note below.
 Zoom  : ip_camera_zoom_node exposes /ip_camera/zoom_in_start, /ip_camera/zoom_out_start,
         /ip_camera/zoom_stop (std_srvs/Trigger).
@@ -65,7 +65,7 @@ def _launch_setup(context, *args, **kwargs):
         }],
         # gscam publishes relative image_raw/camera_info; namespace resolves them to /ip_camera/*.
         remappings=[
-            ('image_raw', '/ip_camera/image_raw'),
+            ('image_raw', '/ip_camera/camera/image_raw'),
             ('camera_info', '/ip_camera/camera_info'),
         ],
     )

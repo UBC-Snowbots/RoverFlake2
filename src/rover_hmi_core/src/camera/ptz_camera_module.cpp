@@ -131,7 +131,7 @@ QWidget* PtzCameraModule::createWidget(QWidget* parent) {
         preview_->setIdleImage(QImage(QString::fromStdString(share + "/assets/cats/cat_square.png")));
     } catch (const std::exception&) {}
     feed_col->addWidget(preview_, 1);
-    feed_lbl_ = new QLabel("/ip_camera/image_raw — waiting for frames");
+    feed_lbl_ = new QLabel("/ip_camera/camera/image_raw — waiting for frames");
     feed_lbl_->setFont(monoSm);
     feed_lbl_->setAlignment(Qt::AlignCenter);
     feed_lbl_->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
@@ -226,7 +226,7 @@ void PtzCameraModule::setNode(rclcpp::Node::SharedPtr node) {
     // Best-effort keeps the HMI happy over the lossy radio link (compatible with
     // gscam's reliable publisher either way).
     img_sub_ = node->create_subscription<sensor_msgs::msg::Image>(
-        "/ip_camera/image_raw", rclcpp::SensorDataQoS(),
+        "/ip_camera/camera/image_raw", rclcpp::SensorDataQoS(),
         [this](sensor_msgs::msg::Image::ConstSharedPtr msg) { onImage(msg); });
 }
 
@@ -275,10 +275,10 @@ void PtzCameraModule::onHealthTick() {
     const auto age = duration_cast<seconds>(steady_clock::now() - last_frame_).count();
     if (age >= 2) {
         preview_->setStale();
-        feed_lbl_->setText(QString("/ip_camera/image_raw — stale (%1s)").arg(age));
+        feed_lbl_->setText(QString("/ip_camera/camera/image_raw — stale (%1s)").arg(age));
         feed_lbl_->setStyleSheet(QString("color: %1;").arg(theme::Yellow));
     } else {
-        feed_lbl_->setText(QString("/ip_camera/image_raw — %1×%2 @ %3 fps")
+        feed_lbl_->setText(QString("/ip_camera/camera/image_raw — %1×%2 @ %3 fps")
                                .arg(frame_w_).arg(frame_h_).arg(frames_));
         feed_lbl_->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
     }
