@@ -7,7 +7,7 @@
 #include <QElapsedTimer>
 #include <pluginlib/class_list_macros.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <yaml-cpp/yaml.h>
+#include <rclcpp/parameter_map.hpp>
 
 // Styled entirely in the app's own idiom (catppuccin.h tokens + the e-stop
 // button's dark-tinted-bg/colored-border/colored-text pattern from
@@ -16,7 +16,6 @@
 namespace {
 QElapsedTimer g_steady;  // steady/monotonic arrival clock
 qint64 steadyMs() { if (!g_steady.isValid()) g_steady.start(); return g_steady.elapsed(); }
-constexpr qint64 HOST_TIMEOUT_MS = 2500;  // 2.5 beats at 1 Hz
 constexpr const char* kBeaconDim      = "#0d5533";  // dim phase between beats (beacon logic untouched)
 constexpr const char* kBeaconNeverSeen = "#444444";
 constexpr const char* kOnlineTint      = "#0d2a1a";
@@ -46,16 +45,19 @@ QString buttonStyle(const char* accent) {
 
 void SubsystemsModule::setNode(rclcpp::Node::SharedPtr node) {
     node_ = node;
+    loadHeartParams();
+    loadBackendParams();
     sub_ = node_->create_subscription<rover_msgs::msg::HeartRequest>(
-        "/heart/running_subsystems", 10,
+        feedback_topic_, 10,
         std::bind(&SubsystemsModule::onFeedback, this, std::placeholders::_1));
-    pub_ = node_->create_publisher<rover_msgs::msg::HeartRequest>("/heart/request", 10);
+    pub_ = node_->create_publisher<rover_msgs::msg::HeartRequest>(request_topic_, 10);
 }
 
 QWidget* SubsystemsModule::createWidget(QWidget* parent) {
     root_ = new QWidget(parent);
     auto* outer = new QVBoxLayout(root_);
-    waiting_ = new QLabel("⏳ waiting for hearts on /heart/running_subsystems");
+    waiting_ = new QLabel(QString("⏳ waiting for hearts on %1")
+                              .arg(QString::fromStdString(feedback_topic_)));
     outer->addWidget(waiting_);
     hosts_layout_ = new QVBoxLayout();
     outer->addLayout(hosts_layout_);
@@ -174,7 +176,7 @@ void SubsystemsModule::checkHostsAlive() {
     const qint64 now = steadyMs();
     for (auto& [host, g] : hosts_) {
         const bool never_seen = (g.last_arrival_ms == 0);
-        const bool lost = !never_seen && (now - g.last_arrival_ms > HOST_TIMEOUT_MS);
+        const bool lost = !never_seen && (now - g.last_arrival_ms > host_timeout_ms_);
         const HeartPhase new_phase = never_seen ? HeartPhase::NeverSeen
                                     : lost       ? HeartPhase::Lost
                                                  : HeartPhase::Fresh;
@@ -214,40 +216,53 @@ void SubsystemsModule::checkHostsAlive() {
     }
 }
 
-void SubsystemsModule::loadExpectedHosts() {
-    std::string path;
+std::string SubsystemsModule::heartYamlPath() const {
     try {
-        path = ament_index_cpp::get_package_share_directory("rover_manager") + "/config/heart.yaml";
+        return ament_index_cpp::get_package_share_directory("rover_manager") + "/config/heart.yaml";
     } catch (const std::exception& e) {
-        RCLCPP_WARN(node_->get_logger(), "Subsystems: rover_manager share dir not found (%s); no pre-rendered hosts", e.what());
-        return;
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: rover_manager share dir not found (%s)", e.what());
+        return {};
     }
-    YAML::Node root;
+}
+
+// heart.yaml read with the same params parser ros2 uses to launch the hearts.
+void SubsystemsModule::loadHeartParams() {
+    const std::string path = heartYamlPath();
+    if (path.empty()) return;
     try {
-        root = YAML::LoadFile(path);
+        heart_params_ = rclcpp::parameter_map_from_yaml_file(path);
     } catch (const std::exception& e) {
-        RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts", path.c_str(), e.what());
-        return;
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts, built-in defaults", path.c_str(), e.what());
     }
-    // heart.yaml is hand-edited config: a structurally-wrong entry (e.g. a
-    // "/heart_x" key whose value isn't a map) must not be able to crash the
-    // HMI. Guard each entry individually; warn once and skip the bad entry
-    // so the rest of the file still pre-renders.
-    bool warned = false;
-    for (const auto& top : root) {
+}
+
+// Old GTK dashboard's config block; only the keys this panel uses are mapped.
+void SubsystemsModule::loadBackendParams() {
+    const auto it = heart_params_.find("/dashboard_hmi_node");
+    if (it == heart_params_.end()) return;
+    for (const rclcpp::Parameter& p : it->second) {
         try {
-            const std::string key = top.first.as<std::string>();
-            if (key.rfind("/heart_", 0) != 0) continue;  // only heart nodes, e.g. skip /dashboard_hmi_node
-            const std::string host = key.substr(7);      // strip "/heart_"
-            const YAML::Node subsystems = top.second["ros__parameters"]["subsystems"];
-            if (!subsystems || !subsystems.IsMap()) continue;
-            HostGroup& g = hostGroup(host);
-            for (const auto& sub : subsystems) row(g, sub.first.as<std::string>());
-        } catch (const std::exception& e) {
-            if (!warned) {
-                RCLCPP_WARN(node_->get_logger(), "Subsystems: malformed entry in %s (%s); skipping bad entries", path.c_str(), e.what());
-                warned = true;
-            }
+            if (p.get_name() == "heart_request_topic")       request_topic_   = p.as_string();
+            else if (p.get_name() == "heart_feedback_topic") feedback_topic_  = p.as_string();
+            else if (p.get_name() == "watchdog_timeout_ms")  host_timeout_ms_ = p.as_int();
+        } catch (const rclcpp::exceptions::InvalidParameterTypeException& e) {
+            RCLCPP_WARN(node_->get_logger(), "Subsystems: /dashboard_hmi_node param has wrong type (%s); keeping built-in default", e.what());
+        }
+    }
+}
+
+void SubsystemsModule::loadExpectedHosts() {
+    static const std::string kPrefix = "subsystems.";  // nested params flatten to dotted names
+    // sorted copy: ParameterMap is unordered, host boxes should render in a stable order
+    const std::map<std::string, std::vector<rclcpp::Parameter>> sorted(heart_params_.begin(), heart_params_.end());
+    for (const auto& [node_name, params] : sorted) {
+        if (node_name.rfind("/heart_", 0) != 0) continue;  // skip e.g. /dashboard_hmi_node
+        const std::string host = node_name.substr(7);      // strip "/heart_"
+        for (const rclcpp::Parameter& p : params) {
+            if (p.get_name().rfind(kPrefix, 0) != 0) continue;
+            std::string sub = p.get_name().substr(kPrefix.size());
+            sub = sub.substr(0, sub.find('.'));  // first segment = subsystem name
+            if (!sub.empty()) row(hostGroup(host), sub);
         }
     }
 }

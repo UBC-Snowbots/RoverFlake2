@@ -187,6 +187,8 @@ class NMEAReader(Node):
     def msgToNavSatFix(self, msg: pynmea2.types.talker.GGA | EBP) -> NavSatFix:
         navsat_fix = NavSatFix()
         if msg.lat == '' or msg.lon == '':
+            # no satellites yet — default status 0 would read as STATUS_FIX
+            navsat_fix.status.status = NavSatStatus.STATUS_NO_FIX
             return navsat_fix
         
         # pynmea doesnt apply the sign

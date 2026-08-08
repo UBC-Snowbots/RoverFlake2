@@ -12,7 +12,6 @@ find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rover_arm_common REQUIRED)
 find_package(rover_mapping_interfaces REQUIRED)
-find_package(yaml-cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -113,7 +112,6 @@ target_include_directories(rover_hmi_modules PRIVATE
 target_link_libraries(rover_hmi_modules
     rover_hmi_core
     Qt5::Widgets
-    ${YAML_CPP_LIBRARIES}
 )
 ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs std_srvs pluginlib ament_index_cpp rover_arm_common rover_mapping_interfaces)
 target_compile_definitions(rover_hmi_modules PRIVATE
