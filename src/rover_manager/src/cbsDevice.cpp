@@ -152,7 +152,9 @@ void CBSDevice::pollRX(){
 
 //$gen_left_A(0,0,0,0,0,0,0,0,0,0,0)
 void CBSDevice::parseLeftPanelABuff(const std::string buff){
+    #ifdef RUN_DEBUG_MSGS
     RCLCPP_INFO(manager->get_logger(), "%s running left panel buff parse", this->id.c_str());
+    #endif
     rover_msgs::msg::GenericPanel outmsg;
     outmsg.num_buttons = 6;
     outmsg.num_switches = 5;
@@ -168,8 +170,9 @@ void CBSDevice::parseLeftPanelABuff(const std::string buff){
 }
 
 void CBSDevice::parseArmJoyPanelBuff(std::string buff){
+    #ifdef RUN_DEBUG_MSGS
         RCLCPP_INFO(manager->get_logger(), "%s running arm panel buff parse", this->id.c_str());
-
+    #endif
     //! need switch case to figure out msg type from id
     rover_msgs::msg::ArmPanel arm_panel_msg;
     buff.erase(std::remove(buff.begin(), buff.end(), '\r'), buff.end());  // Remove '\r'
