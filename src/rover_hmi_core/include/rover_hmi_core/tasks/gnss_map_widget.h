@@ -11,6 +11,8 @@
 #include <QPixmap>
 #include <QWidget>
 
+#include <functional>
+
 class GnssMapWidget : public QWidget {
 public:
     explicit GnssMapWidget(QWidget* parent = nullptr);
@@ -28,6 +30,11 @@ public:
     int  clearManualPoints();               // returns how many were removed
     void centerOnFix();
     void centerOn(double lat, double lon);  // jump to a coordinate, stop following
+    // Armed: crosshair cursor, and a clean click (no drag — drag still pans)
+    // reports its coordinate to the callback. The owner decides what a pick
+    // means and when to disarm; the widget stays ROS-free.
+    void setPickMode(bool on);
+    void setPointPickedCallback(std::function<void(double lat, double lon)> cb);
     bool    haveView() const { return have_view_; }
     double  viewLat()  const { return center_lat_; }
     double  viewLon()  const { return center_lon_; }
@@ -39,6 +46,7 @@ protected:
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void wheelEvent(QWheelEvent*) override;
+    void leaveEvent(QEvent*) override;
 
 private:
     struct Waypoint { double lat, lon; QString category, label; bool manual; };
@@ -50,6 +58,7 @@ private:
     };
 
     QPointF toScreen(double lat, double lon) const;
+    QPointF toLatLon(QPoint pos) const;     // screen px -> (lat, lon)
     const QPixmap* tilePixmap(int z, int x, int y);   // any site, cached
     bool drawCoarser(QPainter& p, int tx, int ty, const QRectF& dst);
     void updateActiveSite();                // badge + fetch target only
@@ -69,4 +78,9 @@ private:
     QList<Waypoint> waypoints_;
     QMap<QString, QPixmap> cache_;          // "z/x/y" -> pixmap (null = miss)
     QPoint drag_pos_;
+    QPoint press_pos_;                      // separates a click from a drag
+    QPoint hover_pos_;
+    bool hover_ = false;
+    bool pick_mode_ = false;
+    std::function<void(double, double)> point_picked_;
 };

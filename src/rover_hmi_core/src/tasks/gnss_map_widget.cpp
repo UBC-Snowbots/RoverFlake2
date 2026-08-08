@@ -45,6 +45,16 @@ QColor categoryColor(const QString& c) {
 GnssMapWidget::GnssMapWidget(QWidget* parent) : QWidget(parent) {
     setMinimumHeight(200);
     setCursor(Qt::OpenHandCursor);
+    setMouseTracking(true);                 // hover coordinate readout
+}
+
+void GnssMapWidget::setPickMode(bool on) {
+    pick_mode_ = on;
+    setCursor(on ? Qt::CrossCursor : Qt::OpenHandCursor);
+}
+
+void GnssMapWidget::setPointPickedCallback(std::function<void(double, double)> cb) {
+    point_picked_ = std::move(cb);
 }
 
 // Scan imagery/<site>/tiles: zoom range + center per site (center from the
@@ -197,6 +207,12 @@ QPointF GnssMapWidget::toScreen(double lat, double lon) const {
             height() / 2.0 + (t.y() - c.y()) * kTilePx};
 }
 
+QPointF GnssMapWidget::toLatLon(QPoint pos) const {
+    const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
+    return tileToLL(c.x() + (pos.x() - width() / 2.0) / kTilePx,
+                    c.y() + (pos.y() - height() / 2.0) / kTilePx, zoom_);
+}
+
 // A z/x/y tile names one square of earth, so the first site holding it is as
 // good as any other — overlapping fetches mesh for free.
 const QPixmap* GnssMapWidget::tilePixmap(int z, int x, int y) {
@@ -320,27 +336,52 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
                    .arg(active_ >= 0 ? sites_[active_].name + " · " : "")
                    .arg(zoom_)
                    .arg(follow_ ? " · follow" : ""));
+
+    // Cursor coordinate — exact inverse of the tile projection, so it is
+    // only shown once a real view exists (fix or imagery), never null island.
+    if (hover_ && have_view_) {
+        const QPointF ll = toLatLon(hover_pos_);
+        p.drawText(rect().adjusted(6, 0, 0, -4), Qt::AlignLeft | Qt::AlignBottom,
+                   QString("%1, %2")
+                       .arg(ll.x(), 0, 'f', 6).arg(ll.y(), 0, 'f', 6));
+    }
 }
 
 void GnssMapWidget::mousePressEvent(QMouseEvent* e) {
-    drag_pos_ = e->pos();
-    setCursor(Qt::ClosedHandCursor);
+    press_pos_ = drag_pos_ = e->pos();
+    if (!pick_mode_) setCursor(Qt::ClosedHandCursor);
 }
 
+// Fires on plain hover too (mouse tracking is on) — pan only while the
+// button is held.
 void GnssMapWidget::mouseMoveEvent(QMouseEvent* e) {
-    const QPoint d = e->pos() - drag_pos_;
-    drag_pos_ = e->pos();
-    follow_ = false;
-    const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
-    const QPointF ll = tileToLL(c.x() - d.x() / double(kTilePx),
-                                c.y() - d.y() / double(kTilePx), zoom_);
-    center_lat_ = ll.x(); center_lon_ = ll.y();
-    setCursor(Qt::ClosedHandCursor);
+    hover_pos_ = e->pos();
+    hover_ = true;
+    if (e->buttons() & Qt::LeftButton) {
+        const QPoint d = e->pos() - drag_pos_;
+        drag_pos_ = e->pos();
+        follow_ = false;
+        const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
+        const QPointF ll = tileToLL(c.x() - d.x() / double(kTilePx),
+                                    c.y() - d.y() / double(kTilePx), zoom_);
+        center_lat_ = ll.x(); center_lon_ = ll.y();
+    }
     update();
 }
 
-void GnssMapWidget::mouseReleaseEvent(QMouseEvent*) {
-    setCursor(Qt::OpenHandCursor);
+void GnssMapWidget::mouseReleaseEvent(QMouseEvent* e) {
+    // A pick is a clean click; any real movement was a pan, even while armed.
+    if (pick_mode_ && point_picked_ &&
+        (e->pos() - press_pos_).manhattanLength() < 5) {
+        const QPointF ll = toLatLon(e->pos());
+        point_picked_(ll.x(), ll.y());      // owner may disarm via setPickMode
+    }
+    setCursor(pick_mode_ ? Qt::CrossCursor : Qt::OpenHandCursor);
+}
+
+void GnssMapWidget::leaveEvent(QEvent*) {
+    hover_ = false;
+    update();
 }
 
 void GnssMapWidget::wheelEvent(QWheelEvent* e) {

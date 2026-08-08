@@ -16,6 +16,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QProcess>
+#include <QPushButton>
 
 #include <rover_mapping_interfaces/srv/export_map.hpp>
 #include <rover_mapping_interfaces/srv/segment.hpp>
@@ -46,6 +47,7 @@ private:
     void stopMission();
     void tag(const QString& category);
     void addManualPoint();
+    void tagManualAt(double lat, double lon);
     void segment(bool open);
     void exportReport();
     void openReport();
@@ -77,6 +79,7 @@ private:
     QLineEdit*     manual_lon_    = nullptr;
     QLineEdit*     manual_label_  = nullptr;
     QComboBox*     manual_cat_    = nullptr;
+    QPushButton*   pick_btn_      = nullptr;
     GnssMapWidget* map_           = nullptr;
     QProcess*      fetch_proc_    = nullptr;
 };

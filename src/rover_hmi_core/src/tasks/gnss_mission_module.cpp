@@ -200,6 +200,15 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
     auto* add_point = button("Add point", theme::Cyan);
     QObject::connect(add_point, &QPushButton::clicked, [this]() { addManualPoint(); });
     manual_row->addWidget(add_point);
+    // Arms the map: the next clean click tags a point there (drag still pans).
+    pick_btn_ = button("Pick on map", theme::Cyan);
+    pick_btn_->setCheckable(true);
+    pick_btn_->setStyleSheet(pick_btn_->styleSheet() +
+        QString("QPushButton:checked { color: %1; background: %2; }")
+            .arg(theme::Bg, theme::Cyan));
+    QObject::connect(pick_btn_, &QPushButton::toggled,
+                     [this](bool on) { map_->setPickMode(on); });
+    manual_row->addWidget(pick_btn_);
     // Enter in either coordinate field adds the point.
     for (QLineEdit* e : {manual_lat_, manual_lon_, manual_label_})
         QObject::connect(e, &QLineEdit::returnPressed, [this]() { addManualPoint(); });
@@ -220,6 +229,12 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
 
     map_ = new GnssMapWidget();
     map_->setImageryRoot(mappingRoot() + "/imagery");
+    // One-shot: a pick tags the point and disarms (unchecking the button
+    // drops the widget's pick mode via the toggled connection above).
+    map_->setPointPickedCallback([this](double lat, double lon) {
+        pick_btn_->setChecked(false);
+        tagManualAt(lat, lon);
+    });
     col->addWidget(map_, 1);
 
     auto* map_row = new QHBoxLayout();
@@ -333,26 +348,29 @@ void GnssMissionModule::tag(const QString& category) {
     });
 }
 
-// Manual coordinates: persisted through /tag_point exactly like a fix tag so
-// they reach waypoints.yaml and the exported report. The marker goes on the
-// map either way — when mission_manager can't record it (not running, no
-// mission started), the point is still plotted and the status line says it
-// wasn't saved, so a typed target is never silently swallowed.
 void GnssMissionModule::addManualPoint() {
     double lat = 0, lon = 0;
     QString error;
     if (!parseCoords(manual_lat_->text(), manual_lon_->text(), &lat, &lon, &error))
         return report(false, error);
-
-    const QString category = manual_cat_->currentText();
-    const QString label    = manual_label_->text().trimmed();
-    const QString fallback = label.isEmpty() ? category : label;
-    const QString where    = QString("%1, %2").arg(lat, 0, 'f', 6).arg(lon, 0, 'f', 6);
-
     // Cleared now, not in the response callback — the operator may already be
     // typing the next coordinate by the time mission_manager answers.
     manual_lat_->clear();
     manual_lon_->clear();
+    tagManualAt(lat, lon);
+}
+
+// Shared tail of typed entry and picking on the map. Persisted through
+// /tag_point exactly like a fix tag so it reaches waypoints.yaml and the
+// exported report. The marker goes on the map either way — when
+// mission_manager can't record it (not running, no mission started), the
+// point is still plotted and the status line says it wasn't saved, so a
+// manual target is never silently swallowed.
+void GnssMissionModule::tagManualAt(double lat, double lon) {
+    const QString category = manual_cat_->currentText();
+    const QString label    = manual_label_->text().trimmed();
+    const QString fallback = label.isEmpty() ? category : label;
+    const QString where    = QString("%1, %2").arg(lat, 0, 'f', 6).arg(lon, 0, 'f', 6);
     manual_label_->clear();
 
     const auto plot = [this, lat, lon, category](const QString& marker) {
