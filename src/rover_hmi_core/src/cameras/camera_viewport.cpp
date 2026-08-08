@@ -1,12 +1,12 @@
 #include "camera_viewport.h"
 #include <rover_hmi_core/catppuccin.h>
+#include <rover_hmi_core/cameras/camera_config.h>
 
 #include <QDateTime>
 #include <QDir>
 #include <QPainter>
 #include <QPushButton>
 #include <QRandomGenerator>
-#include <QStandardPaths>
 
 namespace {
 // Zero-copy QImage wrap of the ROS buffer; invalid + reason set on bad input.
@@ -133,8 +133,7 @@ void CameraViewport::saveSnapshot()
     QImage img = wrapFrame(*msg_, &why);
     if (img.isNull()) return;  // the paint path already shows why on screen
 
-    QDir dir(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)
-             + QStringLiteral("/rover_screenshots"));
+    QDir dir(rover_hmi_core::camera_config::screenshotDir());
     dir.mkpath(QStringLiteral("."));
     const QString file = dir.filePath(
         QStringLiteral("%1_%2.png")

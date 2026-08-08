@@ -24,7 +24,7 @@ public:
     bool hasFrame() const { return static_cast<bool>(msg_); }
     // Border highlight for the focused cell in the dwindle grid view.
     void setFocused(bool on);
-    // Save the current frame as a PNG under ~/Pictures/rover_screenshots.
+    // Save the current frame as a PNG under camera_config::screenshotDir().
     // No-op without a live frame. Also wired to the 📷 button.
     void saveSnapshot();
 
