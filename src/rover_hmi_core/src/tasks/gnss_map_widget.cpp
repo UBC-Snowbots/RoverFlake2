@@ -47,13 +47,13 @@ GnssMapWidget::GnssMapWidget(QWidget* parent) : QWidget(parent) {
     setCursor(Qt::OpenHandCursor);
 }
 
-// Scan imagery/<site>/tiles once: zoom range + center per site (center from
-// the max-zoom tile index range). The nearest site to the view center is
-// activated lazily in updateActiveSite().
+// Scan imagery/<site>/tiles: zoom range + center per site (center from the
+// max-zoom tile index range). All sites draw together; the "active" one is
+// only the badge label and the fetch-tiles target.
 void GnssMapWidget::setImageryRoot(const QString& dir) {
+    imagery_root_ = dir;
     sites_.clear();
     active_ = -1;
-    tiles_dir_.clear();
     cache_.clear();
     for (const QString& name : QDir(dir).entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         const QString tiles = dir + "/" + name + "/tiles";
@@ -89,6 +89,16 @@ void GnssMapWidget::setImageryRoot(const QString& dir) {
                        se.x(), nw.y(), nw.x(), se.y(),
                        zooms.first(), z};
     }
+    // Zoom range spans every site so meshed neighbors never clamp each other.
+    if (!sites_.isEmpty()) {
+        zoom_min_ = sites_[0].zmin;
+        zoom_max_ = sites_[0].zmax;
+        for (const Site& s : sites_) {
+            zoom_min_ = std::min(zoom_min_, s.zmin);
+            zoom_max_ = std::max(zoom_max_, s.zmax);
+        }
+        zoom_ = std::clamp(zoom_, zoom_min_, zoom_max_);
+    }
     // No fix yet: open on the first site so there is something to look at.
     if (!have_view_ && !sites_.isEmpty()) {
         center_lat_ = sites_[0].lat;
@@ -99,10 +109,18 @@ void GnssMapWidget::setImageryRoot(const QString& dir) {
     update();
 }
 
-// Activate the best site for the view center: sites whose tiles COVER the
-// point beat merely-nearby ones (a small overlapping set must not shadow a
-// large one that actually has imagery here); nearest center breaks ties and
-// is the fallback when nothing covers. Cheap enough to run every repaint.
+void GnssMapWidget::rescan() {
+    if (!imagery_root_.isEmpty()) setImageryRoot(imagery_root_);
+}
+
+QString GnssMapWidget::activeSiteName() const {
+    return active_ >= 0 ? sites_[active_].name : QString();
+}
+
+// Best site for the view center — badge label + fetch-tiles target only,
+// tiles composite across all sites regardless. Sites whose tiles COVER the
+// point beat merely-nearby ones; nearest center breaks ties and is the
+// fallback when nothing covers. Cheap enough to run every repaint.
 void GnssMapWidget::updateActiveSite() {
     if (sites_.isEmpty()) return;
     const double cs = std::cos(center_lat_ * M_PI / 180.0);
@@ -120,13 +138,7 @@ void GnssMapWidget::updateActiveSite() {
             if (best < 0 || d < best_d) { best_d = d; best = i; }
         }
     }
-    if (best == active_) return;
     active_ = best;
-    tiles_dir_ = sites_[best].tiles;
-    zoom_min_ = sites_[best].zmin;
-    zoom_max_ = sites_[best].zmax;
-    zoom_ = std::clamp(zoom_, zoom_min_, zoom_max_);
-    cache_.clear();
 }
 
 void GnssMapWidget::addFix(double lat, double lon) {
@@ -165,18 +177,41 @@ QPointF GnssMapWidget::toScreen(double lat, double lon) const {
             height() / 2.0 + (t.y() - c.y()) * kTilePx};
 }
 
-const QPixmap* GnssMapWidget::tilePixmap(int x, int y) {
-    const QString key = QString("%1/%2/%3").arg(zoom_).arg(x).arg(y);
+// A z/x/y tile names one square of earth, so the first site holding it is as
+// good as any other — overlapping fetches mesh for free.
+const QPixmap* GnssMapWidget::tilePixmap(int z, int x, int y) {
+    const QString key = QString("%1/%2/%3").arg(z).arg(x).arg(y);
     auto it = cache_.find(key);
     if (it == cache_.end()) {
         QPixmap pm;
-        for (const char* ext : {"png", "jpg", "jpeg"}) {
-            const QString path = tiles_dir_ + "/" + key + "." + ext;
-            if (QFile::exists(path)) { pm.load(path); break; }
+        for (const Site& s : sites_) {
+            if (z < s.zmin || z > s.zmax) continue;
+            for (const char* ext : {"png", "jpg", "jpeg"}) {
+                const QString path = s.tiles + "/" + key + "." + ext;
+                if (QFile::exists(path)) { pm.load(path); break; }
+            }
+            if (!pm.isNull()) break;
         }
+        if (cache_.size() > 1024) cache_.clear();
         it = cache_.insert(key, pm);  // null pixmap caches the miss too
     }
     return it->isNull() ? nullptr : &it.value();
+}
+
+// Missing at the current zoom: magnify the nearest coarser tile any site
+// has, so sites with different zoom ranges (or fetch gaps at their seams)
+// blend instead of leaving holes.
+bool GnssMapWidget::drawCoarser(QPainter& p, int tx, int ty, const QRectF& dst) {
+    for (int dz = 1; dz <= 5 && zoom_ - dz >= zoom_min_; ++dz) {
+        if (const QPixmap* pm = tilePixmap(zoom_ - dz, tx >> dz, ty >> dz)) {
+            const int f = 1 << dz;
+            const double sub = pm->width() / double(f);
+            p.drawPixmap(dst, *pm, QRectF((tx & (f - 1)) * sub,
+                                          (ty & (f - 1)) * sub, sub, sub));
+            return true;
+        }
+    }
+    return false;
 }
 
 void GnssMapWidget::paintEvent(QPaintEvent*) {
@@ -201,8 +236,11 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
             const int tx = int(std::floor(c.x())) + dx, ty = int(std::floor(c.y())) + dy;
             const double sx = width() / 2.0 + (tx - c.x()) * kTilePx;
             const double sy = height() / 2.0 + (ty - c.y()) * kTilePx;
-            if (const QPixmap* pm = tilePixmap(tx, ty)) {
-                p.drawPixmap(QRectF(sx, sy, kTilePx, kTilePx), *pm, pm->rect());
+            const QRectF dst(sx, sy, kTilePx, kTilePx);
+            if (const QPixmap* pm = tilePixmap(zoom_, tx, ty)) {
+                p.drawPixmap(dst, *pm, pm->rect());
+                drew_tile = true;
+            } else if (drawCoarser(p, tx, ty, dst)) {
                 drew_tile = true;
             }
         }

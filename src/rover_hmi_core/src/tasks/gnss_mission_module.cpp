@@ -149,6 +149,9 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
     col->addWidget(map_, 1);
 
     auto* map_row = new QHBoxLayout();
+    auto* fetch = button("Fetch tiles", theme::Yellow);
+    QObject::connect(fetch, &QPushButton::clicked, [this]() { fetchTiles(); });
+    map_row->addWidget(fetch);
     map_row->addStretch();
     auto* center = button("Center", theme::Cyan);
     QObject::connect(center, &QPushButton::clicked, [this]() {
@@ -274,6 +277,47 @@ void GnssMissionModule::exportReport() {
         report(r->ok, QString::fromStdString(r->message));
         if (r->ok) last_report_ = QString::fromStdString(r->path);
     });
+}
+
+// Download imagery around the current view center (fetch_tiles skips tiles
+// already on disk, so repeated fetches extend the site and mesh seamlessly).
+// Needs internet — meant for pre-mission prep on the base station.
+void GnssMissionModule::fetchTiles() {
+    if (fetch_proc_)
+        return report(false, "tile fetch already running");
+    if (!map_->haveView())
+        return report(false, "no view center yet — wait for a fix or imagery");
+    QString site = map_->activeSiteName();
+    if (site.isEmpty()) site = "fetched";
+    auto* proc = new QProcess();
+    fetch_proc_ = proc;
+    QObject::connect(
+        proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        [this, proc, site](int code, QProcess::ExitStatus) {
+            const QString tail = QString::fromLocal8Bit(
+                proc->readAllStandardOutput()).trimmed().section('\n', -1);
+            proc->deleteLater();
+            fetch_proc_ = nullptr;
+            map_->rescan();
+            report(code == 0, code == 0 ? QString("%1: %2").arg(site, tail)
+                                        : "tile fetch failed — see HMI console");
+        });
+    // FailedToStart never reaches finished(); other errors do.
+    QObject::connect(proc, &QProcess::errorOccurred,
+                     [this, proc](QProcess::ProcessError e) {
+        if (e != QProcess::FailedToStart) return;
+        proc->deleteLater();
+        fetch_proc_ = nullptr;
+        report(false, "could not run fetch_tiles (is the ROS env sourced?)");
+    });
+    proc->setProcessChannelMode(QProcess::MergedChannels);
+    proc->start("ros2",
+        {"run", "rover_mapping", "fetch_tiles", "--",
+         "--name", site,
+         "--center", QString::number(map_->viewLat(), 'f', 6),
+                     QString::number(map_->viewLon(), 'f', 6),
+         "--km", "1.0"});
+    report(true, QString("fetching tiles into \"%1\" around the view center…").arg(site));
 }
 
 // Opens the last-exported report/route_map.png in the system viewer;

@@ -1,4 +1,5 @@
-"""Report-map exporter: offline tiles + track.csv + waypoints.yaml -> PNG.
+"""Report-map exporter: offline tiles + track.csv + waypoints.yaml ->
+report/route_map.png, mission.geojson (all tags + track, GIS-ready), poi.csv.
 
 Pillow only — no gdal, no matplotlib, no bag reading (mission_manager logs
 the track to CSV while recording). Degrades to a plain background when the
@@ -19,6 +20,7 @@ import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 from rover_mapping import paths
+from rover_mapping.geojson_export import mission_geojson, write_geojson
 from rover_mapping.mission_io import CATEGORY_COLORS, load_yaml_list
 
 MAX_PX = 3000          # cap of the stitched canvas' long side
@@ -91,12 +93,12 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     if not lats:
         raise ValueError(f'{mission_dir}: no track and no waypoints to draw')
 
+    meta = {}
+    mpath = os.path.join(mission_dir, 'mission.yaml')
+    if os.path.exists(mpath):
+        with open(mpath) as f:
+            meta = yaml.safe_load(f) or {}
     if site is None:
-        meta = {}
-        mpath = os.path.join(mission_dir, 'mission.yaml')
-        if os.path.exists(mpath):
-            with open(mpath) as f:
-                meta = yaml.safe_load(f) or {}
         site = (meta.get('site')
                 or paths.site_covering(sum(lats) / len(lats),
                                        sum(lons) / len(lons))
@@ -219,6 +221,10 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     img.save(out)
     write_poi_csv(os.path.join(os.path.dirname(out), 'poi.csv'),
                   waypoints, track)
+    segments = load_yaml_list(os.path.join(mission_dir, 'segments.yaml'))
+    write_geojson(os.path.join(os.path.dirname(out), 'mission.geojson'),
+                  mission_geojson(waypoints, track, segments,
+                                  meta=dict(meta, mission=os.path.basename(mission_dir))))
     if missing and zooms:
         print(f'warning: {missing} tiles missing (site imagery incomplete)',
               file=sys.stderr)

@@ -13,6 +13,7 @@
 
 #include <QLabel>
 #include <QLineEdit>
+#include <QProcess>
 
 #include <rover_mapping_interfaces/srv/export_map.hpp>
 #include <rover_mapping_interfaces/srv/segment.hpp>
@@ -45,6 +46,7 @@ private:
     void segment(bool open);
     void exportReport();
     void openReport();
+    void fetchTiles();
     void report(bool ok, const QString& msg);
     void refreshFix();
 
@@ -69,4 +71,5 @@ private:
     QLineEdit*     tag_label_     = nullptr;
     QLineEdit*     seg_name_      = nullptr;
     GnssMapWidget* map_           = nullptr;
+    QProcess*      fetch_proc_    = nullptr;
 };

@@ -1,3 +1,4 @@
+import json
 import os
 
 from rover_mapping import exporter, mission_io
@@ -42,3 +43,9 @@ def test_export_without_imagery(tmp_path, monkeypatch):
     assert rows[1].startswith('track_start')
     assert rows[-1].startswith('track_end')
     assert any(r.startswith('site_1') for r in rows)
+
+    with open(os.path.join(os.path.dirname(out), 'mission.geojson')) as f:
+        fc = json.load(f)
+    kinds = [ft['properties']['kind'] for ft in fc['features']]
+    assert kinds == ['waypoint', 'track']
+    assert fc['mission']['mission'] == '2026-08-05_t'
