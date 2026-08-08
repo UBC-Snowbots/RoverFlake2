@@ -7,7 +7,9 @@
 #include <QElapsedTimer>
 #include <pluginlib/class_list_macros.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <yaml-cpp/yaml.h>
+#include <rclcpp/parameter_map.hpp>
+#include <algorithm>
+#include <vector>
 
 // Styled entirely in the app's own idiom (catppuccin.h tokens + the e-stop
 // button's dark-tinted-bg/colored-border/colored-text pattern from
@@ -45,6 +47,7 @@ QString buttonStyle(const char* accent) {
 
 void SubsystemsModule::setNode(rclcpp::Node::SharedPtr node) {
     node_ = node;
+    loadHeartParams();
     loadBackendParams();
     sub_ = node_->create_subscription<rover_msgs::msg::HeartRequest>(
         feedback_topic_, 10,
@@ -224,54 +227,56 @@ std::string SubsystemsModule::heartYamlPath() const {
     }
 }
 
+// heart.yaml is a ROS 2 params file, so it's read with the same parser ros2
+// uses when launching the hearts (rcl_yaml_param_parser via
+// rclcpp::parameter_map_from_yaml_file) — the panel can't disagree with what
+// the hearts themselves load. A file that fails here would also fail every
+// heart's launch; on failure the panel just falls back to dynamic-only.
+void SubsystemsModule::loadHeartParams() {
+    const std::string path = heartYamlPath();
+    if (path.empty()) return;
+    try {
+        heart_params_ = rclcpp::parameter_map_from_yaml_file(path);
+    } catch (const std::exception& e) {
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts, built-in defaults", path.c_str(), e.what());
+    }
+}
+
 // The same config block dashboard_bringup hands the old GTK dashboard. Only
 // the keys the panel has a use for are mapped; camera routing and the
 // computer_*/subsystems_* lists are redundant here — hosts and rows come from
 // the /heart_* blocks themselves (loadExpectedHosts), which is what the
 // hearts actually run.
 void SubsystemsModule::loadBackendParams() {
-    const std::string path = heartYamlPath();
-    if (path.empty()) return;
-    try {
-        const YAML::Node dash = YAML::LoadFile(path)["/dashboard_hmi_node"]["ros__parameters"];
-        if (!dash) return;
-        if (const auto& n = dash["heart_request_topic"])  request_topic_  = n.as<std::string>();
-        if (const auto& n = dash["heart_feedback_topic"]) feedback_topic_ = n.as<std::string>();
-        if (const auto& n = dash["watchdog_timeout_ms"])  host_timeout_ms_ = n.as<qint64>();
-    } catch (const std::exception& e) {
-        RCLCPP_WARN(node_->get_logger(), "Subsystems: could not map /dashboard_hmi_node from %s (%s); using built-in defaults", path.c_str(), e.what());
+    const auto it = heart_params_.find("/dashboard_hmi_node");
+    if (it == heart_params_.end()) return;
+    for (const rclcpp::Parameter& p : it->second) {
+        try {
+            if (p.get_name() == "heart_request_topic")       request_topic_   = p.as_string();
+            else if (p.get_name() == "heart_feedback_topic") feedback_topic_  = p.as_string();
+            else if (p.get_name() == "watchdog_timeout_ms")  host_timeout_ms_ = p.as_int();
+        } catch (const rclcpp::exceptions::InvalidParameterTypeException& e) {
+            RCLCPP_WARN(node_->get_logger(), "Subsystems: /dashboard_hmi_node param has wrong type (%s); keeping built-in default", e.what());
+        }
     }
 }
 
 void SubsystemsModule::loadExpectedHosts() {
-    const std::string path = heartYamlPath();
-    if (path.empty()) return;
-    YAML::Node root;
-    try {
-        root = YAML::LoadFile(path);
-    } catch (const std::exception& e) {
-        RCLCPP_WARN(node_->get_logger(), "Subsystems: failed to parse %s (%s); no pre-rendered hosts", path.c_str(), e.what());
-        return;
-    }
-    // heart.yaml is hand-edited config: a structurally-wrong entry (e.g. a
-    // "/heart_x" key whose value isn't a map) must not be able to crash the
-    // HMI. Guard each entry individually; warn once and skip the bad entry
-    // so the rest of the file still pre-renders.
-    bool warned = false;
-    for (const auto& top : root) {
-        try {
-            const std::string key = top.first.as<std::string>();
-            if (key.rfind("/heart_", 0) != 0) continue;  // only heart nodes, e.g. skip /dashboard_hmi_node
-            const std::string host = key.substr(7);      // strip "/heart_"
-            const YAML::Node subsystems = top.second["ros__parameters"]["subsystems"];
-            if (!subsystems || !subsystems.IsMap()) continue;
-            HostGroup& g = hostGroup(host);
-            for (const auto& sub : subsystems) row(g, sub.first.as<std::string>());
-        } catch (const std::exception& e) {
-            if (!warned) {
-                RCLCPP_WARN(node_->get_logger(), "Subsystems: malformed entry in %s (%s); skipping bad entries", path.c_str(), e.what());
-                warned = true;
-            }
+    // ParameterMap is unordered — sort node names so host boxes render in a
+    // stable order across launches.
+    std::vector<std::string> heart_nodes;
+    for (const auto& [node_name, params] : heart_params_)
+        if (node_name.rfind("/heart_", 0) == 0) heart_nodes.push_back(node_name);  // skip e.g. /dashboard_hmi_node
+    std::sort(heart_nodes.begin(), heart_nodes.end());
+    constexpr const char* kSubPrefix = "subsystems.";  // nested params flatten to dotted names
+    for (const std::string& node_name : heart_nodes) {
+        const std::string host = node_name.substr(7);      // strip "/heart_"
+        for (const rclcpp::Parameter& p : heart_params_.at(node_name)) {
+            if (p.get_name().rfind(kSubPrefix, 0) != 0) continue;
+            // first dotted segment after the prefix is the subsystem name
+            std::string sub = p.get_name().substr(std::string(kSubPrefix).size());
+            sub = sub.substr(0, sub.find('.'));
+            if (!sub.empty()) row(hostGroup(host), sub);
         }
     }
 }

@@ -13,6 +13,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <map>
+#include <rclcpp/parameter_map.hpp>
 #include "rover_hmi_core/gui_module.h"
 #include "rover_msgs/msg/heart_request.hpp"
 
@@ -55,8 +56,12 @@ private:
     // Maps the old dashboard's /dashboard_hmi_node block (topics, watchdog)
     // onto this panel; keeps the built-in defaults on any parse failure.
     void loadBackendParams();
+    // Parses heart.yaml once with rclcpp's own params-file parser
+    // (rcl_yaml_param_parser) into heart_params_; empty map on failure.
+    void loadHeartParams();
     std::string heartYamlPath() const;      // "" (with a warn) when not found
 
+    rclcpp::ParameterMap heart_params_;
     std::string request_topic_  = "/heart/request";
     std::string feedback_topic_ = "/heart/running_subsystems";
     qint64 host_timeout_ms_ = 2500;         // fallback: 2.5 beats at 1 Hz
