@@ -6,15 +6,12 @@
 #include <QPixmap>
 #include <QTimer>
 #include <QWidget>
-#include <functional>
 
 #include "sensor_msgs/msg/image.hpp"
 
 class CameraViewport : public QWidget {
 public:
     explicit CameraViewport(QWidget* parent = nullptr);
-
-    std::function<void()> onClick;  // set by grid view: click cell → zoom to single
 
     void setLabel(const QString& label);
     void setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg);
@@ -28,7 +25,6 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override;
-    void mousePressEvent(QMouseEvent* ev) override;
 
 private:
     void drawStatic(QPainter& p);

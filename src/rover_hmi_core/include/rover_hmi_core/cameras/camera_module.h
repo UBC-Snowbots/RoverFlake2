@@ -1,6 +1,6 @@
-// camera_module.h — FNAF-style camera viewer: single viewport with a
-// bottom-right selector list (arrow keys), or a 2-column grid of all feeds.
-// Only the visible view's cameras are subscribed, on /<name>/image_raw_decoded.
+// camera_module.h — dwindle-tiled grid of camera feeds with a bottom button
+// bar selecting which cameras are in the grid. Only in-grid cameras are
+// subscribed, on /<name>/image_raw_decoded.
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
@@ -13,10 +13,8 @@
 #include "sensor_msgs/msg/image.hpp"
 
 class CameraViewport;
-class CameraListOverlay;
 class CameraGrid;
-class CameraPickerOverlay;
-class QStackedWidget;
+class QPushButton;
 
 class CameraModule : public rover_hmi_core::GuiModule {
 public:
@@ -36,38 +34,31 @@ public:
 
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
-            { "1..9",       "Switch camera (module focused)" },
-            { "Up/Down",    "Prev/next camera (single view)" },
-            { "G",          "Toggle grid view"               },
-            { "Shift+1..9", "Toggle camera in/out of grid"   },
-            { "P",          "Camera picker (grid view)"      },
-            { "Click cell", "Zoom into camera (grid view)"   },
-            { "Alt+Arrow",  "Focus cell (grid view)"         },
-            { "Alt+Shift+Arrow",      "Resize cell (grid view)" },
-            { "Alt+Ctrl+Shift+Arrow", "Swap cells (grid view)"  },
-            { "Alt+J",      "Toggle cell split (grid view)"  },
+            { "1..9",       "Toggle camera in/out of grid"   },
+            { "Alt+Arrow",  "Focus cell"                     },
+            { "Alt+Shift+Arrow",      "Resize cell" },
+            { "Alt+Ctrl+Shift+Arrow", "Swap cells"  },
+            { "Alt+J",      "Toggle cell split"              },
         };
     }
 
-    // Alt chords act on camera cells while grid view is showing; the panel
+    // Alt chords act on camera cells while the module is visible; the panel
     // tiling keeps them otherwise.
     std::function<bool(TilingOp, int, int)> tilingOpsCallback() override {
         return [this](TilingOp op, int dx, int dy) {
-            return grid_ && visible_ && gridOp(op, dx, dy);
+            return visible_ && gridOp(op, dx, dy);
         };
     }
 
-    // Persisted in saved layouts: view mode, active camera, grid membership.
+    // Persisted in saved layouts: grid membership and cell arrangement.
     QJsonObject saveState() const override;
     void restoreState(const QJsonObject& state) override;
 
 private:
-    void switchTo(int idx);
-    void setGrid(bool on);
     void toggleInGrid(int idx);
-    void rebuildGrid();     // sync the dwindle grid to in_grid_ membership
+    void rebuildGrid();     // sync the dwindle grid + buttons to in_grid_
     bool gridOp(TilingOp op, int dx, int dy);
-    void resubscribe();     // rebuild subscriptions for the current mode
+    void resubscribe();     // rebuild subscriptions for the current membership
     void unsubscribeAll();
     void onLivenessTick();
     void onVisibility(bool on);
@@ -79,16 +70,12 @@ private:
     std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_;
 
     std::vector<rover_hmi_core::camera_config::Camera> cams_;
-    CameraViewport* viewport_ = nullptr;        // single view (stack page 0)
-    std::vector<CameraViewport*> cells_;        // grid view  (stack page 1)
-    CameraListOverlay* list_ = nullptr;
-    CameraGrid* grid_widget_ = nullptr;         // dwindle-tiled cell container
-    CameraPickerOverlay* picker_ = nullptr;
-    QStackedWidget* stack_ = nullptr;
-    QTimer*         liveness_timer_ = nullptr;
+    std::vector<CameraViewport*> cells_;
+    std::vector<QPushButton*> buttons_;   // bottom selector, one per camera
+    CameraGrid* grid_widget_ = nullptr;   // dwindle-tiled cell container
+    QTimer*     liveness_timer_ = nullptr;
     std::vector<QElapsedTimer> last_frames_;
     std::vector<bool> in_grid_;   // grid membership per camera
-    int  active_  = -1;
-    bool grid_    = false;
+    std::vector<bool> alive_;     // publisher present per camera
     bool visible_ = true;
 };

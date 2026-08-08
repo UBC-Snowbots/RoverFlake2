@@ -96,8 +96,6 @@ add_library(rover_hmi_modules SHARED
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
     src/cameras/camera_grid.cpp
-    src/cameras/camera_list_overlay.cpp
-    src/cameras/camera_picker_overlay.cpp
     src/cameras/camera_module.cpp
     src/camera/ptz_camera_module.cpp
 )

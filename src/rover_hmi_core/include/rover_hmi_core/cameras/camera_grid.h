@@ -1,6 +1,6 @@
 // camera_grid.h — dwindle-tiled grid of camera cells. Same DwindleTree the
 // panel tiling uses; CameraModule forwards Alt-chord tiling ops here while
-// grid view is showing. Hover focuses a cell (like panels); click still zooms.
+// the module is visible. Hover focuses a cell (like panels).
 #pragma once
 
 #include <QWidget>
@@ -26,7 +26,7 @@ public:
     void setMembership(const std::vector<bool>& in_grid);
 
     // Alt-chord ops routed from TilingContainer via CameraModule. Always
-    // consumes: in grid view the camera panel owns the chords.
+    // consumes: while visible the camera panel owns the chords.
     bool handleOp(TilingOp op, int dx, int dy);
 
     // Tree persistence inside the module's saved state.

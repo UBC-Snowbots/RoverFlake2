@@ -13,12 +13,6 @@ CameraViewport::CameraViewport(QWidget* parent) : QWidget(parent)
     static_timer_->start(100);
 }
 
-void CameraViewport::mousePressEvent(QMouseEvent* ev)
-{
-    if (onClick) onClick();
-    QWidget::mousePressEvent(ev);
-}
-
 void CameraViewport::setLabel(const QString& label)
 {
     label_ = label;
