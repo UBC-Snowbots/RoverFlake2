@@ -16,7 +16,6 @@
 namespace {
 QElapsedTimer g_steady;  // steady/monotonic arrival clock
 qint64 steadyMs() { if (!g_steady.isValid()) g_steady.start(); return g_steady.elapsed(); }
-constexpr qint64 HOST_TIMEOUT_MS = 2500;  // 2.5 beats at 1 Hz
 constexpr const char* kBeaconDim      = "#0d5533";  // dim phase between beats (beacon logic untouched)
 constexpr const char* kBeaconNeverSeen = "#444444";
 constexpr const char* kOnlineTint      = "#0d2a1a";
@@ -46,16 +45,18 @@ QString buttonStyle(const char* accent) {
 
 void SubsystemsModule::setNode(rclcpp::Node::SharedPtr node) {
     node_ = node;
+    loadBackendParams();
     sub_ = node_->create_subscription<rover_msgs::msg::HeartRequest>(
-        "/heart/running_subsystems", 10,
+        feedback_topic_, 10,
         std::bind(&SubsystemsModule::onFeedback, this, std::placeholders::_1));
-    pub_ = node_->create_publisher<rover_msgs::msg::HeartRequest>("/heart/request", 10);
+    pub_ = node_->create_publisher<rover_msgs::msg::HeartRequest>(request_topic_, 10);
 }
 
 QWidget* SubsystemsModule::createWidget(QWidget* parent) {
     root_ = new QWidget(parent);
     auto* outer = new QVBoxLayout(root_);
-    waiting_ = new QLabel("⏳ waiting for hearts on /heart/running_subsystems");
+    waiting_ = new QLabel(QString("⏳ waiting for hearts on %1")
+                              .arg(QString::fromStdString(feedback_topic_)));
     outer->addWidget(waiting_);
     hosts_layout_ = new QVBoxLayout();
     outer->addLayout(hosts_layout_);
@@ -174,7 +175,7 @@ void SubsystemsModule::checkHostsAlive() {
     const qint64 now = steadyMs();
     for (auto& [host, g] : hosts_) {
         const bool never_seen = (g.last_arrival_ms == 0);
-        const bool lost = !never_seen && (now - g.last_arrival_ms > HOST_TIMEOUT_MS);
+        const bool lost = !never_seen && (now - g.last_arrival_ms > host_timeout_ms_);
         const HeartPhase new_phase = never_seen ? HeartPhase::NeverSeen
                                     : lost       ? HeartPhase::Lost
                                                  : HeartPhase::Fresh;
@@ -214,14 +215,37 @@ void SubsystemsModule::checkHostsAlive() {
     }
 }
 
-void SubsystemsModule::loadExpectedHosts() {
-    std::string path;
+std::string SubsystemsModule::heartYamlPath() const {
     try {
-        path = ament_index_cpp::get_package_share_directory("rover_manager") + "/config/heart.yaml";
+        return ament_index_cpp::get_package_share_directory("rover_manager") + "/config/heart.yaml";
     } catch (const std::exception& e) {
-        RCLCPP_WARN(node_->get_logger(), "Subsystems: rover_manager share dir not found (%s); no pre-rendered hosts", e.what());
-        return;
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: rover_manager share dir not found (%s)", e.what());
+        return {};
     }
+}
+
+// The same config block dashboard_bringup hands the old GTK dashboard. Only
+// the keys the panel has a use for are mapped; camera routing and the
+// computer_*/subsystems_* lists are redundant here — hosts and rows come from
+// the /heart_* blocks themselves (loadExpectedHosts), which is what the
+// hearts actually run.
+void SubsystemsModule::loadBackendParams() {
+    const std::string path = heartYamlPath();
+    if (path.empty()) return;
+    try {
+        const YAML::Node dash = YAML::LoadFile(path)["/dashboard_hmi_node"]["ros__parameters"];
+        if (!dash) return;
+        if (const auto& n = dash["heart_request_topic"])  request_topic_  = n.as<std::string>();
+        if (const auto& n = dash["heart_feedback_topic"]) feedback_topic_ = n.as<std::string>();
+        if (const auto& n = dash["watchdog_timeout_ms"])  host_timeout_ms_ = n.as<qint64>();
+    } catch (const std::exception& e) {
+        RCLCPP_WARN(node_->get_logger(), "Subsystems: could not map /dashboard_hmi_node from %s (%s); using built-in defaults", path.c_str(), e.what());
+    }
+}
+
+void SubsystemsModule::loadExpectedHosts() {
+    const std::string path = heartYamlPath();
+    if (path.empty()) return;
     YAML::Node root;
     try {
         root = YAML::LoadFile(path);

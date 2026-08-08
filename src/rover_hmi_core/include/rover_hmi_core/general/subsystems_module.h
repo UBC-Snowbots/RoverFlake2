@@ -1,6 +1,9 @@
 // Heart control panel: per-subsystem running state from each per-computer
 // heart (/heart/running_subsystems), start/stop via /heart/request — the same
-// HeartRequest protocol the old GTK dashboard (dashboard_bringup) spoke.
+// HeartRequest protocol the old GTK dashboard (dashboard_bringup) spoke. The
+// old dashboard's backend block in heart.yaml (/dashboard_hmi_node: topics,
+// watchdog_timeout_ms) is read directly, so retuning the backend retunes this
+// panel without a rebuild.
 // Host liveness is arrival-time on OUR steady clock — sender stamps are never trusted.
 #pragma once
 #include <QWidget>
@@ -49,6 +52,14 @@ private:
     // controls exist (and work) before any heartbeat arrives. Warns and
     // no-ops on missing/unparsable file — falls back to dynamic-only.
     void loadExpectedHosts();
+    // Maps the old dashboard's /dashboard_hmi_node block (topics, watchdog)
+    // onto this panel; keeps the built-in defaults on any parse failure.
+    void loadBackendParams();
+    std::string heartYamlPath() const;      // "" (with a warn) when not found
+
+    std::string request_topic_  = "/heart/request";
+    std::string feedback_topic_ = "/heart/running_subsystems";
+    qint64 host_timeout_ms_ = 2500;         // fallback: 2.5 beats at 1 Hz
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr sub_;
