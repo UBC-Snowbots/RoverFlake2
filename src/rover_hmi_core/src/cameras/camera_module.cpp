@@ -77,6 +77,13 @@ QWidget* CameraModule::createWidget(QWidget* parent)
         QObject::connect(sc, &QShortcut::activated,
                          [this, i]() { toggleInGrid(i); });
     }
+    for (auto key : { Qt::Key_Return, Qt::Key_Enter }) {
+        auto* sc = new QShortcut(QKeySequence(key), widget);
+        sc->setContext(Qt::WidgetWithChildrenShortcut);
+        QObject::connect(sc, &QShortcut::activated, [this]() {
+            if (auto* cell = grid_widget_->focusedCell()) cell->saveSnapshot();
+        });
+    }
 
     liveness_timer_ = new QTimer(widget);
     QObject::connect(liveness_timer_, &QTimer::timeout,

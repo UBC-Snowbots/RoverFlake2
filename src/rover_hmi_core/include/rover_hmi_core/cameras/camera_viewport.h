@@ -24,6 +24,9 @@ public:
     bool hasFrame() const { return static_cast<bool>(msg_); }
     // Border highlight for the focused cell in the dwindle grid view.
     void setFocused(bool on);
+    // Save the current frame as a PNG under ~/Pictures/rover_screenshots.
+    // No-op without a live frame. Also wired to the 📷 button.
+    void saveSnapshot();
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -33,8 +36,6 @@ private:
     void drawStatic(QPainter& p);
     void drawFrame(QPainter& p);
     void drawOverlay(QPainter& p);
-    // Save the current frame as a PNG under ~/Pictures/rover_screenshots.
-    void saveSnapshot();
 
     sensor_msgs::msg::Image::ConstSharedPtr msg_;  // keeps the buffer alive for painting
     QPixmap placeholder_;

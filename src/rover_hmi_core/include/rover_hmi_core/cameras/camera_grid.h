@@ -29,6 +29,9 @@ public:
     // consumes: while visible the camera panel owns the chords.
     bool handleOp(TilingOp op, int dx, int dy);
 
+    // Hover-focused cell (green border); nullptr when the grid is empty.
+    CameraViewport* focusedCell() const { return focused_; }
+
     // Tree persistence inside the module's saved state.
     QJsonObject saveTree() const;
     // Rebuild from saved JSON: leaves resolve by camera name; names that are

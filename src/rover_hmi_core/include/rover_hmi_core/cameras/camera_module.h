@@ -35,6 +35,7 @@ public:
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
             { "1..9",       "Toggle camera in/out of grid"   },
+            { "Enter",      "Screenshot hovered camera"      },
             { "Alt+Arrow",  "Focus cell"                     },
             { "Alt+Shift+Arrow",      "Resize cell" },
             { "Alt+Ctrl+Shift+Arrow", "Swap cells"  },
