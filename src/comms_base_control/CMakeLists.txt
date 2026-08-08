@@ -13,20 +13,21 @@ find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 
 add_executable(death_ray_motor_control_node src/death_ray_motor_control.cpp)
-# add_executable(death_ray_cbs_input_node src/death_ray_cbs_input.cpp)
+add_executable(death_ray_cbs_input_node src/death_ray_cbs_input_node.cpp)
 
 
 ament_target_dependencies(death_ray_motor_control_node
   rclcpp
   std_msgs
 )
-# ament_target_dependencies(death_ray_cbs_input_node
-#   rclcpp
-#   std_msgs
-#   rover_msgs
-# )
+ament_target_dependencies(death_ray_cbs_input_node
+  rclcpp
+  std_msgs
+  rover_msgs
+)
 
 target_link_libraries(death_ray_motor_control_node gpiod)
+# target_link_libraries(death_ray_cbs_input_node rclcpp)
 
 target_include_directories(death_ray_motor_control_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -36,7 +37,7 @@ target_include_directories(death_ray_motor_control_node PUBLIC
 
 install(TARGETS
   death_ray_motor_control_node
-  # death_raw_cbs_input_node
+  death_ray_cbs_input_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
