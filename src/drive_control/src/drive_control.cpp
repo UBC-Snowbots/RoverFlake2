@@ -15,9 +15,13 @@ DriveControlNode::DriveControlNode() : Node("drive_control_node") {
 
 void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
     geometry_msgs::msg::Twist twist_msg;
-
-    twist_msg.linear.x = msg->axes[1] * MAX_LINEAR_SPEED_MPS;
-    twist_msg.angular.z = msg->axes[0] * -MAX_ANGULAR_SPEED_MPS;
+    float linear_speed = MAX_LINEAR_SPEED_MPS;
+    if(msg->buttons[0])
+    {
+        linear_speed = linear_speed *1.5;
+    }
+    twist_msg.linear.x = msg->axes[1] * linear_speed * -1;
+    twist_msg.angular.z = msg->axes[3] * -MAX_ANGULAR_SPEED_MPS;
 
     cmd_vel_pub_->publish(twist_msg);
 }

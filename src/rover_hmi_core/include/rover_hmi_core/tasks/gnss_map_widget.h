@@ -1,9 +1,9 @@
 // gnss_map_widget.h — offline slippy-tile map canvas for the GNSS Mission
-// module: XYZ imagery, the live /gnss_fix path, and tagged waypoints. Scans
-// imagery/ and composites tiles from every site — z/x/y is a global grid, so
-// overlapping sites mesh; missing zooms fall back to a magnified coarser
-// tile. Drag pans, wheel zooms; following the fix resumes via centerOnFix().
-// Pure QWidget, no ROS — the module feeds it data.
+// module: XYZ imagery, the live /gnss_fix path, tagged waypoints, and
+// hand-entered points. Scans imagery/ and composites tiles from every site —
+// z/x/y is a global grid, so overlapping sites mesh; missing zooms fall back
+// to a magnified coarser tile. Drag pans, wheel zooms; following the fix
+// resumes via centerOnFix(). Pure QWidget, no ROS — the module feeds it data.
 
 #pragma once
 
@@ -18,10 +18,16 @@ public:
     void setImageryRoot(const QString& dir);  // scans imagery/<site>/tiles
     void rescan();                          // pick up freshly fetched tiles
     void addFix(double lat, double lon);
+    // manual = entered by hand rather than tagged at the fix; drawn as a
+    // diamond so a planned target never reads as somewhere the rover has been.
     void addWaypoint(double lat, double lon, const QString& category,
-                     const QString& label);
-    void clearRun();                        // new mission: drop path + waypoints
+                     const QString& label, bool manual = false);
+    // New mission: drop the path and tagged waypoints. Manual points survive —
+    // they are targets for the run about to start, not leftovers from the last.
+    void clearRun();
+    int  clearManualPoints();               // returns how many were removed
     void centerOnFix();
+    void centerOn(double lat, double lon);  // jump to a coordinate, stop following
     bool    haveView() const { return have_view_; }
     double  viewLat()  const { return center_lat_; }
     double  viewLon()  const { return center_lon_; }
@@ -35,7 +41,7 @@ protected:
     void wheelEvent(QWheelEvent*) override;
 
 private:
-    struct Waypoint { double lat, lon; QString category, label; };
+    struct Waypoint { double lat, lon; QString category, label; bool manual; };
     struct Site {
         QString name, tiles;
         double lat, lon;                    // center

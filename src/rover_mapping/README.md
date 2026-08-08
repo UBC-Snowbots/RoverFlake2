@@ -13,7 +13,7 @@ One node, `mission_manager`, owns the mission lifecycle:
 |-------------------|-----------------------------------------|------------------------------------------|
 | `/mission/start`  | `rover_mapping_interfaces/StartMission` | create `missions/<date>_<name>/`, start bag + track log |
 | `/mission/stop`   | `std_srvs/Trigger`                      | finalize the bag, close the mission      |
-| `/tag_point`      | `rover_mapping_interfaces/TagPoint`     | save current GPS fix as a labeled waypoint |
+| `/tag_point`      | `rover_mapping_interfaces/TagPoint`     | save a labeled waypoint — the current GPS fix, or `manual_lat`/`manual_lon` when `use_manual` |
 | `/segment_start`  | `rover_mapping_interfaces/Segment`      | open a named route leg                   |
 | `/segment_end`    | `rover_mapping_interfaces/Segment`      | close a leg (empty name = last open)     |
 | `/mission/export` | `rover_mapping_interfaces/ExportMap`    | render `report/` (PNG + GeoJSON + CSV)   |
@@ -77,3 +77,22 @@ Then drive it from the HMI's GNSS Mission module, or from a terminal:
 ros2 run rover_mapping tag site "rock outcrop"
 ros2 run rover_mapping export_map          # newest mission -> route_map.png
 ```
+
+## Manual coordinates
+
+Points the rover isn't standing on — a target radioed in by the judges, a
+coordinate read off another map — are tagged by coordinate instead of by
+fix. They land in `waypoints.yaml` alongside fix tags (marked
+`source: manual`), so the report map and POI CSV pick them up for free.
+
+```bash
+ros2 run rover_mapping tag site "given target" --at 51.453361 -112.722667
+```
+
+In the HMI's **GNSS Mission** module, the lat/lon row under the tag buttons
+does the same: type the two numbers (or paste `51.453361, -112.722667` whole
+into the lat box), pick a category, hit **Add point**. The map jumps to the
+point and draws it as a diamond — fix tags stay circles, so a planned target
+never reads as somewhere the rover has been. A manual point with no mission
+recording is still plotted, and the status line says it wasn't saved.
+Manual points survive a new mission's map reset; **Clear points** drops them.

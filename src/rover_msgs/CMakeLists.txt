@@ -50,9 +50,13 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LightControl.msg"
   "msg/LightStatus.msg"
   "msg/ScienceSensorData.msg"
+  "msg/ServoCommand.msg"
 
   "msg/AckAlert.msg"
   "msg/ActiveAlert.msg"
+
+  "srv/SetServoLimit.srv"
+  "srv/SetServoPwm.srv"
 
   DEPENDENCIES std_msgs
  )
