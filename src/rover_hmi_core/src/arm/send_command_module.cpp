@@ -159,15 +159,6 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     QObject::connect(estop_btn, &QPushButton::clicked, [this]() { sendStopAll(); });
     btns->addWidget(estop_btn);
 
-    auto* home_btn = new QPushButton("HOME…");
-    home_btn->setFont(fontBold);
-    home_btn->setStyleSheet(
-        QString("QPushButton { background: %1; color: %2; border: 2px solid %2; padding: 10px 18px; }"
-                "QPushButton:hover { border-color: %3; }")
-        .arg(theme::Bg).arg(theme::Green).arg(theme::Text));
-    QObject::connect(home_btn, &QPushButton::clicked, [this]() { homeChecked(); });
-    btns->addWidget(home_btn);
-
     btns->addStretch();
     layout->addLayout(btns);
 
@@ -234,7 +225,7 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     layout->addWidget(zero_sep);
 
     auto* zero_header = new QHBoxLayout();
-    auto* zero_title = new QLabel("Set Zero");
+    auto* zero_title = new QLabel("Axis Select (zero / home)");
     zero_title->setFont(fontBold);
     zero_title->setStyleSheet(QString("color: %1;").arg(theme::Text));
     zero_header->addWidget(zero_title);
@@ -277,15 +268,26 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     zero_checks_row->addStretch();
     layout->addLayout(zero_checks_row);
 
+    auto* zero_actions = new QHBoxLayout();
     auto* zero_btn = new QPushButton("Zero Selected");
     zero_btn->setFont(fontBold);
     zero_btn->setStyleSheet(
         QString("QPushButton { background: %1; color: %2; border: 1px solid %3; padding: 6px 14px; }"
                 "QPushButton:hover { border-color: %4; }")
         .arg(theme::Bg).arg(theme::Yellow).arg(theme::Yellow).arg(theme::Text));
-    layout->addWidget(zero_btn);
+    zero_actions->addWidget(zero_btn);
+
+    auto* home_btn = new QPushButton("Home Selected…");
+    home_btn->setFont(fontBold);
+    home_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 1px solid %2; padding: 6px 14px; }"
+                "QPushButton:hover { border-color: %3; }")
+        .arg(theme::Bg).arg(theme::Green).arg(theme::Text));
+    zero_actions->addWidget(home_btn);
+    layout->addLayout(zero_actions);
 
     QObject::connect(zero_btn, &QPushButton::clicked, [this]() { sendZeroChecked(); });
+    QObject::connect(home_btn, &QPushButton::clicked, [this]() { homeChecked(); });
 
     QObject::connect(all_none_btn, &QPushButton::clicked, [this]() {
         bool any_unchecked = false;

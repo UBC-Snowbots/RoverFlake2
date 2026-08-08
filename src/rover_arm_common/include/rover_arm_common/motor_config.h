@@ -216,7 +216,7 @@ namespace AxisConfig {
         /*AXIS 3 */   -1,
         /*AXIS 4 */   -1,
         /*AXIS 5 */   1,
-        /*AXIS 6 */   -1,
+        /*AXIS 6 */   1,
         /*AXIS EE */  -1 };
 
     float max_running_speed[NUM_AXES] = { // Rev/s Direction Independent. 
@@ -238,7 +238,7 @@ namespace AxisConfig {
         /*AXIS EE */  0.5 };
     
     float idle_position[NUM_AXES] = { // Rev/s Direction Independent.
-        /*AXIS 1 */   0.1,
+        /*AXIS 1 */   0.23,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
         /*AXIS 4 */   0.1,

@@ -23,8 +23,10 @@ inline bool stateMachineOwns(AxisState s) {
 
 // Pure axis->motor for the coupled wrist. Assumes both inputs already
 // coherent (same mode, shared limits) — resolveWrist() guarantees that.
+// cur_m5/cur_m6 are present motor positions, used to synchronize position moves.
 void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
-                   MotorCommand& m5, MotorCommand& m6) {
+                   MotorCommand& m5, MotorCommand& m6,
+                   float cur_m5, float cur_m6) {
     m5 = a5;  m6 = a6;                          // carry flags + shared limits
     if (!(a5.active || a6.active)) { m5.active = m6.active = false; return; }
     m5.active = m6.active = true;
@@ -36,8 +38,25 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
         differential_drive((float)a5.position, (float)a6.position, o5, o6);
         m5.position = o5;  m6.position = o6;
         m5.velocity = m6.velocity = NAN;
+        // Summed targets travel different distances per motor; scale each
+        // motor's profile by its share so both arrive together and the
+        // joint-space path stays straight mid-move.
+        float d5 = std::fabs(o5 - cur_m5), d6 = std::fabs(o6 - cur_m6);
+        float dmax = std::max(d5, d6);
+        if (dmax > 1e-4f) {
+            m5.max_velocity     *= d5 / dmax;  m6.max_velocity     *= d6 / dmax;
+            m5.max_acceleration *= d5 / dmax;  m6.max_acceleration *= d6 / dmax;
+        }
     } else {
         differential_drive((float)a5.velocity, (float)a6.velocity, o5, o6);
+        // Summed commands reach 2x the shared cap; rescale both together so
+        // nothing exceeds the per-frame velocity_limit (firmware winds up
+        // position error past it) and the joint-space direction is preserved.
+        const float vlim = (float)a5.max_velocity;  // shared by wrist coherence
+        const float mag  = std::max(std::fabs(o5), std::fabs(o6));
+        if (!std::isnan(vlim) && mag > vlim) {
+            o5 *= vlim / mag;  o6 *= vlim / mag;
+        }
         m5.velocity = o5;  m6.velocity = o6;
         m5.position = m6.position = NAN;
     }
@@ -458,7 +477,9 @@ void MoteusDriverNode::run() {
         motor_cmds_[AXIS_5_INDEX] = axis_cmds_[AXIS_5_INDEX];   // raw motor commands
         motor_cmds_[AXIS_6_INDEX] = axis_cmds_[AXIS_6_INDEX];
     } else {
-        combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
+        combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX],
+                      motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX],
+                      telem_[AXIS_5_INDEX].position, telem_[AXIS_6_INDEX].position);
         if (motor_cmds_[AXIS_5_INDEX].active)
             RCLCPP_INFO(this->get_logger(), "Axis 5/6 -> motor space  VEL: %0.3f %0.3f -> %0.3f %0.3f  POS: %0.3f %0.3f -> %0.3f %0.3f",
                 axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity,
