@@ -123,6 +123,7 @@ void DeathRayMotorControlNode::deathRayMotorCallback(const std_msgs::msg::Float3
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
         gpiod_line_set_value(step_line, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
+        rclcpp::spin_some(this->get_node_base_interface());
     }
 }
 
