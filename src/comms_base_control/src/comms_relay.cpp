@@ -44,10 +44,10 @@ ServoControlNode::~ServoControlNode() {
 
 bool ServoControlNode::lookupServo(uint8_t servo, ServoSpec& spec) const {
     switch (servo) {
-        case SetServoLimit::SERVO_RP:
+        case SetServoLimit::Request::SERVO_RP:
             spec = {"RP", SERVO_RP_GPIO_PIN, SERVO_RP_MIN_PWM, SERVO_RP_MAX_PWM};
             return true;
-        case SetServoLimit::SERVO_CLAW:
+        case SetServoLimit::Request::SERVO_CLAW:
             spec = {"CLAW", SERVO_CLAW_GPIO_PIN, SERVO_CLAW_MIN_PWM, SERVO_CLAW_MAX_PWM};
             return true;
         default:
@@ -84,10 +84,10 @@ void ServoControlNode::handleSetServoLimit(
 
     float pwm;
     switch (request->limit) {
-        case SetServoLimit::LIMIT_MIN:
+        case SetServoLimit::Request::LIMIT_MIN:
             pwm = spec.min_pwm;
             break;
-        case SetServoLimit::LIMIT_MAX:
+        case SetServoLimit::Request::LIMIT_MAX:
             pwm = spec.max_pwm;
             break;
         default:
@@ -101,9 +101,9 @@ void ServoControlNode::handleSetServoLimit(
     response->success = true;
     response->pwm_us = pwm;
     response->message = std::string(spec.name) +
-                        (request->limit == SetServoLimit::LIMIT_MAX ? " at MAX" : " at MIN");
+                        (request->limit == SetServoLimit::Request::LIMIT_MAX ? " at MAX" : " at MIN");
     RCLCPP_INFO(this->get_logger(), "%s servo -> %s (%.0f us)", spec.name,
-                request->limit == SetServoLimit::LIMIT_MAX ? "MAX" : "MIN", pwm);
+                request->limit == SetServoLimit::Request::LIMIT_MAX ? "MAX" : "MIN", pwm);
 }
 
 void ServoControlNode::handleSetServoPwm(
