@@ -1,6 +1,6 @@
-// camera_module.h — FNAF-style camera viewer: single viewport with a
-// bottom-right selector list (arrow keys), or a 2-column grid of all feeds.
-// Only the visible view's cameras are subscribed, on /<name>/image_raw_decoded.
+// camera_module.h — dwindle-tiled grid of camera feeds with a bottom button
+// bar selecting which cameras are in the grid. Only in-grid cameras are
+// subscribed, on /<name>/image_raw_decoded.
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
@@ -13,9 +13,8 @@
 #include "sensor_msgs/msg/image.hpp"
 
 class CameraViewport;
-class CameraListOverlay;
-class QGridLayout;
-class QStackedWidget;
+class CameraGrid;
+class QPushButton;
 
 class CameraModule : public rover_hmi_core::GuiModule {
 public:
@@ -35,24 +34,32 @@ public:
 
     std::vector<std::pair<std::string,std::string>> keybindings() const override {
         return {
-            { "1..9",       "Switch camera (module focused)" },
-            { "Up/Down",    "Prev/next camera (single view)" },
-            { "G",          "Toggle grid view"               },
-            { "Shift+1..9", "Toggle camera in/out of grid"   },
-            { "Click cell", "Zoom into camera (grid view)"   },
+            { "1..9",       "Toggle camera in/out of grid"   },
+            { "Enter",      "Screenshot hovered camera"      },
+            { "Alt+Arrow",  "Focus cell"                     },
+            { "Alt+Shift+Arrow",      "Resize cell" },
+            { "Alt+Ctrl+Shift+Arrow", "Swap cells"  },
+            { "Alt+J",      "Toggle cell split"              },
         };
     }
 
-    // Persisted in saved layouts: view mode, active camera, grid membership.
+    // Alt chords act on camera cells while the module is visible; the panel
+    // tiling keeps them otherwise.
+    std::function<bool(TilingOp, int, int)> tilingOpsCallback() override {
+        return [this](TilingOp op, int dx, int dy) {
+            return visible_ && gridOp(op, dx, dy);
+        };
+    }
+
+    // Persisted in saved layouts: grid membership and cell arrangement.
     QJsonObject saveState() const override;
     void restoreState(const QJsonObject& state) override;
 
 private:
-    void switchTo(int idx);
-    void setGrid(bool on);
     void toggleInGrid(int idx);
-    void rebuildGrid();     // re-lay grid cells from in_grid_ membership
-    void resubscribe();     // rebuild subscriptions for the current mode
+    void rebuildGrid();     // sync the dwindle grid + buttons to in_grid_
+    bool gridOp(TilingOp op, int dx, int dy);
+    void resubscribe();     // rebuild subscriptions for the current membership
     void unsubscribeAll();
     void onLivenessTick();
     void onVisibility(bool on);
@@ -64,15 +71,11 @@ private:
     std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_;
 
     std::vector<rover_hmi_core::camera_config::Camera> cams_;
-    CameraViewport* viewport_ = nullptr;        // single view (stack page 0)
-    std::vector<CameraViewport*> cells_;        // grid view  (stack page 1)
-    CameraListOverlay* list_ = nullptr;
-    QStackedWidget* stack_ = nullptr;
-    QGridLayout*    grid_layout_ = nullptr;
-    QTimer*         liveness_timer_ = nullptr;
+    std::vector<CameraViewport*> cells_;
+    std::vector<QPushButton*> buttons_;   // bottom selector, one per camera
+    CameraGrid* grid_widget_ = nullptr;   // dwindle-tiled cell container
+    QTimer*     liveness_timer_ = nullptr;
     std::vector<QElapsedTimer> last_frames_;
     std::vector<bool> in_grid_;   // grid membership per camera
-    int  active_  = -1;
-    bool grid_    = false;
     bool visible_ = true;
 };

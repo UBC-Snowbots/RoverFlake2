@@ -27,4 +27,8 @@ QString topicFor(const Camera& cam);  // "/<name>/image_raw_decoded"
 QString catFor(int idx);  // camera idx → cat path (wraps); empty if none found
 QString catError();       // config-error tile cat (first spare past the cameras)
 
+// <repo>/screenshots (gitignored); ~/Pictures fallback when the repo root
+// can't be resolved. Not created here — callers mkpath before writing.
+QString screenshotDir();
+
 }  // namespace rover_hmi_core::camera_config

@@ -72,3 +72,6 @@ log/
 
 .vscode/settings.json
 .venv
+
+# camera panel screenshots
+/screenshots/

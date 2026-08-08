@@ -114,7 +114,8 @@ int main(int argc, char* argv[]) {
                              module->defaultVisible(), module->toggleCallback(),
                              module->keybindings(), module->sectionName(),
                              [module]() { return module->saveState(); },
-                             [module](const QJsonObject& st) { module->restoreState(st); });
+                             [module](const QJsonObject& st) { module->restoreState(st); },
+                             module->tilingOpsCallback());
             modules.push_back(module);
         } catch (const pluginlib::PluginlibException& ex) {
             RCLCPP_WARN(node->get_logger(),

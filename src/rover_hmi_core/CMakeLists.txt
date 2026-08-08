@@ -24,10 +24,12 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
+    src/dwindle_tree.cpp
     src/layout_store.cpp
     src/spectro_paths.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
+    include/rover_hmi_core/dwindle_tree.h
     include/rover_hmi_core/spectro_paths.h
 )
 target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
@@ -92,7 +94,7 @@ add_library(rover_hmi_modules SHARED
     # Cameras
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
-    src/cameras/camera_list_overlay.cpp
+    src/cameras/camera_grid.cpp
     src/cameras/camera_module.cpp
     src/camera/ptz_camera_module.cpp
 )

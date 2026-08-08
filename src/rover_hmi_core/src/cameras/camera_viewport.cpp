@@ -1,8 +1,37 @@
 #include "camera_viewport.h"
 #include <rover_hmi_core/catppuccin.h>
+#include <rover_hmi_core/cameras/camera_config.h>
 
+#include <QDateTime>
+#include <QDir>
 #include <QPainter>
+#include <QPushButton>
 #include <QRandomGenerator>
+
+namespace {
+// Zero-copy QImage wrap of the ROS buffer; invalid + reason set on bad input.
+// The wrap stays valid only while msg's buffer lives.
+QImage wrapFrame(const sensor_msgs::msg::Image& msg, QString* why)
+{
+    QImage::Format fmt;
+    size_t bpp = 0;
+    const auto& enc = msg.encoding;
+    if      (enc == "rgb8")  { fmt = QImage::Format_RGB888; bpp = 3; }
+    else if (enc == "bgr8")  { fmt = QImage::Format_BGR888; bpp = 3; }
+    else if (enc == "mono8") { fmt = QImage::Format_Grayscale8; bpp = 1; }
+    else {
+        *why = QStringLiteral("unsupported encoding: %1").arg(enc.c_str());
+        return {};
+    }
+    if (msg.step < size_t(msg.width) * bpp
+        || msg.data.size() < size_t(msg.step) * msg.height) {
+        *why = QStringLiteral("malformed image: truncated data");
+        return {};
+    }
+    return QImage(msg.data.data(), int(msg.width), int(msg.height),
+                  qsizetype(msg.step), fmt);
+}
+}  // namespace
 
 CameraViewport::CameraViewport(QWidget* parent) : QWidget(parent)
 {
@@ -11,12 +40,16 @@ CameraViewport::CameraViewport(QWidget* parent) : QWidget(parent)
     static_timer_ = new QTimer(this);
     QObject::connect(static_timer_, &QTimer::timeout, this, [this]() { update(); });
     static_timer_->start(100);
-}
 
-void CameraViewport::mousePressEvent(QMouseEvent* ev)
-{
-    if (onClick) onClick();
-    QWidget::mousePressEvent(ev);
+    snap_btn_ = new QPushButton(QStringLiteral("📷"), this);
+    snap_btn_->setFocusPolicy(Qt::NoFocus);  // keys stay with the module
+    snap_btn_->setToolTip(QStringLiteral("Save screenshot"));
+    snap_btn_->setStyleSheet(QStringLiteral(
+        "QPushButton { background: rgba(0,0,0,170); border: 1px solid %1;"
+        " padding: 2px 8px; }").arg(theme::BorderDim));
+    snap_btn_->hide();
+    QObject::connect(snap_btn_, &QPushButton::clicked,
+                     this, [this]() { saveSnapshot(); });
 }
 
 void CameraViewport::setLabel(const QString& label)
@@ -37,6 +70,7 @@ void CameraViewport::setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg)
     msg_ = std::move(msg);
     error_.clear();
     if (static_timer_->isActive()) static_timer_->stop();
+    snap_btn_->show();
     update();
 }
 
@@ -45,6 +79,7 @@ void CameraViewport::setNoSignal()
     msg_.reset();
     fps_ = 0.0;
     frame_clock_.invalidate();
+    snap_btn_->hide();
     // The noise animation only runs when there is no placeholder picture.
     if (placeholder_.isNull() && !static_timer_->isActive()) static_timer_->start(100);
     update();
@@ -65,6 +100,13 @@ void CameraViewport::setError(const QString& msg)
     setNoSignal();
 }
 
+void CameraViewport::setFocused(bool on)
+{
+    if (focused_ == on) return;
+    focused_ = on;
+    update();
+}
+
 void CameraViewport::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
@@ -72,32 +114,48 @@ void CameraViewport::paintEvent(QPaintEvent*)
     if (msg_) drawFrame(p);
     else      drawStatic(p);
     drawOverlay(p);
+    if (focused_) {
+        p.setPen(QPen(QColor(theme::Green), 2));
+        p.drawRect(rect().adjusted(1, 1, -1, -1));
+    }
+}
+
+void CameraViewport::resizeEvent(QResizeEvent*)
+{
+    snap_btn_->adjustSize();
+    snap_btn_->move(width() - snap_btn_->width() - 8, 8);
+}
+
+void CameraViewport::saveSnapshot()
+{
+    if (!msg_) return;
+    QString why;
+    QImage img = wrapFrame(*msg_, &why);
+    if (img.isNull()) return;  // the paint path already shows why on screen
+
+    QDir dir(rover_hmi_core::camera_config::screenshotDir());
+    dir.mkpath(QStringLiteral("."));
+    const QString file = dir.filePath(
+        QStringLiteral("%1_%2.png")
+            .arg(label_.toLower().replace(' ', '_'),
+                 QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")));
+
+    flash_ = img.save(file) ? QStringLiteral("saved %1").arg(file)
+                            : QStringLiteral("screenshot failed: %1").arg(file);
+    QTimer::singleShot(3000, this, [this]() { flash_.clear(); update(); });
+    update();
 }
 
 void CameraViewport::drawFrame(QPainter& p)
 {
-    QImage::Format fmt;
-    size_t bpp = 0;
-    const auto& enc = msg_->encoding;
-    if      (enc == "rgb8")  { fmt = QImage::Format_RGB888; bpp = 3; }
-    else if (enc == "bgr8")  { fmt = QImage::Format_BGR888; bpp = 3; }
-    else if (enc == "mono8") { fmt = QImage::Format_Grayscale8; bpp = 1; }
-    else {
-        p.setPen(QColor(theme::Red));
-        p.drawText(rect(), Qt::AlignCenter,
-                   QStringLiteral("unsupported encoding: %1").arg(enc.c_str()));
-        return;
-    }
-    if (msg_->step < size_t(msg_->width) * bpp
-        || msg_->data.size() < size_t(msg_->step) * msg_->height) {
-        p.setPen(QColor(theme::Red));
-        p.drawText(rect(), Qt::AlignCenter,
-                   QStringLiteral("malformed image: truncated data"));
-        return;
-    }
+    QString why;
     // Zero-copy wrap; msg_ keeps the buffer alive until the next frame replaces it.
-    QImage img(msg_->data.data(), int(msg_->width), int(msg_->height),
-               qsizetype(msg_->step), fmt);
+    QImage img = wrapFrame(*msg_, &why);
+    if (img.isNull()) {
+        p.setPen(QColor(theme::Red));
+        p.drawText(rect(), Qt::AlignCenter, why);
+        return;
+    }
     QSize scaled = img.size().scaled(size(), Qt::KeepAspectRatio);
     QRect target(QPoint((width() - scaled.width()) / 2,
                         (height() - scaled.height()) / 2), scaled);
@@ -151,4 +209,12 @@ void CameraViewport::drawOverlay(QPainter& p)
     p.fillRect(box, QColor(0, 0, 0, 170));
     p.setPen(QColor(theme::Green));
     p.drawText(box, Qt::AlignCenter, info);
+
+    if (!flash_.isEmpty()) {
+        QRect fb = p.fontMetrics().boundingRect(flash_).adjusted(-8, -4, 8, 4);
+        fb.moveBottomLeft(QPoint(8, height() - 8));
+        p.fillRect(fb, QColor(0, 0, 0, 170));
+        p.setPen(QColor(theme::Yellow));
+        p.drawText(fb, Qt::AlignCenter, flash_);
+    }
 }

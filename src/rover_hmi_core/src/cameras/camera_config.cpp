@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QStandardPaths>
 #include <cstdlib>
 
 namespace rover_hmi_core::camera_config {
@@ -99,6 +100,15 @@ QString catError()
     QStringList cats = catList();
     if (cats.isEmpty()) return {};
     return cats[qMin(6, int(cats.size()) - 1)];
+}
+
+QString screenshotDir()
+{
+    QString root = packageRoot();  // <repo>/src/rover_hmi_core
+    if (root.isEmpty())
+        return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)
+               + QStringLiteral("/rover_screenshots");
+    return QDir::cleanPath(root + QStringLiteral("/../../screenshots"));
 }
 
 }  // namespace rover_hmi_core::camera_config
