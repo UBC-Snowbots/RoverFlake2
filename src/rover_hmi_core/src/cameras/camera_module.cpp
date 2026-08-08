@@ -1,8 +1,9 @@
 #include "camera_module.h"
+#include "camera_grid.h"
 #include "camera_list_overlay.h"
+#include "camera_picker_overlay.h"
 #include "camera_viewport.h"
 
-#include <QGridLayout>
 #include <QJsonArray>
 #include <QLabel>
 #include <QSet>
@@ -37,28 +38,33 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     auto* grid_col = new QVBoxLayout(grid_page);
     grid_col->setContentsMargins(0, 0, 0, 0);
     grid_col->setSpacing(2);
-    auto* grid_cells = new QWidget(grid_page);
-    grid_layout_ = new QGridLayout(grid_cells);
-    grid_layout_->setContentsMargins(0, 0, 0, 0);
-    grid_layout_->setSpacing(4);
+    grid_widget_ = new CameraGrid(grid_page);
+    QStringList cell_names, cell_labels;
     for (int i = 0; i < int(cams_.size()); ++i) {
-        auto* cell = new CameraViewport(grid_cells);
-        cell->setMinimumSize(160, 120);
+        auto* cell = new CameraViewport(grid_widget_);
+        cell->setMinimumSize(0, 0);  // geometry is tree-managed, not layout-managed
         cell->setLabel(cams_[size_t(i)].label);
         cell->setPlaceholder(QPixmap(rover_hmi_core::camera_config::catFor(i)));
         cell->onClick = [this, i]() { setGrid(false); switchTo(i); };
         cells_.push_back(cell);
+        cell_names  << cams_[size_t(i)].name;
+        cell_labels << cams_[size_t(i)].label;
     }
+    grid_widget_->setCells(cells_, cell_names);
     in_grid_.assign(cams_.size(), true);
     rebuildGrid();
-    grid_col->addWidget(grid_cells, 1);
+    grid_col->addWidget(grid_widget_, 1);
     auto* grid_hint = new QLabel(
-        QStringLiteral("G single view   ·   click a feed to zoom in"), grid_page);
+        QStringLiteral("G single view   ·   P pick cameras   ·   Alt+arrows move/resize   ·   click to zoom"),
+        grid_page);
     grid_hint->setStyleSheet(QStringLiteral("color: %1; padding: 2px 8px;")
                                  .arg(theme::TextDim));
     grid_hint->setAlignment(Qt::AlignRight);
     grid_col->addWidget(grid_hint);
     stack_->addWidget(grid_page);
+
+    picker_ = new CameraPickerOverlay(cell_labels, grid_page);
+    picker_->onToggle = [this](int idx) { toggleInGrid(idx); };
 
     std::vector<QString> labels;
     for (const auto& c : cams_) labels.push_back(c.label);
@@ -92,6 +98,7 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     bind(QKeySequence(Qt::Key_Down),
          [this, n]() { if (!grid_) switchTo((active_ + 1) % n); });
     bind(QKeySequence(Qt::Key_G), [this]() { setGrid(!grid_); });
+    bind(QKeySequence(Qt::Key_P), [this]() { if (grid_) picker_->toggle(); });
 
     liveness_timer_ = new QTimer(widget);
     QObject::connect(liveness_timer_, &QTimer::timeout,
@@ -198,17 +205,21 @@ void CameraModule::toggleInGrid(int idx)
 
 void CameraModule::rebuildGrid()
 {
-    if (!grid_layout_) return;
-    while (grid_layout_->count()) grid_layout_->takeAt(0);
-    int slot = 0;
-    for (int i = 0; i < int(cells_.size()); ++i) {
-        bool in = in_grid_[size_t(i)];
-        cells_[size_t(i)]->setVisible(in);
-        if (in) {
-            grid_layout_->addWidget(cells_[size_t(i)], slot / 2, slot % 2);
-            ++slot;
-        }
+    if (!grid_widget_) return;
+    grid_widget_->setMembership(in_grid_);
+    if (picker_) {
+        std::vector<bool> alive(cams_.size(), false);
+        if (node_)
+            for (size_t i = 0; i < cams_.size(); ++i)
+                alive[i] = node_->count_publishers(topicFor(cams_[i]).toStdString()) > 0;
+        picker_->setState(in_grid_, alive);
     }
+}
+
+bool CameraModule::gridOp(TilingOp op, int dx, int dy)
+{
+    if (!grid_widget_ || picker_->isVisible()) return false;
+    return grid_widget_->handleOp(op, dx, dy);
 }
 
 void CameraModule::onLivenessTick()
@@ -218,6 +229,7 @@ void CameraModule::onLivenessTick()
     for (size_t i = 0; i < cams_.size(); ++i)
         alive[i] = node_->count_publishers(topicFor(cams_[i]).toStdString()) > 0;
     list_->setAlive(alive);
+    if (picker_) picker_->setState(in_grid_, alive);
 
     // Hold the last frame through short dropouts; only admit NO SIGNAL after 5 s.
     auto stale = [this](size_t i) {
@@ -241,6 +253,10 @@ QJsonObject CameraModule::saveState() const
     for (size_t i = 0; i < cams_.size(); ++i)
         if (in_grid_[i]) members.append(cams_[i].name);
     st["grid_cams"] = members;
+    if (grid_widget_) {
+        QJsonObject tree = grid_widget_->saveTree();
+        if (!tree.isEmpty()) st["grid_tree"] = tree;
+    }
     return st;
 }
 
@@ -256,6 +272,10 @@ void CameraModule::restoreState(const QJsonObject& st)
     }
     active_ = qBound(0, st["active"].toInt(0), int(cams_.size()) - 1);
     rebuildGrid();
+    // Cell arrangement rides on top of membership; older layouts without a
+    // saved tree keep the membership-order dwindle from rebuildGrid().
+    if (grid_widget_ && st.contains(QStringLiteral("grid_tree")))
+        grid_widget_->restoreTree(st["grid_tree"].toObject());
     bool want_grid = st["grid"].toBool(false);
     grid_ = !want_grid;           // force setGrid through its change path
     setGrid(want_grid);           // sets the stack page and resubscribes

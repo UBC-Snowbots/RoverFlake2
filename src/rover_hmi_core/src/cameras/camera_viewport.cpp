@@ -65,6 +65,13 @@ void CameraViewport::setError(const QString& msg)
     setNoSignal();
 }
 
+void CameraViewport::setFocused(bool on)
+{
+    if (focused_ == on) return;
+    focused_ = on;
+    update();
+}
+
 void CameraViewport::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
@@ -72,6 +79,10 @@ void CameraViewport::paintEvent(QPaintEvent*)
     if (msg_) drawFrame(p);
     else      drawStatic(p);
     drawOverlay(p);
+    if (focused_) {
+        p.setPen(QPen(QColor(theme::Green), 2));
+        p.drawRect(rect().adjusted(1, 1, -1, -1));
+    }
 }
 
 void CameraViewport::drawFrame(QPainter& p)

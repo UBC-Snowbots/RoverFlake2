@@ -23,6 +23,8 @@ public:
     // Shown instead of animated static when signal-less, caption underneath.
     void setPlaceholder(const QPixmap& pm);
     bool hasFrame() const { return static_cast<bool>(msg_); }
+    // Border highlight for the focused cell in the dwindle grid view.
+    void setFocused(bool on);
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -40,4 +42,5 @@ private:
     QTimer* static_timer_;   // repaints the noise at 10 Hz while signal-less
     QElapsedTimer frame_clock_;
     double fps_ = 0.0;
+    bool focused_ = false;
 };

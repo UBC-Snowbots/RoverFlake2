@@ -14,7 +14,8 @@
 
 class CameraViewport;
 class CameraListOverlay;
-class QGridLayout;
+class CameraGrid;
+class CameraPickerOverlay;
 class QStackedWidget;
 
 class CameraModule : public rover_hmi_core::GuiModule {
@@ -39,7 +40,20 @@ public:
             { "Up/Down",    "Prev/next camera (single view)" },
             { "G",          "Toggle grid view"               },
             { "Shift+1..9", "Toggle camera in/out of grid"   },
+            { "P",          "Camera picker (grid view)"      },
             { "Click cell", "Zoom into camera (grid view)"   },
+            { "Alt+Arrow",  "Focus cell (grid view)"         },
+            { "Alt+Shift+Arrow",      "Resize cell (grid view)" },
+            { "Alt+Ctrl+Shift+Arrow", "Swap cells (grid view)"  },
+            { "Alt+J",      "Toggle cell split (grid view)"  },
+        };
+    }
+
+    // Alt chords act on camera cells while grid view is showing; the panel
+    // tiling keeps them otherwise.
+    std::function<bool(TilingOp, int, int)> tilingOpsCallback() override {
+        return [this](TilingOp op, int dx, int dy) {
+            return grid_ && visible_ && gridOp(op, dx, dy);
         };
     }
 
@@ -51,7 +65,8 @@ private:
     void switchTo(int idx);
     void setGrid(bool on);
     void toggleInGrid(int idx);
-    void rebuildGrid();     // re-lay grid cells from in_grid_ membership
+    void rebuildGrid();     // sync the dwindle grid to in_grid_ membership
+    bool gridOp(TilingOp op, int dx, int dy);
     void resubscribe();     // rebuild subscriptions for the current mode
     void unsubscribeAll();
     void onLivenessTick();
@@ -67,8 +82,9 @@ private:
     CameraViewport* viewport_ = nullptr;        // single view (stack page 0)
     std::vector<CameraViewport*> cells_;        // grid view  (stack page 1)
     CameraListOverlay* list_ = nullptr;
+    CameraGrid* grid_widget_ = nullptr;         // dwindle-tiled cell container
+    CameraPickerOverlay* picker_ = nullptr;
     QStackedWidget* stack_ = nullptr;
-    QGridLayout*    grid_layout_ = nullptr;
     QTimer*         liveness_timer_ = nullptr;
     std::vector<QElapsedTimer> last_frames_;
     std::vector<bool> in_grid_;   // grid membership per camera
