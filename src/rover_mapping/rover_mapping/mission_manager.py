@@ -3,7 +3,8 @@
 Services (the whole interface — HMI, tag CLI, and autonomy all use these):
   /mission/start   StartMission  create mission dir, start bag + track log
   /mission/stop    Trigger       finalize the bag, close the mission
-  /tag_point       TagPoint      save current GPS position as a waypoint
+  /tag_point       TagPoint      save a waypoint (current GPS fix, or a
+                                 manually entered coordinate)
   /segment_start   Segment       open a named route leg
   /segment_end     Segment       close a leg (empty name = last open)
   /mission/export  ExportMap     render report/route_map.png (Pillow)
@@ -214,15 +215,20 @@ class MissionManager(Node):
         if error is None and category not in CATEGORIES:
             error = (f'unknown category "{req.category}" '
                      f'(want one of {", ".join(CATEGORIES)})')
-        fix = self._fresh_fix()
-        if error is None and fix is None:
+        # Manual coordinates bypass the fix entirely: the point is somewhere
+        # the rover isn't (yet), so fix age says nothing about its validity.
+        manual = bool(req.use_manual)
+        fix = None if manual else self._fresh_fix()
+        if error is None and manual:
+            error = mission_io.coord_error(req.manual_lat, req.manual_lon)
+        if error is None and not manual and fix is None:
             error = ('no GPS fix yet' if self._fix is None
                      else f'fix is stale (> {self._stale_sec:.0f} s)')
         if error is not None:
             res.ok = False
             res.message = error
             return res
-        assert fix is not None
+        assert manual or fix is not None
 
         # id from the file, not the in-memory cache — stays collision-free
         # even if another writer (CLI, stray node) appended since our last tag
@@ -233,17 +239,20 @@ class MissionManager(Node):
             'id': wp_id,
             'label': label,
             'category': category,
-            'lat': float(fix.latitude),
-            'lon': float(fix.longitude),
-            'alt': float(fix.altitude),
-            'stamp': stamp_to_float(fix.header.stamp),
+            'lat': float(req.manual_lat) if manual else float(fix.latitude),
+            'lon': float(req.manual_lon) if manual else float(fix.longitude),
+            'alt': 0.0 if manual else float(fix.altitude),
+            'stamp': (self.get_clock().now().nanoseconds * 1e-9 if manual
+                      else stamp_to_float(fix.header.stamp)),
+            'source': 'manual' if manual else 'fix',
             'notes': req.notes,
         }
         self._waypoints = mission_io.append_waypoint(
             self._sidecar('waypoints.yaml'), waypoint)
         self.get_logger().info(
             f'tagged {wp_id} "{label}" at '
-            f'({waypoint["lat"]:.6f}, {waypoint["lon"]:.6f})')
+            f'({waypoint["lat"]:.6f}, {waypoint["lon"]:.6f})'
+            f'{" (manual)" if manual else ""}')
         res.ok = True
         res.message = f'saved {wp_id}'
         res.id = wp_id

@@ -1,7 +1,12 @@
-# Tag the rover's current GPS position as a labeled point of interest.
+# Tag a labeled point of interest — the rover's current GPS position, or a
+# manually entered coordinate when use_manual is true (planned targets, points
+# read off a map, coordinates handed over by the judges).
 string category      # start|site|sample|obstacle|landmark
 string label         # optional; auto "<Category> <n>" if empty
 string notes         # optional
+bool use_manual      # true: tag manual_lat/manual_lon instead of the live fix
+float64 manual_lat   # degrees, -90..90    (only read when use_manual)
+float64 manual_lon   # degrees, -180..180  (only read when use_manual)
 ---
 bool ok
 string message       # human-readable error when ok=false

@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -36,6 +37,51 @@ QString mappingRoot() {
     if (QFileInfo::exists(baked)) return baked;
 #endif
     return {};
+}
+
+// Categories accepted by /tag_point (mission_io.CATEGORIES).
+const struct { const char* cat; const char* color; } kCats[] = {
+    {"start", theme::Yellow}, {"site", theme::Green},
+    {"sample", theme::Cyan},  {"obstacle", theme::Red},
+    {"landmark", theme::Text}};
+
+// One coordinate field: a bare number, or a "lat, lon" / "lat lon" pair
+// pasted whole into the lat box (the lon box is then ignored).
+// Returns false with `error` set on anything unparseable.
+bool parseCoords(const QString& lat_text, const QString& lon_text,
+                 double* lat, double* lon, QString* error) {
+    QStringList parts = lat_text.split(QRegularExpression("[,;\\s]+"),
+                                       Qt::SkipEmptyParts);
+    if (parts.size() < 2) parts << lon_text.trimmed();
+    if (parts.size() > 2) {
+        *error = QString("expected two numbers, got %1").arg(parts.size());
+        return false;
+    }
+    if (parts.size() != 2 || parts[0].isEmpty() || parts[1].isEmpty()) {
+        *error = "enter both a latitude and a longitude";
+        return false;
+    }
+    bool ok_lat = false, ok_lon = false;
+    *lat = parts[0].toDouble(&ok_lat);
+    *lon = parts[1].toDouble(&ok_lon);
+    if (!ok_lat || !ok_lon) {
+        *error = QString("not a decimal coordinate: %1, %2").arg(parts[0], parts[1]);
+        return false;
+    }
+    if (*lat < -90.0 || *lat > 90.0) {
+        *error = QString("latitude %1 out of range (-90..90)").arg(*lat);
+        return false;
+    }
+    if (*lon < -180.0 || *lon > 180.0) {
+        *error = QString("longitude %1 out of range (-180..180)").arg(*lon);
+        return false;
+    }
+    // Matches mission_io.coord_error: 0,0 is a parse slip, never a target.
+    if (*lat == 0.0 && *lon == 0.0) {
+        *error = "refusing to tag 0, 0 — enter a real coordinate";
+        return false;
+    }
+    return true;
 }
 
 QPushButton* button(const QString& text, const QString& color) {
@@ -118,18 +164,46 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
     tag_label_->setPlaceholderText("tag label (optional)");
     tag_label_->setStyleSheet(lineCss);
     tag_row->addWidget(tag_label_, 1);
-    // Categories accepted by /tag_point (mission_io.CATEGORIES).
-    const struct { const char* cat; const char* color; } cats[] = {
-        {"start", theme::Yellow}, {"site", theme::Green},
-        {"sample", theme::Cyan},  {"obstacle", theme::Red},
-        {"landmark", theme::Text}};
-    for (const auto& c : cats) {
+    for (const auto& c : kCats) {
         auto* b = button(c.cat, c.color);
         const QString cat = c.cat;
         QObject::connect(b, &QPushButton::clicked, [this, cat]() { tag(cat); });
         tag_row->addWidget(b);
     }
     col->addLayout(tag_row);
+
+    // Manual coordinate entry: a point the rover isn't standing on — a target
+    // handed over by the judges, something read off another map.
+    auto* manual_row = new QHBoxLayout();
+    manual_lat_ = new QLineEdit();
+    manual_lat_->setPlaceholderText("lat (or \"lat, lon\")");
+    manual_lat_->setStyleSheet(lineCss);
+    manual_row->addWidget(manual_lat_, 1);
+    manual_lon_ = new QLineEdit();
+    manual_lon_->setPlaceholderText("lon");
+    manual_lon_->setStyleSheet(lineCss);
+    manual_row->addWidget(manual_lon_, 1);
+    manual_label_ = new QLineEdit();
+    manual_label_->setPlaceholderText("label (optional)");
+    manual_label_->setStyleSheet(lineCss);
+    manual_row->addWidget(manual_label_, 1);
+    manual_cat_ = new QComboBox();
+    for (const auto& c : kCats) manual_cat_->addItem(c.cat);
+    manual_cat_->setCurrentText("landmark");
+    manual_cat_->setStyleSheet(QString(
+        "QComboBox { color: %1; background: %2; border: 1px solid %3;"
+        "  border-radius: 4px; padding: 6px; }"
+        "QComboBox QAbstractItemView { color: %1; background: %2;"
+        "  selection-background-color: %3; }")
+        .arg(theme::Text, theme::BgPanel, theme::BorderDim));
+    manual_row->addWidget(manual_cat_);
+    auto* add_point = button("Add point", theme::Cyan);
+    QObject::connect(add_point, &QPushButton::clicked, [this]() { addManualPoint(); });
+    manual_row->addWidget(add_point);
+    // Enter in either coordinate field adds the point.
+    for (QLineEdit* e : {manual_lat_, manual_lon_, manual_label_})
+        QObject::connect(e, &QLineEdit::returnPressed, [this]() { addManualPoint(); });
+    col->addLayout(manual_row);
 
     auto* seg_row = new QHBoxLayout();
     seg_name_ = new QLineEdit();
@@ -157,6 +231,16 @@ QWidget* GnssMissionModule::createWidget(QWidget* parent) {
                                 : "no GPS fix yet — nothing to center on");
     });
     map_row->addWidget(center);
+    // Manual points outlive clearRun(), so they need their own way out.
+    auto* clear_pts = button("Clear points", theme::Yellow);
+    QObject::connect(clear_pts, &QPushButton::clicked, [this]() {
+        const int n = map_->clearManualPoints();
+        report(true, n ? QString("removed %1 manual point%2 from the map"
+                                 " (saved ones stay in waypoints.yaml)")
+                             .arg(n).arg(n == 1 ? "" : "s")
+                       : "no manual points on the map");
+    });
+    map_row->addWidget(clear_pts);
     auto* exp = button("Export report", theme::Green);
     QObject::connect(exp, &QPushButton::clicked, [this]() { exportReport(); });
     map_row->addWidget(exp);
@@ -242,6 +326,58 @@ void GnssMissionModule::tag(const QString& category) {
             map_->addWaypoint(r->lat, r->lon, category,
                               QString::fromStdString(r->id));
             tag_label_->clear();
+        }
+    });
+}
+
+// Manual coordinates: persisted through /tag_point exactly like a fix tag so
+// they reach waypoints.yaml and the exported report. The marker goes on the
+// map either way — when mission_manager can't record it (not running, no
+// mission started), the point is still plotted and the status line says it
+// wasn't saved, so a typed target is never silently swallowed.
+void GnssMissionModule::addManualPoint() {
+    double lat = 0, lon = 0;
+    QString error;
+    if (!parseCoords(manual_lat_->text(), manual_lon_->text(), &lat, &lon, &error))
+        return report(false, error);
+
+    const QString category = manual_cat_->currentText();
+    const QString label    = manual_label_->text().trimmed();
+    const QString fallback = label.isEmpty() ? category : label;
+    const QString where    = QString("%1, %2").arg(lat, 0, 'f', 6).arg(lon, 0, 'f', 6);
+
+    // Cleared now, not in the response callback — the operator may already be
+    // typing the next coordinate by the time mission_manager answers.
+    manual_lat_->clear();
+    manual_lon_->clear();
+    manual_label_->clear();
+
+    const auto plot = [this, lat, lon, category](const QString& marker) {
+        map_->addWaypoint(lat, lon, category, marker, /*manual=*/true);
+        map_->centerOn(lat, lon);
+    };
+
+    if (!tag_cli_->service_is_ready()) {
+        plot(fallback);
+        return report(false, QString("plotted %1 — mission_manager not running,"
+                                     " so it was NOT saved").arg(where));
+    }
+    auto req = std::make_shared<TagPoint::Request>();
+    req->category   = category.toStdString();
+    req->label      = label.toStdString();
+    req->use_manual = true;
+    req->manual_lat = lat;
+    req->manual_lon = lon;
+    tag_cli_->async_send_request(req, [this, plot, fallback, where](
+                                          rclcpp::Client<TagPoint>::SharedFuture f) {
+        const auto r = f.get();
+        if (r->ok) {
+            plot(QString::fromStdString(r->id));
+            report(true, QString("%1 @ %2").arg(QString::fromStdString(r->id), where));
+        } else {
+            plot(fallback);
+            report(false, QString("plotted %1 but NOT saved: %2")
+                              .arg(where, QString::fromStdString(r->message)));
         }
     });
 }

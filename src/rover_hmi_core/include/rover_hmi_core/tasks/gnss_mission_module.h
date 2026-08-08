@@ -1,7 +1,8 @@
 // gnss_mission_module.h — "GNSS Mission"
 //
 // Front panel for rover_mapping's mission_manager: start/stop a recorded
-// mission, tag waypoints at the current fix, open/close route segments —
+// mission, tag waypoints at the current fix or at a hand-entered coordinate,
+// open/close route segments —
 // all over its services — plus an embedded offline tile map (GnssMapWidget)
 // that live-plots the fix path and tags, and report export via the `rover`
 // CLI. Section: Tasks. defaultVisible: false.
@@ -11,6 +12,7 @@
 #include <rover_hmi_core/gui_module.h>
 #include <rover_hmi_core/tasks/gnss_map_widget.h>
 
+#include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
 
@@ -42,6 +44,7 @@ private:
     void startMission();
     void stopMission();
     void tag(const QString& category);
+    void addManualPoint();
     void segment(bool open);
     void exportReport();
     void openReport();
@@ -68,5 +71,9 @@ private:
     QLineEdit*     mission_name_  = nullptr;
     QLineEdit*     tag_label_     = nullptr;
     QLineEdit*     seg_name_      = nullptr;
+    QLineEdit*     manual_lat_    = nullptr;
+    QLineEdit*     manual_lon_    = nullptr;
+    QLineEdit*     manual_label_  = nullptr;
+    QComboBox*     manual_cat_    = nullptr;
     GnssMapWidget* map_           = nullptr;
 };

@@ -141,20 +141,40 @@ void GnssMapWidget::addFix(double lat, double lon) {
 }
 
 void GnssMapWidget::addWaypoint(double lat, double lon, const QString& category,
-                                const QString& label) {
-    waypoints_ << Waypoint{lat, lon, category, label};
+                                const QString& label, bool manual) {
+    waypoints_ << Waypoint{lat, lon, category, label, manual};
     update();
 }
 
 void GnssMapWidget::clearRun() {
     path_.clear();
-    waypoints_.clear();
+    for (int i = waypoints_.size() - 1; i >= 0; --i)
+        if (!waypoints_[i].manual) waypoints_.removeAt(i);
     update();
+}
+
+int GnssMapWidget::clearManualPoints() {
+    const int before = waypoints_.size();
+    for (int i = before - 1; i >= 0; --i)
+        if (waypoints_[i].manual) waypoints_.removeAt(i);
+    update();
+    return before - waypoints_.size();
 }
 
 void GnssMapWidget::centerOnFix() {
     follow_ = true;
     if (have_fix_) { center_lat_ = fix_lat_; center_lon_ = fix_lon_; }
+    update();
+}
+
+// Following would drag the view straight back to the rover, so a manual
+// jump drops it — "Center" puts it back.
+void GnssMapWidget::centerOn(double lat, double lon) {
+    follow_ = false;
+    center_lat_ = lat;
+    center_lon_ = lon;
+    have_view_ = true;
+    updateActiveSite();
     update();
 }
 
@@ -233,9 +253,15 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
         const QColor col = categoryColor(w.category);
         p.setPen(QPen(QColor(theme::Bg), 2));
         p.setBrush(col);
-        p.drawEllipse(s, 6, 6);
+        if (w.manual) {  // diamond: entered by hand, not tagged at the fix
+            const QPointF d[4] = {s + QPointF(0, -8), s + QPointF(8, 0),
+                                  s + QPointF(0, 8), s + QPointF(-8, 0)};
+            p.drawConvexPolygon(d, 4);
+        } else {
+            p.drawEllipse(s, 6, 6);
+        }
         p.setPen(col);
-        p.drawText(s + QPointF(9, 4), w.label);
+        p.drawText(s + QPointF(11, 4), w.label);
     }
 
     // Current fix
