@@ -33,7 +33,7 @@ missions/2026-08-05_field1/
   rosbag2/         /gnss_fix bag — the raw source of truth
   report/
     route_map.png
-    mission.geojson  every tag as a placed Point + track/segment LineStrings
+    mission.geojson  waypoints + track as GIS-ready vectors
     poi.csv
 ```
 

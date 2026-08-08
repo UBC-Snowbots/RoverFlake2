@@ -11,6 +11,7 @@ site imagery hasn't been fetched; the track and waypoints still render.
 from __future__ import annotations
 
 import csv
+import json
 import math
 import os
 import sys
@@ -20,7 +21,6 @@ import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 from rover_mapping import paths
-from rover_mapping.geojson_export import mission_geojson, write_geojson
 from rover_mapping.mission_io import CATEGORY_COLORS, load_yaml_list
 
 MAX_PX = 3000          # cap of the stitched canvas' long side
@@ -221,14 +221,39 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     img.save(out)
     write_poi_csv(os.path.join(os.path.dirname(out), 'poi.csv'),
                   waypoints, track)
-    segments = load_yaml_list(os.path.join(mission_dir, 'segments.yaml'))
     write_geojson(os.path.join(os.path.dirname(out), 'mission.geojson'),
-                  mission_geojson(waypoints, track, segments,
-                                  meta=dict(meta, mission=os.path.basename(mission_dir))))
+                  waypoints, track,
+                  dict(meta, mission=os.path.basename(mission_dir)))
     if missing and zooms:
         print(f'warning: {missing} tiles missing (site imagery incomplete)',
               file=sys.stderr)
     return out
+
+
+def write_geojson(path: str, waypoints: List[dict], track, meta: dict) -> str:
+    """Waypoints as Points + the track as a LineString, RFC 7946 ([lon, lat]) —
+    opens directly in QGIS / geojson.io / Google Earth. default=str keeps
+    YAML-loaded values JSON-safe (mission.yaml's date parses as datetime)."""
+    features = []
+    for wp in waypoints:
+        coords = [wp['lon'], wp['lat']]
+        if wp.get('alt') is not None:
+            coords.append(wp['alt'])
+        props = {k: wp[k] for k in ('id', 'label', 'category', 'stamp', 'notes')
+                 if wp.get(k) not in (None, '')}
+        features.append({'type': 'Feature',
+                         'geometry': {'type': 'Point', 'coordinates': coords},
+                         'properties': dict(props, kind='waypoint')})
+    if len(track) > 1:
+        features.append({'type': 'Feature',
+                         'geometry': {'type': 'LineString',
+                                      'coordinates': [[lon, lat] for _, lat, lon in track]},
+                         'properties': {'kind': 'track'}})
+    with open(path, 'w') as f:
+        json.dump({'type': 'FeatureCollection', 'features': features,
+                   'mission': meta}, f, indent=2, default=str)
+        f.write('\n')
+    return path
 
 
 def write_poi_csv(path: str, waypoints: List[dict], track) -> str:
