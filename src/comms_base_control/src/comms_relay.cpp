@@ -34,7 +34,7 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
 
 ServoControlNode::~ServoControlNode() {
     if (pi_ >= 0) {
-        set_servo_pulsewidth(pi_, SERVO_RP_GPIO_PIN, 0);
+        set_servo_pulsewidth(pi_, SERVO_RP_GPIO_PIN, SERVO_RP_MAX_PWM);
         set_servo_pulsewidth(pi_, SERVO_CLAW_GPIO_PIN, 0);
         pigpio_stop(pi_);
     }
