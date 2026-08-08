@@ -1,0 +1,49 @@
+# Settings for one CAN loop. Copy this file per loop if your loops differ
+# (config/can_loop_arm.yaml, config/can_loop_drive.yaml, ...) and point the
+# launch file at it with config_file:=...
+#
+# "/**" means "apply to any node this file is given to".
+/**:
+  ros__parameters:
+
+    # ---- ROS side ----
+    # Topics become /can/<loop_name>/incoming, /can/<loop_name>/outgoing, etc.
+    # The launch file overrides this with its loop_name argument.
+    loop_name: "on_board"
+
+    # How often we check the socket for new frames, and how many frames we are
+    # willing to pull out in one go. 
+    rx_poll_rate_hz: 100.0
+    max_frames_per_poll: 128 #should be way higher than we need
+
+    # Publisher/subscriber queue depth.
+    qos_depth: 25
+
+    # If true, messages that have their own typed topic ALSO get published on
+    # the generic incoming topic. Handy for logging/debugging, off by default so
+    # the network stays clean.
+    mirror_typed_to_incoming: false
+
+    # ---- SocketCAN interface (used by the node) ----
+    can_interface: "can0" #TODO Fragile? By id based path?
+    enable_can_fd: false 
+
+    # ---- Link settings ----
+    # These are used by scripts/can_setup.sh, NOT by the node itself. Bitrate
+    # and bit timing are a property of the network interface, so they get set
+    # with `ip link` before the node starts.
+    link:
+      # Arbitration (and classic CAN) bitrate.
+      bitrate: 500000
+      sample_point: 0.875
+
+      # Data phase, only used when enable_can_fd is true.
+      data_bitrate: 2000000
+      data_sample_point: 0.75
+
+      # Auto recover this many ms after a bus-off. 0 disables auto restart.
+      restart_ms: 100
+
+      # Kernel tx queue. Bigger queue = more buffering before writes start
+      # failing with ENOBUFS when the bus is busy.
+      txqueuelen: 1000

@@ -25,8 +25,6 @@ private:
 
     bool sim_on_    = false;
     int  drill_dir_ = 0;      // -1 raise, 0 hold, +1 lower
-    bool flow1_     = false;
-    bool flow2_     = false;
     bool sample_    = false;  // sample loaded → NPK/fluoro/gas read plausible values
     bool spectro_   = false;
     int  tick_      = 0;
@@ -36,8 +34,6 @@ private:
     QPushButton* lower_btn_   = nullptr;
     QPushButton* hold_btn_    = nullptr;
     QPushButton* raise_btn_   = nullptr;
-    QPushButton* flow1_btn_   = nullptr;
-    QPushButton* flow2_btn_   = nullptr;
     QPushButton* sample_btn_  = nullptr;
     QPushButton* spectro_btn_ = nullptr;
     QLabel*      depth_lbl_   = nullptr;

@@ -17,6 +17,7 @@
 #?    -> sudo systemctl restart rover_heart_<press tab here to figure out what the service name is>.service 
 #? OR, just restart computer.
 
+#? /** might work... for any names
 /dashboard_hmi_node:
   ros__parameters:
     watchdog_timeout_ms: 2000 
@@ -27,13 +28,10 @@
     heart_feedback_topic: "/heart/running_subsystems"
     subsystems_control_base:
       - "drive_control"
-      - "banana"
-      - "apple"
     subsystems_onboard_nuc:
       - "drive_interface"
       - "arm_interface"
-      - "cucumber"
-      - "meow"
+      - "gnss_interface"
     subsystems_onboard_jetson: # Not implemented in the dashboard gui yet
       - "yolo_detection"
       - "aruco_detection"
@@ -54,22 +52,19 @@
     subsystems:
       # drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
       drive_control: "ros2 run joy joy_node"
-      banana: "notify-send hello"
-      apple: "notify-send apple"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
 
     # request_topic: "/heart_control_base/request"
-      
+
 /heart_onboard_nuc:
   ros__parameters:
     subsystems:
       drive_interface: "ros2 launch drive_control drive_control_launch.launch.py"
       # drive_control: "ros2 launch drive_control drive_the_rover.launch.py"
       arm_interface: "ros2 launch arm_hardware_interface arm_hardware_bringup.launch.py"
-      cucumber: "ros2 run demo_nodes_cpp talker"
-      meow: "ros2 run demo_nodes_cpp listener"
+      gnss_interface: "ros2 run rover_gnss nmea_reader"
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
@@ -78,7 +73,15 @@
     # subsystems:
     #   - drive_interface
     #   - arm_interface
-    # subsystem_commands: 
+    # subsystem_commands:
     #   - "ros2 launch drive_control drive_control_onboard_bringup"
     #   - "ros2 launch arm_hardware_interface "
+
+/heart_jetson:
+  ros__parameters:
+    subsystems:
+      camera: "ros2 launch cameras_cpp jetson_compressor.launch.py"
+    request_topic: "/heart/request"
+    heart_feedback_topic: "/heart/running_subsystems"
+    heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
 

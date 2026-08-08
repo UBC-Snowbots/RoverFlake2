@@ -29,7 +29,8 @@ private:
     std::array<QPushButton*, 4> seq_btns_{};  // Rinse, Agitator, Process, Purge
     QLabel*      seq_status_lbl_ = nullptr;
 
-    QPushButton* drill_btn_      = nullptr;
+    QPushButton* drill_ccw_btn_  = nullptr;
+    QPushButton* drill_cw_btn_   = nullptr;
     QPushButton* vac_btn_        = nullptr;
     QPushButton* step_lower_btn_ = nullptr;
     QPushButton* step_hold_btn_  = nullptr;
@@ -40,13 +41,10 @@ private:
     QPushButton* pump_fwd_btn_   = nullptr;
 
     QLabel*      carousel_lbl_   = nullptr;
+    QPushButton* drop_btn_       = nullptr;
 
     QPushButton* large_btn_      = nullptr;
     QPushButton* small_btn_      = nullptr;
-
-    QPushButton* osf1_btn_       = nullptr;
-    QPushButton* osf2_btn_       = nullptr;
-    QLabel*      osf_warn_lbl_   = nullptr;
 
     QPushButton* spectro_btn_    = nullptr;
     QPushButton* ag_btn_         = nullptr;
@@ -61,8 +59,7 @@ private:
     void setStatus(const QString& text, const char* color, bool bold = false);
 
     void setPump(int status);                 // 0=stop, 1=rev, 2=fwd
-    void setOSF(int idx, bool unblocked);     // idx: 0 or 1
-    void updateOSFWarning();
+    void setDrillDir(int dir);                // hold-to-rotate: -1=ccw, 0=stop, 1=cw
 
     // Sequences (sequenceselection 1=rinse 2=agitator 3=process 4=purge; 0=idle)
     void startSequence(int seq);
@@ -76,6 +73,7 @@ private:
     void advanceDispenser(bool large);
 
     void updateDrillBtns();
+    void updateDropBtn();
     void updateValveBtn(int idx);
     void updatePumpBtns();
     void updateSeqBtns();

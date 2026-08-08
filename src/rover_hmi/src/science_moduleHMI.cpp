@@ -553,12 +553,10 @@ void ScienceHMINode::OSF1clicked() {
     if (!osf1_unblocked) {
         style_context->remove_class("unblocked");
         style_context->add_class("blocked");  // Change to not energized (red)
-        home_msg.osf1status = 0;
 
     } else {
         style_context->remove_class("blocked");
         style_context->add_class("unblocked");  // Change to energized (green)
-        home_msg.osf1status = 1;
     }
 
     osf_pub->publish(home_msg);
@@ -581,12 +579,10 @@ void ScienceHMINode::OSF2clicked() {
      if (!osf2_unblocked) {
         style_context->remove_class("unblocked");
         style_context->add_class("blocked");  // Change to not energized (red)
-        home_msg.osf2status = 0;
 
     } else {
         style_context->remove_class("blocked");
         style_context->add_class("unblocked");  // Change to energized (green)
-        home_msg.osf2status = 1;
 
     }
 
@@ -645,49 +641,23 @@ void ScienceHMINode::updateOFSBlockedLable(){
 
 // Toggle valve states (Only two states: Energized (green) and Not Energized (red))
 void ScienceHMINode::prevClicked() {
-    // Wrap from 0 → 15
-    carousel_index_ = (carousel_index_ == 0) ? 15 : carousel_index_ - 1;
+    // 3-chamber carousel: publish the commanded index, servo does the rest
+    carousel_index_ = (carousel_index_ == 0) ? 2 : carousel_index_ - 1;
 
     estopbutton->get_style_context()->add_class("not_active");
-   
 
     updateCarouselIndexLabel();
-
-    home_msg.carouseldir = -1;
-    carousel_pub->publish(home_msg);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    
-
-    home_msg.carouseldir= 0;
-    carousel_pub->publish(home_msg);
 }
 
 
 void ScienceHMINode::nextClicked() {
-    // Wrap from 15 → 0
-    carousel_index_ = (carousel_index_ + 1) % 16;
+    carousel_index_ = (carousel_index_ + 1) % 3;
 
     //update button:
     estopbutton->get_style_context()->add_class("not_active");
-    
 
-    // Update the label
+    // Update the label (publishes carouselindex)
     updateCarouselIndexLabel();
-
-    // Set motor direction forward
-    home_msg.carouseldir= 1;
-    carousel_pub->publish(home_msg);
-
-
-    // After short delay, stop motor
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    // Disable buttons here
-
-
-    home_msg.carouseldir = 0;
-    carousel_pub->publish(home_msg);
 }
 
 void ScienceHMINode::updateCarouselIndexLabel() {

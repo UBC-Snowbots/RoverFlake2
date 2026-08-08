@@ -1,0 +1,10 @@
+{
+    "names": {
+        "ffmpeg_encoder_decoder":{
+            "cmake-args": ["-DBUILD_TESTING=OFF"]
+        },
+        "ffmpeg_image_transport":{
+            "cmake-args": ["-DBUILD_TESTING=OFF"]
+        }
+    }
+}

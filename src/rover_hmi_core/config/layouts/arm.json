@@ -1,0 +1,59 @@
+{
+    "name": "Arm",
+    "saved_at": "2026-08-02 10:12",
+    "tree": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Motor Telemetry"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Motor Params"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 0.9599093794822693,
+                        "splitTop": true
+                    },
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Plots"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Send Command"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1.0221049785614014,
+                        "splitTop": true
+                    }
+                ],
+                "isNode": true,
+                "splitRatio": 0.7925420999526978,
+                "splitTop": false
+            },
+            {
+                "isNode": false,
+                "panel": "Command Log"
+            }
+        ],
+        "isNode": true,
+        "splitRatio": 1.7538166046142578,
+        "splitTop": true
+    },
+    "visible": [
+        "Command Log",
+        "Motor Params",
+        "Motor Telemetry",
+        "Plots",
+        "Send Command"
+    ]
+}

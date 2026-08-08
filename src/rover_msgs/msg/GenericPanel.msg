@@ -1,3 +1,4 @@
+#GenericPanel.msg
 int16 num_buttons
 int16 num_switches
 

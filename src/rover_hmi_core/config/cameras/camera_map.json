@@ -1,0 +1,8 @@
+{
+    "cameras": [
+        { "name": "realsense415",  "label": "Front" },
+        { "name": "realsense435i", "label": "Arm" },
+        { "name": "logitech",      "label": "Rear" },
+        { "name": "suyin",         "label": "Mast" }
+    ]
+}

@@ -1,0 +1,15 @@
+# CBS button → HMI layout map. Index = button index in /cbs/left_panel_a.
+# Entry forms:  ""                        = unbound
+#               "arm"                     = all windows load layout "arm"
+#               "left:camera, center:arm" = scene — per-window layouts
+#               (scene entries address hmi_wall.launch.py instances; a plain single HMI ignores them)
+# Layout names must exactly match saved layout names (Alt+P).
+hmi_router:
+  ros__parameters:
+    button_layouts:
+      - "left:camera, center:arm, right:camera"
+      - "arm"
+      - "camera"
+      - ""
+      - ""
+      - ""

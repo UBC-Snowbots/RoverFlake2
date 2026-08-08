@@ -54,25 +54,24 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     auto* grid = new QGridLayout();
     grid->setSpacing(8);
 
-    auto* motor_lbl = new QLabel("Motor:");
+    auto* motor_lbl = new QLabel("Target:");
     motor_lbl->setFont(fontBold);
     grid->addWidget(motor_lbl, 0, 0);
     motor_select_ = new QComboBox();
     motor_select_->setFont(font);
+    // Motors are the real targets (commands address CAN ids); A5/A6 are
+    // differential combinations of M5+M6, appended after. Picking an entry
+    // IS the motor/axis-space selection — no mode state.
     for (int i = 0; i < NUM_MOTORS; i++) {
-        QString label = QString("%1 - %2").arg(i + 1).arg(ARM_JOINTS[i].hardware_name);
-        motor_select_->addItem(label, i + 1);
+        const bool wrist = (i == AXIS_5_INDEX || i == AXIS_6_INDEX);
+        const QString hint = (i == AXIS_EE_INDEX) ? QStringLiteral(" – EE")
+                           : (wrist ? QStringLiteral(" – wrist raw") : QString());
+        motor_select_->addItem(QString("M%1%2").arg(i + 1).arg(hint), 100 + i + 1);
     }
+    motor_select_->insertSeparator(motor_select_->count());
+    motor_select_->addItem("A5 – wrist (M5+M6)", AXIS_5_INDEX + 1);
+    motor_select_->addItem("A6 – wrist (M5−M6)", AXIS_6_INDEX + 1);
     grid->addWidget(motor_select_, 0, 1, 1, 2);
-
-    auto* cmd_lbl = new QLabel("Command:");
-    cmd_lbl->setFont(fontBold);
-    grid->addWidget(cmd_lbl, 1, 0);
-    cmd_type_ = new QComboBox();
-    cmd_type_->setFont(font);
-    cmd_type_->addItem("Stop");
-    cmd_type_->addItem("Position");
-    grid->addWidget(cmd_type_, 1, 1, 1, 2);
 
     pos_enable_ = new QCheckBox();
     pos_enable_->setChecked(true);
@@ -84,9 +83,9 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     position_spin_->setSingleStep(0.01);
     auto* pos_lbl = new QLabel("Position (rev):");
     pos_lbl->setFont(font);
-    grid->addWidget(pos_lbl, 2, 0);
-    grid->addWidget(position_spin_, 2, 1);
-    grid->addWidget(pos_enable_, 2, 2);
+    grid->addWidget(pos_lbl, 1, 0);
+    grid->addWidget(position_spin_, 1, 1);
+    grid->addWidget(pos_enable_, 1, 2);
 
     QObject::connect(pos_enable_, &QCheckBox::toggled, [this](bool on) {
         position_spin_->setEnabled(on);
@@ -104,9 +103,9 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     velocity_spin_->setSingleStep(0.1);
     auto* vel_lbl = new QLabel("Velocity (rev/s):");
     vel_lbl->setFont(font);
-    grid->addWidget(vel_lbl, 3, 0);
-    grid->addWidget(velocity_spin_, 3, 1);
-    grid->addWidget(vel_enable_, 3, 2);
+    grid->addWidget(vel_lbl, 2, 0);
+    grid->addWidget(velocity_spin_, 2, 1);
+    grid->addWidget(vel_enable_, 2, 2);
 
     QObject::connect(vel_enable_, &QCheckBox::toggled, [this](bool on) {
         velocity_spin_->setEnabled(on);
@@ -114,34 +113,10 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
             QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
     });
 
-    torque_enable_ = new QCheckBox();
-    torque_enable_->setChecked(false);
-    torque_enable_->setToolTip("Uncheck for NaN (no torque limit)");
-    torque_spin_ = new QDoubleSpinBox();
-    torque_spin_->setFont(font);
-    torque_spin_->setRange(0.0, 10.0);
-    torque_spin_->setDecimals(2);
-    torque_spin_->setSingleStep(0.1);
-    torque_spin_->setValue(0.5);
-    torque_spin_->setEnabled(false);
-    torque_spin_->setStyleSheet(
-        QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
-    auto* torq_lbl = new QLabel("Max Torque (Nm):");
-    torq_lbl->setFont(font);
-    grid->addWidget(torq_lbl, 4, 0);
-    grid->addWidget(torque_spin_, 4, 1);
-    grid->addWidget(torque_enable_, 4, 2);
-
-    QObject::connect(torque_enable_, &QCheckBox::toggled, [this](bool on) {
-        torque_spin_->setEnabled(on);
-        torque_spin_->setStyleSheet(on ? "" :
-            QString("QDoubleSpinBox { color: %1; }").arg(theme::TextDim));
-    });
-
-    auto* nan_hint = new QLabel("Uncheck = NaN (e.g. d pos nan 0 nan)");
+    auto* nan_hint = new QLabel("Uncheck = NaN (skip that field, e.g. velocity-only jog)");
     nan_hint->setFont(QFont("monospace", theme::FontSizeSm));
     nan_hint->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
-    grid->addWidget(nan_hint, 5, 0, 1, 3);
+    grid->addWidget(nan_hint, 3, 0, 1, 3);
 
     layout->addLayout(grid);
 
@@ -150,19 +125,32 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     auto* send_btn = new QPushButton("Send");
     send_btn->setFont(fontBold);
     QObject::connect(send_btn, &QPushButton::clicked, [this]() {
-        int id = motor_select_->currentData().toInt();
-        if (cmd_type_->currentText() == "Stop") {
-            sendStop(id);
-        } else {
-            double pos    = pos_enable_->isChecked()    ? position_spin_->value() : NAN;
-            double vel    = vel_enable_->isChecked()    ? velocity_spin_->value() : NAN;
-            double torque = torque_enable_->isChecked() ? torque_spin_->value()   : NAN;
-            sendPosition(id, pos, vel, torque);
-        }
+        // The checked boxes ARE the command: pos+vel, pos-only, or vel-only.
+        double pos = pos_enable_->isChecked() ? position_spin_->value() : NAN;
+        double vel = vel_enable_->isChecked() ? velocity_spin_->value() : NAN;
+        sendPosition(targetId(), pos, vel);
     });
     btns->addWidget(send_btn);
 
-    auto* estop_btn = new QPushButton("E-STOP ALL");
+    // Per-target "d stop": limp + clears a latched fault on just this target.
+    auto* stop_btn = new QPushButton("D-STOP");
+    stop_btn->setFont(fontBold);
+    stop_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 2px solid %2; padding: 10px 18px; }"
+                "QPushButton:hover { border-color: %3; }")
+        .arg(theme::Bg).arg(theme::Yellow).arg(theme::Text));
+    QObject::connect(stop_btn, &QPushButton::clicked, [this]() { sendStop(targetId()); });
+    auto updateStopLabel = [this, stop_btn]() {
+        stop_btn->setText("D-STOP " + motor_select_->currentText().section(QChar(' '), 0, 0));
+    };
+    QObject::connect(motor_select_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     [updateStopLabel](int) { updateStopLabel(); });
+    updateStopLabel();
+    btns->addWidget(stop_btn);
+
+    // "d stop" to every motor (goes limp, clears faults). NOT an e-stop —
+    // there is no software e-stop; kill power for that.
+    auto* estop_btn = new QPushButton("D-STOP ALL");
     estop_btn->setFont(fontBold);
     estop_btn->setStyleSheet(
         QString("QPushButton { background: %1; color: #000000; border: 2px solid %1; padding: 10px 18px; }"
@@ -170,6 +158,15 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
         .arg(theme::Red));
     QObject::connect(estop_btn, &QPushButton::clicked, [this]() { sendStopAll(); });
     btns->addWidget(estop_btn);
+
+    auto* home_btn = new QPushButton("HOME…");
+    home_btn->setFont(fontBold);
+    home_btn->setStyleSheet(
+        QString("QPushButton { background: %1; color: %2; border: 2px solid %2; padding: 10px 18px; }"
+                "QPushButton:hover { border-color: %3; }")
+        .arg(theme::Bg).arg(theme::Green).arg(theme::Text));
+    QObject::connect(home_btn, &QPushButton::clicked, [this]() { homeChecked(); });
+    btns->addWidget(home_btn);
 
     btns->addStretch();
     layout->addLayout(btns);
@@ -219,16 +216,16 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     layout->addLayout(jog_row);
 
     QObject::connect(jog_plus, &JogButton::jogPressed, [this]() {
-        sendVelocity(motor_select_->currentData().toInt(), jog_speed_spin_->value());
+        sendVelocity(targetId(), jog_speed_spin_->value());
     });
     QObject::connect(jog_plus, &JogButton::jogReleased, [this]() {
-        sendVelocity(motor_select_->currentData().toInt(), 0.0);
+        sendVelocity(targetId(), 0.0);
     });
     QObject::connect(jog_minus, &JogButton::jogPressed, [this]() {
-        sendVelocity(motor_select_->currentData().toInt(), -jog_speed_spin_->value());
+        sendVelocity(targetId(), -jog_speed_spin_->value());
     });
     QObject::connect(jog_minus, &JogButton::jogReleased, [this]() {
-        sendVelocity(motor_select_->currentData().toInt(), 0.0);
+        sendVelocity(targetId(), 0.0);
     });
 
     auto* zero_sep = new QWidget();
@@ -237,7 +234,7 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     layout->addWidget(zero_sep);
 
     auto* zero_header = new QHBoxLayout();
-    auto* zero_title = new QLabel("Zero Axes");
+    auto* zero_title = new QLabel("Set Zero");
     zero_title->setFont(fontBold);
     zero_title->setStyleSheet(QString("color: %1;").arg(theme::Text));
     zero_header->addWidget(zero_title);
@@ -288,11 +285,7 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
         .arg(theme::Bg).arg(theme::Yellow).arg(theme::Yellow).arg(theme::Text));
     layout->addWidget(zero_btn);
 
-    QObject::connect(zero_btn, &QPushButton::clicked, [this]() {
-        for (int i = 0; i < NUM_ZERO_AXES; i++)
-            if (zero_checks_[i]->isChecked())
-                sendZero(i + 1);
-    });
+    QObject::connect(zero_btn, &QPushButton::clicked, [this]() { sendZeroChecked(); });
 
     QObject::connect(all_none_btn, &QPushButton::clicked, [this]() {
         bool any_unchecked = false;
@@ -304,6 +297,15 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
 
     layout->addStretch();
     return widget;
+}
+
+int SendCommandModule::targetId() const {
+    const int d = motor_select_ ? motor_select_->currentData().toInt() : 0;
+    return d > 100 ? d - 100 : d;
+}
+
+bool SendCommandModule::targetMotorSpace() const {
+    return motor_select_ && motor_select_->currentData().toInt() > 100;
 }
 
 void SendCommandModule::setNode(rclcpp::Node::SharedPtr node) {
@@ -323,45 +325,51 @@ void SendCommandModule::logCmd(const QString& cmd) {
     log_pub_->publish(msg);
 }
 
-void SendCommandModule::sendPosition(int motor_id, double pos, double vel, double max_torque) {
+void SendCommandModule::sendPosition(int motor_id, double pos, double vel) {
     if (!cmd_pub_) return;
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ABS_POS;
+    msg.cmd_value = targetMotorSpace() ? CMD_SPACE_MOTOR : CMD_SPACE_AXIS;
     msg.positions.resize(NUM_MOTORS, NAN);
     msg.velocities.resize(NUM_MOTORS, NAN);
     if (motor_id >= 1 && motor_id <= NUM_MOTORS) {
         msg.positions[motor_id - 1] = pos;
-        msg.velocities[motor_id - 1] = vel;
+        msg.velocities[motor_id - 1] = vel * 360.0;  // wire contract is deg/s, UI is rev/s
     }
     cmd_pub_->publish(msg);
 
     auto fmt = [](double v) -> QString {
         return std::isnan(v) ? "nan" : QString::number(v, 'f', 3);
     };
-    logCmd(QString("%1> d pos %2 %3 %4")
-           .arg(motor_id).arg(fmt(pos)).arg(fmt(vel)).arg(fmt(max_torque)));
+    logCmd(QString("%1%2> d pos %3 %4").arg(targetMotorSpace() ? 'M' : 'A')
+           .arg(motor_id).arg(fmt(pos)).arg(fmt(vel)));
 }
 
 void SendCommandModule::sendVelocity(int motor_id, double velocity) {
     if (!cmd_pub_) return;
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ABS_VEL;
+    msg.cmd_value = targetMotorSpace() ? CMD_SPACE_MOTOR : CMD_SPACE_AXIS;
     msg.velocities.resize(NUM_MOTORS, NAN);
     if (motor_id >= 1 && motor_id <= NUM_MOTORS)
-        msg.velocities[motor_id - 1] = velocity;
+        msg.velocities[motor_id - 1] = velocity * 360.0;  // wire contract is deg/s, UI is rev/s
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d vel %2").arg(motor_id).arg(QString::number(velocity, 'f', 3)));
+    logCmd(QString("%1%2> d pos nan %3 nan").arg(targetMotorSpace() ? 'M' : 'A')
+           .arg(motor_id).arg(QString::number(velocity, 'f', 3)));
 }
 
+// Real "d stop" for one target (motor goes limp, clears a latched fault) —
+// unlike jog-release, which is velocity-0 hold.
 void SendCommandModule::sendStop(int motor_id) {
     if (!cmd_pub_) return;
     rover_msgs::msg::ArmCommand msg;
-    msg.cmd_type = CMD_ABS_VEL;
-    msg.velocities.resize(NUM_MOTORS, NAN);
+    msg.cmd_type = CMD_STOP;
+    msg.cmd_value = targetMotorSpace() ? CMD_SPACE_MOTOR : CMD_SPACE_AXIS;
+    msg.positions.resize(NUM_MOTORS, NAN);   // mask: non-NaN = stop that one
     if (motor_id >= 1 && motor_id <= NUM_MOTORS)
-        msg.velocities[motor_id - 1] = 0.0;
+        msg.positions[motor_id - 1] = 1.0;
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d stop").arg(motor_id));
+    logCmd(QString("%1%2> d stop").arg(targetMotorSpace() ? 'M' : 'A').arg(motor_id));
 }
 
 void SendCommandModule::sendStopAll() {
@@ -372,15 +380,64 @@ void SendCommandModule::sendStopAll() {
     logCmd("A> d stop");
 }
 
-void SendCommandModule::sendZero(int motor_id) {
+// Switch homing: the Zero Axes checkboxes select which axes home (switch-
+// equipped axes 1-6; EE has no switch and the driver denies it anyway).
+// Each axis creeps to its switch, zeroes THERE, and parks just off it —
+// independent per axis; the wrist pair (A5/A6) homes one at a time.
+void SendCommandModule::homeChecked() {
+    if (!cmd_pub_) return;
+    QStringList names;
+    std::vector<double> selected;
+    for (int i = 0; i < NUM_ZERO_AXES && i <= AXIS_6_INDEX; i++) {
+        if (!zero_checks_[i]->isChecked()) continue;
+        selected.push_back((double)i);
+        names << QString("A%1").arg(i + 1);
+    }
+    if (selected.empty()) return;
+
+    QMessageBox box;
+    box.setWindowTitle("Home arm");
+    box.setText(QString("Make sure the path to each limit switch is clear.\n\n"
+                        "On confirm, %1 will each creep to their limit switch, "
+                        "zero there, and park just off the switch. A5/A6 home "
+                        "one at a time.")
+                    .arg(names.join(", ")));
+    box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    box.setDefaultButton(QMessageBox::Cancel);
+    box.setFont(QFont("monospace", theme::FontSize));
+    box.setStyleSheet(QString(
+        "QMessageBox { background: %1; }"
+        "QLabel { color: %2; background: transparent; }"
+        "QPushButton { background: %1; color: %2; border: 1px solid %3; padding: 6px 14px; min-width: 70px; }"
+        "QPushButton:hover { border-color: %2; }")
+        .arg(theme::Bg).arg(theme::Text).arg(theme::Border));
+    if (box.exec() != QMessageBox::Ok) return;
+
+    rover_msgs::msg::ArmCommand home;
+    home.cmd_type = CMD_HOME;
+    home.cmd_value = HOME_VALUE_SELECTED;
+    home.positions = selected;
+    cmd_pub_->publish(home);
+
+    logCmd(QString("%1> home (switch = 0)").arg(names.join(",")));
+}
+
+// One message for all selected axes: per-axis publishes on this KeepLast(1)
+// topic overwrite each other in flight, so only the last axis ever zeroed.
+void SendCommandModule::sendZeroChecked() {
     if (!cmd_pub_) return;
     rover_msgs::msg::ArmCommand msg;
     msg.cmd_type = CMD_ZERO;
     msg.positions.resize(NUM_MOTORS, NAN);
-    if (motor_id >= 1 && motor_id <= NUM_MOTORS)
-        msg.positions[motor_id - 1] = 1.0;
+    QStringList ids;
+    for (int i = 0; i < NUM_ZERO_AXES && i < NUM_MOTORS; i++) {
+        if (!zero_checks_[i]->isChecked()) continue;
+        msg.positions[i] = 1.0;
+        ids << QString::number(i + 1);
+    }
+    if (ids.isEmpty()) return;
     cmd_pub_->publish(msg);
-    logCmd(QString("%1> d exact 0").arg(motor_id));
+    logCmd(QString("%1> d exact 0").arg(ids.join(",")));
 }
 
 PLUGINLIB_EXPORT_CLASS(SendCommandModule, rover_hmi_core::GuiModule)

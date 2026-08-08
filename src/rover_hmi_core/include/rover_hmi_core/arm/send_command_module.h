@@ -23,6 +23,7 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <array>
 #include <cmath>
@@ -48,24 +49,29 @@ public:
     void stop() override {}
 
 private:
-    void sendPosition(int motor_id, double pos, double vel, double max_torque);
+    void sendPosition(int motor_id, double pos, double vel);
     void sendVelocity(int motor_id, double velocity);
-    void sendStop(int motor_id);
+    void sendStop(int motor_id);   // masked CMD_STOP: real "d stop" for one target
     void sendStopAll();
-    void sendZero(int motor_id);
+    void sendZeroChecked();
+    void homeChecked();   // safe-pose prompt -> zero selected -> group home
     void logCmd(const QString& cmd);
+
+    // Target dropdown holds axis entries (A1..A6, EE; data = id) plus raw
+    // motor entries M5/M6 (data = 100+id → cmd_value CMD_SPACE_MOTOR, which
+    // bypasses the driver's differential-wrist transform). Picking the entry
+    // IS the space selection — no separate mode state.
+    int  targetId() const;
+    bool targetMotorSpace() const;
 
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr cmd_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr log_pub_;
 
     QComboBox* motor_select_ = nullptr;
-    QComboBox* cmd_type_ = nullptr;
     QDoubleSpinBox* position_spin_ = nullptr;
     QDoubleSpinBox* velocity_spin_ = nullptr;
-    QDoubleSpinBox* torque_spin_ = nullptr;
     QDoubleSpinBox* jog_speed_spin_ = nullptr;
     QCheckBox* pos_enable_ = nullptr;
     QCheckBox* vel_enable_ = nullptr;
-    QCheckBox* torque_enable_ = nullptr;
     std::array<QCheckBox*, NUM_ZERO_AXES> zero_checks_{};
 };

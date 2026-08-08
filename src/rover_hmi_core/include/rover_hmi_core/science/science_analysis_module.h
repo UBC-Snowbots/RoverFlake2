@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rover_hmi_core/gui_module.h>
+#include <rover_hmi_core/stale_monitor.h>
 #include <QLabel>
 #include <QPushButton>
 #include <QProgressBar>
@@ -38,9 +39,10 @@ private:
     void appendNpkRecord(float n, float p, float k);
 
     // Spectro
-    QLabel*       spectro_lbls_[6] = {};
+    static constexpr int kNumVials = 3;
+    QLabel*       spectro_lbls_[kNumVials] = {};
     SpectroPaint* spectro_chart_   = nullptr;
-    std::array<float,6> spectro_vals_{};
+    std::array<float,kNumVials> spectro_vals_{};
 
     // NPK
     QLabel*       npk_n_lbl_   = nullptr;
@@ -62,8 +64,9 @@ private:
     std::deque<float> gas_history_;
 
     // Flow sensors
-    QLabel*       flow1_lbl_  = nullptr;
-    QLabel*       flow2_lbl_  = nullptr;
+
+    QLabel* banner_ = nullptr;
+    rover_hmi_core::StaleMonitor stale_;
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::ScienceSensorData>::SharedPtr sub_;

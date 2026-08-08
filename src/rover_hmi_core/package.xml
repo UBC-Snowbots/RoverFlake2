@@ -15,11 +15,17 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>ament_index_cpp</depend>
   <depend>rover_arm_common</depend>
+  <depend>rover_mapping_interfaces</depend>
+  <depend>yaml-cpp</depend>
+  <exec_depend>rover_manager</exec_depend>
 
   <build_depend>qt5-qmake</build_depend>
   <build_depend>qtbase5-dev</build_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

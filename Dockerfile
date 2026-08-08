@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV ROVERFLAKE_ROOT=/RoverFlake2
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV ROS_DOMAIN_ID=101
 
 # install base dependencies (recommend not to change if you want to add niche deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -49,9 +50,8 @@ COPY src/ $ROVERFLAKE_ROOT/src/
 # run full setup to install dependencies inside the image (auto-confirm prompts)
 RUN yes | bash setup_scripts/setup_everything_common.sh
 
-# spectrometer pipeline deps — apt's matplotlib/scipy are built against the
-# numpy 1.x ABI and fail to import against the numpy 2.x in this image
-RUN pip3 install --no-cache-dir -r $ROVERFLAKE_ROOT/src/rover_hmi_core/scripts/spectrometer/requirements.txt
+# (spectrometer python deps now install inside setup_everything_common.sh —
+# same path for native and Docker setups)
 
 # copy everything else (code changes invalidate from here, but deps are cached)
 COPY . $ROVERFLAKE_ROOT

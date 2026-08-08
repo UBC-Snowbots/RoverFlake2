@@ -1,0 +1,10 @@
+# Tag the rover's current GPS position as a labeled point of interest.
+string category      # start|site|sample|obstacle|landmark
+string label         # optional; auto "<Category> <n>" if empty
+string notes         # optional
+---
+bool ok
+string message       # human-readable error when ok=false
+string id            # e.g. "site_2"
+float64 lat
+float64 lon

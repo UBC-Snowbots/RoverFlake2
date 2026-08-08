@@ -1,3 +1,6 @@
+bool connected              # motor answered the most recent CAN cycle;
+                            # when false, curr_* hold the last-known values
+
 float32 curr_voltage_volts
 float32 curr_current_amps
 float32 curr_power_watts

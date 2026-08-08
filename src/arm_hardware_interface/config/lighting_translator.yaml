@@ -1,0 +1,19 @@
+/**:
+  ros__parameters:
+    # Which CAN loop the LED panels are on. Topics are /can/<loop_name>/...
+    loop_name: "on_board"
+
+    # The typed topic the can node routes lighting frames to. Must match the
+    # suffix in can_topic_routing.h for MSG_TYPE__LED_PANEL_FEEDBACK.
+    lighting_topic_suffix: "lighting"
+
+    # HMI side
+    cmd_topic: "/lights/cmd"
+    feedback_topic: "/lights/feedback"
+
+    # Who we are on the bus. Decimal, because ros params have no hex.
+    # 3075 = 0x0C03 = DEVICE_ID__ON_BOARD_JETSON_JETSKI. Change it to whichever
+    # box this node actually runs on, see device_ids.h.
+    device_id: 3075
+
+    qos_depth: 15

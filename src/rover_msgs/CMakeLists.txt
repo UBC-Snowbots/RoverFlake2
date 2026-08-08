@@ -43,6 +43,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MoteusCalibrationRequest.msg"
   "msg/MoteusCalibrationStatus.msg"
   "msg/PowerStatus.msg"
+
+  "msg/GenericCommsMsg.msg"
+
   "msg/WheelStates.msg"
   "msg/LightControl.msg"
   "msg/LightStatus.msg"

@@ -19,7 +19,7 @@
   <class name="rover_hmi_core/LightingModule"
          type="LightingModule"
          base_class_type="rover_hmi_core::GuiModule">
-    <description>Lighting zone on/off, brightness, and auto-mode control</description>
+    <description>Five-board lighting control: spatial rover view with per-board brightness over /lights/cmd</description>
   </class>
   <class name="rover_hmi_core/VawTreeModule"
          type="VawTreeModule"
@@ -88,6 +88,13 @@
     <description>Mock /science/sensor_data publisher for desk-testing the pipeline and analysis panels</description>
   </class>
 
+  <!-- Cameras -->
+  <class name="rover_hmi_core/PtzCameraModule"
+         type="PtzCameraModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>PTZ camera panel: live feed, pan/tilt gimbal, Hi3510 zoom/focus</description>
+  </class>
+
   <!-- Drive -->
   <class name="rover_hmi_core/DriveModule"
          type="DriveModule"
@@ -95,10 +102,50 @@
     <description>Virtual joystick driving interface — publishes geometry_msgs/Twist to /cmd_vel</description>
   </class>
 
+  <!-- Cameras -->
+  <class name="rover_hmi_core/CameraModule"
+         type="CameraModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>FNAF-style camera viewer: single feed with selector list, or grid of all feeds</description>
+  </class>
 
   <class name="rover_hmi_core/SpectrometerModule"
          type="SpectrometerModule"
          base_class_type="rover_hmi_core::GuiModule">
     <description>Camera spectrometer: capture, view, and predict from PySpectrometer2 CSVs</description>
+  </class>
+
+  <!-- Tasks -->
+  <class name="rover_hmi_core/VendingDecoderModule"
+         type="VendingDecoderModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Snack Run Err2 helper: 7-seg pattern decode, column-XOR switch sequence, binary/text converter</description>
+  </class>
+  <class name="rover_hmi_core/MorseViewerModule"
+         type="MorseViewerModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Read-only view of rover_vision's /morse_decoded output — no decode logic of its own</description>
+  </class>
+  <class name="rover_hmi_core/TaskTimersModule"
+         type="TaskTimersModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Named countdown timers plus Snack Run credit-tap and double-tap cadence helpers</description>
+  </class>
+  <class name="rover_hmi_core/TaskScoringModule"
+         type="TaskScoringModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Interactive CIRC score tracker — checkable rubric from config/tasks/scoring.json with live totals</description>
+  </class>
+  <class name="rover_hmi_core/GnssMissionModule"
+         type="GnssMissionModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Mission control for rover_mapping's mission_manager — start/stop recording, tag waypoints, route segments, live /gnss_fix</description>
+  </class>
+
+  <!-- General -->
+  <class name="rover_hmi_core/SubsystemsModule"
+         type="SubsystemsModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Per-computer heart supervisor status and subsystem start/stop/restart</description>
   </class>
 </library>

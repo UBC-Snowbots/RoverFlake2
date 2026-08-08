@@ -6,7 +6,9 @@ def generate_launch_description():
         package='arm_hardware_interface',
         executable='moteus_driver',
         name='moteus_driver',
-        output='screen'
+        output='screen',
+        respawn=True,        # watchdog exits the process if the CAN fd dies
+        respawn_delay=2.0,   # (fdcanusb re-enumeration) — relaunch re-detects
     )
     arm_joy = Node(
         package='arm_control',

@@ -59,9 +59,10 @@ namespace mot = mjbots::moteus;
 // ── WATCHDOG / COMMAND PERSISTENCE ──────────────────────────────────────────
 //
 //   The moteus has a configurable watchdog timeout (servo.default_timeout_s).
-//   If valid CAN frames stop arriving, it faults with code 32 (Timeout).
-//   A QUERY frame counts as a valid keep-alive — the driver always sends
-//   at least one frame per motor per poll cycle for this reason.
+//   If valid CAN frames stop arriving, it enters mode 11 (position timeout)
+//   and runs its configured timeout behavior — NOT a fault; code 32 is
+//   calibration_fault (fw/error.h). A QUERY frame counts as a keep-alive —
+//   the driver always sends at least one frame per motor per poll cycle.
 // =============================================================================
 
 namespace MoteusProtocol {
