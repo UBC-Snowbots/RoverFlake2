@@ -31,7 +31,7 @@ private:
     std::string control_topic;
     std::string outgoing_topic;
     uint16_t    device_id        = 0;
-    double      max_speed        = 100.0;   // servo set_speed() units (percent)
+    double      max_speed        = 100.0;   
     double      deadband         = 0.0;     // inputs below this are treated as 0
     bool        invert_pan       = false;
     bool        invert_tilt      = false;
