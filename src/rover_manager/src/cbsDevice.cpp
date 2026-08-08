@@ -139,7 +139,7 @@ void CBSDevice::pollRX(){
     }
     // this->parseBuff(new_buff);
     }else{
-        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
+        RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
     }
     // }else{
 

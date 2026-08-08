@@ -5,17 +5,26 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include_directories(include/comms_base_control)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(rover_msgs REQUIRED)
 
 add_executable(death_ray_motor_control_node src/death_ray_motor_control.cpp)
+# add_executable(death_ray_cbs_input_node src/death_ray_cbs_input.cpp)
+
 
 ament_target_dependencies(death_ray_motor_control_node
   rclcpp
   std_msgs
 )
+# ament_target_dependencies(death_ray_cbs_input_node
+#   rclcpp
+#   std_msgs
+#   rover_msgs
+# )
 
 target_link_libraries(death_ray_motor_control_node gpiod)
 
@@ -27,6 +36,7 @@ target_include_directories(death_ray_motor_control_node PUBLIC
 
 install(TARGETS
   death_ray_motor_control_node
+  # death_raw_cbs_input_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
