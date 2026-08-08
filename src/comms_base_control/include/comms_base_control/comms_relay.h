@@ -2,7 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/string.hpp"
-#include <pigpio.h>
+#include <pigpiod_if2.h>
 
 #define SERVO1_GPIO_PIN 17   // rack-and-pinion drive servo
 #define SERVO2_GPIO_PIN 27   // catch/release latch servo
@@ -71,5 +71,6 @@ private:
     // Dwell tracking at endpoints, in state-machine ticks
     int dwell_ticks_remaining_ = 0;
 
-    bool pigpio_ready_ = false;
+    // Handle for the connection to the pigpio daemon; negative means not connected.
+    int pi_ = -1;
 };

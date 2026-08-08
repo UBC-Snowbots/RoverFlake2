@@ -3,13 +3,16 @@
 #include <cmath>
 
 ServoControlNode::ServoControlNode() : Node("servo_control_node") {
-    gpioCfgInterfaces(PI_DISABLE_FIFO_IF | PI_DISABLE_SOCK_IF);
-    if (gpioInitialise() < 0) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to initialize pigpio");
+    // Connect to an already-running pigpiod rather than driving the hardware
+    // directly, so this node does not need root. Passing nulls means
+    // localhost:8888 unless PIGPIO_ADDR / PIGPIO_PORT say otherwise.
+    pi_ = pigpio_start(nullptr, nullptr);
+    if (pi_ < 0) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Failed to connect to pigpio daemon (%d); is pigpiod running?", pi_);
         return;
     }
-    pigpio_ready_ = true;
-    RCLCPP_INFO(this->get_logger(), "pigpio initialized successfully");
+    RCLCPP_INFO(this->get_logger(), "Connected to pigpio daemon (handle %d)", pi_);
 
     // On power-up: immediately drive PWM to a known-safe starting state
     // (servo1 at MIN, servo2 in catch position) before anything else runs.
@@ -37,23 +40,26 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
 }
 
 ServoControlNode::~ServoControlNode() {
-    if (pigpio_ready_) {
-        gpioServo(SERVO1_GPIO_PIN, 0);
-        gpioServo(SERVO2_GPIO_PIN, 0);
-        gpioTerminate();
+    if (pi_ >= 0) {
+        set_servo_pulsewidth(pi_, SERVO1_GPIO_PIN, 0);
+        set_servo_pulsewidth(pi_, SERVO2_GPIO_PIN, 0);
+        pigpio_stop(pi_);
     }
 }
 
 /**
  * Maps a commanded angle in [-90, 90] degrees to a pulse width in
- * microseconds and writes it to the given GPIO pin via pigpio.
+ * microseconds and writes it to the given GPIO pin via the pigpio daemon.
  * Out-of-range values are clamped rather than rejected.
  */
 void ServoControlNode::setServoAngle(int gpio_pin, float angle_deg) {
+    if (pi_ < 0) {
+        return;
+    }
     float clamped = std::clamp(angle_deg, SERVO1_MIN_ANGLE, SERVO1_MAX_ANGLE);
     float t = (clamped - SERVO1_MIN_ANGLE) / (SERVO1_MAX_ANGLE - SERVO1_MIN_ANGLE);
     int pulse_us = SERVO_MIN_PULSE_US + static_cast<int>(t * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US));
-    gpioServo(gpio_pin, pulse_us);
+    set_servo_pulsewidth(pi_, gpio_pin, pulse_us);
 }
 
 const char* ServoControlNode::stateName(RackState s) {
