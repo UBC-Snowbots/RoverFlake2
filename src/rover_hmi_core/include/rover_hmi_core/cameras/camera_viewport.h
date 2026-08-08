@@ -9,6 +9,8 @@
 
 #include "sensor_msgs/msg/image.hpp"
 
+class QPushButton;
+
 class CameraViewport : public QWidget {
 public:
     explicit CameraViewport(QWidget* parent = nullptr);
@@ -25,11 +27,14 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override;
+    void resizeEvent(QResizeEvent*) override;
 
 private:
     void drawStatic(QPainter& p);
     void drawFrame(QPainter& p);
     void drawOverlay(QPainter& p);
+    // Save the current frame as a PNG under ~/Pictures/rover_screenshots.
+    void saveSnapshot();
 
     sensor_msgs::msg::Image::ConstSharedPtr msg_;  // keeps the buffer alive for painting
     QPixmap placeholder_;
@@ -39,4 +44,6 @@ private:
     QElapsedTimer frame_clock_;
     double fps_ = 0.0;
     bool focused_ = false;
+    QPushButton* snap_btn_;  // top-right, shown only while a frame is live
+    QString flash_;          // transient "saved …" note in the overlay
 };
