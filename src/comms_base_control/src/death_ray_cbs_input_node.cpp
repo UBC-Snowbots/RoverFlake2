@@ -70,9 +70,9 @@ void DeathRayCbsInputNode::panelCallback(const rover_msgs::msg::GenericPanel::Sh
     else if (isRisingEdge(BUTTON_INDEX__CW, cw) && ctrl_mode == PRECISION_INCREMENTAL) {
         incDeathRay(INC_STEP_DEG);
     } else if (ccw && ctrl_mode == JOGGING_CONTINUOUS) {
-        jogDeathRay(JOG_STEP_DEG);
+        incDeathRay(-JOG_STEP_DEG);
     } else if (cw && ctrl_mode == JOGGING_CONTINUOUS) {
-        jogDeathRay(JOG_STEP_DEG);
+        incDeathRay(JOG_STEP_DEG);
     } 
     // Save state for the next message. Done after the checks, obviously.
     prev_buttons_[BUTTON_INDEX__HOME] = home;
@@ -113,6 +113,7 @@ void DeathRayCbsInputNode::incDeathRay(float degrees)
 {
     float target = death_ray_position_deg_ + degrees;
 
+    void jogDeathRay(float degrees);
     // Clamp instead of dropping the command, so holding at the end of travel isn't confusing
     if (target > MAX_COMMAND_DEG) target = MAX_COMMAND_DEG;
     if (target < MIN_COMMAND_DEG) target = MIN_COMMAND_DEG;
@@ -124,20 +125,20 @@ void DeathRayCbsInputNode::incDeathRay(float degrees)
     RCLCPP_INFO(this->get_logger(), "Jog %.1f deg -> commanding %.1f deg", degrees, target);
 }
 
-void DeathRayCbsInputNode::jogDeathRay(float degrees)
-{
-    float target = death_ray_position_deg_ + degrees;
+// void DeathRayCbsInputNode::jogDeathRay(float degrees)
+// {
+//     float target = death_ray_position_deg_ + degrees;
 
-    // Clamp instead of dropping the command, so holding at the end of travel isn't confusing
-    if (target > MAX_COMMAND_DEG) target = MAX_COMMAND_DEG;
-    if (target < MIN_COMMAND_DEG) target = MIN_COMMAND_DEG;
+//     // Clamp instead of dropping the command, so holding at the end of travel isn't confusing
+//     if (target > MAX_COMMAND_DEG) target = MAX_COMMAND_DEG;
+//     if (target < MIN_COMMAND_DEG) target = MIN_COMMAND_DEG;
 
-    std_msgs::msg::Float32 msg;
-    msg.data = target;
-    death_ray_motor_pub_->publish(msg);
+//     std_msgs::msg::Float32 msg;
+//     msg.data = target;
+//     death_ray_motor_pub_->publish(msg);
 
-    RCLCPP_INFO(this->get_logger(), "Jog %.1f deg -> commanding %.1f deg", degrees, target);
-}
+//     RCLCPP_INFO(this->get_logger(), "Jog %.1f deg -> commanding %.1f deg", degrees, target);
+// }
 
 /**
  * Tell the motor node that wherever the dish is right now is zero.

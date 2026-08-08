@@ -90,6 +90,7 @@ private:
 
     // Member function prototypes
     bool isRisingEdge(int button_index, int current_state);
-    void jogDeathRay(float degrees);
+    // void jogDeathRay(float degrees);
+    void incDeathRay(float degrees);
     void homeDeathRay();
 };
