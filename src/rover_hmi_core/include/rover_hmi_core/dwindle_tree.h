@@ -46,7 +46,6 @@ public:
     DwindleNode* makeLeaf(QWidget* w);
     DwindleNode* makeSplit(bool split_top, float ratio, DwindleNode* c0, DwindleNode* c1);
     void setRoot(DwindleNode* n) { root_ = n; }
-    DwindleNode* root() const { return root_; }
     bool empty() const { return root_ == nullptr; }
 
     // Bisect the leaf of split_target (fallback: first leaf); smart split —

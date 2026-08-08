@@ -76,6 +76,5 @@ private:
     QTimer*     liveness_timer_ = nullptr;
     std::vector<QElapsedTimer> last_frames_;
     std::vector<bool> in_grid_;   // grid membership per camera
-    std::vector<bool> alive_;     // publisher present per camera
     bool visible_ = true;
 };

@@ -47,7 +47,6 @@ QWidget* CameraModule::createWidget(QWidget* parent)
     }
     grid_widget_->setCells(cells_, cell_names);
     in_grid_.assign(cams_.size(), true);
-    alive_.assign(cams_.size(), false);
     lay->addWidget(grid_widget_, 1);
 
     // Bottom selector: one toggle button per camera controls grid membership.
@@ -164,11 +163,9 @@ void CameraModule::rebuildGrid()
     for (size_t i = 0; i < buttons_.size(); ++i) {
         auto* btn = buttons_[i];
         btn->setChecked(in_grid_[i]);
-        const char* fg = in_grid_[i] ? theme::Green
-                       : alive_[i]   ? theme::Text : theme::TextDim;
         btn->setStyleSheet(QStringLiteral(
-            "QPushButton { color: %1; border-color: %2; }")
-            .arg(fg, in_grid_[i] ? theme::Green : theme::BorderDim));
+            "QPushButton { color: %1; border-color: %1; }")
+            .arg(in_grid_[i] ? theme::Green : theme::TextDim));
     }
 }
 
@@ -179,15 +176,6 @@ bool CameraModule::gridOp(TilingOp op, int dx, int dy)
 
 void CameraModule::onLivenessTick()
 {
-    if (!node_ || cams_.empty()) return;
-    std::vector<bool> alive(cams_.size(), false);
-    for (size_t i = 0; i < cams_.size(); ++i)
-        alive[i] = node_->count_publishers(topicFor(cams_[i]).toStdString()) > 0;
-    if (alive != alive_) {
-        alive_ = alive;
-        rebuildGrid();
-    }
-
     // Hold the last frame through short dropouts; only admit NO SIGNAL after 5 s.
     for (size_t i = 0; i < cells_.size(); ++i)
         if (cells_[i]->hasFrame() && last_frames_[i].isValid()
