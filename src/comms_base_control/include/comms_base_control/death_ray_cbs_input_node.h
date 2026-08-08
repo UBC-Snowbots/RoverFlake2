@@ -47,14 +47,16 @@ enum CTRL_MODE {
 #define BUTTON_INDEX__CW       2
 #define NUM_USED_BUTTONS       3
 
-#define SWITCH_INDEX__MODE     4
+#define SWITCH_INDEX__MODE     3
+#define SWITCH_INDEX__TWEAKER  4
 
 #define BUTTON_PRESSED         1
 
 // Degrees moved per button press. One press = one jog, holding does nothing extra.
 #define INC_STEP_DEG           0.1f
 
-#define JOG_STEP_DEG           1.0f
+#define JOG_STEP_DEG           2.0f
+#define TWEAK_STEP_DEG           0.1f
 
 /**
  * The motor node rejects anything outside (-180, 180], so clamp before we send.

@@ -43,7 +43,7 @@ DeathRayMotorControlNode::DeathRayMotorControlNode() : Node("death_ray_motor_con
         std::bind(&DeathRayMotorControlNode::publishDeathRayPosition, this)
     );
     run_timer = this->create_wall_timer(
-        std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS),
+        std::chrono::microseconds(STEPPER_PULSE_DELAY_US),
         std::bind(&DeathRayMotorControlNode::run, this)
     );
 
@@ -151,7 +151,17 @@ void DeathRayMotorControlNode::run() {
     {
         last_step = !last_step;
         gpiod_line_set_value(step_line, last_step);
-        steps--;
+        if(last_step)
+        {
+            steps--; // Only decrease steps on a rising edge, or position would be halfed
+        }
+        if(dir)
+        {
+            position += 1.0f / DISH_PULSES_PER_DEGREE;
+        } else {
+            position -= 1.0f / DISH_PULSES_PER_DEGREE;
+
+        }
         // std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));
         // gpiod_line_set_value(step_line, 0);
         // std::this_thread::sleep_for(std::chrono::milliseconds(STEPPER_PULSE_DELAY_MS));

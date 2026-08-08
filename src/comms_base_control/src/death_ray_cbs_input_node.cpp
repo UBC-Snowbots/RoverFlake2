@@ -59,6 +59,7 @@ void DeathRayCbsInputNode::panelCallback(const rover_msgs::msg::GenericPanel::Sh
     int home = msg->buttons[BUTTON_INDEX__HOME];
     int ccw  = msg->buttons[BUTTON_INDEX__CCW];
     int cw   = msg->buttons[BUTTON_INDEX__CW];
+    int tweak = msg->switches[SWITCH_INDEX__TWEAKER];
     int ctrl_mode = msg->switches[SWITCH_INDEX__MODE] ? PRECISION_INCREMENTAL : JOGGING_CONTINUOUS;
 
     if (isRisingEdge(BUTTON_INDEX__HOME, home)) {
@@ -70,9 +71,21 @@ void DeathRayCbsInputNode::panelCallback(const rover_msgs::msg::GenericPanel::Sh
     else if (isRisingEdge(BUTTON_INDEX__CW, cw) && ctrl_mode == PRECISION_INCREMENTAL) {
         incDeathRay(INC_STEP_DEG);
     } else if (ccw && ctrl_mode == JOGGING_CONTINUOUS) {
-        incDeathRay(-JOG_STEP_DEG);
+        if(tweak)
+        {
+            incDeathRay(-TWEAK_STEP_DEG);
+        } else {
+            incDeathRay(-JOG_STEP_DEG);
+
+        }
     } else if (cw && ctrl_mode == JOGGING_CONTINUOUS) {
-        incDeathRay(JOG_STEP_DEG);
+        if(tweak)
+        {
+            incDeathRay(TWEAK_STEP_DEG);
+        } else {
+            incDeathRay(JOG_STEP_DEG);
+
+        }
     } 
     // Save state for the next message. Done after the checks, obviously.
     prev_buttons_[BUTTON_INDEX__HOME] = home;
