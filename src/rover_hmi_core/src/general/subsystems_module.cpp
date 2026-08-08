@@ -8,8 +8,6 @@
 #include <pluginlib/class_list_macros.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/parameter_map.hpp>
-#include <algorithm>
-#include <vector>
 
 // Styled entirely in the app's own idiom (catppuccin.h tokens + the e-stop
 // button's dark-tinted-bg/colored-border/colored-text pattern from
@@ -227,11 +225,7 @@ std::string SubsystemsModule::heartYamlPath() const {
     }
 }
 
-// heart.yaml is a ROS 2 params file, so it's read with the same parser ros2
-// uses when launching the hearts (rcl_yaml_param_parser via
-// rclcpp::parameter_map_from_yaml_file) — the panel can't disagree with what
-// the hearts themselves load. A file that fails here would also fail every
-// heart's launch; on failure the panel just falls back to dynamic-only.
+// heart.yaml read with the same params parser ros2 uses to launch the hearts.
 void SubsystemsModule::loadHeartParams() {
     const std::string path = heartYamlPath();
     if (path.empty()) return;
@@ -242,11 +236,7 @@ void SubsystemsModule::loadHeartParams() {
     }
 }
 
-// The same config block dashboard_bringup hands the old GTK dashboard. Only
-// the keys the panel has a use for are mapped; camera routing and the
-// computer_*/subsystems_* lists are redundant here — hosts and rows come from
-// the /heart_* blocks themselves (loadExpectedHosts), which is what the
-// hearts actually run.
+// Old GTK dashboard's config block; only the keys this panel uses are mapped.
 void SubsystemsModule::loadBackendParams() {
     const auto it = heart_params_.find("/dashboard_hmi_node");
     if (it == heart_params_.end()) return;
@@ -262,20 +252,16 @@ void SubsystemsModule::loadBackendParams() {
 }
 
 void SubsystemsModule::loadExpectedHosts() {
-    // ParameterMap is unordered — sort node names so host boxes render in a
-    // stable order across launches.
-    std::vector<std::string> heart_nodes;
-    for (const auto& [node_name, params] : heart_params_)
-        if (node_name.rfind("/heart_", 0) == 0) heart_nodes.push_back(node_name);  // skip e.g. /dashboard_hmi_node
-    std::sort(heart_nodes.begin(), heart_nodes.end());
-    constexpr const char* kSubPrefix = "subsystems.";  // nested params flatten to dotted names
-    for (const std::string& node_name : heart_nodes) {
+    static const std::string kPrefix = "subsystems.";  // nested params flatten to dotted names
+    // sorted copy: ParameterMap is unordered, host boxes should render in a stable order
+    const std::map<std::string, std::vector<rclcpp::Parameter>> sorted(heart_params_.begin(), heart_params_.end());
+    for (const auto& [node_name, params] : sorted) {
+        if (node_name.rfind("/heart_", 0) != 0) continue;  // skip e.g. /dashboard_hmi_node
         const std::string host = node_name.substr(7);      // strip "/heart_"
-        for (const rclcpp::Parameter& p : heart_params_.at(node_name)) {
-            if (p.get_name().rfind(kSubPrefix, 0) != 0) continue;
-            // first dotted segment after the prefix is the subsystem name
-            std::string sub = p.get_name().substr(std::string(kSubPrefix).size());
-            sub = sub.substr(0, sub.find('.'));
+        for (const rclcpp::Parameter& p : params) {
+            if (p.get_name().rfind(kPrefix, 0) != 0) continue;
+            std::string sub = p.get_name().substr(kPrefix.size());
+            sub = sub.substr(0, sub.find('.'));  // first segment = subsystem name
             if (!sub.empty()) row(hostGroup(host), sub);
         }
     }
