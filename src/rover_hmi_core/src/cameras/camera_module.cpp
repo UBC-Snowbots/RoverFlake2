@@ -8,7 +8,6 @@
 #include <QSet>
 #include <QShortcut>
 #include <QVBoxLayout>
-#include <algorithm>
 
 #include <rover_hmi_core/catppuccin.h>
 
@@ -146,11 +145,6 @@ void CameraModule::resubscribe()
 void CameraModule::toggleInGrid(int idx)
 {
     if (idx < 0 || idx >= int(in_grid_.size())) return;
-    if (in_grid_[size_t(idx)]
-        && std::count(in_grid_.begin(), in_grid_.end(), true) <= 1) {
-        rebuildGrid();  // undo the button's own toggle
-        return;         // never empty the grid
-    }
     in_grid_[size_t(idx)] = !in_grid_[size_t(idx)];
     rebuildGrid();
     resubscribe();
