@@ -122,7 +122,9 @@ void CBSDevice::pollRX(){
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\r'), new_buff.end());  // Remove '\r'
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\n'), new_buff.end());  // Remove '\n'
 
+    #ifdef RUN_DEBUG_MSGS
     RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
+    #endif
     switch(this->parse_seq){
         case PARSE_SEQUENCE::GENERIC:
             // parseGenericBuff(new_buff);
@@ -139,7 +141,9 @@ void CBSDevice::pollRX(){
     }
     // this->parseBuff(new_buff);
     }else{
+        #ifdef RUN_DEBUG_MSGS
         RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
+        #endif
     }
     // }else{
 
