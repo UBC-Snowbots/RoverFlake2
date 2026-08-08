@@ -15,6 +15,14 @@
         {
             "name": "suyin",
             "params_file": "suyin.yaml"
+        },
+        {
+            "name": "science_webcam",
+            "params_file": "science_webcam.yaml"
+        },
+        {
+            "name": "science_fisheye",
+            "params_file": "science_fisheye.yaml"
         }
     ]
 }
