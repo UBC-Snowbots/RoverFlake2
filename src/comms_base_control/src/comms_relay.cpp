@@ -25,7 +25,7 @@ ServoControlNode::ServoControlNode() : Node("servo_control_node") {
     // Subscribed even when pigpiod is unreachable, so commands are logged as
     // rejected instead of vanishing into a topic nobody listens on.
     servo_command_sub_ = this->create_subscription<ServoCommand>(
-        "~/servo_command", 10,
+        "/servo_control_node/servo_command", 10,
         std::bind(&ServoControlNode::handleServoCommand, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(),
