@@ -73,17 +73,3 @@ def test_segment_offsets():
     _, dur = mission_io.segment_offsets(
         {'name': 'x', 'start_stamp': 1.0, 'end_stamp': None}, 0.0)
     assert dur is None
-
-
-def test_coord_error_accepts_real_coordinates():
-    assert mission_io.coord_error(51.453361, -112.722667) is None
-    assert mission_io.coord_error(-90.0, 180.0) is None   # edges are valid
-
-
-@pytest.mark.parametrize('lat,lon', [
-    (91.0, 0.0), (-90.5, 0.0),      # latitude out of range
-    (0.0, 181.0), (0.0, -180.5),    # longitude out of range
-    (0.0, 0.0),                     # empty fields parsed as zeros
-])
-def test_coord_error_rejects_bad_input(lat, lon):
-    assert mission_io.coord_error(lat, lon)

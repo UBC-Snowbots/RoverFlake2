@@ -3,7 +3,6 @@
     ros2 run rover_mapping tag site "rock outcrop"
     ros2 run rover_mapping tag sample
     ros2 run rover_mapping tag obstacle "boulder field" -n "east of track"
-    ros2 run rover_mapping tag site "given target" --at 51.453361 -112.722667
     ros2 run rover_mapping tag seg start route_to_site_2
     ros2 run rover_mapping tag seg end
 """
@@ -47,8 +46,6 @@ def main(argv=None) -> int:
     parser.add_argument('name', nargs='?', default='',
                         help='segment name (with "seg start")')
     parser.add_argument('-n', '--notes', default='', help='free-form notes')
-    parser.add_argument('--at', nargs=2, type=float, metavar=('LAT', 'LON'),
-                        help='tag this coordinate instead of the current fix')
     args = parser.parse_args(argv)
 
     rclpy.init()
@@ -57,8 +54,6 @@ def main(argv=None) -> int:
         if args.what == 'seg':
             if args.label not in ('start', 'end'):
                 parser.error('usage: tag seg start <name> | tag seg end')
-            if args.at:
-                parser.error('--at applies to waypoints, not segments')
             req = Segment.Request()
             req.name = args.name
             res = _call(node, Segment, f'/segment_{args.label}', req)
@@ -70,9 +65,6 @@ def main(argv=None) -> int:
             req.category = args.what
             req.label = args.label
             req.notes = args.notes
-            if args.at:
-                req.use_manual = True
-                req.manual_lat, req.manual_lon = args.at
             res = _call(node, TagPoint, '/tag_point', req)
 
         if res is None:

@@ -1,8 +1,7 @@
 // gnss_map_widget.h — offline slippy-tile map canvas for the GNSS Mission
-// module: XYZ imagery, the live /gnss_fix path, tagged waypoints, and
-// hand-entered points. Scans imagery/ and composites tiles from every site —
-// z/x/y is a global grid, so overlapping sites mesh; missing zooms fall back
-// to a magnified coarser tile. Drag pans, wheel zooms; following the fix
+// module: XYZ imagery, the live /gnss_fix path, and tagged waypoints. Scans
+// imagery/ once and auto-activates whichever site is closest to the current
+// view — no site selection UI. Drag pans, wheel zooms; following the fix
 // resumes via centerOnFix(). Pure QWidget, no ROS — the module feeds it data.
 
 #pragma once
@@ -11,34 +10,16 @@
 #include <QPixmap>
 #include <QWidget>
 
-#include <functional>
-
 class GnssMapWidget : public QWidget {
 public:
     explicit GnssMapWidget(QWidget* parent = nullptr);
 
     void setImageryRoot(const QString& dir);  // scans imagery/<site>/tiles
-    void rescan();                          // pick up freshly fetched tiles
     void addFix(double lat, double lon);
-    // manual = entered by hand rather than tagged at the fix; drawn as a
-    // diamond so a planned target never reads as somewhere the rover has been.
     void addWaypoint(double lat, double lon, const QString& category,
-                     const QString& label, bool manual = false);
-    // New mission: drop the path and tagged waypoints. Manual points survive —
-    // they are targets for the run about to start, not leftovers from the last.
-    void clearRun();
-    int  clearManualPoints();               // returns how many were removed
+                     const QString& label);
+    void clearRun();                        // new mission: drop path + waypoints
     void centerOnFix();
-    void centerOn(double lat, double lon);  // jump to a coordinate, stop following
-    // Armed: crosshair cursor, and a clean click (no drag — drag still pans)
-    // reports its coordinate to the callback. The owner decides what a pick
-    // means and when to disarm; the widget stays ROS-free.
-    void setPickMode(bool on);
-    void setPointPickedCallback(std::function<void(double lat, double lon)> cb);
-    bool    haveView() const { return have_view_; }
-    double  viewLat()  const { return center_lat_; }
-    double  viewLon()  const { return center_lon_; }
-    QString activeSiteName() const;         // site under the view, or ""
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -46,10 +27,9 @@ protected:
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void wheelEvent(QWheelEvent*) override;
-    void leaveEvent(QEvent*) override;
 
 private:
-    struct Waypoint { double lat, lon; QString category, label; bool manual; };
+    struct Waypoint { double lat, lon; QString category, label; };
     struct Site {
         QString name, tiles;
         double lat, lon;                    // center
@@ -58,14 +38,12 @@ private:
     };
 
     QPointF toScreen(double lat, double lon) const;
-    QPointF toLatLon(QPoint pos) const;     // screen px -> (lat, lon)
-    const QPixmap* tilePixmap(int z, int x, int y);   // any site, cached
-    bool drawCoarser(QPainter& p, int tx, int ty, const QRectF& dst);
-    void updateActiveSite();                // badge + fetch target only
+    const QPixmap* tilePixmap(int x, int y);
+    void updateActiveSite();                // nearest site to the view center
 
     QList<Site> sites_;
     int active_ = -1;
-    QString imagery_root_;
+    QString tiles_dir_;
     int zoom_min_ = 3, zoom_max_ = 19;
     int zoom_ = 18;
     double center_lat_ = 0, center_lon_ = 0;
@@ -78,9 +56,4 @@ private:
     QList<Waypoint> waypoints_;
     QMap<QString, QPixmap> cache_;          // "z/x/y" -> pixmap (null = miss)
     QPoint drag_pos_;
-    QPoint press_pos_;                      // separates a click from a drag
-    QPoint hover_pos_;
-    bool hover_ = false;
-    bool pick_mode_ = false;
-    std::function<void(double, double)> point_picked_;
 };

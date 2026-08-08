@@ -55,21 +55,6 @@ def atomic_dump_yaml(path: str, data: list) -> None:
         raise
 
 
-def coord_error(lat: float, lon: float) -> Optional[str]:
-    """Reject coordinates a typo would produce; None means they're usable.
-
-    0, 0 is out in the Atlantic — as a manually typed waypoint it is always
-    an empty field or a parse slip, never a real target.
-    """
-    if not -90.0 <= lat <= 90.0:
-        return f'latitude {lat} out of range (-90..90)'
-    if not -180.0 <= lon <= 180.0:
-        return f'longitude {lon} out of range (-180..180)'
-    if lat == 0.0 and lon == 0.0:
-        return 'refusing to tag 0, 0 — enter a real coordinate'
-    return None
-
-
 def next_waypoint_id(waypoints: List[dict], category: str) -> str:
     """Auto-increment ids per category: site_1, site_2, ... unique per run."""
     existing = {wp.get('id') for wp in waypoints}

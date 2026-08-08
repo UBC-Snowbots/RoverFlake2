@@ -45,25 +45,15 @@ QColor categoryColor(const QString& c) {
 GnssMapWidget::GnssMapWidget(QWidget* parent) : QWidget(parent) {
     setMinimumHeight(200);
     setCursor(Qt::OpenHandCursor);
-    setMouseTracking(true);                 // hover coordinate readout
 }
 
-void GnssMapWidget::setPickMode(bool on) {
-    pick_mode_ = on;
-    setCursor(on ? Qt::CrossCursor : Qt::OpenHandCursor);
-}
-
-void GnssMapWidget::setPointPickedCallback(std::function<void(double, double)> cb) {
-    point_picked_ = std::move(cb);
-}
-
-// Scan imagery/<site>/tiles: zoom range + center per site (center from the
-// max-zoom tile index range). All sites draw together; the "active" one is
-// only the badge label and the fetch-tiles target.
+// Scan imagery/<site>/tiles once: zoom range + center per site (center from
+// the max-zoom tile index range). The nearest site to the view center is
+// activated lazily in updateActiveSite().
 void GnssMapWidget::setImageryRoot(const QString& dir) {
-    imagery_root_ = dir;
     sites_.clear();
     active_ = -1;
+    tiles_dir_.clear();
     cache_.clear();
     for (const QString& name : QDir(dir).entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
         const QString tiles = dir + "/" + name + "/tiles";
@@ -99,16 +89,6 @@ void GnssMapWidget::setImageryRoot(const QString& dir) {
                        se.x(), nw.y(), nw.x(), se.y(),
                        zooms.first(), z};
     }
-    // Zoom range spans every site so meshed neighbors never clamp each other.
-    if (!sites_.isEmpty()) {
-        zoom_min_ = sites_[0].zmin;
-        zoom_max_ = sites_[0].zmax;
-        for (const Site& s : sites_) {
-            zoom_min_ = std::min(zoom_min_, s.zmin);
-            zoom_max_ = std::max(zoom_max_, s.zmax);
-        }
-        zoom_ = std::clamp(zoom_, zoom_min_, zoom_max_);
-    }
     // No fix yet: open on the first site so there is something to look at.
     if (!have_view_ && !sites_.isEmpty()) {
         center_lat_ = sites_[0].lat;
@@ -119,18 +99,10 @@ void GnssMapWidget::setImageryRoot(const QString& dir) {
     update();
 }
 
-void GnssMapWidget::rescan() {
-    if (!imagery_root_.isEmpty()) setImageryRoot(imagery_root_);
-}
-
-QString GnssMapWidget::activeSiteName() const {
-    return active_ >= 0 ? sites_[active_].name : QString();
-}
-
-// Best site for the view center — badge label + fetch-tiles target only,
-// tiles composite across all sites regardless. Sites whose tiles COVER the
-// point beat merely-nearby ones; nearest center breaks ties and is the
-// fallback when nothing covers. Cheap enough to run every repaint.
+// Activate the best site for the view center: sites whose tiles COVER the
+// point beat merely-nearby ones (a small overlapping set must not shadow a
+// large one that actually has imagery here); nearest center breaks ties and
+// is the fallback when nothing covers. Cheap enough to run every repaint.
 void GnssMapWidget::updateActiveSite() {
     if (sites_.isEmpty()) return;
     const double cs = std::cos(center_lat_ * M_PI / 180.0);
@@ -148,7 +120,13 @@ void GnssMapWidget::updateActiveSite() {
             if (best < 0 || d < best_d) { best_d = d; best = i; }
         }
     }
+    if (best == active_) return;
     active_ = best;
+    tiles_dir_ = sites_[best].tiles;
+    zoom_min_ = sites_[best].zmin;
+    zoom_max_ = sites_[best].zmax;
+    zoom_ = std::clamp(zoom_, zoom_min_, zoom_max_);
+    cache_.clear();
 }
 
 void GnssMapWidget::addFix(double lat, double lon) {
@@ -163,40 +141,20 @@ void GnssMapWidget::addFix(double lat, double lon) {
 }
 
 void GnssMapWidget::addWaypoint(double lat, double lon, const QString& category,
-                                const QString& label, bool manual) {
-    waypoints_ << Waypoint{lat, lon, category, label, manual};
+                                const QString& label) {
+    waypoints_ << Waypoint{lat, lon, category, label};
     update();
 }
 
 void GnssMapWidget::clearRun() {
     path_.clear();
-    for (int i = waypoints_.size() - 1; i >= 0; --i)
-        if (!waypoints_[i].manual) waypoints_.removeAt(i);
+    waypoints_.clear();
     update();
-}
-
-int GnssMapWidget::clearManualPoints() {
-    const int before = waypoints_.size();
-    for (int i = before - 1; i >= 0; --i)
-        if (waypoints_[i].manual) waypoints_.removeAt(i);
-    update();
-    return before - waypoints_.size();
 }
 
 void GnssMapWidget::centerOnFix() {
     follow_ = true;
     if (have_fix_) { center_lat_ = fix_lat_; center_lon_ = fix_lon_; }
-    update();
-}
-
-// Following would drag the view straight back to the rover, so a manual
-// jump drops it — "Center" puts it back.
-void GnssMapWidget::centerOn(double lat, double lon) {
-    follow_ = false;
-    center_lat_ = lat;
-    center_lon_ = lon;
-    have_view_ = true;
-    updateActiveSite();
     update();
 }
 
@@ -207,47 +165,18 @@ QPointF GnssMapWidget::toScreen(double lat, double lon) const {
             height() / 2.0 + (t.y() - c.y()) * kTilePx};
 }
 
-QPointF GnssMapWidget::toLatLon(QPoint pos) const {
-    const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
-    return tileToLL(c.x() + (pos.x() - width() / 2.0) / kTilePx,
-                    c.y() + (pos.y() - height() / 2.0) / kTilePx, zoom_);
-}
-
-// A z/x/y tile names one square of earth, so the first site holding it is as
-// good as any other — overlapping fetches mesh for free.
-const QPixmap* GnssMapWidget::tilePixmap(int z, int x, int y) {
-    const QString key = QString("%1/%2/%3").arg(z).arg(x).arg(y);
+const QPixmap* GnssMapWidget::tilePixmap(int x, int y) {
+    const QString key = QString("%1/%2/%3").arg(zoom_).arg(x).arg(y);
     auto it = cache_.find(key);
     if (it == cache_.end()) {
         QPixmap pm;
-        for (const Site& s : sites_) {
-            if (z < s.zmin || z > s.zmax) continue;
-            for (const char* ext : {"png", "jpg", "jpeg"}) {
-                const QString path = s.tiles + "/" + key + "." + ext;
-                if (QFile::exists(path)) { pm.load(path); break; }
-            }
-            if (!pm.isNull()) break;
+        for (const char* ext : {"png", "jpg", "jpeg"}) {
+            const QString path = tiles_dir_ + "/" + key + "." + ext;
+            if (QFile::exists(path)) { pm.load(path); break; }
         }
-        if (cache_.size() > 1024) cache_.clear();
         it = cache_.insert(key, pm);  // null pixmap caches the miss too
     }
     return it->isNull() ? nullptr : &it.value();
-}
-
-// Missing at the current zoom: magnify the nearest coarser tile any site
-// has, so sites with different zoom ranges (or fetch gaps at their seams)
-// blend instead of leaving holes.
-bool GnssMapWidget::drawCoarser(QPainter& p, int tx, int ty, const QRectF& dst) {
-    for (int dz = 1; dz <= 5 && zoom_ - dz >= zoom_min_; ++dz) {
-        if (const QPixmap* pm = tilePixmap(zoom_ - dz, tx >> dz, ty >> dz)) {
-            const int f = 1 << dz;
-            const double sub = pm->width() / double(f);
-            p.drawPixmap(dst, *pm, QRectF((tx & (f - 1)) * sub,
-                                          (ty & (f - 1)) * sub, sub, sub));
-            return true;
-        }
-    }
-    return false;
 }
 
 void GnssMapWidget::paintEvent(QPaintEvent*) {
@@ -272,11 +201,8 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
             const int tx = int(std::floor(c.x())) + dx, ty = int(std::floor(c.y())) + dy;
             const double sx = width() / 2.0 + (tx - c.x()) * kTilePx;
             const double sy = height() / 2.0 + (ty - c.y()) * kTilePx;
-            const QRectF dst(sx, sy, kTilePx, kTilePx);
-            if (const QPixmap* pm = tilePixmap(zoom_, tx, ty)) {
-                p.drawPixmap(dst, *pm, pm->rect());
-                drew_tile = true;
-            } else if (drawCoarser(p, tx, ty, dst)) {
+            if (const QPixmap* pm = tilePixmap(tx, ty)) {
+                p.drawPixmap(QRectF(sx, sy, kTilePx, kTilePx), *pm, pm->rect());
                 drew_tile = true;
             }
         }
@@ -307,15 +233,9 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
         const QColor col = categoryColor(w.category);
         p.setPen(QPen(QColor(theme::Bg), 2));
         p.setBrush(col);
-        if (w.manual) {  // diamond: entered by hand, not tagged at the fix
-            const QPointF d[4] = {s + QPointF(0, -8), s + QPointF(8, 0),
-                                  s + QPointF(0, 8), s + QPointF(-8, 0)};
-            p.drawConvexPolygon(d, 4);
-        } else {
-            p.drawEllipse(s, 6, 6);
-        }
+        p.drawEllipse(s, 6, 6);
         p.setPen(col);
-        p.drawText(s + QPointF(11, 4), w.label);
+        p.drawText(s + QPointF(9, 4), w.label);
     }
 
     // Current fix
@@ -336,52 +256,27 @@ void GnssMapWidget::paintEvent(QPaintEvent*) {
                    .arg(active_ >= 0 ? sites_[active_].name + " · " : "")
                    .arg(zoom_)
                    .arg(follow_ ? " · follow" : ""));
-
-    // Cursor coordinate — exact inverse of the tile projection, so it is
-    // only shown once a real view exists (fix or imagery), never null island.
-    if (hover_ && have_view_) {
-        const QPointF ll = toLatLon(hover_pos_);
-        p.drawText(rect().adjusted(6, 0, 0, -4), Qt::AlignLeft | Qt::AlignBottom,
-                   QString("%1, %2")
-                       .arg(ll.x(), 0, 'f', 6).arg(ll.y(), 0, 'f', 6));
-    }
 }
 
 void GnssMapWidget::mousePressEvent(QMouseEvent* e) {
-    press_pos_ = drag_pos_ = e->pos();
-    if (!pick_mode_) setCursor(Qt::ClosedHandCursor);
+    drag_pos_ = e->pos();
+    setCursor(Qt::ClosedHandCursor);
 }
 
-// Fires on plain hover too (mouse tracking is on) — pan only while the
-// button is held.
 void GnssMapWidget::mouseMoveEvent(QMouseEvent* e) {
-    hover_pos_ = e->pos();
-    hover_ = true;
-    if (e->buttons() & Qt::LeftButton) {
-        const QPoint d = e->pos() - drag_pos_;
-        drag_pos_ = e->pos();
-        follow_ = false;
-        const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
-        const QPointF ll = tileToLL(c.x() - d.x() / double(kTilePx),
-                                    c.y() - d.y() / double(kTilePx), zoom_);
-        center_lat_ = ll.x(); center_lon_ = ll.y();
-    }
+    const QPoint d = e->pos() - drag_pos_;
+    drag_pos_ = e->pos();
+    follow_ = false;
+    const QPointF c = llToTile(center_lat_, center_lon_, zoom_);
+    const QPointF ll = tileToLL(c.x() - d.x() / double(kTilePx),
+                                c.y() - d.y() / double(kTilePx), zoom_);
+    center_lat_ = ll.x(); center_lon_ = ll.y();
+    setCursor(Qt::ClosedHandCursor);
     update();
 }
 
-void GnssMapWidget::mouseReleaseEvent(QMouseEvent* e) {
-    // A pick is a clean click; any real movement was a pan, even while armed.
-    if (pick_mode_ && point_picked_ &&
-        (e->pos() - press_pos_).manhattanLength() < 5) {
-        const QPointF ll = toLatLon(e->pos());
-        point_picked_(ll.x(), ll.y());      // owner may disarm via setPickMode
-    }
-    setCursor(pick_mode_ ? Qt::CrossCursor : Qt::OpenHandCursor);
-}
-
-void GnssMapWidget::leaveEvent(QEvent*) {
-    hover_ = false;
-    update();
+void GnssMapWidget::mouseReleaseEvent(QMouseEvent*) {
+    setCursor(Qt::OpenHandCursor);
 }
 
 void GnssMapWidget::wheelEvent(QWheelEvent* e) {
