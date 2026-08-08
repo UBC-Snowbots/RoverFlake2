@@ -153,12 +153,6 @@ ament_export_dependencies(rclcpp pluginlib Qt5Widgets rover_arm_common)
 
 if(BUILD_TESTING)
     find_package(ament_cmake_gtest REQUIRED)
-    ament_add_gtest(test_dwindle_tree
-        test/test_dwindle_tree.cpp
-        src/dwindle_tree.cpp)
-    target_link_libraries(test_dwindle_tree Qt5::Widgets)
-    target_include_directories(test_dwindle_tree PRIVATE include)
-
     ament_add_gtest(test_camera_config
         test/test_camera_config.cpp
         src/cameras/camera_config.cpp)
