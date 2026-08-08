@@ -122,7 +122,9 @@ void CBSDevice::pollRX(){
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\r'), new_buff.end());  // Remove '\r'
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\n'), new_buff.end());  // Remove '\n'
 
-    RCLCPP_INFO(manager->get_logger(), "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
+    #ifdef RUN_DEBUG_MSGS
+    RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
+    #endif
     switch(this->parse_seq){
         case PARSE_SEQUENCE::GENERIC:
             // parseGenericBuff(new_buff);
@@ -139,7 +141,9 @@ void CBSDevice::pollRX(){
     }
     // this->parseBuff(new_buff);
     }else{
-        RCLCPP_INFO(manager->get_logger(), "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
+        #ifdef RUN_DEBUG_MSGS
+        RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Msg too small to parse. This indicates we are reading faster than the device is writing. (which is good) %s", this->id.c_str());
+        #endif
     }
     // }else{
 
@@ -148,7 +152,9 @@ void CBSDevice::pollRX(){
 
 //$gen_left_A(0,0,0,0,0,0,0,0,0,0,0)
 void CBSDevice::parseLeftPanelABuff(const std::string buff){
+    #ifdef RUN_DEBUG_MSGS
     RCLCPP_INFO(manager->get_logger(), "%s running left panel buff parse", this->id.c_str());
+    #endif
     rover_msgs::msg::GenericPanel outmsg;
     outmsg.num_buttons = 6;
     outmsg.num_switches = 5;
@@ -164,8 +170,9 @@ void CBSDevice::parseLeftPanelABuff(const std::string buff){
 }
 
 void CBSDevice::parseArmJoyPanelBuff(std::string buff){
+    #ifdef RUN_DEBUG_MSGS
         RCLCPP_INFO(manager->get_logger(), "%s running arm panel buff parse", this->id.c_str());
-
+    #endif
     //! need switch case to figure out msg type from id
     rover_msgs::msg::ArmPanel arm_panel_msg;
     buff.erase(std::remove(buff.begin(), buff.end(), '\r'), buff.end());  // Remove '\r'

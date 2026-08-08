@@ -47,14 +47,15 @@ enum DeathRayControlMode {
 #define STEP_LINE_GPIO_PIN 24
 
 #define STEPPER_CLOCKWISE_DIRECTION 1
-#define STEPPER_PULSE_DELAY_MS 2
+#define STEPPER_PULSE_DELAY_US 2000
 
-#define STEPPER_PULSES_PER_REVOLUTION 400.0f
-#define STEPPER_GEAR_RATIO 50.0f
-#define DISH_PULSES_PER_REVOLUTION (STEPPER_PULSES_PER_REVOLUTION * STEPPER_GEAR_RATIO)
-#define DISH_PULSES_PER_DEGREE (DISH_PULSES_PER_REVOLUTION / 360.0f)
+static inline float STEPPER_PULSES_PER_REVOLUTION = 400.0f;
+static inline float STEPPER_GEAR_RATIO = 50.0f;
+static inline float DISH_PULSES_PER_REVOLUTION = (STEPPER_PULSES_PER_REVOLUTION * STEPPER_GEAR_RATIO);
+static inline float DISH_PULSES_PER_DEGREE = (DISH_PULSES_PER_REVOLUTION / 360.0f);
 
-#define POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS 200
+#define POSITION_FEEDBACK_PUBLISH_FREQUENCY_MS 20
+// #define RUN_DELAY 200
 
 #define ROS_SUBSCRIBER_QOS 1
 
@@ -76,13 +77,20 @@ private:
     void deathRayZeroCallback(const std_msgs::msg::Empty::SharedPtr msg);
 
     rclcpp::TimerBase::SharedPtr death_ray_position_feedback_timer_;
+    rclcpp::TimerBase::SharedPtr run_timer;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr death_ray_position_pub_;
     void publishDeathRayPosition();
+    void run();
 
     gpiod_chip* chip;
     gpiod_line* dir_line;
     gpiod_line* step_line;
 
-    int position = 0;
+    int dir = 0;
+
+    float position = 0;
+    int curr_position_steps = 0;
     int steps = 0;
+
+    int last_step = 0;
 };
