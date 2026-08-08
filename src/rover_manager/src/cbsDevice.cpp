@@ -122,7 +122,7 @@ void CBSDevice::pollRX(){
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\r'), new_buff.end());  // Remove '\r'
     new_buff.erase(std::remove(new_buff.begin(), new_buff.end(), '\n'), new_buff.end());  // Remove '\n'
 
-    RCLCPP_INFO(manager->get_logger(), "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
+    RCLCPP_INFO_THROTTLE(manager->get_logger(), *manager->get_clock(), 1000, "Serial Line Read: [%s] on device %s", new_buff.c_str(), this->id.c_str());
     switch(this->parse_seq){
         case PARSE_SEQUENCE::GENERIC:
             // parseGenericBuff(new_buff);
