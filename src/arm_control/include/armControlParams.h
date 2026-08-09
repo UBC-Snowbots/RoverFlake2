@@ -15,18 +15,7 @@
 #define EE_SPEED_SCALE 1
 #define PI 3.14
 
-// Uncomment the one you want, comment the one you dont
-    // #define SELECT_MOTEUS_ARM
-    #define SELECT_OLD_ARM
-
-    
-#ifdef SELECT_MOTEUS_ARM
-static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
-#endif
-
-#ifdef SELECT_OLD_ARM
-static float max_joysticks_output_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
-#endif
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {7.2, 3.6, 3.6, 3.6, 28.8, 28.8, 30.0};
 
 namespace MoteusArmParams{
   static constexpr float base_max_accel = 3.0;
