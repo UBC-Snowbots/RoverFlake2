@@ -28,6 +28,7 @@
 #include <QMouseEvent>
 #include <array>
 #include <cmath>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
@@ -35,11 +36,11 @@
 
 constexpr int NUM_ZERO_AXES = NUM_MOTORS;
 
-// JogButton and KeyJogPad are defined in send_command_module.cpp (Q_OBJECT in
-// the .cpp avoids AUTOMOC header-scanning issues with private include
+// JogButton and KeyJogFilter are defined in send_command_module.cpp (Q_OBJECT
+// in the .cpp avoids AUTOMOC header-scanning issues with private include
 // directories).
 class JogButton;
-class KeyJogPad;
+class KeyJogFilter;
 
 class SendCommandModule : public rover_hmi_core::GuiModule {
 public:
@@ -55,10 +56,13 @@ private:
     void sendPosition(int motor_id, double pos, double vel);
     void sendVelocity(int motor_id, double velocity);
     // Keyboard jog: one CMD_ABS_VEL carrying every mapped axis at once, so
-    // several held keys move several axes simultaneously.
-    void buildKeyJogSection(class QVBoxLayout* layout);
-    void publishKeyJog();          // reads the pad's held keys, publishes once
+    // several held keys move several axes simultaneously. Capture is an
+    // application-wide event filter gated by the ARM toggle — the toggle is
+    // the safety, so the keys work from any panel, not just a focused widget.
+    void buildKeyJogSection(class QVBoxLayout* layout, QWidget* owner);
+    void publishKeyJog();          // reads the filter's held keys, publishes once
     void setKeyJogArmed(bool on);
+    void restyleKeyJogChips();     // held-key readout
     void sendStop(int motor_id);   // masked CMD_STOP: real "d stop" for one target
     void sendStopAll();
     void sendZeroChecked();
@@ -83,9 +87,10 @@ private:
     QCheckBox* vel_enable_ = nullptr;
     std::array<QCheckBox*, NUM_ZERO_AXES> zero_checks_{};
 
-    KeyJogPad*      key_jog_pad_    = nullptr;
-    QCheckBox*      key_jog_arm_    = nullptr;
-    QDoubleSpinBox* key_jog_scale_  = nullptr;
-    QLabel*         key_jog_status_ = nullptr;
-    bool            key_jog_moving_ = false;  // true → an all-zero stop is owed
+    KeyJogFilter*   key_jog_filter_  = nullptr;
+    QPushButton*    key_jog_arm_btn_ = nullptr;
+    QDoubleSpinBox* key_jog_scale_   = nullptr;
+    QLabel*         key_jog_status_  = nullptr;
+    std::vector<QLabel*> key_jog_chips_;
+    bool            key_jog_moving_  = false;  // true → an all-zero stop is owed
 };

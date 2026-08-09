@@ -11,7 +11,7 @@
 #include <QLabel>
 #include <QFont>
 #include <QKeyEvent>
-#include <QFocusEvent>
+#include <QApplication>
 #include <QSet>
 
 #include <algorithm>
@@ -96,91 +96,61 @@ static bool keyJogAxisEnabled(int axis) {
     return axis >= 0 && axis < NUM_AXES && HmiDefaults::axis_velocity_revps[axis] > 0.0f;
 }
 
-// KeyJogPad — a focusable key-capture surface. It owns nothing but the held-key
-// set and the chip highlighting; the module does the publishing.
+// KeyJogFilter — an application-wide key grab, gated by the ARM toggle.
 //
-// Key events only reach a focused widget, which is exactly the safety property
-// we want: typing into the spin boxes above must never jog the arm. The pad
-// paints a green border while it holds focus so the operator can see whether
-// keys will land.
-class KeyJogPad : public QWidget {
+// Installed on qApp, so it sees every key event in the HMI before any widget
+// does. That is the point: the arm toggle IS the safety, not widget focus.
+// While armed the bound keys drive the arm no matter which panel is focused,
+// and get consumed so nothing else reacts to them; while disarmed the filter
+// is transparent and the spin boxes type normally.
+//
+// Modified keys are deliberately passed through, so the host's Alt+... tiling
+// shortcuts and Ctrl+= zoom keep working even while armed.
+class KeyJogFilter : public QObject {
     Q_OBJECT
 public:
-    explicit KeyJogPad(QWidget* parent = nullptr);
+    explicit KeyJogFilter(QObject* parent = nullptr);
+
+    void setArmed(bool on);
+    bool armed() const { return armed_; }
+    bool isHeld(int key) const { return held_.contains(key); }
 
     // Sum of the held directions per axis, -1/0/+1. Holding both keys of a
     // pair cancels to 0 rather than picking a winner.
     std::array<double, NUM_AXES> directions() const;
-    bool anyHeld() const { return !held_.isEmpty(); }
     void releaseAll();          // clears held keys and emits keysChanged()
 
 signals:
     void keysChanged();
     void stopAllRequested();    // Space
-    void focusLost();
-    void focusGained();
+    void windowLeft();          // HMI window deactivated → auto-released
 
 protected:
-    void keyPressEvent(QKeyEvent* e) override;
-    void keyReleaseEvent(QKeyEvent* e) override;
-    void focusInEvent(QFocusEvent* e) override;
-    void focusOutEvent(QFocusEvent* e) override;
-    void hideEvent(QHideEvent* e) override;
+    bool eventFilter(QObject* obj, QEvent* ev) override;
 
 private:
-    void restyleChips();
+    bool armed_ = false;
     QSet<int> held_;
-    std::array<QLabel*, NUM_KEY_JOG_BINDINGS> chips_{};
 };
 
-KeyJogPad::KeyJogPad(QWidget* parent) : QWidget(parent) {
-    setFocusPolicy(Qt::StrongFocus);
-    // A bare QWidget ignores stylesheet borders/backgrounds without this.
-    setAttribute(Qt::WA_StyledBackground, true);
-
-    auto* grid = new QGridLayout(this);
-    grid->setSpacing(6);
-    grid->setContentsMargins(8, 8, 8, 8);
-
-    // One row per axis: [-key] [+key] [axis name].
-    for (int a = 0; a < NUM_AXES; a++) {
-        auto* name = new QLabel(KEY_JOG_AXIS_NAMES[a]);
-        name->setFont(QFont("monospace", theme::FontSizeSm));
-        grid->addWidget(name, a, 2);
-    }
-    for (int b = 0; b < NUM_KEY_JOG_BINDINGS; b++) {
-        const auto& bind = KEY_JOG_BINDINGS[b];
-        auto* chip = new QLabel(QString("%1 %2").arg(bind.dir > 0 ? "+" : "−").arg(bind.label));
-        chip->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
-        chip->setAlignment(Qt::AlignCenter);
-        chip->setMinimumWidth(64);
-        chips_[b] = chip;
-        grid->addWidget(chip, bind.axis, bind.dir > 0 ? 1 : 0);
-    }
-    grid->setColumnStretch(2, 1);
-    restyleChips();
+KeyJogFilter::KeyJogFilter(QObject* parent) : QObject(parent) {
+    if (qApp) qApp->installEventFilter(this);
 }
 
-void KeyJogPad::restyleChips() {
-    for (int b = 0; b < NUM_KEY_JOG_BINDINGS; b++) {
-        const auto& bind = KEY_JOG_BINDINGS[b];
-        const bool enabled = keyJogAxisEnabled(bind.axis);
-        const bool down = enabled && held_.contains(bind.key);
-        const char* fg = !enabled ? theme::TextDim : (down ? theme::Bg : theme::Text);
-        const char* bg = down ? theme::Green : theme::Bg;
-        const char* border = !enabled ? theme::BorderDim : (down ? theme::Green : theme::Border);
-        chips_[b]->setStyleSheet(
-            QString("QLabel { color: %1; background: %2; border: 1px solid %3; "
-                    "border-radius: 6px; padding: 4px 8px; }")
-                .arg(fg).arg(bg).arg(border));
-        chips_[b]->setToolTip(enabled ? QString()
-                                      : QStringLiteral("Disabled in motor_config.h (HmiDefaults)"));
+void KeyJogFilter::setArmed(bool on) {
+    if (armed_ == on) return;
+    armed_ = on;
+    if (on) {
+        // Arming steals the keyboard, so drop the caret out of whatever spin
+        // box holds it — otherwise it would sit there looking editable while
+        // every keystroke goes to the arm instead.
+        if (QWidget* f = QApplication::focusWidget()) f->clearFocus();
+    } else {
+        releaseAll();
     }
-    setStyleSheet(QString("KeyJogPad { border: 2px solid %1; border-radius: 8px; }")
-                      .arg(hasFocus() ? theme::Green : theme::BorderDim));
 }
 
-std::array<double, NUM_AXES> KeyJogPad::directions() const {
+std::array<double, NUM_AXES> KeyJogFilter::directions() const {
     std::array<double, NUM_AXES> dirs{};
     dirs.fill(0.0);
     for (const auto& bind : KEY_JOG_BINDINGS) {
@@ -191,64 +161,64 @@ std::array<double, NUM_AXES> KeyJogPad::directions() const {
     return dirs;
 }
 
-void KeyJogPad::releaseAll() {
+void KeyJogFilter::releaseAll() {
     if (held_.isEmpty()) return;
     held_.clear();
-    restyleChips();
     emit keysChanged();
 }
 
-// isAutoRepeat() is the crux of hold-to-move on X11/Wayland: a held key
-// generates a continuous release/press stream, and treating those as real
-// releases would make the axis stutter to a stop between repeats.
-void KeyJogPad::keyPressEvent(QKeyEvent* e) {
-    if (e->isAutoRepeat()) { e->accept(); return; }
+bool KeyJogFilter::eventFilter(QObject* obj, QEvent* ev) {
+    const QEvent::Type type = ev->type();
 
-    if (e->key() == Qt::Key_Space) { releaseAll(); emit stopAllRequested(); e->accept(); return; }
-    if (e->key() == Qt::Key_Escape) { releaseAll(); e->accept(); return; }
+    // Leaving the HMI window never delivers the key-up events, so the held set
+    // would stay stale and the arm would keep running. Release on the way out.
+    // This is the only involuntary disarm — clicking between panels inside the
+    // window does not interrupt jogging.
+    if (type == QEvent::WindowDeactivate || type == QEvent::ApplicationDeactivate) {
+        if (armed_ && !held_.isEmpty()) { releaseAll(); emit windowLeft(); }
+        return QObject::eventFilter(obj, ev);
+    }
 
+    if (!armed_ || (type != QEvent::KeyPress && type != QEvent::KeyRelease))
+        return QObject::eventFilter(obj, ev);
+
+    auto* ke = static_cast<QKeyEvent*>(ev);
+
+    // Alt/Ctrl/Meta chords belong to the host (tiling, zoom, overlays).
+    const auto mods = ke->modifiers() & ~Qt::ShiftModifier;
+    if (mods != Qt::NoModifier) return QObject::eventFilter(obj, ev);
+
+    // isAutoRepeat() is the crux of hold-to-move on X11/Wayland: a held key
+    // generates a continuous release/press stream, and treating those as real
+    // releases would make the axis stutter to a stop between repeats.
+    const int key = ke->key();
+
+    if (key == Qt::Key_Space) {
+        if (type == QEvent::KeyPress && !ke->isAutoRepeat()) {
+            releaseAll();
+            emit stopAllRequested();
+        }
+        return true;
+    }
+    if (key == Qt::Key_Escape) {
+        if (type == QEvent::KeyPress && !ke->isAutoRepeat()) releaseAll();
+        return true;
+    }
+
+    bool bound = false;
     for (const auto& bind : KEY_JOG_BINDINGS) {
-        if (bind.key != e->key()) continue;
-        if (held_.contains(e->key())) { e->accept(); return; }
-        held_.insert(e->key());
-        restyleChips();
-        emit keysChanged();
-        e->accept();
-        return;
+        if (bind.key == key) { bound = true; break; }
     }
-    QWidget::keyPressEvent(e);
-}
+    if (!bound) return QObject::eventFilter(obj, ev);
 
-void KeyJogPad::keyReleaseEvent(QKeyEvent* e) {
-    if (e->isAutoRepeat()) { e->accept(); return; }
-    if (held_.remove(e->key())) {
-        restyleChips();
-        emit keysChanged();
-        e->accept();
-        return;
+    if (ke->isAutoRepeat()) return true;   // swallow, but do not re-trigger
+
+    if (type == QEvent::KeyPress) {
+        if (!held_.contains(key)) { held_.insert(key); emit keysChanged(); }
+    } else {
+        if (held_.remove(key)) emit keysChanged();
     }
-    QWidget::keyReleaseEvent(e);
-}
-
-void KeyJogPad::focusInEvent(QFocusEvent* e) {
-    QWidget::focusInEvent(e);
-    restyleChips();
-    emit focusGained();
-}
-
-// Losing focus (alt-tab, clicking another panel) never delivers the key-up
-// events, so the held set would stay stale and the arm would keep moving.
-// Drop everything and let the module publish the stop.
-void KeyJogPad::focusOutEvent(QFocusEvent* e) {
-    QWidget::focusOutEvent(e);
-    releaseAll();
-    restyleChips();
-    emit focusLost();
-}
-
-void KeyJogPad::hideEvent(QHideEvent* e) {
-    QWidget::hideEvent(e);
-    releaseAll();
+    return true;
 }
 
 QWidget* SendCommandModule::createWidget(QWidget* parent) {
@@ -258,6 +228,8 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
 
     QFont font("monospace", theme::FontSize);
     QFont fontBold("monospace", theme::FontSize, QFont::Bold);
+
+    buildKeyJogSection(layout, widget);
 
     auto* grid = new QGridLayout();
     grid->setSpacing(8);
@@ -525,33 +497,30 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
             zero_checks_[i]->setChecked(any_unchecked);
     });
 
-    buildKeyJogSection(layout);
-
     layout->addStretch();
     return widget;
 }
 
-void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout) {
+// Built at the TOP of the panel: the toggle has to stay visible, and panels
+// here are not wrapped in a scroll area (hmi_host.cpp drops the module widget
+// straight into the tile), so anything below the fold is unreachable.
+void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) {
     QFont font("monospace", theme::FontSize);
     QFont fontBold("monospace", theme::FontSize, QFont::Bold);
 
-    auto* sep = new QWidget();
-    sep->setFixedHeight(1);
-    sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
-    layout->addWidget(sep);
-
-    auto* title = new QLabel("Keyboard Jog (hold several keys → several axes)");
-    title->setFont(fontBold);
-    title->setStyleSheet(QString("color: %1;").arg(theme::Text));
-    layout->addWidget(title);
+    // Parented to the panel, so the filter is uninstalled and destroyed with it.
+    key_jog_filter_ = new KeyJogFilter(owner);
 
     auto* ctl = new QHBoxLayout();
     ctl->setSpacing(8);
 
-    key_jog_arm_ = new QCheckBox("Arm");
-    key_jog_arm_->setFont(fontBold);
-    key_jog_arm_->setToolTip("Enable keyboard jogging, then keep the pad focused");
-    ctl->addWidget(key_jog_arm_);
+    key_jog_arm_btn_ = new QPushButton("ARM KEYBOARD");
+    key_jog_arm_btn_->setCheckable(true);
+    key_jog_arm_btn_->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+    // No focus: the button must never eat a keystroke itself (Space would
+    // otherwise re-toggle it once it had been clicked).
+    key_jog_arm_btn_->setFocusPolicy(Qt::NoFocus);
+    ctl->addWidget(key_jog_arm_btn_);
 
     auto* scale_lbl = new QLabel("Speed x");
     scale_lbl->setFont(font);
@@ -573,49 +542,101 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout) {
     ctl->addStretch();
     layout->addLayout(ctl);
 
-    key_jog_pad_ = new KeyJogPad();
-    key_jog_pad_->setEnabled(false);
-    layout->addWidget(key_jog_pad_);
+    // Live readout of what is held — display only, nothing to click.
+    auto* chips = new QWidget();
+    auto* grid = new QGridLayout(chips);
+    grid->setSpacing(6);
+    grid->setContentsMargins(0, 0, 0, 0);
+    for (int a = 0; a < NUM_AXES; a++) {
+        auto* name = new QLabel(KEY_JOG_AXIS_NAMES[a]);
+        name->setFont(QFont("monospace", theme::FontSizeSm));
+        grid->addWidget(name, a, 2);
+    }
+    key_jog_chips_.assign(NUM_KEY_JOG_BINDINGS, nullptr);
+    for (int b = 0; b < NUM_KEY_JOG_BINDINGS; b++) {
+        const auto& bind = KEY_JOG_BINDINGS[b];
+        auto* chip = new QLabel(QString("%1 %2").arg(bind.dir > 0 ? "+" : "−").arg(bind.label));
+        chip->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+        chip->setAlignment(Qt::AlignCenter);
+        chip->setMinimumWidth(64);
+        key_jog_chips_[b] = chip;
+        grid->addWidget(chip, bind.axis, bind.dir > 0 ? 1 : 0);
+    }
+    grid->setColumnStretch(2, 1);
+    layout->addWidget(chips);
 
-    auto* hint = new QLabel("Click the pad to focus · Space = D-STOP ALL · Esc = release keys");
+    auto* hint = new QLabel("While armed: keys drive the arm from any panel · "
+                            "Space = D-STOP ALL · Esc = release keys");
     hint->setFont(QFont("monospace", theme::FontSizeSm));
     hint->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
     layout->addWidget(hint);
 
-    QObject::connect(key_jog_arm_, &QCheckBox::toggled,
+    auto* sep = new QWidget();
+    sep->setFixedHeight(1);
+    sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
+    layout->addWidget(sep);
+
+    QObject::connect(key_jog_arm_btn_, &QPushButton::toggled,
                      [this](bool on) { setKeyJogArmed(on); });
-    QObject::connect(key_jog_pad_, &KeyJogPad::keysChanged,
-                     [this]() { publishKeyJog(); });
-    QObject::connect(key_jog_pad_, &KeyJogPad::focusLost, [this]() {
-        publishKeyJog();   // pad already dropped the held keys → this stops the arm
-        if (!key_jog_arm_->isChecked()) return;
-        key_jog_status_->setText("NO FOCUS — click pad");
-        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Yellow));
+    QObject::connect(key_jog_filter_, &KeyJogFilter::keysChanged, [this]() {
+        restyleKeyJogChips();
+        publishKeyJog();
     });
-    QObject::connect(key_jog_pad_, &KeyJogPad::focusGained, [this]() {
-        if (!key_jog_arm_->isChecked()) return;
-        key_jog_status_->setText("ARMED");
-        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Green));
+    QObject::connect(key_jog_filter_, &KeyJogFilter::stopAllRequested, [this]() {
+        restyleKeyJogChips();
+        publishKeyJog();     // filter already dropped the keys → stops the arm
+        sendStopAll();
     });
-    QObject::connect(key_jog_pad_, &KeyJogPad::stopAllRequested,
-                     [this]() { sendStopAll(); });
+    // Leaving the window auto-releases but stays armed, so coming back resumes
+    // without another click.
+    QObject::connect(key_jog_filter_, &KeyJogFilter::windowLeft, [this]() {
+        restyleKeyJogChips();
+        publishKeyJog();
+    });
 
     setKeyJogArmed(false);
 }
 
-void SendCommandModule::setKeyJogArmed(bool on) {
-    if (!key_jog_pad_) return;
-    key_jog_pad_->setEnabled(on);
-    if (on) {
-        key_jog_pad_->setFocus(Qt::OtherFocusReason);
-        key_jog_status_->setText("ARMED");
-        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Green));
-    } else {
-        key_jog_pad_->releaseAll();   // emits keysChanged → publishes the stop
-        publishKeyJog();              // and again in case nothing was held
-        key_jog_status_->setText("disarmed");
-        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
+void SendCommandModule::restyleKeyJogChips() {
+    const bool armed = key_jog_filter_ && key_jog_filter_->armed();
+    for (int b = 0; b < (int)key_jog_chips_.size() && b < NUM_KEY_JOG_BINDINGS; b++) {
+        const auto& bind = KEY_JOG_BINDINGS[b];
+        const bool enabled = keyJogAxisEnabled(bind.axis);
+        const bool down = enabled && armed && key_jog_filter_->isHeld(bind.key);
+        const char* fg = !enabled ? theme::TextDim
+                                  : (down ? theme::Bg : (armed ? theme::Text : theme::TextDim));
+        const char* bg = down ? theme::Green : theme::Bg;
+        const char* border = !enabled ? theme::BorderDim
+                                      : (down ? theme::Green
+                                              : (armed ? theme::Border : theme::BorderDim));
+        key_jog_chips_[b]->setStyleSheet(
+            QString("QLabel { color: %1; background: %2; border: 1px solid %3; "
+                    "border-radius: 6px; padding: 4px 8px; }")
+                .arg(fg).arg(bg).arg(border));
+        key_jog_chips_[b]->setToolTip(
+            enabled ? QString() : QStringLiteral("Disabled in motor_config.h (HmiDefaults)"));
     }
+}
+
+void SendCommandModule::setKeyJogArmed(bool on) {
+    if (!key_jog_filter_) return;
+    key_jog_filter_->setArmed(on);   // disarming releases → keysChanged → stop
+    publishKeyJog();                 // and again in case nothing was held
+
+    key_jog_arm_btn_->setText(on ? "KEYBOARD ARMED" : "ARM KEYBOARD");
+    key_jog_arm_btn_->setStyleSheet(
+        on ? QString("QPushButton { background: %1; color: %2; border: 2px solid %1; "
+                     "padding: 10px 18px; font-weight: bold; }")
+                 .arg(theme::Green).arg(theme::Bg)
+           : QString("QPushButton { background: %1; color: %2; border: 2px solid %3; "
+                     "padding: 10px 18px; font-weight: bold; }")
+                 .arg(theme::Bg).arg(theme::Text).arg(theme::Border));
+
+    key_jog_status_->setText(on ? "keys → arm" : "disarmed");
+    key_jog_status_->setStyleSheet(
+        QString("color: %1;").arg(on ? theme::Green : theme::TextDim));
+
+    restyleKeyJogChips();
 }
 
 // One message, every mapped axis. Axes with no key down are commanded to 0
@@ -626,9 +647,9 @@ void SendCommandModule::setKeyJogArmed(bool on) {
 // quiet — the driver re-sends its active command every poll tick to feed the
 // moteus watchdog, so there is no need to stream while keys are held either.
 void SendCommandModule::publishKeyJog() {
-    if (!cmd_pub_ || !key_jog_pad_ || !key_jog_scale_) return;
+    if (!cmd_pub_ || !key_jog_filter_ || !key_jog_scale_) return;
 
-    const auto dirs = key_jog_pad_->directions();
+    const auto dirs = key_jog_filter_->directions();
     const double scale = key_jog_scale_->value();
 
     rover_msgs::msg::ArmCommand msg;
