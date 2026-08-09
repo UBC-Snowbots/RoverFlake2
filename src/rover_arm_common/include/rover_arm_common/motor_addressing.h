@@ -75,18 +75,30 @@ struct JointMap {
     double      direction;        // +1 or -1: sign between output revolutions and URDF angle
 };
 
-// urdf joint names only needed for IK/rviz. The URDF still describes the old
-// 6-joint arm (a4_rotation..a6_rotation) — a5_differential/a6_differential/
-// ee_prismatic don't exist there yet.
+// urdf joint names match dev_arm_description_v2 (the current arm, loaded by
+// dev_arm_moveit_config_v3).
+//
+// initial_pos_rad is the URDF joint angle AT THE LIMIT SWITCH: homing zeroes
+// the counter on the switch, so counter-0 = switch = this angle. Calibrated
+// 2026-08-09 by posing the display.launch.py sim to match the physically
+// homed arm and reading the joint_state_publisher_gui sliders.
+//
+// direction: counter runs 0 → AxisConfig::max_position_rev away from the
+// switch, so the far end (initial_pos_rad + direction·travel·2π) must land
+// inside the URDF joint limits. That determines the sign for A1/A3/A4/A5.
+// A6 is continuous (no limits) and A2 fits NEITHER sign — its travel
+// (0.5 rev = 3.14 rad) exceeds what the switch angle leaves in the URDF range
+// both ways, so either max_position_rev[1] or the URDF limits are wrong.
+// VERIFY each sign by jogging the axis and watching RViz track /joint_states.
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
-    //  id   hardware label    urdf joint name    boot angle (rad)   direction
-    {  1,   "A1",   "shoulder_joint",       -1.57,          -1.0  },
-    {  2,   "A2",   "link_1_joint",         -1.57,          -1.0  },
-    {  3,   "A3",   "link1_link2",           0.9,           -1.0  },
-    {  4,   "A4",   "a4_rotation",           0.9,           -1.0  },
-    {  5,   "A5",   "a5_differential",       0.0,           -1.0  },
-    {  6,   "A6",   "a6_differential",       1.2,           -1.0  },
-    {  7,   "EE",   "ee_prismatic",          0.0,           -1.0  },
+    //  id   hardware label    urdf joint name    switch angle (rad)   direction
+    {  1,   "A1",   "shoulder_joint",       -1.681,          1.0  },
+    {  2,   "A2",   "link_1_joint",         -1.799,          1.0  },  // TODO sign unproven (see above)
+    {  3,   "A3",   "link1_link2",          -1.273,          1.0  },
+    {  4,   "A4",   "a4_rotation",           3.089,         -1.0  },
+    {  5,   "A5",   "a5_rotation",          -1.341,          1.0  },
+    {  6,   "A6",   "a6_rotation",          -1.511,          1.0  },  // TODO sign unproven (continuous joint)
+    {  7,   "EE",   "joint_ee",              0.0,           -1.0  },  // TODO not calibrated
 };
 
 
