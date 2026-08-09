@@ -19,20 +19,14 @@
 // ---- Tunables (px unless noted) --------------------------------------------
 // Saved layouts: repo-tracked JSON files, see layout_store.h
 
-// Tiling geometry
+// Tiling geometry — pane minimums and ratio clamps live in DwindleTree.
 static constexpr int SIDEBAR_WIDTH     = 180;  // initial; user can drag the right edge
 static constexpr int SIDEBAR_MIN_WIDTH = 140;
 static constexpr int SIDEBAR_MAX_WIDTH = 420;
 static constexpr int SIDEBAR_GRIP_PX   = 8;    // grab zone along the right edge
 static constexpr int PANEL_GAP       = 3;
-static constexpr int MIN_PANE_WIDTH  = 80;   // splits never squeeze a side below these
-static constexpr int MIN_PANE_HEIGHT = 60;
 static const char*   SIDEBAR_BG      = "#080808";  // other colors: catppuccin.h
 
-// splitRatio: 1.0 = 50/50 (see DwindleNode); clamped so a side can't collapse
-static constexpr float SPLIT_RATIO_MIN        = 0.1f;
-static constexpr float SPLIT_RATIO_MAX        = 1.9f;
-static constexpr float RESIZE_RATIO_STEP      = 0.08f;  // per Alt+Shift+Arrow press
 static constexpr float TOP_BOTTOM_SPLIT_RATIO = 1.6f;   // initial top/bottom = 80/20
 
 // TilePanel chrome
@@ -68,49 +62,6 @@ public:
 private:
     QCheckBox* box_;
 };
-
-
-// ---------------------------------------------------------------------------
-// DwindleNode
-// ---------------------------------------------------------------------------
-
-// DFS for the leaf holding panel `p`; nullptr if absent
-DwindleNode* DwindleNode::leafFor(TilePanel* p) {
-    if (!isNode) return (panel == p) ? this : nullptr;
-    auto* r = children[0] ? children[0]->leafFor(p) : nullptr;
-    if (r) return r;
-    return children[1] ? children[1]->leafFor(p) : nullptr;
-}
-
-void DwindleNode::recalcSizePosRecursive(int gap) {
-    if (!isNode) {
-        if (panel)
-            panel->setGeometry(box.adjusted(gap, gap, -gap, -gap));
-        return;
-    }
-
-    auto* c0 = children[0];
-    auto* c1 = children[1];
-    if (!c0 || !c1) return;
-
-    if (!splitTop) {
-        // Left/right split
-        int w0 = (int)(box.width() / 2.0f * splitRatio);
-        // max(min()) not std::clamp: bounds may cross when box < 2*MIN_PANE_WIDTH
-        w0 = std::max(MIN_PANE_WIDTH, std::min(w0, box.width() - MIN_PANE_WIDTH));
-        c0->box = QRect(box.x(), box.y(), w0, box.height());
-        c1->box = QRect(box.x() + w0, box.y(), box.width() - w0, box.height());
-    } else {
-        // Top/bottom split
-        int h0 = (int)(box.height() / 2.0f * splitRatio);
-        h0 = std::max(MIN_PANE_HEIGHT, std::min(h0, box.height() - MIN_PANE_HEIGHT));
-        c0->box = QRect(box.x(), box.y(), box.width(), h0);
-        c1->box = QRect(box.x(), box.y() + h0, box.width(), box.height() - h0);
-    }
-
-    c0->recalcSizePosRecursive(gap);
-    c1->recalcSizePosRecursive(gap);
-}
 
 
 // ---------------------------------------------------------------------------
@@ -904,9 +855,7 @@ TilingContainer::TilingContainer(QWidget* parent) : QWidget(parent) {
     qApp->installEventFilter(this);
 }
 
-TilingContainer::~TilingContainer() {
-    for (auto* n : all_nodes_) delete n;
-}
+TilingContainer::~TilingContainer() = default;
 
 void TilingContainer::addPanel(const std::string& title, QWidget* content,
                                 const std::string& layout_hint,
@@ -915,7 +864,8 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
                                 std::vector<std::pair<std::string,std::string>> module_keybinds,
                                 const std::string& section,
                                 std::function<QJsonObject()> save_state,
-                                std::function<void(const QJsonObject&)> restore_state) {
+                                std::function<void(const QJsonObject&)> restore_state,
+                                std::function<bool(TilingOp, int, int)> tiling_ops) {
     auto* panel = new TilePanel(title, content, this);
 
     connect(panel, &TilePanel::clicked, [this, panel]() { setFocusedPanel(panel); });
@@ -925,39 +875,19 @@ void TilingContainer::addPanel(const std::string& title, QWidget* content,
 
     panels_.push_back({panel, layout_hint, section, default_visible, on_toggle,
                        std::move(save_state), std::move(restore_state),
-                       std::move(module_keybinds)});
+                       std::move(module_keybinds), std::move(tiling_ops)});
 }
 
 // Build a vertical (vertical=true) or horizontal column of panels
 DwindleNode* TilingContainer::buildColumn(std::vector<TilePanel*>& panels, bool vertical) {
     if (panels.empty()) return nullptr;
 
-    if (panels.size() == 1) {
-        auto* leaf = new DwindleNode();
-        leaf->panel = panels[0];
-        all_nodes_.push_back(leaf);
-        return leaf;
-    }
+    if (panels.size() == 1) return tree_.makeLeaf(panels[0]);
 
-    auto* node = new DwindleNode();
-    node->isNode = true;
-    node->splitTop = vertical;  // true = top/bottom stacking
-    all_nodes_.push_back(node);
-
-    // First panel → first child
-    auto* leaf0 = new DwindleNode();
-    leaf0->panel = panels[0];
-    leaf0->parent = node;
-    all_nodes_.push_back(leaf0);
-
-    // Remaining panels → second child (recurse)
+    // First panel → first child; remaining panels → second child (recurse)
+    auto* leaf0 = tree_.makeLeaf(panels[0]);
     std::vector<TilePanel*> rest(panels.begin() + 1, panels.end());
-    auto* rest_node = buildColumn(rest, vertical);
-    rest_node->parent = node;
-
-    node->children[0] = leaf0;
-    node->children[1] = rest_node;
-    return node;
+    return tree_.makeSplit(vertical, 1.0f, leaf0, buildColumn(rest, vertical));
 }
 
 DwindleNode* TilingContainer::buildHintTree(
@@ -980,33 +910,13 @@ DwindleNode* TilingContainer::buildHintTree(
     auto* bottom_tree = buildColumn(bottom_panels, false);  // horizontal row
 
     DwindleNode* top_tree = nullptr;
-    if (left_tree && right_tree) {
-        auto* lr = new DwindleNode();
-        lr->isNode = true;
-        lr->splitTop = false;
-        lr->splitRatio = 1.0f;
-        lr->children[0] = left_tree;
-        lr->children[1] = right_tree;
-        left_tree->parent  = lr;
-        right_tree->parent = lr;
-        all_nodes_.push_back(lr);
-        top_tree = lr;
-    } else {
+    if (left_tree && right_tree)
+        top_tree = tree_.makeSplit(false, 1.0f, left_tree, right_tree);
+    else
         top_tree = left_tree ? left_tree : right_tree;
-    }
 
-    if (top_tree && bottom_tree) {
-        auto* tb = new DwindleNode();
-        tb->isNode = true;
-        tb->splitTop = true;
-        tb->splitRatio = TOP_BOTTOM_SPLIT_RATIO;
-        tb->children[0] = top_tree;
-        tb->children[1] = bottom_tree;
-        top_tree->parent    = tb;
-        bottom_tree->parent = tb;
-        all_nodes_.push_back(tb);
-        return tb;
-    }
+    if (top_tree && bottom_tree)
+        return tree_.makeSplit(true, TOP_BOTTOM_SPLIT_RATIO, top_tree, bottom_tree);
     return top_tree ? top_tree : bottom_tree;
 }
 
@@ -1058,7 +968,7 @@ void TilingContainer::finalize() {
     }
 
     // Build initial dwindle tree for default-visible panels.
-    root_ = buildHintTree([](const PanelInfo& pi) { return pi.default_visible; });
+    tree_.setRoot(buildHintTree([](const PanelInfo& pi) { return pi.default_visible; }));
 
     // Recalculate when tiling_area_ resizes
     tiling_area_->installEventFilter(this);
@@ -1101,31 +1011,34 @@ void TilingContainer::finalize() {
         connect(sc, &QShortcut::activated, fn);
     };
 
-    bind("Alt+Left",  [this]() { if (anyOverlayVisible()) return; focusDirection(-1, 0); });
-    bind("Alt+Right", [this]() { if (anyOverlayVisible()) return; focusDirection(1, 0); });
-    bind("Alt+Up",    [this]() { if (anyOverlayVisible()) return; focusDirection(0, -1); });
-    bind("Alt+Down",  [this]() { if (anyOverlayVisible()) return; focusDirection(0, 1); });
+    // Each op is offered to the focused panel's module first (moduleConsumed);
+    // the camera grid consumes them in grid view so Alt chords act on cells.
+    auto op = [this](TilingOp o, int dx, int dy, void (TilingContainer::*fn)(int, int)) {
+        if (anyOverlayVisible() || moduleConsumed(o, dx, dy)) return;
+        (this->*fn)(dx, dy);
+    };
+    bind("Alt+Left",  [op]() { op(TilingOp::Focus, -1, 0, &TilingContainer::focusDirection); });
+    bind("Alt+Right", [op]() { op(TilingOp::Focus,  1, 0, &TilingContainer::focusDirection); });
+    bind("Alt+Up",    [op]() { op(TilingOp::Focus,  0, -1, &TilingContainer::focusDirection); });
+    bind("Alt+Down",  [op]() { op(TilingOp::Focus,  0, 1, &TilingContainer::focusDirection); });
 
-    bind("Alt+Shift+Right", [this]() { if (anyOverlayVisible()) return; resizeFocused(1, 0); },  true);
-    bind("Alt+Shift+Left",  [this]() { if (anyOverlayVisible()) return; resizeFocused(-1, 0); }, true);
-    bind("Alt+Shift+Up",    [this]() { if (anyOverlayVisible()) return; resizeFocused(0, -1); }, true);
-    bind("Alt+Shift+Down",  [this]() { if (anyOverlayVisible()) return; resizeFocused(0, 1); },  true);
+    bind("Alt+Shift+Right", [op]() { op(TilingOp::Resize,  1, 0, &TilingContainer::resizeFocused); }, true);
+    bind("Alt+Shift+Left",  [op]() { op(TilingOp::Resize, -1, 0, &TilingContainer::resizeFocused); }, true);
+    bind("Alt+Shift+Up",    [op]() { op(TilingOp::Resize,  0, -1, &TilingContainer::resizeFocused); }, true);
+    bind("Alt+Shift+Down",  [op]() { op(TilingOp::Resize,  0, 1, &TilingContainer::resizeFocused); }, true);
 
-    bind("Alt+Ctrl+Shift+Left",  [this]() { if (anyOverlayVisible()) return; swapWithFocused(-1, 0); });
-    bind("Alt+Ctrl+Shift+Right", [this]() { if (anyOverlayVisible()) return; swapWithFocused(1, 0); });
-    bind("Alt+Ctrl+Shift+Up",    [this]() { if (anyOverlayVisible()) return; swapWithFocused(0, -1); });
-    bind("Alt+Ctrl+Shift+Down",  [this]() { if (anyOverlayVisible()) return; swapWithFocused(0, 1); });
+    bind("Alt+Ctrl+Shift+Left",  [op]() { op(TilingOp::Swap, -1, 0, &TilingContainer::swapWithFocused); });
+    bind("Alt+Ctrl+Shift+Right", [op]() { op(TilingOp::Swap,  1, 0, &TilingContainer::swapWithFocused); });
+    bind("Alt+Ctrl+Shift+Up",    [op]() { op(TilingOp::Swap,  0, -1, &TilingContainer::swapWithFocused); });
+    bind("Alt+Ctrl+Shift+Down",  [op]() { op(TilingOp::Swap,  0, 1, &TilingContainer::swapWithFocused); });
 
     bind("Alt+Tab", [this]() { if (anyOverlayVisible()) return; focusNext(); });
 
     bind("Alt+J", [this]() {
         if (anyOverlayVisible()) return;
-        if (!focused_panel_) return;
-        auto* leaf = getLeafFor(focused_panel_);
-        if (leaf && leaf->parent) {
-            leaf->parent->splitTop = !leaf->parent->splitTop;
+        if (moduleConsumed(TilingOp::ToggleSplit, 0, 0)) return;
+        if (focused_panel_ && tree_.toggleSplit(focused_panel_))
             recalculate();
-        }
     });
 
     bind("Alt+/", [this]() { toggleKeybindingsOverlay(); });
@@ -1156,126 +1069,34 @@ void TilingContainer::finalize() {
 
 
 // ---------------------------------------------------------------------------
-// Dwindle tree operations
+// Dwindle tree operations — structure/geometry live in DwindleTree
 // ---------------------------------------------------------------------------
 
-// Nearest ancestor of `leaf` split in the given orientation; child_on_path
-// receives that ancestor's child on the path from leaf (resize direction).
-static DwindleNode* splitAncestor(DwindleNode* leaf, bool split_top,
-                                  DwindleNode** child_on_path = nullptr) {
-    for (auto* cur = leaf; cur && cur->parent; cur = cur->parent) {
-        if (cur->parent->splitTop == split_top) {
-            if (child_on_path) *child_on_path = cur;
-            return cur->parent;
-        }
-    }
-    return nullptr;
-}
-
 void TilingContainer::dwindleAdd(TilePanel* panel) {
-    auto* newLeaf = new DwindleNode();
-    newLeaf->panel = panel;
-    all_nodes_.push_back(newLeaf);
-
-    if (!root_) {
-        root_ = newLeaf;
-        recalculate();
-        setFocusedPanel(panel);
-        return;
-    }
-
-    // Split the focused leaf (or the first available leaf)
-    DwindleNode* target = focused_panel_ ? getLeafFor(focused_panel_) : nullptr;
-    if (!target) {
-        target = root_;
-        while (target->isNode && target->children[0]) target = target->children[0];
-    }
-
-    // Create an internal node to replace target
-    auto* newParent = new DwindleNode();
-    newParent->isNode = true;
-    newParent->parent = target->parent;
-    // Smart split: taller box → top/bottom, wider box → left/right
-    newParent->splitTop = (target->box.height() >= target->box.width());
-
-    if (target->parent) {
-        if (target->parent->children[0] == target)
-            target->parent->children[0] = newParent;
-        else
-            target->parent->children[1] = newParent;
-    } else {
-        root_ = newParent;
-    }
-
-    target->parent  = newParent;
-    newLeaf->parent = newParent;
-    newParent->children[0] = target;
-    newParent->children[1] = newLeaf;
-    all_nodes_.push_back(newParent);
-
+    tree_.add(panel, focused_panel_);
     recalculate();
     setFocusedPanel(panel);
 }
 
 void TilingContainer::dwindleRemove(TilePanel* panel) {
-    auto* leaf = getLeafFor(panel);
-    if (!leaf) return;
-
-    if (!leaf->parent) {
-        // Last panel in the tree
-        all_nodes_.erase(std::remove(all_nodes_.begin(), all_nodes_.end(), leaf), all_nodes_.end());
-        delete leaf;
-        root_ = nullptr;
-        return;
-    }
-
-    auto* parent  = leaf->parent;
-    auto* sibling = leaf->sibling();
-
-    // Sibling takes parent's place
-    sibling->parent = parent->parent;
-    if (parent->parent) {
-        if (parent->parent->children[0] == parent)
-            parent->parent->children[0] = sibling;
-        else
-            parent->parent->children[1] = sibling;
-    } else {
-        root_ = sibling;
-    }
-
-    all_nodes_.erase(std::remove(all_nodes_.begin(), all_nodes_.end(), leaf),   all_nodes_.end());
-    all_nodes_.erase(std::remove(all_nodes_.begin(), all_nodes_.end(), parent), all_nodes_.end());
-    delete leaf;
-    delete parent;
-
+    QWidget* next = tree_.remove(panel);
     recalculate();
-
-    // Refocus on sibling's first leaf if we removed the focused panel
-    if (focused_panel_ == panel) {
-        DwindleNode* next = sibling;
-        while (next && next->isNode) next = next->children[0];
-        if (next && next->panel) setFocusedPanel(next->panel);
-    }
-}
-
-void TilingContainer::dwindleSwap(TilePanel* a, TilePanel* b) {
-    auto* nodeA = getLeafFor(a);
-    auto* nodeB = getLeafFor(b);
-    if (!nodeA || !nodeB) return;
-    std::swap(nodeA->panel, nodeB->panel);
-    recalculate();
-}
-
-DwindleNode* TilingContainer::getLeafFor(TilePanel* panel) {
-    return (root_ && panel) ? root_->leafFor(panel) : nullptr;
+    // Refocus on the sibling's first leaf if we removed the focused panel
+    if (focused_panel_ == panel && next)
+        setFocusedPanel(static_cast<TilePanel*>(next));
 }
 
 void TilingContainer::recalculate() {
-    if (!root_ || !tiling_area_) return;
-    QRect area = tiling_area_->rect();
-    if (area.isEmpty()) return;
-    root_->box = area;
-    root_->recalcSizePosRecursive(PANEL_GAP);
+    if (!tiling_area_) return;
+    tree_.recalc(tiling_area_->rect(), PANEL_GAP);
+}
+
+bool TilingContainer::moduleConsumed(TilingOp op, int dx, int dy) {
+    if (!focused_panel_) return false;
+    for (auto& pi : panels_)
+        if (pi.panel == focused_panel_)
+            return pi.tiling_ops && pi.tiling_ops(op, dx, dy);
+    return false;
 }
 
 
@@ -1367,27 +1188,8 @@ bool TilingContainer::eventFilter(QObject* obj, QEvent* event) {
             }
 
         } else if (drag_mode_ == DragMode::Resize && focused_panel_) {
-            // per axis, resize the closest matching-orientation split;
-            // *2 maps a full-box drag to the full 0..2 ratio range
-            auto* leaf = getLeafFor(focused_panel_);
-            if (leaf) {
-                if (delta.x() != 0) {
-                    if (auto* split = splitAncestor(leaf, /*split_top=*/false)) {
-                        float rel = (float)delta.x() * 2.0f / std::max(1, split->box.width());
-                        split->splitRatio = std::clamp(split->splitRatio + rel,
-                                                       SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
-                        recalculate();
-                    }
-                }
-                if (delta.y() != 0) {
-                    if (auto* split = splitAncestor(leaf, /*split_top=*/true)) {
-                        float rel = (float)delta.y() * 2.0f / std::max(1, split->box.height());
-                        split->splitRatio = std::clamp(split->splitRatio + rel,
-                                                       SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
-                        recalculate();
-                    }
-                }
-            }
+            if (tree_.resizeDrag(focused_panel_, delta))
+                recalculate();
         }
 
         last_mouse_global_ = globalPos;
@@ -1430,8 +1232,10 @@ void TilingContainer::enterMoveMode() {
 
 void TilingContainer::exitDragMode() {
     if (drag_mode_ == DragMode::Move) {
-        if (drag_source_ && drag_target_ && drag_source_ != drag_target_)
-            dwindleSwap(drag_source_, drag_target_);
+        if (drag_source_ && drag_target_ && drag_source_ != drag_target_) {
+            tree_.swap(drag_source_, drag_target_);
+            recalculate();
+        }
 
         for (auto& pi : panels_) pi.panel->setDropTarget(false);
 
@@ -1523,57 +1327,13 @@ void TilingContainer::hideLayoutManagerOverlay() {
 // UI indices are into LayoutStore::list(), same ordering everywhere.
 // ---------------------------------------------------------------------------
 
-QJsonObject TilingContainer::serializeTree(DwindleNode* node) const {
-    QJsonObject obj;
-    obj["isNode"] = node->isNode;
-    if (node->isNode) {
-        obj["splitTop"]   = node->splitTop;
-        obj["splitRatio"] = (double)node->splitRatio;
-        QJsonArray children;
-        if (node->children[0]) children.append(serializeTree(node->children[0]));
-        if (node->children[1]) children.append(serializeTree(node->children[1]));
-        obj["children"] = children;
-    } else {
-        obj["panel"] = node->panel ? QString::fromStdString(node->panel->title()) : "";
-    }
-    return obj;
-}
-
-DwindleNode* TilingContainer::deserializeTree(const QJsonObject& obj) {
-    auto* node = new DwindleNode();
-    all_nodes_.push_back(node);
-    node->isNode = obj["isNode"].toBool();
-    if (node->isNode) {
-        node->splitTop   = obj["splitTop"].toBool();
-        node->splitRatio = (float)obj["splitRatio"].toDouble(1.0);
-        auto children    = obj["children"].toArray();
-        if (children.size() >= 2) {
-            node->children[0] = deserializeTree(children[0].toObject());
-            node->children[1] = deserializeTree(children[1].toObject());
-            node->children[0]->parent = node;
-            node->children[1]->parent = node;
-        }
-    } else {
-        QString title = obj["panel"].toString();
-        for (auto& pi : panels_) {
-            if (QString::fromStdString(pi.panel->title()) == title) {
-                node->panel = pi.panel;
-                break;
-            }
-        }
-    }
-    return node;
-}
-
 void TilingContainer::clearAllPanels() {
     for (auto& pi : panels_) {
         if (!pi.panel->isVisible()) continue;
         if (pi.on_toggle) pi.on_toggle(false);
         pi.panel->setVisible(false);
     }
-    for (auto* n : all_nodes_) delete n;
-    all_nodes_.clear();
-    root_          = nullptr;
+    tree_.clear();
     focused_panel_ = nullptr;
     sidebar_->syncCheckboxes({});
     recalculate();
@@ -1581,7 +1341,10 @@ void TilingContainer::clearAllPanels() {
 
 QJsonObject TilingContainer::currentLayoutJson() const {
     QJsonObject layout;
-    if (root_) layout["tree"] = serializeTree(root_);
+    if (!tree_.empty())
+        layout["tree"] = tree_.serialize([](QWidget* w) {
+            return QString::fromStdString(static_cast<TilePanel*>(w)->title());
+        });
     QJsonArray visible;
     for (auto& pi : panels_)
         if (pi.panel->isVisible())
@@ -1614,10 +1377,7 @@ void TilingContainer::applyLayoutJson(const QJsonObject& layout) {
     for (auto v : layout["visible"].toArray())
         visible_set.insert(v.toString());
 
-    // Clear tree
-    for (auto* n : all_nodes_) delete n;
-    all_nodes_.clear();
-    root_         = nullptr;
+    tree_.clear();
     focused_panel_ = nullptr;
 
     // Set panel visibility — only show panels explicitly in the saved visible set
@@ -1639,9 +1399,14 @@ void TilingContainer::applyLayoutJson(const QJsonObject& layout) {
         if (it != modules.constEnd()) pi.restore_state(it->toObject());
     }
 
-    // Reconstruct tree
+    // Reconstruct tree — leaves resolve by panel title; unknown titles
+    // become empty leaves, same as before the DwindleTree extraction.
     if (layout.contains("tree") && !layout["tree"].toObject().isEmpty())
-        root_ = deserializeTree(layout["tree"].toObject());
+        tree_.deserialize(layout["tree"].toObject(), [this](const QString& title) -> QWidget* {
+            for (auto& pi : panels_)
+                if (QString::fromStdString(pi.panel->title()) == title) return pi.panel;
+            return nullptr;
+        });
 
     recalculate();
 
@@ -1667,9 +1432,7 @@ bool TilingContainer::loadLayoutByName(const QString& name) {
 }
 
 void TilingContainer::showPanels(const std::vector<std::string>& titles) {
-    for (auto* n : all_nodes_) delete n;
-    all_nodes_.clear();
-    root_          = nullptr;
+    tree_.clear();
     focused_panel_ = nullptr;
 
     std::vector<std::string> visible_titles;
@@ -1681,10 +1444,10 @@ void TilingContainer::showPanels(const std::vector<std::string>& titles) {
     }
     sidebar_->syncCheckboxes(visible_titles);
 
-    root_ = buildHintTree([&titles](const PanelInfo& pi) {
+    tree_.setRoot(buildHintTree([&titles](const PanelInfo& pi) {
         return std::find(titles.begin(), titles.end(),
                          pi.panel->title()) != titles.end();
-    });
+    }));
     recalculate();
 
     for (auto& pi : panels_)
@@ -1783,26 +1546,13 @@ void TilingContainer::focusDirection(int dx, int dy) {
 }
 
 void TilingContainer::swapWithFocused(int dx, int dy) {
-    if (auto* target = nearestPanelInDirection(dx, dy))
-        dwindleSwap(focused_panel_, target);
+    if (auto* target = nearestPanelInDirection(dx, dy)) {
+        tree_.swap(focused_panel_, target);
+        recalculate();
+    }
 }
 
-// Resize along the arrow axis via the nearest matching-orientation split;
-// the sign flips by which side the panel is on so it grows toward the arrow.
 void TilingContainer::resizeFocused(int dx, int dy) {
-    if (!focused_panel_) return;
-    auto* leaf = getLeafFor(focused_panel_);
-    if (!leaf) return;
-
-    int arrow = (dx != 0) ? dx : dy;
-    bool split_top = (dx == 0);  // vertical arrow → top/bottom split
-
-    DwindleNode* child = nullptr;
-    auto* split = splitAncestor(leaf, split_top, &child);
-    if (!split) return;
-
-    float delta = (split->children[0] == child ? arrow : -arrow) * RESIZE_RATIO_STEP;
-    split->splitRatio = std::clamp(split->splitRatio + delta,
-                                   SPLIT_RATIO_MIN, SPLIT_RATIO_MAX);
-    recalculate();
+    if (focused_panel_ && tree_.resizeStep(focused_panel_, dx, dy))
+        recalculate();
 }

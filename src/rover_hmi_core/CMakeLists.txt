@@ -12,7 +12,6 @@ find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rover_arm_common REQUIRED)
 find_package(rover_mapping_interfaces REQUIRED)
-find_package(yaml-cpp REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 
 set(CMAKE_AUTOMOC ON)
@@ -25,10 +24,12 @@ include_directories(include)
 add_library(rover_hmi_core SHARED
     src/plot_widget.cpp
     src/tiling_container.cpp
+    src/dwindle_tree.cpp
     src/layout_store.cpp
     src/spectro_paths.cpp
     include/rover_hmi_core/plot_widget.h
     include/rover_hmi_core/tiling_container.h
+    include/rover_hmi_core/dwindle_tree.h
     include/rover_hmi_core/spectro_paths.h
 )
 target_link_libraries(rover_hmi_core Qt5::Core Qt5::Widgets)
@@ -93,7 +94,7 @@ add_library(rover_hmi_modules SHARED
     # Cameras
     src/cameras/camera_config.cpp
     src/cameras/camera_viewport.cpp
-    src/cameras/camera_list_overlay.cpp
+    src/cameras/camera_grid.cpp
     src/cameras/camera_module.cpp
     src/camera/ptz_camera_module.cpp
 )
@@ -113,7 +114,6 @@ target_include_directories(rover_hmi_modules PRIVATE
 target_link_libraries(rover_hmi_modules
     rover_hmi_core
     Qt5::Widgets
-    ${YAML_CPP_LIBRARIES}
 )
 ament_target_dependencies(rover_hmi_modules rclcpp rover_msgs std_msgs sensor_msgs geometry_msgs std_srvs pluginlib ament_index_cpp rover_arm_common rover_mapping_interfaces)
 target_compile_definitions(rover_hmi_modules PRIVATE

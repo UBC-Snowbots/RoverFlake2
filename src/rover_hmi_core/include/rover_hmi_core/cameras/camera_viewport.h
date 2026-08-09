@@ -6,15 +6,14 @@
 #include <QPixmap>
 #include <QTimer>
 #include <QWidget>
-#include <functional>
 
 #include "sensor_msgs/msg/image.hpp"
+
+class QPushButton;
 
 class CameraViewport : public QWidget {
 public:
     explicit CameraViewport(QWidget* parent = nullptr);
-
-    std::function<void()> onClick;  // set by grid view: click cell → zoom to single
 
     void setLabel(const QString& label);
     void setFrame(sensor_msgs::msg::Image::ConstSharedPtr msg);
@@ -23,10 +22,15 @@ public:
     // Shown instead of animated static when signal-less, caption underneath.
     void setPlaceholder(const QPixmap& pm);
     bool hasFrame() const { return static_cast<bool>(msg_); }
+    // Border highlight for the focused cell in the dwindle grid view.
+    void setFocused(bool on);
+    // Save the current frame as a PNG under camera_config::screenshotDir().
+    // No-op without a live frame. Also wired to the 📷 button.
+    void saveSnapshot();
 
 protected:
     void paintEvent(QPaintEvent*) override;
-    void mousePressEvent(QMouseEvent* ev) override;
+    void resizeEvent(QResizeEvent*) override;
 
 private:
     void drawStatic(QPainter& p);
@@ -40,4 +44,7 @@ private:
     QTimer* static_timer_;   // repaints the noise at 10 Hz while signal-less
     QElapsedTimer frame_clock_;
     double fps_ = 0.0;
+    bool focused_ = false;
+    QPushButton* snap_btn_;  // top-right, shown only while a frame is live
+    QString flash_;          // transient "saved …" note in the overlay
 };

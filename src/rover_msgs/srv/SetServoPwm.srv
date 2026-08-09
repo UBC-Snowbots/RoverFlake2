@@ -1,0 +1,12 @@
+# Drive one servo to a caller-supplied pulse width. The value is clamped to
+# that servo's calibrated range; see SetServoLimit for the range endpoints.
+
+uint8 SERVO_RP=0     # rack-and-pinion drive servo
+uint8 SERVO_CLAW=1   # catch/release latch servo
+
+uint8 servo
+float32 pwm_us       # requested pulse width, in microseconds
+---
+bool success
+float32 pwm_us       # pulse width actually applied (may be clamped)
+string message

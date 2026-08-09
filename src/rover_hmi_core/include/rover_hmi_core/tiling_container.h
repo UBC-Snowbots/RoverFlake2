@@ -1,15 +1,14 @@
 // =============================================================================
 // tiling_container.h — Hyprland-style dwindle tiling layout for Qt widgets
 //
-// Panels are organised in a binary space partition (BSP) tree whose structure
-// mirrors Hyprland's SDwindleNodeData.  Every internal node splits its
-// rectangle either horizontally or vertically at a configurable ratio; every
-// leaf wraps a single TilePanel.  Adding a panel bisects the leaf that
-// currently holds focus, so the layout grows organically without any manual
-// geometry management.
+// Panels are organised in a dwindle BSP tree (DwindleTree, dwindle_tree.h —
+// shared with the camera grid).  Every internal node splits its rectangle
+// either horizontally or vertically at a configurable ratio; every leaf wraps
+// a single TilePanel.  Adding a panel bisects the leaf that currently holds
+// focus, so the layout grows organically without any manual geometry
+// management.
 //
 // Key classes:
-//   DwindleNode          — one node in the BSP tree (internal split or leaf)
 //   TilePanel            — titled widget wrapper shown at each leaf
 //   DragOverlay          — translucent floating snapshot rendered during drag
 //   KeybindingsOverlay   — Alt+/ keybindings cheatsheet, arrow-key browsable
@@ -42,11 +41,11 @@
 #include <QJsonObject>
 
 #include <rover_hmi_core/layout_store.h>
+#include <rover_hmi_core/dwindle_tree.h>
 
 #include <vector>
 #include <string>
 #include <functional>
-#include <array>
 
 // ---------------------------------------------------------------------------
 // Overlay data types
@@ -56,32 +55,6 @@ struct KeybindCategory { QString name; std::vector<KeybindEntry> entries; };
 
 class TilePanel;
 class TilingContainer;
-
-// ---------------------------------------------------------------------------
-// Dwindle binary tree node — mirrors Hyprland's SDwindleNodeData
-//   isNode=true  → internal node, children[0/1] are sub-trees
-//   isNode=false → leaf, panel points to the TilePanel widget
-//   splitTop     → true = top/bottom split, false = left/right split
-//   splitRatio   → 0.1..1.9; 1.0 means 50/50
-// ---------------------------------------------------------------------------
-struct DwindleNode {
-    DwindleNode* parent = nullptr;
-    bool isNode = false;
-    std::array<DwindleNode*, 2> children = {nullptr, nullptr};
-    bool splitTop = false;
-    float splitRatio = 1.0f;
-    QRect box;                   // in tiling_area_ local coordinates
-    TilePanel* panel = nullptr;  // non-null only for leaf nodes
-
-    DwindleNode* sibling() const {
-        if (!parent) return nullptr;
-        return parent->children[0] == this ? parent->children[1] : parent->children[0];
-    }
-
-    DwindleNode* leafFor(TilePanel* p);
-    void recalcSizePosRecursive(int gap = 3);
-};
-
 
 // ---------------------------------------------------------------------------
 // TilePanel — a single titled panel in the tiling area
@@ -269,7 +242,9 @@ public:
     explicit TilingContainer(QWidget* parent = nullptr);
     ~TilingContainer();
 
-    // Register a panel before finalize()
+    // Register a panel before finalize(). tiling_ops (optional) lets the
+    // module consume Alt-chord tiling ops while its panel is focused — the
+    // camera grid routes them to its cells this way.
     void addPanel(const std::string& title, QWidget* content,
                   const std::string& layout_hint = "right",
                   bool default_visible = true,
@@ -277,7 +252,8 @@ public:
                   std::vector<std::pair<std::string,std::string>> module_keybinds = {},
                   const std::string& section = "General",
                   std::function<QJsonObject()> save_state = nullptr,
-                  std::function<void(const QJsonObject&)> restore_state = nullptr);
+                  std::function<void(const QJsonObject&)> restore_state = nullptr,
+                  std::function<bool(TilingOp, int, int)> tiling_ops = nullptr);
 
     // Hide every visible panel (Alt+C), notifying modules via their toggles.
     void clearAllPanels();
@@ -331,8 +307,6 @@ private:
     // Dwindle tree
     void dwindleAdd(TilePanel* panel);
     void dwindleRemove(TilePanel* panel);
-    void dwindleSwap(TilePanel* a, TilePanel* b);
-    DwindleNode* getLeafFor(TilePanel* panel);
     void recalculate();
 
     // Build a column/row sub-tree from a list of panels
@@ -342,13 +316,12 @@ private:
     void enterMoveMode();
     void exitDragMode();
 
+    // True when the focused panel's module consumed the op (see addPanel).
+    bool moduleConsumed(TilingOp op, int dx, int dy);
+
     // Hit-testing / directional navigation helpers
     TilePanel* panelUnderCursor() const;
     TilePanel* nearestPanelInDirection(int dx, int dy) const;
-
-    // Tree serialization helpers (used by layout save/load)
-    QJsonObject serializeTree(DwindleNode* node) const;
-    DwindleNode* deserializeTree(const QJsonObject& obj);
 
     bool anyOverlayVisible() const;
 
@@ -361,6 +334,7 @@ private:
         std::function<QJsonObject()> save_state;
         std::function<void(const QJsonObject&)> restore_state;
         std::vector<std::pair<std::string,std::string>> module_keybinds;
+        std::function<bool(TilingOp, int, int)> tiling_ops;
     };
 
     // Build the hint-partitioned initial tree (left/right/bottom) from panels
@@ -371,9 +345,7 @@ private:
     TilePanel* focused_panel_ = nullptr;
     LayoutStore layout_store_;
 
-    // Dwindle tree data
-    DwindleNode* root_ = nullptr;
-    std::vector<DwindleNode*> all_nodes_;
+    DwindleTree tree_;
 
     QWidget* tiling_area_ = nullptr;
     ModuleSidebar* sidebar_ = nullptr;

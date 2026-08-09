@@ -49,7 +49,8 @@ apt_packages_to_install=(
     "ros-humble-rviz-common"
     "ros-humble-gscam"
     "libgpiod-dev"
-    ""
+    "libpigpio-dev"
+    "libpigpiod-dev"
 )
 
 # Loop through the package list and install missing packages

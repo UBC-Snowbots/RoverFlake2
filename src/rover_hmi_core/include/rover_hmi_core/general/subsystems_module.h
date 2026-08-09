@@ -1,6 +1,6 @@
-// Heart control panel: per-subsystem running state from each per-computer
-// heart (/heart/running_subsystems), start/stop via /heart/request — the same
-// HeartRequest protocol the old GTK dashboard (dashboard_bringup) spoke.
+// Heart control panel: per-subsystem running state from each per-computer heart,
+// start/stop via HeartRequest — same protocol as the old GTK dashboard. Topics and
+// watchdog come from heart.yaml, so retuning it retunes this panel without a rebuild.
 // Host liveness is arrival-time on OUR steady clock — sender stamps are never trusted.
 #pragma once
 #include <QWidget>
@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <map>
+#include <rclcpp/parameter_map.hpp>
 #include "rover_hmi_core/gui_module.h"
 #include "rover_msgs/msg/heart_request.hpp"
 
@@ -45,10 +46,15 @@ private:
     Row& row(HostGroup& g, const std::string& subsystem);
     void applyRunning(Row& r, bool running);
     void checkHostsAlive();
-    // Pre-creates host/subsystem rows from rover_manager's heart.yaml so
-    // controls exist (and work) before any heartbeat arrives. Warns and
-    // no-ops on missing/unparsable file — falls back to dynamic-only.
-    void loadExpectedHosts();
+    void loadExpectedHosts();               // pre-render rows from /heart_* blocks
+    void loadBackendParams();               // topics + watchdog from /dashboard_hmi_node block
+    void loadHeartParams();                 // parse heart.yaml once into heart_params_
+    std::string heartYamlPath() const;      // "" (with a warn) when not found
+
+    rclcpp::ParameterMap heart_params_;     // empty on missing/unparsable file → dynamic-only
+    std::string request_topic_  = "/heart/request";
+    std::string feedback_topic_ = "/heart/running_subsystems";
+    qint64 host_timeout_ms_ = 2500;         // fallback: 2.5 beats at 1 Hz
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr sub_;

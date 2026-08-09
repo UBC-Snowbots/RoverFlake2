@@ -24,6 +24,7 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rover_hmi_core/dwindle_tree.h"  // TilingOp
 
 namespace rover_hmi_core {
 
@@ -65,6 +66,11 @@ public:
     // Override to expose module-specific keybindings shown in the Alt+/ overlay.
     // Each pair is { keys, description }, e.g. { "Alt+R", "Reset motors" }.
     virtual std::vector<std::pair<std::string,std::string>> keybindings() const { return {}; }
+
+    // Override to consume tiling ops (Alt+Arrow chords, Alt+J) while this
+    // module's panel is focused. Return true to consume the op; false lets the
+    // panel tiling handle it as usual. dx/dy is the arrow direction.
+    virtual std::function<bool(TilingOp, int, int)> tilingOpsCallback() { return nullptr; }
 
     // Module state persisted inside saved layouts (e.g. camera grid setup).
     // Return {} when there is nothing to save.

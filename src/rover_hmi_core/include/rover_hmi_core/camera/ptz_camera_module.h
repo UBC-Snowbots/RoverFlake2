@@ -26,7 +26,7 @@ class PtzKeyFilter;
 // pitch_tilt_node consumes x/y (serial gimbal) and the zoom node consumes z.
 //
 // ROS interface (all served by ptz_cam):
-//   sub /ip_camera/image_raw   sensor_msgs/Image      gscam RTSP feed
+//   sub /ip_camera/camera/image_raw   sensor_msgs/Image      gscam RTSP feed
 //   pub /ptz/control           geometry_msgs/Vector3  x=pan, y=tilt, z=zoom; 0 = stop
 class PtzCameraModule : public rover_hmi_core::GuiModule {
 public:
