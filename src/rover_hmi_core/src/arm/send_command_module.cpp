@@ -2,6 +2,7 @@
 // See send_command_module.h for module overview.
 
 #include "send_command_module.h"
+#include <rover_arm_common/motor_config.h>  // HmiDefaults
 #include <rover_hmi_core/catppuccin.h>
 
 #include <QVBoxLayout>
@@ -184,7 +185,6 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     jog_speed_spin_->setRange(0.001, 10.0);
     jog_speed_spin_->setDecimals(3);
     jog_speed_spin_->setSingleStep(0.01);
-    jog_speed_spin_->setValue(0.05);
     jog_speed_spin_->setSuffix(" rev/s");
     jog_row->addWidget(jog_speed_spin_);
 
@@ -218,6 +218,27 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
     QObject::connect(jog_minus, &JogButton::jogReleased, [this]() {
         sendVelocity(targetId(), 0.0);
     });
+
+    // Picking a target loads its default velocity (HmiDefaults in
+    // motor_config.h) into both speed boxes; 0 in the table = jog disabled.
+    auto applyTargetDefaults = [this, jog_minus, jog_plus]() {
+        const int idx = targetId() - 1;
+        if (idx < 0 || idx >= NUM_MOTORS) return;
+        const float def = targetMotorSpace() ? HmiDefaults::motor_velocity_revps[idx]
+                                             : HmiDefaults::axis_velocity_revps[idx];
+        const bool on = def > 0.0f;
+        velocity_spin_->setValue(on ? def : 0.0);
+        if (on) jog_speed_spin_->setValue(def);
+        jog_speed_spin_->setEnabled(on);
+        for (JogButton* b : {jog_minus, jog_plus}) {
+            b->setEnabled(on);
+            b->setToolTip(on ? QString()
+                             : QStringLiteral("Disabled in motor_config.h (HmiDefaults)"));
+        }
+    };
+    QObject::connect(motor_select_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     [applyTargetDefaults](int) { applyTargetDefaults(); });
+    applyTargetDefaults();
 
     auto* zero_sep = new QWidget();
     zero_sep->setFixedHeight(1);

@@ -190,7 +190,7 @@ inline std::vector<MotorConfig> get_arm_configuration() {
 
 namespace AxisConfig {
     // In Revolutions
-    float max_position_rev[NUM_AXES] = {
+    inline float max_position_rev[NUM_AXES] = {
         /*AXIS 1 */   0.4,
         /*AXIS 2 */   0.5,
         /*AXIS 3 */   0.5,
@@ -199,9 +199,9 @@ namespace AxisConfig {
         /*AXIS 6 */   0.5,
         /*AXIS EE */  0.5 };
          
-    float min_position_rev[NUM_AXES] = {0, 0, 0, 0, 0, 0, 0};
+    inline float min_position_rev[NUM_AXES] = {0, 0, 0, 0, 0, 0, 0};
 
-    float homing_speed_revps[NUM_AXES] = { // Rev/s Direction Independent. 
+    inline float homing_speed_revps[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   0.01,
         /*AXIS 2 */   0.01,
         /*AXIS 3 */   0.01,
@@ -210,7 +210,7 @@ namespace AxisConfig {
         /*AXIS 6 */   0.01,
         /*AXIS EE */  0.01 };
 
-    int homing_direction[NUM_AXES] = { // Rev/s Direction Independent. 
+    inline int homing_direction[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   -1,
         /*AXIS 2 */   -1,
         /*AXIS 3 */   -1,
@@ -219,7 +219,7 @@ namespace AxisConfig {
         /*AXIS 6 */   1,
         /*AXIS EE */  -1 };
 
-    float max_running_speed[NUM_AXES] = { // Rev/s Direction Independent. 
+    inline float max_running_speed[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   0.1,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
@@ -228,7 +228,7 @@ namespace AxisConfig {
         /*AXIS 6 */   0.1,
         /*AXIS EE */  0.5 };
 
-    float max_running_accel[NUM_AXES] = { // Rev/s Direction Independent. 
+    inline float max_running_accel[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   0.5,
         /*AXIS 2 */   0.5,
         /*AXIS 3 */   0.5,
@@ -237,7 +237,7 @@ namespace AxisConfig {
         /*AXIS 6 */   0.5,
         /*AXIS EE */  0.5 };
     
-    float idle_position[NUM_AXES] = { // Rev/s Direction Independent.
+    inline float idle_position[NUM_AXES] = { // Rev/s Direction Independent.
         /*AXIS 1 */   0.23,
         /*AXIS 2 */   0.1,
         /*AXIS 3 */   0.1,
@@ -249,7 +249,7 @@ namespace AxisConfig {
     // Limit switches — AUX2 digital input.
     // mask: aux2 GPIO status bitfield, bit0 = aux2.pins.0 (ABS connector pin 2).
     // inverted=false: NC switch to GND (hard 2k pullup) -> pin HIGH = pressed.
-    bool has_limit_switch[NUM_AXES] = {
+    inline bool has_limit_switch[NUM_AXES] = {
         /*AXIS 1 */   true,
         /*AXIS 2 */   true,
         /*AXIS 3 */   true,
@@ -266,7 +266,36 @@ namespace AxisConfig {
     // switch, so the observed transitions were releases, not presses.
     // A3's pin has no pull; if it flakes: conf set aux2.pins.0.pull 2 on motor 3.
     // A5/A6 (wrist): switch on each motor's own aux2 pin 0 (Aaron, 2026-08-05).
-    uint8_t limit_switch_mask[NUM_AXES]     = {1, 2, 1, 1, 1, 1, 0};
-    bool    limit_switch_inverted[NUM_AXES] = {false, false, false, false, false, false, false};
+    inline uint8_t limit_switch_mask[NUM_AXES]     = {1, 2, 1, 1, 1, 1, 0};
+    inline bool    limit_switch_inverted[NUM_AXES] = {false, false, false, false, false, false, false};
 
 };
+
+// =============================================================================
+// HMI defaults — loaded into the Send Command panel's velocity / jog speed
+// boxes whenever a target is picked.  0 = disabled: jog is blocked for that
+// target.  Output-shaft rev/s.
+// =============================================================================
+
+namespace HmiDefaults {
+    // Motor-space targets (index = motor_id - 1).
+    inline float motor_velocity_revps[NUM_MOTORS] = {
+        /*M1*/ 0.02f,
+        /*M2*/ 0.01f,
+        /*M3*/ 0.01f,
+        /*M4*/ 0.0f,     // disabled
+        /*M5*/ 0.10f,
+        /*M6*/ 0.10f,
+        /*M7 EE*/ 0.15f };
+
+    // Axis-space targets (index = axis).  Only A5/A6 (differential wrist) are
+    // selectable as axes in the HMI today; the rest mirror their motors.
+    inline float axis_velocity_revps[NUM_AXES] = {
+        /*A1*/ 0.02f,
+        /*A2*/ 0.01f,
+        /*A3*/ 0.01f,
+        /*A4*/ 0.0f,     // disabled
+        /*A5*/ 0.08f,
+        /*A6*/ 0.08f,
+        /*EE*/ 0.15f };
+}

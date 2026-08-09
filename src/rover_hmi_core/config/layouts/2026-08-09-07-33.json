@@ -1,0 +1,70 @@
+{
+    "modules": {
+        "Cameras": {
+            "grid_cams": [
+                "realsense415"
+            ],
+            "grid_tree": {
+                "isNode": false,
+                "panel": "realsense415"
+            }
+        }
+    },
+    "name": "2026-08-09 07:33",
+    "saved_at": "2026-08-09 07:33",
+    "tree": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Motor Telemetry"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Cameras"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1,
+                        "splitTop": true
+                    },
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "Plots"
+                            },
+                            {
+                                "isNode": false,
+                                "panel": "Send Command"
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1.0221049785614014,
+                        "splitTop": true
+                    }
+                ],
+                "isNode": true,
+                "splitRatio": 0.7925420999526978,
+                "splitTop": false
+            },
+            {
+                "isNode": false,
+                "panel": "Command Log"
+            }
+        ],
+        "isNode": true,
+        "splitRatio": 1.7538166046142578,
+        "splitTop": true
+    },
+    "visible": [
+        "Cameras",
+        "Command Log",
+        "Motor Telemetry",
+        "Plots",
+        "Send Command"
+    ]
+}
