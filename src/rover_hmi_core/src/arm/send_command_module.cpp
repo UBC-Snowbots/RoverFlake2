@@ -13,6 +13,7 @@
 #include <QKeyEvent>
 #include <QApplication>
 #include <QSet>
+#include <QTimer>
 
 #include <algorithm>
 
@@ -66,21 +67,26 @@ void JogButton::mouseReleaseEvent(QMouseEvent* e) {
 //   W/S  A2 shoulder     J/L  A6 wrist roll
 //   A/D  A1 base         U/O  EE
 //   Z/C  A4 elbow twist
+// Each binding carries both meanings of the key: which firmware axis it jogs in
+// joint mode, and which Cartesian twist component it drives in IK mode. Rows of
+// the readout grid are indexed by `axis` in both modes — the axis→twist map is
+// a bijection, so only the row labels change.
 struct KeyJogBinding {
     int         key;
     const char* label;
-    int         axis;
-    double      dir;    // +1 / -1 along the axis
+    int         axis;   // firmware axis (joint mode)
+    double      dir;    // +1 / -1
+    int         twist;  // IkIndex (IK mode), or -1 for none (EE)
 };
 
 static const KeyJogBinding KEY_JOG_BINDINGS[] = {
-    { Qt::Key_A, "A", AXIS_1_INDEX,  +1.0 }, { Qt::Key_D, "D", AXIS_1_INDEX,  -1.0 },
-    { Qt::Key_W, "W", AXIS_2_INDEX,  +1.0 }, { Qt::Key_S, "S", AXIS_2_INDEX,  -1.0 },
-    { Qt::Key_Q, "Q", AXIS_3_INDEX,  +1.0 }, { Qt::Key_E, "E", AXIS_3_INDEX,  -1.0 },
-    { Qt::Key_Z, "Z", AXIS_4_INDEX,  +1.0 }, { Qt::Key_C, "C", AXIS_4_INDEX,  -1.0 },
-    { Qt::Key_I, "I", AXIS_5_INDEX,  +1.0 }, { Qt::Key_K, "K", AXIS_5_INDEX,  -1.0 },
-    { Qt::Key_J, "J", AXIS_6_INDEX,  +1.0 }, { Qt::Key_L, "L", AXIS_6_INDEX,  -1.0 },
-    { Qt::Key_U, "U", AXIS_EE_INDEX, +1.0 }, { Qt::Key_O, "O", AXIS_EE_INDEX, -1.0 },
+    { Qt::Key_A, "A", AXIS_1_INDEX,  +1.0, IK_LIN_Y_INDEX }, { Qt::Key_D, "D", AXIS_1_INDEX,  -1.0, IK_LIN_Y_INDEX },
+    { Qt::Key_W, "W", AXIS_2_INDEX,  +1.0, IK_LIN_X_INDEX }, { Qt::Key_S, "S", AXIS_2_INDEX,  -1.0, IK_LIN_X_INDEX },
+    { Qt::Key_Q, "Q", AXIS_3_INDEX,  +1.0, IK_LIN_Z_INDEX }, { Qt::Key_E, "E", AXIS_3_INDEX,  -1.0, IK_LIN_Z_INDEX },
+    { Qt::Key_Z, "Z", AXIS_4_INDEX,  +1.0, IK_ANG_X_INDEX }, { Qt::Key_C, "C", AXIS_4_INDEX,  -1.0, IK_ANG_X_INDEX },
+    { Qt::Key_I, "I", AXIS_5_INDEX,  +1.0, IK_ANG_Y_INDEX }, { Qt::Key_K, "K", AXIS_5_INDEX,  -1.0, IK_ANG_Y_INDEX },
+    { Qt::Key_J, "J", AXIS_6_INDEX,  +1.0, IK_ANG_Z_INDEX }, { Qt::Key_L, "L", AXIS_6_INDEX,  -1.0, IK_ANG_Z_INDEX },
+    { Qt::Key_U, "U", AXIS_EE_INDEX, +1.0, -1             }, { Qt::Key_O, "O", AXIS_EE_INDEX, -1.0, -1             },
 };
 constexpr int NUM_KEY_JOG_BINDINGS = (int)(sizeof(KEY_JOG_BINDINGS) / sizeof(KEY_JOG_BINDINGS[0]));
 
@@ -88,6 +94,18 @@ static const char* const KEY_JOG_AXIS_NAMES[NUM_AXES] = {
     "A1 base", "A2 shoulder", "A3 elbow", "A4 twist",
     "A5 wrist pitch", "A6 wrist roll", "EE",
 };
+
+// Same rows, Cartesian meaning. EE keeps jogging the EE axis directly in IK
+// mode — it is not part of the Servo planning group.
+static const char* const KEY_JOG_TWIST_NAMES[NUM_AXES] = {
+    "lin Y (left/right)", "lin X (fwd/back)", "lin Z (up/down)", "ang X (roll)",
+    "ang Y (pitch)", "ang Z (yaw)", "EE (direct)",
+};
+
+// MoveIt Servo's Cartesian input. Mirrors ArmConstants::servo_ik_topic in
+// arm_control/include/armControlParams.h — duplicated rather than included
+// because rover_hmi_core does not depend on arm_control.
+static constexpr const char* SERVO_TWIST_TOPIC = "/arm_moveit_control/delta_twist_cmds";
 
 // An axis with a 0 default in HmiDefaults is disabled in the config table; its
 // keys are shown greyed and never contribute a velocity (same rule the +/- jog
@@ -542,14 +560,47 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     ctl->addStretch();
     layout->addLayout(ctl);
 
+    // Mode swap: the same keys either jog joints directly (ArmCommand) or feed
+    // a Cartesian twist to MoveIt Servo, which solves IK and emits joint
+    // velocities of its own.
+    auto* mode_row = new QHBoxLayout();
+    mode_row->setSpacing(8);
+    auto* mode_lbl = new QLabel("Mode:");
+    mode_lbl->setFont(font);
+    mode_row->addWidget(mode_lbl);
+
+    key_jog_mode_ = new QComboBox();
+    key_jog_mode_->setFont(font);
+    key_jog_mode_->addItem("Joint jog (FK)", 0);
+    key_jog_mode_->addItem("Cartesian (IK — needs servo)", 1);
+    mode_row->addWidget(key_jog_mode_);
+
+    auto* frame_lbl = new QLabel("Frame:");
+    frame_lbl->setFont(font);
+    mode_row->addWidget(frame_lbl);
+
+    // Servo transforms the twist from whatever frame this names, so it has to
+    // be a real link in the loaded URDF — which differs between the v2 and v3
+    // arm descriptions. Editable so it can be corrected without a rebuild.
+    ik_frame_ = new QComboBox();
+    ik_frame_->setFont(font);
+    ik_frame_->setEditable(true);
+    ik_frame_->addItems({"base_link", "link_0", "ee_base_link", "link_tt"});
+    ik_frame_->setToolTip("header.frame_id of the twist — must exist in TF");
+    mode_row->addWidget(ik_frame_);
+    mode_row->addStretch();
+    layout->addLayout(mode_row);
+
     // Live readout of what is held — display only, nothing to click.
     auto* chips = new QWidget();
     auto* grid = new QGridLayout(chips);
     grid->setSpacing(6);
     grid->setContentsMargins(0, 0, 0, 0);
+    key_jog_row_names_.assign(NUM_AXES, nullptr);
     for (int a = 0; a < NUM_AXES; a++) {
         auto* name = new QLabel(KEY_JOG_AXIS_NAMES[a]);
         name->setFont(QFont("monospace", theme::FontSizeSm));
+        key_jog_row_names_[a] = name;
         grid->addWidget(name, a, 2);
     }
     key_jog_chips_.assign(NUM_KEY_JOG_BINDINGS, nullptr);
@@ -576,8 +627,17 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
     layout->addWidget(sep);
 
+    // Servo halts on incoming_command_timeout (1 s in rover_servo_params), and
+    // its publish_period is 0.034 s, so the twist has to be streamed rather
+    // than sent on key change like the joint-mode command is.
+    ik_timer_ = new QTimer(owner);
+    ik_timer_->setInterval(30);
+    QObject::connect(ik_timer_, &QTimer::timeout, [this]() { publishKeyJogTwist(); });
+
     QObject::connect(key_jog_arm_btn_, &QPushButton::toggled,
                      [this](bool on) { setKeyJogArmed(on); });
+    QObject::connect(key_jog_mode_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     [this](int) { applyKeyJogMode(); });
     QObject::connect(key_jog_filter_, &KeyJogFilter::keysChanged, [this]() {
         restyleKeyJogChips();
         publishKeyJog();
@@ -595,13 +655,43 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     });
 
     setKeyJogArmed(false);
+    applyKeyJogMode();
+}
+
+bool SendCommandModule::keyJogIkMode() const {
+    return key_jog_mode_ && key_jog_mode_->currentData().toInt() == 1;
+}
+
+// Switching mode mid-jog would leave the other pipeline latched at its last
+// command, so release everything and let both paths publish their stop.
+void SendCommandModule::applyKeyJogMode() {
+    if (!key_jog_filter_) return;
+    const bool ik = keyJogIkMode();
+
+    key_jog_filter_->releaseAll();
+    publishKeyJog();
+    if (twist_pub_) publishKeyJogTwist();   // zero twist
+
+    for (int a = 0; a < NUM_AXES && a < (int)key_jog_row_names_.size(); a++)
+        key_jog_row_names_[a]->setText(ik ? KEY_JOG_TWIST_NAMES[a] : KEY_JOG_AXIS_NAMES[a]);
+
+    if (ik_frame_) ik_frame_->setEnabled(ik);
+    if (ik_timer_) {
+        if (ik && key_jog_filter_->armed()) ik_timer_->start();
+        else                                ik_timer_->stop();
+    }
+    restyleKeyJogChips();
 }
 
 void SendCommandModule::restyleKeyJogChips() {
     const bool armed = key_jog_filter_ && key_jog_filter_->armed();
+    const bool ik = keyJogIkMode();
     for (int b = 0; b < (int)key_jog_chips_.size() && b < NUM_KEY_JOG_BINDINGS; b++) {
         const auto& bind = KEY_JOG_BINDINGS[b];
-        const bool enabled = keyJogAxisEnabled(bind.axis);
+        // In IK mode the twist keys are always live — Servo decides which
+        // joints move, so a per-axis HmiDefaults of 0 doesn't disable them.
+        // The EE keys stay direct-drive in both modes, so they keep that gate.
+        const bool enabled = (ik && bind.twist >= 0) ? true : keyJogAxisEnabled(bind.axis);
         const bool down = enabled && armed && key_jog_filter_->isHeld(bind.key);
         const char* fg = !enabled ? theme::TextDim
                                   : (down ? theme::Bg : (armed ? theme::Text : theme::TextDim));
@@ -622,6 +712,15 @@ void SendCommandModule::setKeyJogArmed(bool on) {
     if (!key_jog_filter_) return;
     key_jog_filter_->setArmed(on);   // disarming releases → keysChanged → stop
     publishKeyJog();                 // and again in case nothing was held
+
+    if (ik_timer_) {
+        if (on && keyJogIkMode()) {
+            ik_timer_->start();
+        } else {
+            ik_timer_->stop();
+            if (twist_pub_) publishKeyJogTwist();   // one zero twist on the way out
+        }
+    }
 
     key_jog_arm_btn_->setText(on ? "KEYBOARD ARMED" : "ARM KEYBOARD");
     key_jog_arm_btn_->setStyleSheet(
@@ -657,10 +756,16 @@ void SendCommandModule::publishKeyJog() {
     msg.cmd_value = CMD_SPACE_AXIS;   // wrist stays differential; never motor space
     msg.velocities.assign(NUM_MOTORS, NAN);
 
+    // In IK mode the arm joints belong to Servo — this path only carries the
+    // end effector, which is outside the planning group. Touching the other
+    // axes here would fight Servo's own joint velocities.
+    const bool ik = keyJogIkMode();
+
     QStringList active;
     bool moving = false;
     for (int a = 0; a < NUM_AXES && a < NUM_MOTORS; a++) {
         if (!keyJogAxisEnabled(a)) continue;
+        if (ik && a != AXIS_EE_INDEX) continue;
         const double rev_s = dirs[a] * HmiDefaults::axis_velocity_revps[a] * scale;
         msg.velocities[a] = rev_s * 360.0;   // wire contract is deg/s, UI is rev/s
         if (rev_s != 0.0) {
@@ -680,6 +785,51 @@ void SendCommandModule::publishKeyJog() {
                   : QStringLiteral("keyjog> release (all axes 0)"));
 }
 
+// Cartesian mode: publish the held keys as a twist for MoveIt Servo. Servo's
+// command_in_type is "unitless" ([-1:1] scaled by its own linear/rotational
+// scale params), so the speed spin box is clamped into that range rather than
+// treated as rev/s.
+//
+// Unlike the joint path this runs on a timer while armed, including when
+// nothing is held: a steady zero twist keeps Servo alive without motion, and
+// stopping the stream entirely is what triggers its halt behaviour.
+void SendCommandModule::publishKeyJogTwist() {
+    if (!twist_pub_ || !key_jog_filter_ || !key_jog_scale_) return;
+
+    std::array<double, 6> t{};
+    t.fill(0.0);
+    if (key_jog_filter_->armed()) {
+        for (const auto& bind : KEY_JOG_BINDINGS) {
+            if (bind.twist < 0 || bind.twist >= 6) continue;
+            if (key_jog_filter_->isHeld(bind.key)) t[bind.twist] += bind.dir;
+        }
+    }
+    const double scale = std::clamp(key_jog_scale_->value(), 0.0, 1.0);
+    for (double& v : t) v = std::clamp(v, -1.0, 1.0) * scale;
+
+    geometry_msgs::msg::TwistStamped msg;
+    msg.header.frame_id = ik_frame_ ? ik_frame_->currentText().toStdString() : "base_link";
+    if (node_) msg.header.stamp = node_->now();
+    msg.twist.linear.x  = t[IK_LIN_X_INDEX];
+    msg.twist.linear.y  = t[IK_LIN_Y_INDEX];
+    msg.twist.linear.z  = t[IK_LIN_Z_INDEX];
+    msg.twist.angular.x = t[IK_ANG_X_INDEX];
+    msg.twist.angular.y = t[IK_ANG_Y_INDEX];
+    msg.twist.angular.z = t[IK_ANG_Z_INDEX];
+    twist_pub_->publish(msg);
+
+    // Log only on transitions — this fires 33x/s and would drown the log.
+    const bool moving = std::any_of(t.begin(), t.end(), [](double v) { return v != 0.0; });
+    if (moving != ik_twist_moving_) {
+        ik_twist_moving_ = moving;
+        logCmd(moving ? QString("ik> twist %1 [%2 %3 %4 | %5 %6 %7]")
+                            .arg(QString::fromStdString(msg.header.frame_id))
+                            .arg(t[0], 0, 'f', 2).arg(t[1], 0, 'f', 2).arg(t[2], 0, 'f', 2)
+                            .arg(t[3], 0, 'f', 2).arg(t[4], 0, 'f', 2).arg(t[5], 0, 'f', 2)
+                      : QStringLiteral("ik> twist 0"));
+    }
+}
+
 int SendCommandModule::targetId() const {
     const int d = motor_select_ ? motor_select_->currentData().toInt() : 0;
     return d > 100 ? d - 100 : d;
@@ -690,9 +840,13 @@ bool SendCommandModule::targetMotorSpace() const {
 }
 
 void SendCommandModule::setNode(rclcpp::Node::SharedPtr node) {
+    node_ = node;
     auto qos = rclcpp::QoS(1).reliable().durability_volatile();
     cmd_pub_ = node->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
     log_pub_ = node->create_publisher<std_msgs::msg::String>("/arm/hmi_log", qos);
+    // Servo's own subscriber is plain KeepLast(10); a stream, not latched state.
+    twist_pub_ = node->create_publisher<geometry_msgs::msg::TwistStamped>(
+        SERVO_TWIST_TOPIC, rclcpp::QoS(10));
 }
 
 // Publish a human-readable description of a command to /arm/hmi_log so

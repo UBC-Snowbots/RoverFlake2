@@ -33,6 +33,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
+
+class QTimer;
 
 constexpr int NUM_ZERO_AXES = NUM_MOTORS;
 
@@ -63,6 +66,12 @@ private:
     void publishKeyJog();          // reads the filter's held keys, publishes once
     void setKeyJogArmed(bool on);
     void restyleKeyJogChips();     // held-key readout
+    void applyKeyJogMode();        // relabels rows, starts/stops the IK timer
+    bool keyJogIkMode() const;
+    // IK mode: the same keys become a Cartesian twist for MoveIt Servo, which
+    // needs a continuous stream (it halts after incoming_command_timeout), so
+    // this is timer-driven rather than published on key change.
+    void publishKeyJogTwist();
     void sendStop(int motor_id);   // masked CMD_STOP: real "d stop" for one target
     void sendStopAll();
     void sendZeroChecked();
@@ -78,6 +87,7 @@ private:
 
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr cmd_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr log_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_pub_;
 
     QComboBox* motor_select_ = nullptr;
     QDoubleSpinBox* position_spin_ = nullptr;
@@ -91,6 +101,12 @@ private:
     QPushButton*    key_jog_arm_btn_ = nullptr;
     QDoubleSpinBox* key_jog_scale_   = nullptr;
     QLabel*         key_jog_status_  = nullptr;
+    QComboBox*      key_jog_mode_    = nullptr;  // joint (FK) vs Cartesian (IK)
+    QComboBox*      ik_frame_        = nullptr;  // twist header.frame_id
+    QTimer*         ik_timer_        = nullptr;
     std::vector<QLabel*> key_jog_chips_;
+    std::vector<QLabel*> key_jog_row_names_;     // relabelled per mode
     bool            key_jog_moving_  = false;  // true → an all-zero stop is owed
+    bool            ik_twist_moving_ = false;  // log twist transitions only
+    rclcpp::Node::SharedPtr node_;             // for twist header stamps
 };
