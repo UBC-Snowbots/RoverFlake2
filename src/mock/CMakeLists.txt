@@ -17,6 +17,8 @@ find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(rover_utils REQUIRED)
+find_package(rover_msgs REQUIRED)
+find_package(rover_arm_common REQUIRED)
 
 
 include_directories(
@@ -29,6 +31,10 @@ include_directories(
 add_executable(mock_camera_node camera/src/mock_camera.cpp camera/include/mock_camera.h)
 ament_target_dependencies(mock_camera_node rclcpp sensor_msgs cv_bridge image_transport rover_utils)
 target_link_libraries(mock_camera_node ${OpenCV_LIBRARIES})
+
+# Simulated arm driver: /arm/command -> /joint_states (see arm/src/mock_arm.cpp)
+add_executable(mock_arm_node arm/src/mock_arm.cpp)
+ament_target_dependencies(mock_arm_node rclcpp sensor_msgs rover_msgs rover_arm_common)
 
 
 install(
@@ -43,8 +49,9 @@ install (
 )
 
 install(
-  TARGETS 
-  mock_camera_node 
+  TARGETS
+  mock_camera_node
+  mock_arm_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

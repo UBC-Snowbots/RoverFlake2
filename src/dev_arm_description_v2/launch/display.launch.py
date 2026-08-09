@@ -13,6 +13,11 @@ Runs either from the source tree or from the installed share directory:
 
     ros2 launch src/dev_arm_description_v2/launch/display.launch.py   # no build
     ros2 launch dev_arm_description_v2 display.launch.py              # installed
+
+Pass gui:=false when something else publishes /joint_states (e.g. the mock_arm
+node driven by the HMI) -- two publishers on that topic fight each other:
+
+    ros2 launch src/dev_arm_description_v2/launch/display.launch.py gui:=false
 """
 
 import os
@@ -41,21 +46,13 @@ def _launch_setup(context, *args, **kwargs):
 
     rviz_args = ["-d", rviz_config] if os.path.isfile(rviz_config) else []
 
-    return [
+    nodes = [
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",
             name="robot_state_publisher",
             output="screen",
             parameters=[{"robot_description": robot_description}],
-        ),
-        # One slider per non-fixed joint; also the easiest way to dial in a
-        # specific pose deliberately rather than by dragging.
-        Node(
-            package="joint_state_publisher_gui",
-            executable="joint_state_publisher_gui",
-            name="joint_state_publisher_gui",
-            output="screen",
         ),
         Node(
             package="rviz2",
@@ -65,6 +62,16 @@ def _launch_setup(context, *args, **kwargs):
             arguments=rviz_args,
         ),
     ]
+    # One slider per non-fixed joint; also the easiest way to dial in a
+    # specific pose deliberately rather than by dragging.
+    if LaunchConfiguration("gui").perform(context).lower() != "false":
+        nodes.append(Node(
+            package="joint_state_publisher_gui",
+            executable="joint_state_publisher_gui",
+            name="joint_state_publisher_gui",
+            output="screen",
+        ))
+    return nodes
 
 
 def generate_launch_description():
@@ -73,6 +80,12 @@ def generate_launch_description():
             "urdf",
             default_value=_default_urdf(),
             description="Absolute path to the URDF to display",
+        ),
+        DeclareLaunchArgument(
+            "gui",
+            default_value="true",
+            description="Start joint_state_publisher_gui (set false when "
+                        "another node publishes /joint_states)",
         ),
         OpaqueFunction(function=_launch_setup),
     ])

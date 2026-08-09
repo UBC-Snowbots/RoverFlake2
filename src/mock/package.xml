@@ -16,6 +16,9 @@
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
   <depend>rover_utils</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rover_msgs</depend>
+  <depend>rover_arm_common</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
