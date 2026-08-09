@@ -10,6 +10,11 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QFont>
+#include <QKeyEvent>
+#include <QFocusEvent>
+#include <QSet>
+
+#include <algorithm>
 
 #include <pluginlib/class_list_macros.hpp>
 
@@ -42,6 +47,208 @@ void JogButton::mousePressEvent(QMouseEvent* e) {
 void JogButton::mouseReleaseEvent(QMouseEvent* e) {
     QPushButton::mouseReleaseEvent(e);
     emit jogReleased();
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard jog
+// ---------------------------------------------------------------------------
+// One key per direction per axis. Several keys can be down at once, and the
+// resulting velocities go out in a SINGLE CMD_ABS_VEL message — the driver's
+// commandCallback loops over velocities[] and applies every non-NaN entry, so
+// N held keys means N axes moving together. (Publishing one message per axis
+// would not work: /arm/command is KeepLast(1), so all but the last would be
+// dropped in flight.)
+//
+// Bindings are laid out as a left-hand cluster for the arm proper and a
+// right-hand cluster for the wrist + end effector:
+//
+//   Q/E  A3 elbow        I/K  A5 wrist pitch
+//   W/S  A2 shoulder     J/L  A6 wrist roll
+//   A/D  A1 base         U/O  EE
+//   Z/C  A4 elbow twist
+struct KeyJogBinding {
+    int         key;
+    const char* label;
+    int         axis;
+    double      dir;    // +1 / -1 along the axis
+};
+
+static const KeyJogBinding KEY_JOG_BINDINGS[] = {
+    { Qt::Key_A, "A", AXIS_1_INDEX,  +1.0 }, { Qt::Key_D, "D", AXIS_1_INDEX,  -1.0 },
+    { Qt::Key_W, "W", AXIS_2_INDEX,  +1.0 }, { Qt::Key_S, "S", AXIS_2_INDEX,  -1.0 },
+    { Qt::Key_Q, "Q", AXIS_3_INDEX,  +1.0 }, { Qt::Key_E, "E", AXIS_3_INDEX,  -1.0 },
+    { Qt::Key_Z, "Z", AXIS_4_INDEX,  +1.0 }, { Qt::Key_C, "C", AXIS_4_INDEX,  -1.0 },
+    { Qt::Key_I, "I", AXIS_5_INDEX,  +1.0 }, { Qt::Key_K, "K", AXIS_5_INDEX,  -1.0 },
+    { Qt::Key_J, "J", AXIS_6_INDEX,  +1.0 }, { Qt::Key_L, "L", AXIS_6_INDEX,  -1.0 },
+    { Qt::Key_U, "U", AXIS_EE_INDEX, +1.0 }, { Qt::Key_O, "O", AXIS_EE_INDEX, -1.0 },
+};
+constexpr int NUM_KEY_JOG_BINDINGS = (int)(sizeof(KEY_JOG_BINDINGS) / sizeof(KEY_JOG_BINDINGS[0]));
+
+static const char* const KEY_JOG_AXIS_NAMES[NUM_AXES] = {
+    "A1 base", "A2 shoulder", "A3 elbow", "A4 twist",
+    "A5 wrist pitch", "A6 wrist roll", "EE",
+};
+
+// An axis with a 0 default in HmiDefaults is disabled in the config table; its
+// keys are shown greyed and never contribute a velocity (same rule the +/- jog
+// buttons already follow).
+static bool keyJogAxisEnabled(int axis) {
+    return axis >= 0 && axis < NUM_AXES && HmiDefaults::axis_velocity_revps[axis] > 0.0f;
+}
+
+// KeyJogPad — a focusable key-capture surface. It owns nothing but the held-key
+// set and the chip highlighting; the module does the publishing.
+//
+// Key events only reach a focused widget, which is exactly the safety property
+// we want: typing into the spin boxes above must never jog the arm. The pad
+// paints a green border while it holds focus so the operator can see whether
+// keys will land.
+class KeyJogPad : public QWidget {
+    Q_OBJECT
+public:
+    explicit KeyJogPad(QWidget* parent = nullptr);
+
+    // Sum of the held directions per axis, -1/0/+1. Holding both keys of a
+    // pair cancels to 0 rather than picking a winner.
+    std::array<double, NUM_AXES> directions() const;
+    bool anyHeld() const { return !held_.isEmpty(); }
+    void releaseAll();          // clears held keys and emits keysChanged()
+
+signals:
+    void keysChanged();
+    void stopAllRequested();    // Space
+    void focusLost();
+    void focusGained();
+
+protected:
+    void keyPressEvent(QKeyEvent* e) override;
+    void keyReleaseEvent(QKeyEvent* e) override;
+    void focusInEvent(QFocusEvent* e) override;
+    void focusOutEvent(QFocusEvent* e) override;
+    void hideEvent(QHideEvent* e) override;
+
+private:
+    void restyleChips();
+    QSet<int> held_;
+    std::array<QLabel*, NUM_KEY_JOG_BINDINGS> chips_{};
+};
+
+KeyJogPad::KeyJogPad(QWidget* parent) : QWidget(parent) {
+    setFocusPolicy(Qt::StrongFocus);
+    // A bare QWidget ignores stylesheet borders/backgrounds without this.
+    setAttribute(Qt::WA_StyledBackground, true);
+
+    auto* grid = new QGridLayout(this);
+    grid->setSpacing(6);
+    grid->setContentsMargins(8, 8, 8, 8);
+
+    // One row per axis: [-key] [+key] [axis name].
+    for (int a = 0; a < NUM_AXES; a++) {
+        auto* name = new QLabel(KEY_JOG_AXIS_NAMES[a]);
+        name->setFont(QFont("monospace", theme::FontSizeSm));
+        grid->addWidget(name, a, 2);
+    }
+    for (int b = 0; b < NUM_KEY_JOG_BINDINGS; b++) {
+        const auto& bind = KEY_JOG_BINDINGS[b];
+        auto* chip = new QLabel(QString("%1 %2").arg(bind.dir > 0 ? "+" : "−").arg(bind.label));
+        chip->setFont(QFont("monospace", theme::FontSize, QFont::Bold));
+        chip->setAlignment(Qt::AlignCenter);
+        chip->setMinimumWidth(64);
+        chips_[b] = chip;
+        grid->addWidget(chip, bind.axis, bind.dir > 0 ? 1 : 0);
+    }
+    grid->setColumnStretch(2, 1);
+    restyleChips();
+}
+
+void KeyJogPad::restyleChips() {
+    for (int b = 0; b < NUM_KEY_JOG_BINDINGS; b++) {
+        const auto& bind = KEY_JOG_BINDINGS[b];
+        const bool enabled = keyJogAxisEnabled(bind.axis);
+        const bool down = enabled && held_.contains(bind.key);
+        const char* fg = !enabled ? theme::TextDim : (down ? theme::Bg : theme::Text);
+        const char* bg = down ? theme::Green : theme::Bg;
+        const char* border = !enabled ? theme::BorderDim : (down ? theme::Green : theme::Border);
+        chips_[b]->setStyleSheet(
+            QString("QLabel { color: %1; background: %2; border: 1px solid %3; "
+                    "border-radius: 6px; padding: 4px 8px; }")
+                .arg(fg).arg(bg).arg(border));
+        chips_[b]->setToolTip(enabled ? QString()
+                                      : QStringLiteral("Disabled in motor_config.h (HmiDefaults)"));
+    }
+    setStyleSheet(QString("KeyJogPad { border: 2px solid %1; border-radius: 8px; }")
+                      .arg(hasFocus() ? theme::Green : theme::BorderDim));
+}
+
+std::array<double, NUM_AXES> KeyJogPad::directions() const {
+    std::array<double, NUM_AXES> dirs{};
+    dirs.fill(0.0);
+    for (const auto& bind : KEY_JOG_BINDINGS) {
+        if (!keyJogAxisEnabled(bind.axis)) continue;
+        if (held_.contains(bind.key)) dirs[bind.axis] += bind.dir;
+    }
+    for (double& d : dirs) d = std::clamp(d, -1.0, 1.0);
+    return dirs;
+}
+
+void KeyJogPad::releaseAll() {
+    if (held_.isEmpty()) return;
+    held_.clear();
+    restyleChips();
+    emit keysChanged();
+}
+
+// isAutoRepeat() is the crux of hold-to-move on X11/Wayland: a held key
+// generates a continuous release/press stream, and treating those as real
+// releases would make the axis stutter to a stop between repeats.
+void KeyJogPad::keyPressEvent(QKeyEvent* e) {
+    if (e->isAutoRepeat()) { e->accept(); return; }
+
+    if (e->key() == Qt::Key_Space) { releaseAll(); emit stopAllRequested(); e->accept(); return; }
+    if (e->key() == Qt::Key_Escape) { releaseAll(); e->accept(); return; }
+
+    for (const auto& bind : KEY_JOG_BINDINGS) {
+        if (bind.key != e->key()) continue;
+        if (held_.contains(e->key())) { e->accept(); return; }
+        held_.insert(e->key());
+        restyleChips();
+        emit keysChanged();
+        e->accept();
+        return;
+    }
+    QWidget::keyPressEvent(e);
+}
+
+void KeyJogPad::keyReleaseEvent(QKeyEvent* e) {
+    if (e->isAutoRepeat()) { e->accept(); return; }
+    if (held_.remove(e->key())) {
+        restyleChips();
+        emit keysChanged();
+        e->accept();
+        return;
+    }
+    QWidget::keyReleaseEvent(e);
+}
+
+void KeyJogPad::focusInEvent(QFocusEvent* e) {
+    QWidget::focusInEvent(e);
+    restyleChips();
+    emit focusGained();
+}
+
+// Losing focus (alt-tab, clicking another panel) never delivers the key-up
+// events, so the held set would stay stale and the arm would keep moving.
+// Drop everything and let the module publish the stop.
+void KeyJogPad::focusOutEvent(QFocusEvent* e) {
+    QWidget::focusOutEvent(e);
+    releaseAll();
+    restyleChips();
+    emit focusLost();
+}
+
+void KeyJogPad::hideEvent(QHideEvent* e) {
+    QWidget::hideEvent(e);
+    releaseAll();
 }
 
 QWidget* SendCommandModule::createWidget(QWidget* parent) {
@@ -318,8 +525,138 @@ QWidget* SendCommandModule::createWidget(QWidget* parent) {
             zero_checks_[i]->setChecked(any_unchecked);
     });
 
+    buildKeyJogSection(layout);
+
     layout->addStretch();
     return widget;
+}
+
+void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout) {
+    QFont font("monospace", theme::FontSize);
+    QFont fontBold("monospace", theme::FontSize, QFont::Bold);
+
+    auto* sep = new QWidget();
+    sep->setFixedHeight(1);
+    sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
+    layout->addWidget(sep);
+
+    auto* title = new QLabel("Keyboard Jog (hold several keys → several axes)");
+    title->setFont(fontBold);
+    title->setStyleSheet(QString("color: %1;").arg(theme::Text));
+    layout->addWidget(title);
+
+    auto* ctl = new QHBoxLayout();
+    ctl->setSpacing(8);
+
+    key_jog_arm_ = new QCheckBox("Arm");
+    key_jog_arm_->setFont(fontBold);
+    key_jog_arm_->setToolTip("Enable keyboard jogging, then keep the pad focused");
+    ctl->addWidget(key_jog_arm_);
+
+    auto* scale_lbl = new QLabel("Speed x");
+    scale_lbl->setFont(font);
+    ctl->addWidget(scale_lbl);
+
+    // Scale on top of the per-axis HmiDefaults velocity, so one control trims
+    // the whole arm without flattening the (very different) per-axis limits.
+    key_jog_scale_ = new QDoubleSpinBox();
+    key_jog_scale_->setFont(font);
+    key_jog_scale_->setRange(0.05, 2.0);
+    key_jog_scale_->setDecimals(2);
+    key_jog_scale_->setSingleStep(0.05);
+    key_jog_scale_->setValue(1.0);
+    ctl->addWidget(key_jog_scale_);
+
+    key_jog_status_ = new QLabel();
+    key_jog_status_->setFont(font);
+    ctl->addWidget(key_jog_status_);
+    ctl->addStretch();
+    layout->addLayout(ctl);
+
+    key_jog_pad_ = new KeyJogPad();
+    key_jog_pad_->setEnabled(false);
+    layout->addWidget(key_jog_pad_);
+
+    auto* hint = new QLabel("Click the pad to focus · Space = D-STOP ALL · Esc = release keys");
+    hint->setFont(QFont("monospace", theme::FontSizeSm));
+    hint->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
+    layout->addWidget(hint);
+
+    QObject::connect(key_jog_arm_, &QCheckBox::toggled,
+                     [this](bool on) { setKeyJogArmed(on); });
+    QObject::connect(key_jog_pad_, &KeyJogPad::keysChanged,
+                     [this]() { publishKeyJog(); });
+    QObject::connect(key_jog_pad_, &KeyJogPad::focusLost, [this]() {
+        publishKeyJog();   // pad already dropped the held keys → this stops the arm
+        if (!key_jog_arm_->isChecked()) return;
+        key_jog_status_->setText("NO FOCUS — click pad");
+        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Yellow));
+    });
+    QObject::connect(key_jog_pad_, &KeyJogPad::focusGained, [this]() {
+        if (!key_jog_arm_->isChecked()) return;
+        key_jog_status_->setText("ARMED");
+        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Green));
+    });
+    QObject::connect(key_jog_pad_, &KeyJogPad::stopAllRequested,
+                     [this]() { sendStopAll(); });
+
+    setKeyJogArmed(false);
+}
+
+void SendCommandModule::setKeyJogArmed(bool on) {
+    if (!key_jog_pad_) return;
+    key_jog_pad_->setEnabled(on);
+    if (on) {
+        key_jog_pad_->setFocus(Qt::OtherFocusReason);
+        key_jog_status_->setText("ARMED");
+        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::Green));
+    } else {
+        key_jog_pad_->releaseAll();   // emits keysChanged → publishes the stop
+        publishKeyJog();              // and again in case nothing was held
+        key_jog_status_->setText("disarmed");
+        key_jog_status_->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
+    }
+}
+
+// One message, every mapped axis. Axes with no key down are commanded to 0
+// rather than left NaN, so releasing one key of a multi-key hold stops just
+// that axis while the others keep going.
+//
+// Once everything is released we publish a final all-zero message and then go
+// quiet — the driver re-sends its active command every poll tick to feed the
+// moteus watchdog, so there is no need to stream while keys are held either.
+void SendCommandModule::publishKeyJog() {
+    if (!cmd_pub_ || !key_jog_pad_ || !key_jog_scale_) return;
+
+    const auto dirs = key_jog_pad_->directions();
+    const double scale = key_jog_scale_->value();
+
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ABS_VEL;
+    msg.cmd_value = CMD_SPACE_AXIS;   // wrist stays differential; never motor space
+    msg.velocities.assign(NUM_MOTORS, NAN);
+
+    QStringList active;
+    bool moving = false;
+    for (int a = 0; a < NUM_AXES && a < NUM_MOTORS; a++) {
+        if (!keyJogAxisEnabled(a)) continue;
+        const double rev_s = dirs[a] * HmiDefaults::axis_velocity_revps[a] * scale;
+        msg.velocities[a] = rev_s * 360.0;   // wire contract is deg/s, UI is rev/s
+        if (rev_s != 0.0) {
+            moving = true;
+            active << QString("A%1 %2%3").arg(a + 1)
+                          .arg(rev_s > 0 ? "+" : "").arg(rev_s, 0, 'f', 3);
+        }
+    }
+
+    // Nothing held and nothing was moving → don't spam a stop on every stray
+    // keystroke (Esc, an unbound key, re-arming).
+    if (!moving && !key_jog_moving_) return;
+    key_jog_moving_ = moving;
+
+    cmd_pub_->publish(msg);
+    logCmd(moving ? QString("keyjog> %1").arg(active.join(", "))
+                  : QStringLiteral("keyjog> release (all axes 0)"));
 }
 
 int SendCommandModule::targetId() const {

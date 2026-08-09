@@ -23,6 +23,7 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QLabel>
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <array>
@@ -34,9 +35,11 @@
 
 constexpr int NUM_ZERO_AXES = NUM_MOTORS;
 
-// JogButton defined in send_command_module.cpp (Q_OBJECT in .cpp avoids
-// AUTOMOC header-scanning issues with private include directories).
+// JogButton and KeyJogPad are defined in send_command_module.cpp (Q_OBJECT in
+// the .cpp avoids AUTOMOC header-scanning issues with private include
+// directories).
 class JogButton;
+class KeyJogPad;
 
 class SendCommandModule : public rover_hmi_core::GuiModule {
 public:
@@ -51,6 +54,11 @@ public:
 private:
     void sendPosition(int motor_id, double pos, double vel);
     void sendVelocity(int motor_id, double velocity);
+    // Keyboard jog: one CMD_ABS_VEL carrying every mapped axis at once, so
+    // several held keys move several axes simultaneously.
+    void buildKeyJogSection(class QVBoxLayout* layout);
+    void publishKeyJog();          // reads the pad's held keys, publishes once
+    void setKeyJogArmed(bool on);
     void sendStop(int motor_id);   // masked CMD_STOP: real "d stop" for one target
     void sendStopAll();
     void sendZeroChecked();
@@ -74,4 +82,10 @@ private:
     QCheckBox* pos_enable_ = nullptr;
     QCheckBox* vel_enable_ = nullptr;
     std::array<QCheckBox*, NUM_ZERO_AXES> zero_checks_{};
+
+    KeyJogPad*      key_jog_pad_    = nullptr;
+    QCheckBox*      key_jog_arm_    = nullptr;
+    QDoubleSpinBox* key_jog_scale_  = nullptr;
+    QLabel*         key_jog_status_ = nullptr;
+    bool            key_jog_moving_ = false;  // true → an all-zero stop is owed
 };
