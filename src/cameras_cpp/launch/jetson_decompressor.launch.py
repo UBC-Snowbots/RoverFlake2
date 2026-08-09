@@ -1,10 +1,12 @@
-import os
-import json
-from ament_index_python.packages import get_package_share_directory
+import time
+import rclpy
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
+
+# Suffix published by jetson_compressor.launch.py for every camera, e.g. /realsense415/image_raw/ffmpeg
+FFMPEG_TOPIC_SUFFIX = '/image_raw/ffmpeg'
 
 
 def create_broadcaster_node(camera_name):
@@ -25,29 +27,35 @@ def create_broadcaster_node(camera_name):
     )
 
 
+def discover_camera_names(timeout_sec=5.0):
+    """Poll the ROS graph and return the names of cameras currently publishing a compressed feed."""
+    rclpy.init(args=None)
+    node = rclpy.create_node('jetson_decompressor_topic_discovery')
+    try:
+        camera_names = set()
+        deadline = time.time() + timeout_sec
+        while time.time() < deadline and not camera_names:
+            for topic_name, _ in node.get_topic_names_and_types():
+                if topic_name.endswith(FFMPEG_TOPIC_SUFFIX):
+                    camera_names.add(topic_name[:-len(FFMPEG_TOPIC_SUFFIX)].lstrip('/'))
+            if not camera_names:
+                rclpy.spin_once(node, timeout_sec=0.5)
+        return sorted(camera_names)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
 def choose_cameras(context, *args, **kwargs):
-    camera_args = LaunchConfiguration('cameras').perform(context)
-    camera_args_list = camera_args.split()
+    camera_args_list = LaunchConfiguration('cameras').perform(context).split()
+    discovered_cameras = discover_camera_names()
 
-    cameras_config_path = os.path.join(
-        get_package_share_directory('cameras_cpp'),
-        'config', 'cameras.json'
-    )
-    with open(cameras_config_path, 'r') as f:
-        cameras_json = json.load(f)
-    all_cameras = cameras_json.get('cameras', [])
-
-    if len(camera_args_list) == 0:
-        cameras = all_cameras
+    if camera_args_list:
+        cameras = [name for name in discovered_cameras if name in camera_args_list]
     else:
-        cameras = [c for c in all_cameras if c['name'] in camera_args_list]
+        cameras = discovered_cameras
 
-    nodes = []
-    for camera in cameras:
-        camera_name = camera['name']
-        nodes.append(create_broadcaster_node(camera_name))
-
-    return nodes
+    return [create_broadcaster_node(camera_name) for camera_name in cameras]
 
 
 def generate_launch_description():
