@@ -73,6 +73,9 @@ struct JointMap {
     const char* urdf_joint_name;  // Must match the <joint name="..."> in dev_arm.urdf
     double      initial_pos_rad;  // Joint angle (rad) when position counter reads 0 at boot
     double      direction;        // +1 or -1: sign between output revolutions and URDF angle
+    double      extra_reduction;  // motor output revs per JOINT rev — gearing the moteus
+                                  // firmware does NOT know about (external stages).
+                                  // 1.0 = counter is joint revs directly.
 };
 
 // urdf joint names match dev_arm_description_v2 (the current arm, loaded by
@@ -97,15 +100,18 @@ struct JointMap {
 //   A6 +1  sign still unproven: the axis moves ±180° from the switch (see
 //           min_position_rev — the switch is a homing reference mid-travel,
 //           not an end stop), so "which way is positive" needs a jog test.
+// extra_reduction: A5/A6's steppers drive the wrist through an external 3:1
+// stage the moteus doesn't know about — the counter turns 3 motor-output revs
+// per joint rev, so joint motion is counter/3.
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
-    //  id   hardware label    urdf joint name    switch angle (rad)   direction
-    {  1,   "A1",   "shoulder_joint",       -1.681,         -1.0  },
-    {  2,   "A2",   "link_1_joint",         -1.799,          1.0  },
-    {  3,   "A3",   "link1_link2",          -1.273,         -1.0  },
-    {  4,   "A4",   "a4_rotation",           3.089,         -1.0  },  // TODO unverified (jog disabled)
-    {  5,   "A5",   "a5_rotation",          -1.341,          1.0  },
-    {  6,   "A6",   "a6_rotation",          -1.511,          1.0  },  // TODO sign unproven
-    {  7,   "EE",   "joint_ee",              0.0,           -1.0  },  // TODO not calibrated
+    //  id   hardware label    urdf joint name    switch angle (rad)   direction   extra reduction
+    {  1,   "A1",   "shoulder_joint",       -1.681,         -1.0,        1.0  },
+    {  2,   "A2",   "link_1_joint",         -1.799,          1.0,        1.0  },
+    {  3,   "A3",   "link1_link2",          -1.273,         -1.0,        1.0  },
+    {  4,   "A4",   "a4_rotation",           3.089,         -1.0,        1.0  },  // TODO unverified (jog disabled)
+    {  5,   "A5",   "a5_rotation",          -1.341,          1.0,        3.0  },
+    {  6,   "A6",   "a6_rotation",          -1.511,          1.0,        3.0  },  // TODO sign unproven
+    {  7,   "EE",   "joint_ee",              0.0,           -1.0,        1.0  },  // TODO not calibrated
 };
 
 
@@ -115,17 +121,20 @@ static const JointMap ARM_JOINTS[NUM_MOTORS] = {
 
 // Convert motor telemetry (output revolutions) to URDF joint angle (radians).
 //
-// moteus reports position in OUTPUT-SHAFT revolutions.  The gear ratio is
-// applied internally by the firmware, so this function does NOT need to
-// account for it.  We just scale by 2π and add the boot-time offset.
+// moteus reports position in OUTPUT-SHAFT revolutions.  The firmware's own
+// gear ratio is applied internally, so only gearing the firmware does NOT
+// know about (extra_reduction, e.g. the wrist's external 3:1 stage) is
+// divided out here, then scaled by 2π and offset.
 inline double motorRevToJointRad(int motor_idx, double output_revolutions) {
     const auto& j = ARM_JOINTS[motor_idx];
-    return j.initial_pos_rad + (j.direction * output_revolutions * 2.0 * M_PI);
+    return j.initial_pos_rad
+         + (j.direction * (output_revolutions / j.extra_reduction) * 2.0 * M_PI);
 }
 
 // Convert output-shaft rev/s to URDF joint velocity (rad/s).
 inline double motorRevPerSecToJointRadPerSec(int motor_idx, double output_rev_per_sec) {
-    return ARM_JOINTS[motor_idx].direction * output_rev_per_sec * 2.0 * M_PI;
+    const auto& j = ARM_JOINTS[motor_idx];
+    return j.direction * (output_rev_per_sec / j.extra_reduction) * 2.0 * M_PI;
 }
 
 inline double revolutionToDegrees(double rev)
