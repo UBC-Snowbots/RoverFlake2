@@ -1,5 +1,6 @@
 #include <RoverHMI.h>
 #include <rover_arm_common/arm_commands.h>
+#include <rover_arm_common/motor_addressing.h>
 
 int main(int argc, char* argv[]){
 
