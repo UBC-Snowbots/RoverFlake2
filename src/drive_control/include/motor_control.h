@@ -8,6 +8,7 @@
 #include "rclcpp/qos.hpp"  // Include QoS header
 #include <vector>
 #include <algorithm>  // For std::clamp
+#include "revert_def.h"
 
 /**
  * Motor and wheel specs for calculating rescale factors
