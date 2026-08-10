@@ -12,12 +12,12 @@ class CBSArmInterface : public rclcpp::Node
 public:
     CBSArmInterface() : Node("CBSArmInterface"){
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local();
-    // arm_cmd_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
+    arm_cmd_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/command", qos);
 
      arm_panel_subscriber = this->create_subscription<rover_msgs::msg::ArmPanel>(
-            "/cbs/arm_panel", 10, std::bind(&CBSArmInterface::arm_panel_callback, this, std::placeholders::_1));
+            "/cbs/arm_panel", 3, std::bind(&CBSArmInterface::arm_panel_callback, this, std::placeholders::_1));
     left_panel_subscriber = this->create_subscription<rover_msgs::msg::GenericPanel>(
-            "/cbs/left_panel_a", 10, std::bind(&CBSArmInterface::left_panel_callback, this, std::placeholders::_1));
+            "/cbs/left_panel_a", 3, std::bind(&CBSArmInterface::left_panel_callback, this, std::placeholders::_1));
      
             // arm_ik_pub = this->create_publisher<geometry_msgs::msg::TwistStamped>(
             //     "/arm_moveit_control/delta_twist_cmds", qos);  
@@ -29,13 +29,12 @@ public:
 //         std::bind(&CBSManagerNode::armPanelPoll, this) // Callback function
 //     );
 
-
     }
 
     ~CBSArmInterface(){
         RCLCPP_WARN(this->get_logger(), "WARNING: ARM PANEL INTERFACE NODE OFFLINE!");
     }
-    // rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_publisher;
+    rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_cmd_publisher;
     rclcpp::Subscription<rover_msgs::msg::ArmPanel>::SharedPtr arm_panel_subscriber;
     rclcpp::Subscription<rover_msgs::msg::GenericPanel>::SharedPtr left_panel_subscriber;
     // rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr arm_ik_pub;
@@ -49,6 +48,7 @@ private:
     bool ik = false;
 
     // rclcpp::TimerBase::SharedPtr arm_panel_timer; // Timer handle if we need it
-
+    float multiply = 1.0;
+    float multiply_ee = 1.0;
 
 };

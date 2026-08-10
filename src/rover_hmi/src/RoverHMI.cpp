@@ -1,5 +1,6 @@
 #include <RoverHMI.h>
 #include <rover_arm_common/arm_commands.h>
+#include <rover_arm_common/motor_addressing.h>
 
 int main(int argc, char* argv[]){
 
@@ -154,7 +155,15 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
 void MainHMINode::handleHomeAllButtonClick(){
     rover_msgs::msg::ArmCommand home_msg;
     home_msg.cmd_type = CMD_HOME;
-    home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
+    // home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
+    home_msg.cmd_value = AXIS_1_INDEX;
+    // home_msg.cmd_value = AXIS_2_INDEX;
+    // home_msg.cmd_value = AXIS_3_INDEX;
+    // home_msg.cmd_value = AXIS_4_INDEX;
+    // home_msg.cmd_value = AXIS_5_INDEX;
+    // home_msg.cmd_value = AXIS_6_INDEX;
+    // Don't home EE yet, we can deal with that later.
+
     arm_cmd_pub->publish(home_msg);
     RCLCPP_WARN(this->get_logger(), "Home all button clicked!");
     // RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
