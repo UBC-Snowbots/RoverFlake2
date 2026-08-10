@@ -19,6 +19,7 @@ find_package(image_transport REQUIRED)
 find_package(rover_utils REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED)
+find_package(std_msgs REQUIRED)
 
 
 include_directories(
@@ -36,6 +37,11 @@ target_link_libraries(mock_camera_node ${OpenCV_LIBRARIES})
 add_executable(mock_arm_node arm/src/mock_arm.cpp)
 ament_target_dependencies(mock_arm_node rclcpp sensor_msgs rover_msgs rover_arm_common)
 
+# Digital twin of the real arm: /arm/feedback (telemetry) -> /joint_states,
+# plus optional twin-vs-sim error (see arm/src/arm_twin.cpp)
+add_executable(arm_twin_node arm/src/arm_twin.cpp)
+ament_target_dependencies(arm_twin_node rclcpp sensor_msgs std_msgs rover_msgs rover_arm_common)
+
 
 install(
   DIRECTORY
@@ -52,6 +58,7 @@ install(
   TARGETS
   mock_camera_node
   mock_arm_node
+  arm_twin_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

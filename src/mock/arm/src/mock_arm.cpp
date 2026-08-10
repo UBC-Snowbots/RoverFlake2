@@ -37,6 +37,21 @@
 
 namespace {
 constexpr double TICK_S = 0.02;  // 50 Hz, same order as the real poll loop
+
+// The real arm's motion profile comes from TWO layers: the per-frame command
+// cap (AxisConfig::max_running_speed, sent with every position frame) and the
+// firmware config pushed at startup from MotorConfig (servo.max_velocity and
+// servo.default_accel_limit). Effective velocity is the min of both; accel is
+// MotorConfig's. Torque/current limits (max_current_A) are NOT modelled —
+// a kinematic sim has no load, so it implicitly assumes torque is sufficient.
+struct AxisProfile { double vel_cap; double accel; };
+
+inline AxisProfile axisProfile(int a) {
+    static const std::vector<MotorConfig> cfg = get_arm_configuration();
+    const double fw_vel = (a < (int)cfg.size()) ? cfg[a].max_velocity     : 0.05;
+    const double fw_acc = (a < (int)cfg.size()) ? cfg[a].max_acceleration : 0.5;
+    return { std::min((double)AxisConfig::max_running_speed[a], fw_vel), fw_acc };
+}
 }
 
 class MockArmNode : public rclcpp::Node {
@@ -59,19 +74,23 @@ public:
         // install/ can silently pin an old table into this binary. This makes
         // the running values visible instead of guessable.
         for (int a = 0; a < NUM_AXES; a++) {
+            const AxisProfile prof = axisProfile(a);
             RCLCPP_INFO(get_logger(),
-                "  %-3s %-16s switch=%+7.3f rad  dir=%+.0f  travel=[%+.2f, %+.2f] rev",
+                "  %-3s %-16s switch=%+7.3f rad  dir=%+.0f  travel=[%+.2f, %+.2f] rev"
+                "  vel<=%.3f rev/s  acc=%.2f rev/s^2",
                 ARM_JOINTS[a].hardware_name, ARM_JOINTS[a].urdf_joint_name,
                 ARM_JOINTS[a].initial_pos_rad, ARM_JOINTS[a].direction,
-                AxisConfig::min_position_rev[a], AxisConfig::max_position_rev[a]);
+                AxisConfig::min_position_rev[a], AxisConfig::max_position_rev[a],
+                prof.vel_cap, prof.accel);
         }
     }
 
 private:
     struct AxisSim {
-        double pos_rev = 0.0;   // counter, 0 = limit switch
-        double vel_revps = 0.0; // current commanded velocity
-        double target_rev = NAN;  // NaN = velocity mode, else position target
+        double pos_rev = 0.0;    // counter, 0 = limit switch
+        double vel_revps = 0.0;  // actual velocity (slews toward cmd at accel)
+        double cmd_revps = 0.0;  // commanded velocity
+        double target_rev = NAN; // NaN = velocity mode, else position target
     };
 
     void onCommand(const rover_msgs::msg::ArmCommand::SharedPtr& msg) {
@@ -82,7 +101,7 @@ private:
             for (int a = 0; a < NUM_AXES; a++) {
                 if (masked && (a >= (int)msg->positions.size()
                                || std::isnan(msg->positions[a]))) continue;
-                axes_[a].vel_revps = 0.0;
+                axes_[a].cmd_revps = 0.0;
                 axes_[a].target_rev = NAN;
             }
             return;
@@ -92,8 +111,8 @@ private:
             for (int a = 0; a < NUM_AXES; a++) {
                 double vd = (a < (int)msg->velocities.size()) ? msg->velocities[a] : NAN;
                 if (std::isnan(vd)) continue;
-                const double cap = AxisConfig::max_running_speed[a];
-                axes_[a].vel_revps = std::clamp(degreesToRevolution(vd), -cap, cap);
+                const double cap = axisProfile(a).vel_cap;
+                axes_[a].cmd_revps = std::clamp(degreesToRevolution(vd), -cap, cap);
                 axes_[a].target_rev = NAN;
             }
             return;
@@ -104,15 +123,15 @@ private:
                 double pos = (a < (int)msg->positions.size())  ? msg->positions[a]  : NAN;
                 double vd  = (a < (int)msg->velocities.size()) ? msg->velocities[a] : NAN;
                 if (std::isnan(pos) && std::isnan(vd)) continue;
-                const double cap = AxisConfig::max_running_speed[a];
+                const double cap = axisProfile(a).vel_cap;
                 if (std::isnan(pos)) {   // d pos nan v — pure velocity
-                    axes_[a].vel_revps = std::clamp(degreesToRevolution(vd), -cap, cap);
+                    axes_[a].cmd_revps = std::clamp(degreesToRevolution(vd), -cap, cap);
                     axes_[a].target_rev = NAN;
                 } else {                 // travel to pos at vd (or cap)
                     const double speed = std::isnan(vd)
-                        ? cap : std::min(degreesToRevolution(std::fabs(vd)), (double)cap);
+                        ? cap : std::min(degreesToRevolution(std::fabs(vd)), cap);
                     axes_[a].target_rev = pos;
-                    axes_[a].vel_revps  = speed;
+                    axes_[a].cmd_revps  = speed;
                 }
             }
             return;
@@ -122,7 +141,7 @@ private:
             auto homeOne = [this](int a) {
                 if (a < 0 || a >= NUM_AXES) return;
                 axes_[a].target_rev = 0.0;
-                axes_[a].vel_revps  = AxisConfig::homing_speed_revps[a];
+                axes_[a].cmd_revps  = AxisConfig::homing_speed_revps[a];
             };
             if (msg->cmd_value >= 0 && msg->cmd_value < NUM_AXES) homeOne(msg->cmd_value);
             else if (msg->cmd_value == HOME_VALUE_SELECTED)
@@ -140,6 +159,7 @@ private:
                 if (std::isnan(flag)) continue;
                 axes_[a].pos_rev = 0.0;   // "d exact 0" — reference moves, arm doesn't
                 axes_[a].vel_revps = 0.0;
+                axes_[a].cmd_revps = 0.0;
                 axes_[a].target_rev = NAN;
             }
             return;
@@ -149,29 +169,40 @@ private:
     void tick() {
         for (int a = 0; a < NUM_AXES; a++) {
             auto& ax = axes_[a];
+            const AxisProfile prof = axisProfile(a);
 
+            // Desired velocity this tick (position mode aims at the target).
+            double want = ax.cmd_revps;
             if (!std::isnan(ax.target_rev)) {
-                // Position mode: step toward target, arrive exactly, stop.
                 const double d = ax.target_rev - ax.pos_rev;
-                const double step = std::fabs(ax.vel_revps) * TICK_S;
-                if (std::fabs(d) <= step) {
+                want = std::copysign(std::fabs(ax.cmd_revps), d);
+                // Arrival: within one tick's travel — snap, stop.
+                if (std::fabs(d) <= std::fabs(ax.vel_revps) * TICK_S + 1e-9) {
                     ax.pos_rev = ax.target_rev;
                     ax.target_rev = NAN;
-                    ax.vel_revps = 0.0;
-                } else {
-                    ax.pos_rev += std::copysign(step, d);
+                    ax.vel_revps = ax.cmd_revps = 0.0;
+                    continue;
                 }
-            } else {
-                ax.pos_rev += ax.vel_revps * TICK_S;
             }
+
+            // Slew actual velocity toward desired at the firmware accel limit
+            // (servo.default_accel_limit) — velocity steps are not instant on
+            // the real arm and shouldn't be here.
+            const double dv_max = prof.accel * TICK_S;
+            ax.vel_revps += std::clamp(want - ax.vel_revps, -dv_max, dv_max);
+            ax.pos_rev += ax.vel_revps * TICK_S;
 
             // Travel limits double as the hard stops. For most axes min is 0
             // (the limit switch IS the end of travel); A6's switch sits
             // mid-travel, so its range is symmetric around 0.
             const double lo = AxisConfig::min_position_rev[a];
             const double hi = AxisConfig::max_position_rev[a];
-            if (ax.pos_rev <= lo)  { ax.pos_rev = lo;  if (ax.vel_revps < 0) ax.vel_revps = 0; }
-            if (ax.pos_rev >= hi)  { ax.pos_rev = hi;  if (ax.vel_revps > 0) ax.vel_revps = 0; }
+            if (ax.pos_rev <= lo) { ax.pos_rev = lo;
+                if (ax.vel_revps < 0) ax.vel_revps = 0;
+                if (ax.cmd_revps < 0) ax.cmd_revps = 0; }
+            if (ax.pos_rev >= hi) { ax.pos_rev = hi;
+                if (ax.vel_revps > 0) ax.vel_revps = 0;
+                if (ax.cmd_revps > 0) ax.cmd_revps = 0; }
         }
 
         sensor_msgs::msg::JointState js;
