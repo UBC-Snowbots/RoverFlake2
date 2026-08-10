@@ -1,27 +1,59 @@
-#ifndef WHEEL_SPEED_NODE_H
-#define WHEEL_SPEED_NODE_H
+#pragma once
 
-#include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/float64.hpp"
-#include <vector>
-#include "rclcpp/qos.hpp"  // Include QoS header
+#include "revert_def.h"
 
-class WheelSpeedNode : public rclcpp::Node {
-public:
-    WheelSpeedNode();
-    ~WheelSpeedNode() = default;
 
-private:
-    void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+// REVERTER
+#ifdef REVERT
+    #include "rclcpp/rclcpp.hpp"
+    #include "geometry_msgs/msg/twist.hpp"
+    #include "std_msgs/msg/float64_multi_array.hpp"
+    #include "std_msgs/msg/float64.hpp"
+    #include <vector>
+    #include "rclcpp/qos.hpp"  // Include QoS header
 
-    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
-    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+    class WheelSpeedNode : public rclcpp::Node {
+    public:
+        WheelSpeedNode();
+        ~WheelSpeedNode() = default;
 
-    static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
-    static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
-};
+    private:
+        void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
 
-#endif // WHEEL_SPEED_NODE_H
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+
+        static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
+        static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
+    };
+
+
+#else
+
+    #include "rclcpp/rclcpp.hpp"
+    #include "geometry_msgs/msg/twist.hpp"
+    #include "std_msgs/msg/float64_multi_array.hpp"
+    #include "std_msgs/msg/float64.hpp"
+    #include <vector>
+    #include "rclcpp/qos.hpp"  // Include QoS header
+
+    class WheelSpeedNode : public rclcpp::Node {
+    public:
+        WheelSpeedNode();
+        ~WheelSpeedNode() = default;
+
+    private:
+        void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+
+        static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
+        static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
+    };
+
+#endif
+
+
