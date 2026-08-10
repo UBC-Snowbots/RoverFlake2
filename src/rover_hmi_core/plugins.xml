@@ -58,6 +58,16 @@
          base_class_type="rover_hmi_core::GuiModule">
     <description>Log of sent commands and driver messages</description>
   </class>
+  <class name="rover_hmi_core/ArmTwinModule"
+         type="ArmTwinModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Digital twin — FK view of the physical arm from motor telemetry</description>
+  </class>
+  <class name="rover_hmi_core/ArmSimModule"
+         type="ArmSimModule"
+         base_class_type="rover_hmi_core::GuiModule">
+    <description>Sim arm — FK view of /joint_states (mock_arm)</description>
+  </class>
 
   <!-- MoveIt -->
   <class name="rover_hmi_core/RvizModule"

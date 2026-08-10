@@ -397,6 +397,7 @@ void MoteusDriverNode::run() {
                 RCLCPP_INFO(this->get_logger(), "Axis %d homed", i + 1);
                 if (i == AXIS_5_INDEX) { zero_position(MOTOR_5_INDEX); zero_position(MOTOR_6_INDEX); }
                 else         { zero_position(i); }
+                ax.homed = true;   // counter now switch-referenced → soft limits armed
                 ax.state = AxisState::GOING_TO_PRESET_POSITION;
             } else {  // creep toward switch in AXIS space; wrist's other axis is held in Stage 3
                 auto& c = axis_cmds_[i];
@@ -423,6 +424,46 @@ void MoteusDriverNode::run() {
         }
         default:
             break;
+        }
+    }
+
+    // ── Stage 2.5: soft travel limits (axis space) ──────────────────────────
+    // Mirror of the sim's clamp: position targets bound to
+    // [min_position_rev, max_position_rev] and velocity commands that would
+    // drive past a bound become a position-hold AT the bound (not a stop —
+    // limp at a soft limit would drop a gravity-loaded joint).
+    //
+    // Only enforced on HOMED axes: before homing the counter zero is wherever
+    // the arm booted, and clamping against that fabricates walls in random
+    // places. CMD_ZERO does not arm the limits — only a real switch home does.
+    // Homing itself is exempt via stateMachineOwns (it legitimately drives
+    // toward and past 0).
+    for (int a = 0; a < NUM_AXES; a++) {
+        if (!axes[a].homed || stateMachineOwns(axes[a].state)) continue;
+        auto& c = axis_cmds_[a];
+        if (!c.active || c.is_stop || c.is_zero) continue;
+        const double lo = AxisConfig::min_position_rev[a];
+        const double hi = AxisConfig::max_position_rev[a];
+
+        if (!std::isnan(c.position)) {
+            const double clamped = std::clamp(c.position, lo, hi);
+            if (clamped != c.position) {
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                    "Axis %d position %.3f clamped to soft limit %.3f",
+                    a + 1, c.position, clamped);
+                c.position = clamped;
+            }
+        } else if (!std::isnan(c.velocity) && c.velocity != 0.0) {
+            const double pos = axes[a].position;
+            const bool at_lo = pos <= lo && c.velocity < 0.0;
+            const bool at_hi = pos >= hi && c.velocity > 0.0;
+            if (at_lo || at_hi) {
+                c.position = at_lo ? lo : hi;   // hold the bound
+                c.velocity = 0.0;
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                    "Axis %d velocity into soft limit %s — holding %.3f",
+                    a + 1, at_lo ? "MIN" : "MAX", c.position);
+            }
         }
     }
 

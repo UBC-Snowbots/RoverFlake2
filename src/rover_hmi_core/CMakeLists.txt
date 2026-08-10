@@ -61,6 +61,7 @@ add_library(rover_hmi_modules SHARED
     src/arm/plotting_module.cpp
     src/arm/send_command_module.cpp
     src/arm/command_log_module.cpp
+    src/arm/arm_view_module.cpp
     # MoveIt — header listed explicitly so AUTOMOC scans it (RvizModule
     # is the only module that places Q_OBJECT in its header; the rest use
     # the inline-Q_OBJECT-in-.cpp pattern and don't need this).
