@@ -632,7 +632,8 @@ void MoteusDriverNode::reInitTransport() {
     controllers_.clear();
     transport_.reset();  // fd is now closed — refcount hit 0
 
-    transport_ = mot::TransportRegistry::singleton().make({}).first;
+    // transport_ = mot::TransportRegistry::singleton().make({}).first;
+    transport_ = mot::TransportRegistry::singleton().make({"--can-disable-brs"}).first; // FORCE TO 1mb
 
     for (int id = 1; id <= NUM_MOTORS; id++) {
         mot::Controller::Options opts;
