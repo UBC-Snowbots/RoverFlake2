@@ -55,6 +55,16 @@ public:
 
         RCLCPP_INFO(get_logger(),
             "mock_arm: counters at 0 (homed pose). /arm/command -> /joint_states");
+        // Calibration dump — rover_arm_common is header-only, so a stale
+        // install/ can silently pin an old table into this binary. This makes
+        // the running values visible instead of guessable.
+        for (int a = 0; a < NUM_AXES; a++) {
+            RCLCPP_INFO(get_logger(),
+                "  %-3s %-16s switch=%+7.3f rad  dir=%+.0f  travel=[%+.2f, %+.2f] rev",
+                ARM_JOINTS[a].hardware_name, ARM_JOINTS[a].urdf_joint_name,
+                ARM_JOINTS[a].initial_pos_rad, ARM_JOINTS[a].direction,
+                AxisConfig::min_position_rev[a], AxisConfig::max_position_rev[a]);
+        }
     }
 
 private:
