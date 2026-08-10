@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'rover_gnss'
@@ -10,8 +12,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
+        ('share/' + package_name + '/config', glob('config/*')),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'pyserial', 'pynmea2'],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='deadfloppy@protonmail.com',
@@ -21,8 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'nmea_reader = rover_gnss.nmea_reader:main',
-	        'nmea_reader_new = rover_gnss.nmea_reader_updated:main',
-            'nmea_reader_new_new = rover_gnss.nmea_reader_new_updated:main'
+            'latlon_markers = rover_gnss.latlon_markers:main',
+            'fake_gnss = rover_gnss.fake_gnss:main'
         ],
     },
 )

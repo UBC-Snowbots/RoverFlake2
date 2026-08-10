@@ -1,0 +1,27 @@
+# Task-specific points/labels for gnss_display.launch.py. Edit this file
+# per task — the launch file itself needs no changes.
+#
+#   ros2 launch rover_gnss gnss_display.launch.py
+#   ros2 launch rover_gnss gnss_display.launch.py params:=/abs/path/to/other.yaml
+#
+# waypoints is a flat lat, lon, lat, lon, ... list; waypoint_names lines up
+# with it entry for entry. Extra names are ignored, missing ones become
+# wp0, wp1, ...
+
+latlon_markers:
+  ros__parameters:
+    waypoint_names: [start]
+    waypoints: [51.46695609666667, -112.70651679333332]   # finish
+
+    # ENU origin. Leave at [0.0, 0.0] to take the base station on /base_fix,
+    # falling back to the first waypoint after base_datum_timeout seconds.
+    datum: [0.0, 0.0]
+    base_datum_timeout: 5.0
+
+    frame_id: map
+    # topics nmea_reader publishes on
+    fix_topic: /gnss_fix
+    base_topic: /base_fix
+
+    point_size: 2.0
+    label_size: 2.0

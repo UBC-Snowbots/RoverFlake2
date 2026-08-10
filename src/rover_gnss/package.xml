@@ -8,10 +8,21 @@
   <license>TODO: License declaration</license>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
 
-  <!--! Rosdep fails with the following: -->
-  <!-- <exec_depend>pyserial</exec_depend> -->
-  <!-- <exec_depend>pynmea2</exec_depend>  -->
+  <!-- latlon_markers_demo.launch.py -->
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <!-- nmea_reader: rosdep keys, not the PyPI names (pyserial/pynmea2) -->
+  <exec_depend>python3-serial</exec_depend>
+  <exec_depend>python3-pynmea2</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
