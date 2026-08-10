@@ -52,6 +52,12 @@
     subsystems:
       # drive_control: "ros2 launch drive_control drive_control_base_bringup.launch.py"
       drive_control: "ros2 run joy joy_node"
+      camera: "ros2 launch cameras_cpp jetson_decompressor.launch.py"
+      realsense415: 'ros2 launch cameras_cpp jetson_decompressor.launch.py "cameras:=realsense415"'
+      realsense435i: 'ros2 launch cameras_cpp jetson_decompressor.launch.py "cameras:=realsense435i"'
+      logitech: 'ros2 launch cameras_cpp jetson_decompressor.launch.py "cameras:=logitech"'
+      suyin: 'ros2 launch cameras_cpp jetson_decompressor.launch.py "cameras:=suyin"'
+      science_fisheye: 'ros2 launch cameras_cpp jetson_decompressor.launch.py "cameras:=science_fisheye"'
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
@@ -81,6 +87,11 @@
   ros__parameters:
     subsystems:
       camera: "ros2 launch cameras_cpp jetson_compressor.launch.py"
+      realsense415: 'ros2 launch cameras_cpp jetson_compressor.launch.py "cameras:=realsense415"'
+      realsense435i: 'ros2 launch cameras_cpp jetson_compressor.launch.py "cameras:=realsense435i"'
+      logitech: 'ros2 launch cameras_cpp jetson_compressor.launch.py "cameras:=logitech"'
+      suyin: 'ros2 launch cameras_cpp jetson_compressor.launch.py "cameras:=suyin"'
+      science_fisheye: 'ros2 launch cameras_cpp jetson_compressor.launch.py "cameras:=science_fisheye"'
     request_topic: "/heart/request"
     heart_feedback_topic: "/heart/running_subsystems"
     heartbeat_rate: 1.0 #how often the heart beats, every beat sends a feedback msg with what subsystems are online or offline
