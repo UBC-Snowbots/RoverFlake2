@@ -109,7 +109,7 @@ static const JointMap ARM_JOINTS[NUM_MOTORS] = {
     {  2,   "A2",   "link_1_joint",         -1.799,          1.0,        1.0  },
     {  3,   "A3",   "link1_link2",          -1.273,         -1.0,        1.0  },
     {  4,   "A4",   "a4_rotation",           3.089,         -1.0,        1.0  },  // TODO unverified (jog disabled)
-    {  5,   "A5",   "a5_rotation",          -1.341,          1.0,        3.0  },
+    {  5,   "A5",   "a5_rotation",          -1.341,         -1.0,        3.0  },  // sign flipped 2026-08-09 (sim-vs-arm)
     {  6,   "A6",   "a6_rotation",          -1.511,          1.0,        3.0  },  // TODO sign unproven
     {  7,   "EE",   "joint_ee",              0.0,           -1.0,        1.0  },  // TODO not calibrated
 };
