@@ -196,10 +196,14 @@ namespace AxisConfig {
         /*AXIS 3 */   0.5,
         /*AXIS 4 */   0.5,
         /*AXIS 5 */   0.5,
-        /*AXIS 6 */   0.5,
+        /*AXIS 6 */   0.25,   // ±180° around the homing switch (see min_position_rev)
         /*AXIS EE */  0.5 };
          
-    inline float min_position_rev[NUM_AXES] = {0, 0, 0, 0, 0, 0, 0};
+    // A6's limit switch is a homing REFERENCE mid-travel, not an end stop:
+    // the axis moves 180° to either side of it (verified in sim vs physical
+    // arm, 2026-08-09). Every other axis homes against a true end stop, so
+    // min stays 0 there.
+    inline float min_position_rev[NUM_AXES] = {0, 0, 0, 0, 0, -0.25, 0};
 
     inline float homing_speed_revps[NUM_AXES] = { // Rev/s Direction Independent. 
         /*AXIS 1 */   0.01,

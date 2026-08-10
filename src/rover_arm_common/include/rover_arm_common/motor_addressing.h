@@ -83,21 +83,28 @@ struct JointMap {
 // 2026-08-09 by posing the display.launch.py sim to match the physically
 // homed arm and reading the joint_state_publisher_gui sliders.
 //
-// direction: counter runs 0 → AxisConfig::max_position_rev away from the
-// switch, so the far end (initial_pos_rad + direction·travel·2π) must land
-// inside the URDF joint limits. That determines the sign for A1/A3/A4/A5.
-// A6 is continuous (no limits) and A2 fits NEITHER sign — its travel
-// (0.5 rev = 3.14 rad) exceeds what the switch angle leaves in the URDF range
-// both ways, so either max_position_rev[1] or the URDF limits are wrong.
-// VERIFY each sign by jogging the axis and watching RViz track /joint_states.
+// direction: counter runs min_position_rev → max_position_rev, increasing
+// away from the switch. Signs verified 2026-08-09 by comparing the mock_arm
+// sim (RViz) against the physical arm's motion per axis:
+//   A1 −1  (sim moved opposite to the real arm; URDF-range fit had guessed +1,
+//           but shoulder_joint is continuous so the fit meant nothing there)
+//   A2 +1  confirmed
+//   A3 −1  (sim moved opposite; NOTE far end −1.273 − π = −4.41 falls outside
+//           link1_link2's declared ±3.14 — the URDF limit or the 0.5 rev
+//           travel budget is wrong, same class of issue as A2's travel)
+//   A4 −1  UNVERIFIED — jog disabled in HmiDefaults, could not be tested
+//   A5 +1  confirmed
+//   A6 +1  sign still unproven: the axis moves ±180° from the switch (see
+//           min_position_rev — the switch is a homing reference mid-travel,
+//           not an end stop), so "which way is positive" needs a jog test.
 static const JointMap ARM_JOINTS[NUM_MOTORS] = {
     //  id   hardware label    urdf joint name    switch angle (rad)   direction
-    {  1,   "A1",   "shoulder_joint",       -1.681,          1.0  },
-    {  2,   "A2",   "link_1_joint",         -1.799,          1.0  },  // TODO sign unproven (see above)
-    {  3,   "A3",   "link1_link2",          -1.273,          1.0  },
-    {  4,   "A4",   "a4_rotation",           3.089,         -1.0  },
+    {  1,   "A1",   "shoulder_joint",       -1.681,         -1.0  },
+    {  2,   "A2",   "link_1_joint",         -1.799,          1.0  },
+    {  3,   "A3",   "link1_link2",          -1.273,         -1.0  },
+    {  4,   "A4",   "a4_rotation",           3.089,         -1.0  },  // TODO unverified (jog disabled)
     {  5,   "A5",   "a5_rotation",          -1.341,          1.0  },
-    {  6,   "A6",   "a6_rotation",          -1.511,          1.0  },  // TODO sign unproven (continuous joint)
+    {  6,   "A6",   "a6_rotation",          -1.511,          1.0  },  // TODO sign unproven
     {  7,   "EE",   "joint_ee",              0.0,           -1.0  },  // TODO not calibrated
 };
 

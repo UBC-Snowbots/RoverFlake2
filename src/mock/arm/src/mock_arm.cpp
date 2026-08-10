@@ -17,8 +17,9 @@
 //   CMD_ZERO    ('Z')  re-zero the counter at the current position
 //
 // Limits mirror AxisConfig: velocity clamped to max_running_speed, position
-// clamped to [0, max_position_rev] (switch-referenced travel). The clamp also
-// emulates the limit switch: an axis driven to 0 stops there.
+// clamped to [min_position_rev, max_position_rev] (switch-referenced travel;
+// min is 0 wherever the switch is a true end stop). The clamps emulate the
+// hard stops: an axis driven into one stays there.
 //
 // Motor-space commands (cmd_value = CMD_SPACE_MOTOR) are treated as axis
 // space — this model has no differential wrist; M5/M6 == A5/A6.
@@ -154,10 +155,13 @@ private:
                 ax.pos_rev += ax.vel_revps * TICK_S;
             }
 
-            // Travel limits double as the limit switch (0) and far stop.
+            // Travel limits double as the hard stops. For most axes min is 0
+            // (the limit switch IS the end of travel); A6's switch sits
+            // mid-travel, so its range is symmetric around 0.
+            const double lo = AxisConfig::min_position_rev[a];
             const double hi = AxisConfig::max_position_rev[a];
-            if (ax.pos_rev <= 0.0)  { ax.pos_rev = 0.0;  if (ax.vel_revps < 0) ax.vel_revps = 0; }
-            if (ax.pos_rev >= hi)   { ax.pos_rev = hi;   if (ax.vel_revps > 0) ax.vel_revps = 0; }
+            if (ax.pos_rev <= lo)  { ax.pos_rev = lo;  if (ax.vel_revps < 0) ax.vel_revps = 0; }
+            if (ax.pos_rev >= hi)  { ax.pos_rev = hi;  if (ax.vel_revps > 0) ax.vel_revps = 0; }
         }
 
         sensor_msgs::msg::JointState js;
