@@ -1,5 +1,6 @@
 #include "motor_control.h"  // Include the header file for motor control functionalities
 
+
 #ifdef REVERT 
 
 #include <algorithm>          // For std::clamp
@@ -22,7 +23,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = Phidget_setHubPort((PhidgetHandle)motors[i], i);
         handlePhidgetError(ret, "set hub port", i);
 
-        ret = Phidget_openWaitForAttachment((PhidgetHandle)motors[i], 5000);
+        ret = Phidget_openWaitForAttachment((PhidgetHandle)motors[i], 900);
         handlePhidgetError(ret, "attachment", i);
     }
 
@@ -150,7 +151,7 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = Phidget_setHubPort((PhidgetHandle)motors[i], i);
         handlePhidgetError(ret, "setting motor hub port", i);
 
-        ret = Phidget_openWaitForAttachment((PhidgetHandle)motors[i], 5000);
+        ret = Phidget_openWaitForAttachment((PhidgetHandle)motors[i], 900);
         handlePhidgetError(ret, "opening motor connection", i);
 
         ret = PhidgetMotorPositionController_setNormalizePID(motors[i], 1);
@@ -247,8 +248,32 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
 }
 
 void MotorControlNode::motorControlLoop() {
+    // static uint32_t 
     for (int i = 0; i < NUM_MOTORS; i++) {
         target_positions[i] += (target_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
+
+        float target_position_diff = 0.0;
+        const float diff_limit = 5;
+        double position;
+
+       PhidgetReturnCode ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
+        if (ret != EPHIDGET_OK) {
+
+            position = current_positions[i];
+            target_position_diff = 0.0;
+        }
+
+        target_position_diff = target_positions[i] - position;
+
+        if(abs(target_position_diff) >= diff_limit)
+        {
+            target_position_diff = diff_limit;
+
+            target_positions[i] = position + target_position_diff;
+        }
+        RCLCPP_WARN(this->get_logger(), "MOTOR: %i TARGET POSITION DIFF: %f", i+1, target_position_diff);
+
+
         PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
     }
 }
