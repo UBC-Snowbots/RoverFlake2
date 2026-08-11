@@ -16,7 +16,7 @@ One node, `mission_manager`, owns the mission lifecycle:
 | `/tag_point`      | `rover_mapping_interfaces/TagPoint`     | save current GPS fix as a labeled waypoint |
 | `/segment_start`  | `rover_mapping_interfaces/Segment`      | open a named route leg                   |
 | `/segment_end`    | `rover_mapping_interfaces/Segment`      | close a leg (empty name = last open)     |
-| `/mission/export` | `rover_mapping_interfaces/ExportMap`    | render `report/route_map.png`            |
+| `/mission/export` | `rover_mapping_interfaces/ExportMap`    | render `report/` (PNG + GeoJSON + CSV)   |
 
 Subscribes `/gnss_fix` (NavSatFix). Publishes the active mission name
 latched on `/mission/active` (std_msgs/String, empty = none) so UIs that
@@ -31,8 +31,14 @@ missions/2026-08-05_field1/
   waypoints.yaml   tagged points (atomic writes)
   segments.yaml    named legs as timestamp ranges
   rosbag2/         /gnss_fix bag — the raw source of truth
-  report/route_map.png
+  report/
+    route_map.png
+    mission.geojson  waypoints + track as GIS-ready vectors
+    poi.csv
 ```
+
+`mission.geojson` is standard RFC 7946 (coordinates `[lon, lat, alt]`) and
+opens directly in QGIS, geojson.io, or Google Earth.
 
 ## Data locations & portability
 
