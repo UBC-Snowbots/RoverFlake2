@@ -7,63 +7,25 @@
  */
 
 #pragma once
-#include "revert_def.h"
+
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 
 
-#ifdef REVERT
+#define MAX_LINEAR_SPEED_MPS 2.0
+#define MAX_ANGULAR_SPEED_MPS 2.0
 
-    #include "rclcpp/rclcpp.hpp"
-    #include "sensor_msgs/msg/joy.hpp"
-    #include "geometry_msgs/msg/twist.hpp"
+/**
+    * @brief DriveControlNode handles joystick input and publishes velocity commands.
+    */
+class DriveControlNode : public rclcpp::Node {
+public:
+    DriveControlNode();
 
+private:
+    void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);  // Callback function for joystick input
 
-    //! NEW
-    #define MAX_LINEAR_SPEED_MPS 2.0
-    #define MAX_ANGULAR_SPEED_MPS 2.0
-    //! NEW END
-
-
-
-    /**
-     * @brief DriveControlNode handles joystick input and publishes velocity commands.
-     */
-    class DriveControlNode : public rclcpp::Node {
-    public:
-        DriveControlNode();  // Constructor
-
-    private:
-        void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);  // Callback function for joystick input
-
-        static constexpr double MAX_LINEAR_SPEED = 1.0;  // Maximum linear speed (m/s)
-
-        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
-        rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input
-    };
-
-#else
-    #include "rclcpp/rclcpp.hpp"
-    #include "sensor_msgs/msg/joy.hpp"
-    #include "geometry_msgs/msg/twist.hpp"
-
-
-    #define MAX_LINEAR_SPEED_MPS 2.0
-    #define MAX_ANGULAR_SPEED_MPS 2.0
-
-    /**
-     * @brief DriveControlNode handles joystick input and publishes velocity commands.
-     */
-    class DriveControlNode : public rclcpp::Node {
-    public:
-        DriveControlNode();
-
-    private:
-        void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);  // Callback function for joystick input
-
-        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
-        rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input
-    };
-
-#endif
-
-
-
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input
+};
