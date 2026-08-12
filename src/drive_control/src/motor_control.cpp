@@ -36,6 +36,10 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setCurrentLimit(motors[i], MAX_CURRENT_AMPS);
         handlePhidgetError(ret, "setting motor current limit", i);
 
+        // Idk if this is needed too, but in theroy it should disable surging the motors if it is the same as the current limit
+        ret = PhidgetMotorPositionController_setSurgeCurrentLimit(motors[i], MAX_CURRENT_AMPS);
+        handlePhidgetError(ret, "setting motor surge current limit", i);
+
         // Initialize motor position so wheels are stationary on startup
         ret = PhidgetMotorPositionController_getPosition(motors[i], &current_positions[i]);
         if (ret == EPHIDGET_OK) {
