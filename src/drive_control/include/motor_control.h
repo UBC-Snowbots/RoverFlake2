@@ -16,6 +16,7 @@
 #define MOTOR_NUM_POLES 4
 #define MOTOR_NUM_PHASES 3
 #define WHEEL_RADIUS_METERS 0.1
+#define MAX_CURRENT_AMPS 5.0 //Max fuse current is 7.5A
 
 /**
     * Converts commutations into radians
