@@ -40,6 +40,9 @@ MotorControlNode::MotorControlNode() : Node("motor_control_node") {
         ret = PhidgetMotorPositionController_setSurgeCurrentLimit(motors[i], MAX_CURRENT_AMPS);
         handlePhidgetError(ret, "setting motor surge current limit", i);
 
+        ret = PhidgetMotorPositionController_setDeadBand(motors[i], DEAD_BAND_RADS);
+        handlePhidgetError(ret, "setting motor dead band", i);
+
         // Initialize motor position so wheels are stationary on startup
         ret = PhidgetMotorPositionController_getPosition(motors[i], &current_positions[i]);
         if (ret == EPHIDGET_OK) {
