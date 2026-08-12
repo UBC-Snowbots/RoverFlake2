@@ -22,7 +22,3 @@ private:
     static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
     static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
 };
-
-#endif
-
-
