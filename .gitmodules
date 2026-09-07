@@ -15,4 +15,4 @@
 	url = https://github.com/ros-misc-utilities/ffmpeg_encoder_decoder.git
 [submodule "FirmFlake"]
 	path = FirmFlake
-	url = https://github.com/UBC-Snowbots/FirmFlake.git
+	url = git@github.com:UBC-Snowbots/FirmFlake.git
