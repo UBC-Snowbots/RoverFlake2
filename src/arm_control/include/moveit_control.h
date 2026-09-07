@@ -18,12 +18,12 @@ purpose: to handle moveit control, as well as servo.
 #include <moveit_servo/servo.hpp>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <armControlParams.h>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <control_msgs/msg/joint_jog.hpp>
 
 #define JOINT_JOG 1
 #define CARTESIAN_EE_FRAME 2
 #define CARTESIAN_BASE_FRAME 3
-
-#define PI 3.14159
 
 // Gripper toggle button index
 #define GRIPPER_TOGGLE_BTN 0  // joystick "button 1" is index 0 (zero-indexed)
