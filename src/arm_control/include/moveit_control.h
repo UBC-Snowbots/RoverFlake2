@@ -18,7 +18,6 @@ purpose: to handle moveit control, as well as servo.
 #include <moveit_servo/servo.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <armControlParams.h>
-#include <geometry_msgs/msg/twist_stamped.hpp>
 
 #define JOINT_JOG 1
 #define CARTESIAN_EE_FRAME 2
