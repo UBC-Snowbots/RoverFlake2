@@ -14,7 +14,7 @@ purpose: to handle moveit control, as well as servo.
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 
 // Servo
-#include <moveit_servo/servo_parameters.h>
+#include <moveit_servo/moveit_servo_lib_parameters.hpp>
 #include <moveit_servo/servo.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <armControlParams.h>
