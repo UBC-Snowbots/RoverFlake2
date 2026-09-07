@@ -15,7 +15,7 @@ purpose: to handle moveit control, as well as servo.
 
 // Servo
 #include <moveit_servo/moveit_servo_lib_parameters.hpp>
-#include <moveit_servo/servo.h>
+#include <moveit_servo/servo.hpp>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <armControlParams.h>
 

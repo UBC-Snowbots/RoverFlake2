@@ -43,7 +43,7 @@
 
 // Servo
 #include <moveit_servo/servo_parameters.h>
-#include <moveit_servo/servo.h>
+#include <moveit_servo/servo.hpp>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
 //Rover
