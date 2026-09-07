@@ -60,7 +60,7 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit2_tutorials.servo
 // ^^^^^
 // First we declare pointers to the node and publisher that will publish commands to Servo
 rclcpp::Node::SharedPtr node_;
-rclcpp::Publisher<control_msgs::msg::JointComponentCommand>::SharedPtr joint_cmd_pub_;
+rclcpp::Publisher<control_msgs::msg::JointJog>::SharedPtr joint_cmd_pub_;
 rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_cmd_pub_;
 size_t count_ = 0;
 
@@ -74,7 +74,7 @@ void publishCommands()
   // contains a recent timestamp, or Servo will think the command is stale and will not move the robot.
   if (count_ < 100)
   {
-    auto msg = std::make_unique<control_msgs::msg::JointComponentCommand>();
+    auto msg = std::make_unique<control_msgs::msg::JointJog>();
     msg->header.stamp = node_->now();
     msg->joint_names.push_back("panda_joint1");
     msg->velocities.push_back(0.3);
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
   // These are the publishers that will send commands to MoveIt Servo. Two command types are supported: JointJog
   // messages which will directly jog the robot in the joint space, and TwistStamped messages which will move the
   // specified link with the commanded Cartesian velocity. In this demo, we jog the end effector link.
-  joint_cmd_pub_ = node_->create_publisher<control_msgs::msg::JointComponentCommand>("servo_demo_node/delta_joint_cmds", 10);
+  joint_cmd_pub_ = node_->create_publisher<control_msgs::msg::JointJog>("servo_demo_node/delta_joint_cmds", 10);
   twist_cmd_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>("servo_demo_node/delta_twist_cmds", 10);
 
   // Next we will create a collision object in the way of the arm. As the arm is servoed towards it, it will slow down

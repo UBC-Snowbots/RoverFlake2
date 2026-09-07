@@ -66,7 +66,7 @@ public:
           servo_output_subscriber = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
             "/arm_controller/joint_trajectory", qos, std::bind(&ArmMoveitControl::servoCallback, this, std::placeholders::_1));
         
-	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointComponentCommand>(ArmConstants::servo_fk_topic, 10);
+	joint_cmd_publisher = this->create_publisher<control_msgs::msg::JointJog>(ArmConstants::servo_fk_topic, 10);
 	twist_cmd_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>(ArmConstants::servo_ik_topic, 10);
         // arm_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
         //     "/arm/feedback", 10, std::bind(&ArmMoveitControl::arm_callback, this, std::placeholders::_1));
@@ -109,7 +109,7 @@ private:
 
     // rclcpp::Publisher<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr command_publisher_;
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_publisher;
-    rclcpp::Publisher<control_msgs::msg::JointComponentCommand>::SharedPtr joint_cmd_publisher;
+    rclcpp::Publisher<control_msgs::msg::JointJog>::SharedPtr joint_cmd_publisher;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_cmd_publisher;
     rclcpp::Subscription<control_msgs::msg::JointTrajectoryControllerState>::SharedPtr trajectory_subscriber;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber;

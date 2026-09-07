@@ -42,7 +42,7 @@
  */
 
 #include <chrono>
-#include <control_msgs/msg/joint_component_command.hpp>
+#include <control_msgs/msg/joint_jog.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <moveit_msgs/srv/servo_command_type.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -132,7 +132,7 @@ private:
   rclcpp::Node::SharedPtr nh_;
 
   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_pub_;
-  rclcpp::Publisher<control_msgs::msg::JointComponentCommand>::SharedPtr joint_pub_;
+  rclcpp::Publisher<control_msgs::msg::JointJog>::SharedPtr joint_pub_;
   rclcpp::Client<moveit_msgs::srv::ServoCommandType>::SharedPtr switch_input_;
 
   std::shared_ptr<moveit_msgs::srv::ServoCommandType::Request> request_;
@@ -145,7 +145,7 @@ KeyboardServo::KeyboardServo() : joint_vel_cmd_(1.0), command_frame_id_{ "panda_
   nh_ = rclcpp::Node::make_shared("servo_keyboard_input");
 
   twist_pub_ = nh_->create_publisher<geometry_msgs::msg::TwistStamped>(TWIST_TOPIC, ROS_QUEUE_SIZE);
-  joint_pub_ = nh_->create_publisher<control_msgs::msg::JointComponentCommand>(JOINT_TOPIC, ROS_QUEUE_SIZE);
+  joint_pub_ = nh_->create_publisher<control_msgs::msg::JointJog>(JOINT_TOPIC, ROS_QUEUE_SIZE);
 
   // Client for switching input types
   switch_input_ = nh_->create_client<moveit_msgs::srv::ServoCommandType>("servo_node/switch_command_type");
@@ -218,7 +218,7 @@ int KeyboardServo::keyLoop()
 
     // // Create the messages we might publish
     auto twist_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
-    auto joint_msg = std::make_unique<control_msgs::msg::JointComponentCommand>();
+    auto joint_msg = std::make_unique<control_msgs::msg::JointJog>();
 
     joint_msg->joint_names.resize(7);
     joint_msg->joint_names = { "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",

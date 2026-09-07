@@ -5,7 +5,7 @@
 void ArmMoveitControl::publishCommands(){
 // 	if (count_ < 100)
 // {
-//   auto msg = std::make_unique<control_msgs::msg::JointComponentCommand>();
+//   auto msg = std::make_unique<control_msgs::msg::JointJog>();
 //   msg->header.stamp = this->get_clock()->now();
 //   msg->joint_names.push_back("joint_turntable");
 //   msg->velocities.push_back(0.3);
