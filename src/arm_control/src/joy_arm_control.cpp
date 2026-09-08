@@ -1,6 +1,8 @@
 #include "joy_arm_control.h"
 #include <cmath>
 
+// #define MAX_SPEED_DEG 25
+
 // Cartesian / IK-mode constants (used by MoveIt Servo twist path)
 namespace ControllerConfig {
     constexpr const char* CART_FRAME_ID    = "base_link";
@@ -133,7 +135,12 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         target.cmd_type = 'P';
 
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.positions[i] = axes[i].position + control_input.fk_axes[i] * 10;
+        if(i != AXIS_5_INDEX && i != AXIS_6_INDEX)
+        {
+            target.positions[i] = axes[i].position + control_input.fk_axes[i] * 10;
+        } else {
+            target.positions[i] = axes[i].position + control_input.fk_axes[i] * 35;
+        }
     }
     RCLCPP_WARN(this->get_logger(), "Position control has not been tested on new arm, beware!");
     }else if(CONTROL_MODE == VELOCITY_CONTROL){
@@ -141,7 +148,12 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         target.velocities[6] = target.end_effector;
         target.cmd_type = 'V';
     for (int i = 0; i < NUM_JOINTS; i++){
+              if(i != AXIS_5_INDEX && i != AXIS_6_INDEX)
+        {
         target.velocities[i] = control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale;
+        } else {
+        target.velocities[i] = control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale * 3.5;
+        }
     }
     }
         arm_publisher->publish(target);
