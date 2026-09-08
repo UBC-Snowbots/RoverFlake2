@@ -107,6 +107,74 @@ static const char* const KEY_JOG_TWIST_NAMES[NUM_AXES] = {
 // because rover_hmi_core does not depend on arm_control.
 static constexpr const char* SERVO_TWIST_TOPIC = "/arm_moveit_control/delta_twist_cmds";
 
+// ---------------------------------------------------------------------------
+// PS4 pad jog
+// ---------------------------------------------------------------------------
+// Same axes as the keyboard, driven by sticks instead of keys. joy_linux
+// already owns the device and publishes /joy, so there is nothing to detect or
+// open here — the panel just subscribes and reads the indices below.
+//
+// Mirrors ps4_index and the PS4_JOY_LINUX case of
+// ArmControllerConfig::process_joy_input in arm_control/include/
+// controller_config.h — duplicated rather than included for the same reason as
+// SERVO_TWIST_TOPIC: rover_hmi_core does not depend on arm_control. Keep the
+// two in step.
+namespace ps4_index {
+    namespace axes {
+        constexpr int LEFT_JOYSTICK_X  = 0;
+        constexpr int LEFT_JOYSTICK_Y  = 1;
+        constexpr int L2               = 2;   // left trigger
+        constexpr int RIGHT_JOYSTICK_X = 3;
+        constexpr int RIGHT_JOYSTICK_Y = 4;
+        constexpr int R2               = 5;   // right trigger
+        constexpr int DPAD_X           = 6;
+        constexpr int DPAD_Y           = 7;
+    }
+    namespace buttons {
+        constexpr int L1    = 4;   // left bumper
+        constexpr int R1    = 5;   // right bumper
+        constexpr int SHARE = 8;   // left of the trackpad
+    }
+}
+
+// Which pad control drives which firmware axis in joint mode. Rows match
+// KEY_JOG_AXIS_NAMES, so the readout grid lights up the same way it does for
+// keys. EE is the L1/R1 pair, not an axis, so it is handled separately.
+static const struct { int axis; int joy_axis; } PS4_FK_BINDINGS[] = {
+    { AXIS_1_INDEX, ps4_index::axes::LEFT_JOYSTICK_X  },
+    { AXIS_2_INDEX, ps4_index::axes::LEFT_JOYSTICK_Y  },
+    { AXIS_3_INDEX, ps4_index::axes::RIGHT_JOYSTICK_Y },
+    { AXIS_4_INDEX, ps4_index::axes::RIGHT_JOYSTICK_X },
+    { AXIS_5_INDEX, ps4_index::axes::DPAD_Y           },
+    { AXIS_6_INDEX, ps4_index::axes::DPAD_X           },
+};
+
+// Cartesian mode. Not the same pairing as the joint map — the triggers take
+// over yaw and the right stick X drops out, exactly as in controller_config.h.
+static const struct { int twist; int joy_axis; } PS4_IK_BINDINGS[] = {
+    { IK_LIN_X_INDEX, ps4_index::axes::LEFT_JOYSTICK_Y  },
+    { IK_LIN_Y_INDEX, ps4_index::axes::LEFT_JOYSTICK_X  },
+    { IK_LIN_Z_INDEX, ps4_index::axes::RIGHT_JOYSTICK_Y },
+    { IK_ANG_X_INDEX, ps4_index::axes::DPAD_X           },
+    { IK_ANG_Y_INDEX, ps4_index::axes::DPAD_Y           },
+    // IK_ANG_Z is the trigger pair (L2 − R2) / 2, applied in activeTwist().
+};
+
+// /joy goes quiet for this long while the pad is armed → treat the pad as gone
+// and stop. joy_linux runs at autorepeat_rate 100 Hz (game_controller.launch.py),
+// so it republishes even when a stick is held still; silence is a real fault,
+// not a still hand. Without this the driver re-sends its last command forever.
+static constexpr qint64 JOY_TIMEOUT_MS = 500;
+
+// Reads that fall off the end of a short Joy message return 0 rather than
+// running past the vector — a pad that reports fewer axes must not crash the HMI.
+static double joyAxis(const sensor_msgs::msg::Joy& m, int i) {
+    return (i >= 0 && i < (int)m.axes.size()) ? (double)m.axes[i] : 0.0;
+}
+static int joyButton(const sensor_msgs::msg::Joy& m, int i) {
+    return (i >= 0 && i < (int)m.buttons.size()) ? m.buttons[i] : 0;
+}
+
 // An axis with a 0 default in HmiDefaults is disabled in the config table; its
 // keys are shown greyed and never contribute a velocity (same rule the +/- jog
 // buttons already follow).
@@ -532,13 +600,20 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     auto* ctl = new QHBoxLayout();
     ctl->setSpacing(8);
 
-    key_jog_arm_btn_ = new QPushButton("ARM KEYBOARD");
-    key_jog_arm_btn_->setCheckable(true);
-    key_jog_arm_btn_->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
-    // No focus: the button must never eat a keystroke itself (Space would
-    // otherwise re-toggle it once it had been clicked).
-    key_jog_arm_btn_->setFocusPolicy(Qt::NoFocus);
-    ctl->addWidget(key_jog_arm_btn_);
+    // Input source: exactly one of these owns the arm at a time, and the lit
+    // button says which. Three plain buttons rather than a combo — this is the
+    // safety control, so what is live has to be readable across the room.
+    static const char* const SRC_LABELS[3] = { "OFF", "ARM KEYBOARD", "ARM PS4" };
+    for (int s = 0; s < 3; s++) {
+        auto* b = new QPushButton(SRC_LABELS[s]);
+        b->setFont(QFont("monospace", theme::FontSizeLg, QFont::Bold));
+        // No focus: a button must never eat a keystroke itself (Space would
+        // otherwise re-press it once it had been clicked).
+        b->setFocusPolicy(Qt::NoFocus);
+        QObject::connect(b, &QPushButton::clicked, [this, s]() { setInputSource(s); });
+        src_btns_[s] = b;
+        ctl->addWidget(b);
+    }
 
     auto* scale_lbl = new QLabel("Speed x");
     scale_lbl->setFont(font);
@@ -616,8 +691,9 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     grid->setColumnStretch(2, 1);
     layout->addWidget(chips);
 
-    auto* hint = new QLabel("While armed: keys drive the arm from any panel · "
-                            "Space = D-STOP ALL · Esc = release keys");
+    auto* hint = new QLabel("Keyboard: keys drive the arm from any panel · "
+                            "Space = D-STOP ALL · Esc = release keys\n"
+                            "PS4: sticks + D-pad jog · L1/R1 = EE · SHARE = home (disarms, then asks)");
     hint->setFont(QFont("monospace", theme::FontSizeSm));
     hint->setStyleSheet(QString("color: %1;").arg(theme::TextDim));
     layout->addWidget(hint);
@@ -627,15 +703,31 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
     sep->setStyleSheet(QString("background: %1;").arg(theme::BorderDim));
     layout->addWidget(sep);
 
-    // Servo halts on incoming_command_timeout (1 s in rover_servo_params), and
-    // its publish_period is 0.034 s, so the twist has to be streamed rather
-    // than sent on key change like the joint-mode command is.
-    ik_timer_ = new QTimer(owner);
-    ik_timer_->setInterval(30);
-    QObject::connect(ik_timer_, &QTimer::timeout, [this]() { publishKeyJogTwist(); });
+    // Two streaming jobs share this timer:
+    //   IK  — Servo halts on incoming_command_timeout (1 s in rover_servo_params)
+    //         and its publish_period is 0.034 s, so the twist has to be streamed
+    //         rather than sent on change like the joint-mode command is.
+    //   PS4 — sticks are analog and /joy arrives at 100 Hz; republishing here
+    //         instead of per message keeps /arm/command (and the command log)
+    //         at a sane rate, and gives the pad timeout somewhere to run.
+    jog_timer_ = new QTimer(owner);
+    jog_timer_->setInterval(30);
+    QObject::connect(jog_timer_, &QTimer::timeout, [this]() {
+        if (input_source_ == SRC_PS4) {
+            // Notice a dead pad even while nothing is being commanded.
+            const bool lost = !joyLive();
+            if (lost != joy_lost_) {
+                joy_lost_ = lost;
+                styleSourceButtons();
+                restyleKeyJogChips();
+            }
+        }
+        // Both, in IK mode: Servo owns the joints, but the EE is outside its
+        // planning group and still rides the joint path.
+        if (keyJogIkMode()) publishKeyJogTwist();
+        publishKeyJog(true);
+    });
 
-    QObject::connect(key_jog_arm_btn_, &QPushButton::toggled,
-                     [this](bool on) { setKeyJogArmed(on); });
     QObject::connect(key_jog_mode_, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      [this](int) { applyKeyJogMode(); });
     QObject::connect(key_jog_filter_, &KeyJogFilter::keysChanged, [this]() {
@@ -654,7 +746,7 @@ void SendCommandModule::buildKeyJogSection(QVBoxLayout* layout, QWidget* owner) 
         publishKeyJog();
     });
 
-    setKeyJogArmed(false);
+    setInputSource(SRC_OFF);
     applyKeyJogMode();
 }
 
@@ -669,30 +761,43 @@ void SendCommandModule::applyKeyJogMode() {
     const bool ik = keyJogIkMode();
 
     key_jog_filter_->releaseAll();
-    publishKeyJog();
+    // Not publishKeyJog(): a pad stick stays deflected across the switch, and
+    // in IK mode that path would leave the joints NaN — still latched.
+    publishJogStop();
     if (twist_pub_) publishKeyJogTwist();   // zero twist
 
     for (int a = 0; a < NUM_AXES && a < (int)key_jog_row_names_.size(); a++)
         key_jog_row_names_[a]->setText(ik ? KEY_JOG_TWIST_NAMES[a] : KEY_JOG_AXIS_NAMES[a]);
 
     if (ik_frame_) ik_frame_->setEnabled(ik);
-    if (ik_timer_) {
-        if (ik && key_jog_filter_->armed()) ik_timer_->start();
-        else                                ik_timer_->stop();
+    // Streaming is needed for IK (Servo) in either source, and for the pad in
+    // either mode (analog sticks). Keyboard + joint mode publishes on change.
+    if (jog_timer_) {
+        if (jogArmed() && (ik || input_source_ == SRC_PS4)) jog_timer_->start();
+        else                                                jog_timer_->stop();
     }
     restyleKeyJogChips();
 }
 
 void SendCommandModule::restyleKeyJogChips() {
-    const bool armed = key_jog_filter_ && key_jog_filter_->armed();
+    const bool armed = jogArmed();
     const bool ik = keyJogIkMode();
+    // For the pad there are no keys to be "held" — a chip lights when its axis
+    // is actually being commanded in that direction. Above the pad's own
+    // deadzone so a resting stick doesn't make the readout flicker.
+    const auto dirs = activeDirections();
+    const auto tw   = activeTwist();
     for (int b = 0; b < (int)key_jog_chips_.size() && b < NUM_KEY_JOG_BINDINGS; b++) {
         const auto& bind = KEY_JOG_BINDINGS[b];
         // In IK mode the twist keys are always live — Servo decides which
         // joints move, so a per-axis HmiDefaults of 0 doesn't disable them.
         // The EE keys stay direct-drive in both modes, so they keep that gate.
         const bool enabled = (ik && bind.twist >= 0) ? true : keyJogAxisEnabled(bind.axis);
-        const bool down = enabled && armed && key_jog_filter_->isHeld(bind.key);
+        const double level = (ik && bind.twist >= 0) ? tw[bind.twist] : dirs[bind.axis];
+        const bool active = (input_source_ == SRC_KEYBOARD)
+                                ? key_jog_filter_ && key_jog_filter_->isHeld(bind.key)
+                                : level * bind.dir > 0.15;
+        const bool down = enabled && armed && active;
         const char* fg = !enabled ? theme::TextDim
                                   : (down ? theme::Bg : (armed ? theme::Text : theme::TextDim));
         const char* bg = down ? theme::Green : theme::Bg;
@@ -708,47 +813,80 @@ void SendCommandModule::restyleKeyJogChips() {
     }
 }
 
-void SendCommandModule::setKeyJogArmed(bool on) {
+// The one place the armed source changes. Whatever was live is stopped first —
+// switching straight from one input to another must not leave the old one
+// latched at its last command.
+void SendCommandModule::setInputSource(int src) {
     if (!key_jog_filter_) return;
-    key_jog_filter_->setArmed(on);   // disarming releases → keysChanged → stop
-    publishKeyJog();                 // and again in case nothing was held
+    input_source_ = src;
 
-    if (ik_timer_) {
-        if (on && keyJogIkMode()) {
-            ik_timer_->start();
+    // Only the keyboard grabs keys. Disarming releases → keysChanged → stop.
+    key_jog_filter_->setArmed(src == SRC_KEYBOARD);
+    // Unconditional: a pad stick does not un-deflect just because it stopped
+    // being the armed source, so the outgoing source has to be zeroed here.
+    publishJogStop();
+
+    if (jog_timer_) {
+        if (src != SRC_OFF && (keyJogIkMode() || src == SRC_PS4)) {
+            jog_timer_->start();
         } else {
-            ik_timer_->stop();
+            jog_timer_->stop();
             if (twist_pub_) publishKeyJogTwist();   // one zero twist on the way out
         }
     }
 
-    key_jog_arm_btn_->setText(on ? "KEYBOARD ARMED" : "ARM KEYBOARD");
-    key_jog_arm_btn_->setStyleSheet(
-        on ? QString("QPushButton { background: %1; color: %2; border: 2px solid %1; "
-                     "padding: 10px 18px; font-weight: bold; }")
-                 .arg(theme::Green).arg(theme::Bg)
-           : QString("QPushButton { background: %1; color: %2; border: 2px solid %3; "
-                     "padding: 10px 18px; font-weight: bold; }")
-                 .arg(theme::Bg).arg(theme::Text).arg(theme::Border));
+    if (src == SRC_PS4) {
+        // Re-arming after a dropout should not inherit the old verdict; the
+        // timer re-evaluates on its next tick.
+        joy_lost_ = !joyLive();
+    } else {
+        joy_lost_ = false;
+    }
 
-    key_jog_status_->setText(on ? "keys → arm" : "disarmed");
-    key_jog_status_->setStyleSheet(
-        QString("color: %1;").arg(on ? theme::Green : theme::TextDim));
-
+    styleSourceButtons();
     restyleKeyJogChips();
 }
 
-// One message, every mapped axis. Axes with no key down are commanded to 0
-// rather than left NaN, so releasing one key of a multi-key hold stops just
-// that axis while the others keep going.
+void SendCommandModule::styleSourceButtons() {
+    static const char* const LIT_BY_SRC[3] = { theme::Text, theme::Green, theme::Cyan };
+    for (int s = 0; s < 3; s++) {
+        if (!src_btns_[s]) continue;
+        const bool on = (input_source_ == s);
+        const char* lit = LIT_BY_SRC[s];
+        src_btns_[s]->setStyleSheet(
+            on ? QString("QPushButton { background: %1; color: %2; border: 2px solid %1; "
+                         "padding: 10px 18px; font-weight: bold; }")
+                     .arg(lit).arg(theme::Bg)
+               : QString("QPushButton { background: %1; color: %2; border: 2px solid %3; "
+                         "padding: 10px 18px; font-weight: bold; }")
+                     .arg(theme::Bg).arg(theme::TextDim).arg(theme::BorderDim));
+    }
+    if (!key_jog_status_) return;
+    const char* text = "disarmed";
+    const char* color = theme::TextDim;
+    if (input_source_ == SRC_KEYBOARD) { text = "keys → arm";  color = theme::Green; }
+    else if (input_source_ == SRC_PS4) {
+        if (joy_lost_) { text = joy_seen_ ? "PS4 LOST — /joy silent" : "waiting for /joy";
+                         color = theme::Red; }
+        else           { text = "PS4 → arm"; color = theme::Cyan; }
+    }
+    key_jog_status_->setText(text);
+    key_jog_status_->setStyleSheet(QString("color: %1;").arg(color));
+}
+
+// One message, every mapped axis, whichever source is armed. Idle axes are
+// commanded to 0 rather than left NaN, so releasing one key of a multi-key hold
+// (or centring one stick of two) stops just that axis while the others keep
+// going.
 //
-// Once everything is released we publish a final all-zero message and then go
-// quiet — the driver re-sends its active command every poll tick to feed the
-// moteus watchdog, so there is no need to stream while keys are held either.
-void SendCommandModule::publishKeyJog() {
+// Once everything is idle we publish a final all-zero message and then go quiet
+// — the driver re-sends its active command every poll tick to feed the moteus
+// watchdog, so the keyboard never has to stream. The pad does stream, but only
+// because analog sticks change value, not to keep the arm alive.
+void SendCommandModule::publishKeyJog(bool streaming) {
     if (!cmd_pub_ || !key_jog_filter_ || !key_jog_scale_) return;
 
-    const auto dirs = key_jog_filter_->directions();
+    const auto dirs = activeDirections();
     const double scale = key_jog_scale_->value();
 
     rover_msgs::msg::ArmCommand msg;
@@ -776,16 +914,123 @@ void SendCommandModule::publishKeyJog() {
     }
 
     // Nothing held and nothing was moving → don't spam a stop on every stray
-    // keystroke (Esc, an unbound key, re-arming).
+    // keystroke (Esc, an unbound key, re-arming) or every idle pad tick.
     if (!moving && !key_jog_moving_) return;
+    const bool was_moving = key_jog_moving_;
     key_jog_moving_ = moving;
 
     cmd_pub_->publish(msg);
-    logCmd(moving ? QString("keyjog> %1").arg(active.join(", "))
-                  : QStringLiteral("keyjog> release (all axes 0)"));
+    // The streaming path fires 33x/s, so log its transitions only or the
+    // command log drowns. The change-driven keyboard path logs in full.
+    const char* tag = (input_source_ == SRC_PS4) ? "ps4jog" : "keyjog";
+    if (!streaming || moving != was_moving) {
+        logCmd(moving ? QString("%1> %2").arg(tag).arg(active.join(", "))
+                      : QString("%1> release (all axes 0)").arg(tag));
+    }
 }
 
-// Cartesian mode: publish the held keys as a twist for MoveIt Servo. Servo's
+// Command every enabled axis to 0 regardless of mode or source. publishKeyJog()
+// deliberately leaves the arm joints NaN in IK mode (they belong to Servo) —
+// but NaN means "skip", so a joint that was jogging in FK stays latched in the
+// driver, which re-sends it every poll tick. Anything that ends a jog outright
+// has to go through here instead.
+void SendCommandModule::publishJogStop() {
+    if (!cmd_pub_) return;
+    rover_msgs::msg::ArmCommand msg;
+    msg.cmd_type = CMD_ABS_VEL;
+    msg.cmd_value = CMD_SPACE_AXIS;
+    msg.velocities.assign(NUM_MOTORS, NAN);
+    for (int a = 0; a < NUM_AXES && a < NUM_MOTORS; a++)
+        if (keyJogAxisEnabled(a)) msg.velocities[a] = 0.0;
+    cmd_pub_->publish(msg);
+    key_jog_moving_ = false;
+}
+
+// -1..+1 per firmware axis, from whichever source is armed. Axes disabled in
+// HmiDefaults contribute nothing, so a stick pushed toward A4 does nothing for
+// the same reason its keys are greyed out.
+std::array<double, NUM_AXES> SendCommandModule::activeDirections() const {
+    std::array<double, NUM_AXES> dirs{};
+    dirs.fill(0.0);
+    if (input_source_ == SRC_KEYBOARD && key_jog_filter_) return key_jog_filter_->directions();
+    if (input_source_ != SRC_PS4 || !joyLive()) return dirs;
+
+    for (const auto& bind : PS4_FK_BINDINGS) {
+        if (!keyJogAxisEnabled(bind.axis)) continue;
+        dirs[bind.axis] = std::clamp(joyAxis(joy_, bind.joy_axis), -1.0, 1.0);
+    }
+    // EE is a bumper pair, not a stick: L1 opens, R1 closes.
+    if (keyJogAxisEnabled(AXIS_EE_INDEX)) {
+        dirs[AXIS_EE_INDEX] = joyButton(joy_, ps4_index::buttons::L1)
+                            - joyButton(joy_, ps4_index::buttons::R1);
+    }
+    return dirs;
+}
+
+// The Cartesian twist, same deal.
+std::array<double, 6> SendCommandModule::activeTwist() const {
+    std::array<double, 6> t{};
+    t.fill(0.0);
+    if (input_source_ == SRC_KEYBOARD && key_jog_filter_) {
+        for (const auto& bind : KEY_JOG_BINDINGS) {
+            if (bind.twist < 0 || bind.twist >= 6) continue;
+            if (key_jog_filter_->isHeld(bind.key)) t[bind.twist] += bind.dir;
+        }
+        return t;
+    }
+    if (input_source_ != SRC_PS4 || !joyLive()) return t;
+
+    for (const auto& bind : PS4_IK_BINDINGS)
+        t[bind.twist] = joyAxis(joy_, bind.joy_axis);
+    // Yaw is the trigger pair. The difference cancels any rest value the two
+    // share — but joydev reports a trigger as 0.0 until it is first pulled, so
+    // pull both once after connecting or the untouched one biases the yaw.
+    t[IK_ANG_Z_INDEX] = (joyAxis(joy_, ps4_index::axes::L2)
+                       - joyAxis(joy_, ps4_index::axes::R2)) / 2.0;
+    return t;
+}
+
+// The pad counts as live only while /joy is actually arriving.
+bool SendCommandModule::joyLive() const {
+    if (!joy_seen_ || !joy_clock_.isValid()) return false;
+    return (joy_clock_.elapsed() - joy_last_ms_) <= JOY_TIMEOUT_MS;
+}
+
+// joy_linux owns the device; this just caches the latest state. Runs on the Qt
+// thread (the host pumps spin_some from a QTimer), so widgets are safe to touch.
+void SendCommandModule::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
+    if (!msg) return;
+    joy_ = *msg;
+    if (!joy_clock_.isValid()) joy_clock_.start();
+    joy_last_ms_ = joy_clock_.elapsed();
+    joy_seen_ = true;
+    if (!key_jog_status_) return;   // setNode() runs before createWidget()
+
+    // SHARE homes, edge-triggered. Homing is a driver-side state machine that
+    // jog commands would fight, so drop to OFF first — that publishes the stop
+    // and stops the jog timer, which also keeps the modal box below from being
+    // re-entered when it pumps the event loop (and with it, spin_some).
+    const int home_btn = joyButton(joy_, ps4_index::buttons::SHARE);
+    const bool home_edge = home_btn && !prev_joy_home_ && input_source_ == SRC_PS4;
+    prev_joy_home_ = home_btn;
+
+    if (home_edge && !home_prompt_open_) {
+        setInputSource(SRC_OFF);
+        home_prompt_open_ = true;
+        homeChecked();               // same confirm dialog as the panel button
+        home_prompt_open_ = false;
+        return;
+    }
+
+    // Motion itself goes out on the jog timer, not per message — /joy arrives
+    // at 100 Hz. Only the readout follows the sticks directly.
+    if (input_source_ == SRC_PS4) {
+        if (joy_lost_) { joy_lost_ = false; styleSourceButtons(); }
+        restyleKeyJogChips();
+    }
+}
+
+// Cartesian mode: publish the armed source as a twist for MoveIt Servo. Servo's
 // command_in_type is "unitless" ([-1:1] scaled by its own linear/rotational
 // scale params), so the speed spin box is clamped into that range rather than
 // treated as rev/s.
@@ -796,14 +1041,7 @@ void SendCommandModule::publishKeyJog() {
 void SendCommandModule::publishKeyJogTwist() {
     if (!twist_pub_ || !key_jog_filter_ || !key_jog_scale_) return;
 
-    std::array<double, 6> t{};
-    t.fill(0.0);
-    if (key_jog_filter_->armed()) {
-        for (const auto& bind : KEY_JOG_BINDINGS) {
-            if (bind.twist < 0 || bind.twist >= 6) continue;
-            if (key_jog_filter_->isHeld(bind.key)) t[bind.twist] += bind.dir;
-        }
-    }
+    std::array<double, 6> t = activeTwist();
     const double scale = std::clamp(key_jog_scale_->value(), 0.0, 1.0);
     for (double& v : t) v = std::clamp(v, -1.0, 1.0) * scale;
 
@@ -847,6 +1085,13 @@ void SendCommandModule::setNode(rclcpp::Node::SharedPtr node) {
     // Servo's own subscriber is plain KeepLast(10); a stream, not latched state.
     twist_pub_ = node->create_publisher<geometry_msgs::msg::TwistStamped>(
         SERVO_TWIST_TOPIC, rclcpp::QoS(10));
+
+    // joy_linux publishes here as soon as the pad is plugged in — nothing to
+    // detect or open on this side. Depth 1: only the newest stick position
+    // matters, a backlog of stale ones does not.
+    joy_sub_ = node->create_subscription<sensor_msgs::msg::Joy>(
+        "/joy", rclcpp::QoS(1),
+        std::bind(&SendCommandModule::joyCallback, this, std::placeholders::_1));
 }
 
 // Publish a human-readable description of a command to /arm/hmi_log so

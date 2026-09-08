@@ -12,6 +12,13 @@
 //
 // Commands are also published to /arm/hmi_log as formatted strings so
 // CommandLogModule can display them without any direct coupling between modules.
+//
+// Jogging has three input sources — off, keyboard, PS4 pad — and they are
+// mutually exclusive. All three feed the SAME publish path: whatever is armed
+// only has to produce a -1..1 direction per axis (or a Cartesian twist in IK
+// mode). The pad adds no plumbing of its own — joy_linux already owns the
+// device and publishes /joy, so the panel just subscribes and reads the stick
+// indices (see PS4_FK_BINDINGS in the .cpp).
 
 #pragma once
 
@@ -21,6 +28,7 @@
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QElapsedTimer>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLabel>
@@ -32,6 +40,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 
@@ -56,18 +65,34 @@ public:
     void stop() override {}
 
 private:
+    // Which input owns the arm. Mutually exclusive — arming one disarms the
+    // rest, and OFF is a real state rather than "nothing happens to be held".
+    enum InputSource { SRC_OFF = 0, SRC_KEYBOARD = 1, SRC_PS4 = 2 };
+
     void sendPosition(int motor_id, double pos, double vel);
     void sendVelocity(int motor_id, double velocity);
-    // Keyboard jog: one CMD_ABS_VEL carrying every mapped axis at once, so
-    // several held keys move several axes simultaneously. Capture is an
-    // application-wide event filter gated by the ARM toggle — the toggle is
-    // the safety, so the keys work from any panel, not just a focused widget.
+    // Jog: one CMD_ABS_VEL carrying every mapped axis at once, so several held
+    // keys (or one stick) move several axes simultaneously. Keyboard capture is
+    // an application-wide event filter gated by the source selector — the
+    // selector is the safety, so the keys work from any panel, not just a
+    // focused widget.
     void buildKeyJogSection(class QVBoxLayout* layout, QWidget* owner);
-    void publishKeyJog();          // reads the filter's held keys, publishes once
-    void setKeyJogArmed(bool on);
-    void restyleKeyJogChips();     // held-key readout
-    void applyKeyJogMode();        // relabels rows, starts/stops the IK timer
+    // Reads the armed source and publishes once. streaming=true means the jog
+    // timer called it (33 Hz), so log transitions only.
+    void publishKeyJog(bool streaming = false);
+    void publishJogStop();         // every enabled axis to 0, unconditionally
+    void setInputSource(int src);
+    void styleSourceButtons();
+    void restyleKeyJogChips();     // held-key / stick readout
+    void applyKeyJogMode();        // relabels rows, starts/stops the jog timer
     bool keyJogIkMode() const;
+    bool jogArmed() const { return input_source_ != SRC_OFF; }
+    // -1..+1 per firmware axis, and the Cartesian twist, from whichever source
+    // is armed. Everything downstream is source-agnostic.
+    std::array<double, NUM_AXES> activeDirections() const;
+    std::array<double, 6>        activeTwist() const;
+    void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);
+    bool joyLive() const;          // pad armed and /joy still arriving
     // IK mode: the same keys become a Cartesian twist for MoveIt Servo, which
     // needs a continuous stream (it halts after incoming_command_timeout), so
     // this is timer-driven rather than published on key change.
@@ -88,6 +113,7 @@ private:
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr cmd_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr log_pub_;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
 
     QComboBox* motor_select_ = nullptr;
     QDoubleSpinBox* position_spin_ = nullptr;
@@ -98,15 +124,27 @@ private:
     std::array<QCheckBox*, NUM_ZERO_AXES> zero_checks_{};
 
     KeyJogFilter*   key_jog_filter_  = nullptr;
-    QPushButton*    key_jog_arm_btn_ = nullptr;
+    std::array<QPushButton*, 3> src_btns_{};     // OFF / ARM KEYBOARD / ARM PS4
     QDoubleSpinBox* key_jog_scale_   = nullptr;
     QLabel*         key_jog_status_  = nullptr;
     QComboBox*      key_jog_mode_    = nullptr;  // joint (FK) vs Cartesian (IK)
     QComboBox*      ik_frame_        = nullptr;  // twist header.frame_id
-    QTimer*         ik_timer_        = nullptr;
+    QTimer*         jog_timer_       = nullptr;  // streams IK twist and pad jog
     std::vector<QLabel*> key_jog_chips_;
     std::vector<QLabel*> key_jog_row_names_;     // relabelled per mode
+    int             input_source_    = SRC_OFF;
     bool            key_jog_moving_  = false;  // true → an all-zero stop is owed
     bool            ik_twist_moving_ = false;  // log twist transitions only
+
+    // PS4 pad. joy_linux owns the device and publishes /joy; this only caches
+    // the last message and notices when the stream dies.
+    sensor_msgs::msg::Joy joy_;
+    QElapsedTimer   joy_clock_;
+    qint64          joy_last_ms_     = 0;
+    bool            joy_seen_        = false;  // a /joy message has ever arrived
+    bool            joy_lost_        = false;  // stream went quiet while armed
+    int             prev_joy_home_   = 0;      // SHARE is edge-triggered
+    bool            home_prompt_open_ = false; // modal box pumps events → re-entry
+
     rclcpp::Node::SharedPtr node_;             // for twist header stamps
 };

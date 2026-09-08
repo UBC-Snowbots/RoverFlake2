@@ -1,0 +1,82 @@
+{
+    "modules": {
+        "Cameras": {
+            "grid_cams": [
+                "realsense415",
+                "realsense435i",
+                "logitech",
+                "suyin"
+            ],
+            "grid_tree": {
+                "children": [
+                    {
+                        "isNode": false,
+                        "panel": "realsense415"
+                    },
+                    {
+                        "children": [
+                            {
+                                "isNode": false,
+                                "panel": "realsense435i"
+                            },
+                            {
+                                "children": [
+                                    {
+                                        "isNode": false,
+                                        "panel": "suyin"
+                                    },
+                                    {
+                                        "isNode": false,
+                                        "panel": "logitech"
+                                    }
+                                ],
+                                "isNode": true,
+                                "splitRatio": 1,
+                                "splitTop": false
+                            }
+                        ],
+                        "isNode": true,
+                        "splitRatio": 1,
+                        "splitTop": true
+                    }
+                ],
+                "isNode": true,
+                "splitRatio": 1,
+                "splitTop": true
+            }
+        }
+    },
+    "name": "New Arm",
+    "saved_at": "2026-09-06 19:38",
+    "tree": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "isNode": false,
+                        "panel": "Motor Telemetry"
+                    },
+                    {
+                        "isNode": false,
+                        "panel": "Send Command"
+                    }
+                ],
+                "isNode": true,
+                "splitRatio": 0.6599224209785461,
+                "splitTop": true
+            },
+            {
+                "isNode": false,
+                "panel": "Plots"
+            }
+        ],
+        "isNode": true,
+        "splitRatio": 0.9749179482460022,
+        "splitTop": false
+    },
+    "visible": [
+        "Motor Telemetry",
+        "Plots",
+        "Send Command"
+    ]
+}
