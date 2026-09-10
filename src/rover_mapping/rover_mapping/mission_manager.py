@@ -78,6 +78,7 @@ class MissionManager(Node):
                            .get_parameter_value().double_value)
 
         self._fix: Optional[NavSatFix] = None
+        self._fix_arrival = 0.0
         self._mission_dir: Optional[str] = None
         self._waypoints: List[dict] = []
         self._recorder: Optional[BagRecorder] = None
@@ -122,6 +123,7 @@ class MissionManager(Node):
     # ---------------------------------------------------------- fix + track
     def _on_fix(self, msg: NavSatFix) -> None:
         self._fix = msg
+        self._fix_arrival = self.get_clock().now().nanoseconds * 1e-9
         if self._track is None or msg.status.status < 0:
             return
         stamp = stamp_to_float(msg.header.stamp)
@@ -133,10 +135,13 @@ class MissionManager(Node):
         self._track.flush()
 
     def _fresh_fix(self) -> Optional[NavSatFix]:
+        # Freshness = arrival age, not header.stamp age: GNSS drivers stamp
+        # with GPS time or zero, which can't be compared to the node clock.
+        # A tag therefore always lands on the fix the rover just reported.
         if self._fix is None:
             return None
         now = self.get_clock().now().nanoseconds * 1e-9
-        if now - stamp_to_float(self._fix.header.stamp) > self._stale_sec:
+        if now - self._fix_arrival > self._stale_sec:
             return None
         return self._fix
 
@@ -304,11 +309,11 @@ class MissionManager(Node):
             mission = paths.resolve_mission(req.mission.strip())
             res.path = export_mission(mission, site=self._site or None)
             res.ok = True
-            res.message = f'wrote {res.path}'
+            res.message = f'wrote {res.path} (+ mission.geojson, poi.csv)'
             self.get_logger().info(res.message)
-        except (FileNotFoundError, ValueError, OSError) as e:
+        except Exception as e:   # noqa: BLE001 — a service must always respond
             res.ok = False
-            res.message = str(e)
+            res.message = f'{type(e).__name__}: {e}'
         return res
 
 

@@ -1,4 +1,5 @@
-"""Report-map exporter: offline tiles + track.csv + waypoints.yaml -> PNG.
+"""Report-map exporter: offline tiles + track.csv + waypoints.yaml ->
+report/route_map.png, mission.geojson (all tags + track, GIS-ready), poi.csv.
 
 Pillow only — no gdal, no matplotlib, no bag reading (mission_manager logs
 the track to CSV while recording). Degrades to a plain background when the
@@ -10,6 +11,7 @@ site imagery hasn't been fetched; the track and waypoints still render.
 from __future__ import annotations
 
 import csv
+import json
 import math
 import os
 import sys
@@ -91,12 +93,12 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     if not lats:
         raise ValueError(f'{mission_dir}: no track and no waypoints to draw')
 
+    meta = {}
+    mpath = os.path.join(mission_dir, 'mission.yaml')
+    if os.path.exists(mpath):
+        with open(mpath) as f:
+            meta = yaml.safe_load(f) or {}
     if site is None:
-        meta = {}
-        mpath = os.path.join(mission_dir, 'mission.yaml')
-        if os.path.exists(mpath):
-            with open(mpath) as f:
-                meta = yaml.safe_load(f) or {}
         site = (meta.get('site')
                 or paths.site_covering(sum(lats) / len(lats),
                                        sum(lons) / len(lons))
@@ -219,10 +221,39 @@ def export_mission(mission_dir: str, site: Optional[str] = None,
     img.save(out)
     write_poi_csv(os.path.join(os.path.dirname(out), 'poi.csv'),
                   waypoints, track)
+    write_geojson(os.path.join(os.path.dirname(out), 'mission.geojson'),
+                  waypoints, track,
+                  dict(meta, mission=os.path.basename(mission_dir)))
     if missing and zooms:
         print(f'warning: {missing} tiles missing (site imagery incomplete)',
               file=sys.stderr)
     return out
+
+
+def write_geojson(path: str, waypoints: List[dict], track, meta: dict) -> str:
+    """Waypoints as Points + the track as a LineString, RFC 7946 ([lon, lat]) —
+    opens directly in QGIS / geojson.io / Google Earth. default=str keeps
+    YAML-loaded values JSON-safe (mission.yaml's date parses as datetime)."""
+    features = []
+    for wp in waypoints:
+        coords = [wp['lon'], wp['lat']]
+        if wp.get('alt') is not None:
+            coords.append(wp['alt'])
+        props = {k: wp[k] for k in ('id', 'label', 'category', 'stamp', 'notes')
+                 if wp.get(k) not in (None, '')}
+        features.append({'type': 'Feature',
+                         'geometry': {'type': 'Point', 'coordinates': coords},
+                         'properties': dict(props, kind='waypoint')})
+    if len(track) > 1:
+        features.append({'type': 'Feature',
+                         'geometry': {'type': 'LineString',
+                                      'coordinates': [[lon, lat] for _, lat, lon in track]},
+                         'properties': {'kind': 'track'}})
+    with open(path, 'w') as f:
+        json.dump({'type': 'FeatureCollection', 'features': features,
+                   'mission': meta}, f, indent=2, default=str)
+        f.write('\n')
+    return path
 
 
 def write_poi_csv(path: str, waypoints: List[dict], track) -> str:
