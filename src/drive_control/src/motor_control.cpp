@@ -5,6 +5,7 @@
 
 #include <algorithm>          // For std::clamp
 
+
 /**
  * @brief Construct a new MotorControlNode object
  * Initializes the motor control node, sets up motor resources, and starts a timer.
@@ -132,6 +133,9 @@ int main(int argc, char **argv) {
 
 #else
 
+double commanded_velocities[NUM_MOTORS] = {0.0};
+
+
 #include <algorithm>          // For std::clamp
 
 /**
@@ -248,33 +252,44 @@ void MotorControlNode::handlePhidgetError(PhidgetReturnCode ret, const std::stri
 }
 
 void MotorControlNode::motorControlLoop() {
-    // static uint32_t 
+    constexpr double dt = MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0;
+
     for (int i = 0; i < NUM_MOTORS; i++) {
-        target_positions[i] += (target_velocities[i] * (MOTOR_CONTROL_LOOP_FREQUENCY_MS / 1000.0));
 
-        float target_position_diff = 0.0;
-        const float diff_limit = 5;
-        double position;
+        // Desired velocity comes from setVelocity().
+        const double velocity_error =
+            target_velocities[i] - commanded_velocities[i];
 
-       PhidgetReturnCode ret = PhidgetMotorPositionController_getPosition(motors[i], &position);
+        // Maximum velocity change allowed this control cycle.
+        const double max_velocity_change =
+            MAX_ACCEL_RADS * dt;
+
+        // Acceleration-limit the commanded velocity.
+        const double velocity_change =
+            std::clamp(
+                velocity_error,
+                -max_velocity_change,
+                max_velocity_change
+            );
+
+        commanded_velocities[i] += velocity_change;
+
+        // Integrate velocity -> position.
+        target_positions[i] += commanded_velocities[i] * dt;
+
+        PhidgetReturnCode ret =
+            PhidgetMotorPositionController_setTargetPosition(
+                motors[i],
+                target_positions[i]
+            );
+
         if (ret != EPHIDGET_OK) {
-
-            position = current_positions[i];
-            target_position_diff = 0.0;
+            handlePhidgetError(
+                ret,
+                "set target position",
+                i
+            );
         }
-
-        target_position_diff = target_positions[i] - position;
-
-        if(abs(target_position_diff) >= diff_limit)
-        {
-            target_position_diff = diff_limit;
-
-            target_positions[i] = position + target_position_diff;
-        }
-        RCLCPP_WARN(this->get_logger(), "MOTOR: %i TARGET POSITION DIFF: %f", i+1, target_position_diff);
-
-
-        PhidgetMotorPositionController_setTargetPosition(motors[i], target_positions[i]);
     }
 }
 
