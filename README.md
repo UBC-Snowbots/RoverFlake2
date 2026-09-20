@@ -1,12 +1,10 @@
 # RoverFlake2
 2023 - Present ROS2 repo for rover
-RoverFlake1 is old.
-
-### Other documentation
-[Live view doc to consolidate block diagrams, setup procedures, and more](https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=RoverStartupEverything.drawio&dark=1#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1oTCJmi5VluUgLIwTO4EpU9Yp7SvRvJsf%26export%3Ddownload)
 
 ### Setting up this repo on your computer
-_Reccomended/Required: Ubuntu 22.04_
+_Reccomended/Required: Ubuntu 24.04_
+
+Use the [rovercli](https://github.com/UBC-Snowbots/rovercli) tool to set up this repo
 
 SSH authentication is the easiest way to get authorized to push code.
 
@@ -15,27 +13,10 @@ To set up SSH keys on your computer, follow this tutorial:
 
 Then, set up the newly generated SSH in github with this tutorial: [Adding a new SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
 
-Now, you can clone the repo, with SSH, **NOT HTTPS**:
-> `#Install into your home directory`
-> 
-> `git clone --recurse-submodules git@github.com:UBC-Snowbots/RoverFlake2.git`
-
 _Obviously you are welcome to use HTTPS or another form of authentication (like GitHub Desktop) if you prefer_
 
-Then cd in, and we can use setup scripts from here. 
+Once the repo is set up, try to build!
 
-Before using setup scripts, you need to set your `ROVERFLAKE_ROOT` enviroment variable. Its best to throw this in your .bashrc file so that it sets permanently. 
-One liner to do that:
-> `echo "export ROVERFLAKE_ROOT=<path_to_roverflake>" >> ~/.bashrc`
-
-If the repo is in your home directory, youd do:
-> `echo "export ROVERFLAKE_ROOT=/home/<your_user>/Roverflake2" >> ~/.bashrc`
-
-> `bash setup_scripts/setup_everything_common.sh`
-
-This script will install ros2, as well as other common dependencies. 
-
-After that script finishes, try to build!
 From the root of RoverFlake2:
 > `colcon build`
 (it should automatically use --symlink-install as set in `colcon_defaults.yaml`)
@@ -63,12 +44,10 @@ arm_hardware_interface fails to build:
 > 'git submodule init'
 > 'git submodule update'
 
-_This is only needed if you did not clone recursivley._
-
 'serial' is a ros2 package, its also a git repository. Instead of just copying the code into our repository, git submodules makes it easier to manage different git repositories.
 
 This error means CMake cannot find a package, specifically a ROS2 package. In the above error example CMake cannot find the serial package, which is an external package we use to communicate over USB connections.
 If you get this error for another package, you may just need to install it:
 
-> 'sudo apt install ros-humble-<package_name>'
+> 'sudo apt install ros-$ROS_DISRTO-<package_name>'
  
