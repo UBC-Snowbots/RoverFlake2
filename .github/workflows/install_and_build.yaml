@@ -20,7 +20,7 @@ jobs:
 
       - name: Github setup
         run: |
-          echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE/RoverFlake2" >> "$GITHUB_ENV"
           git config --global url."https://github.com/".insteadOf "git@github.com:"
       - name: Setup Everything
         run: |
@@ -28,6 +28,8 @@ jobs:
           cd $GITHUB_WORKSPACE/RoverFlake2
       - name: Debug info
         run: |
+          ls
+          ls RoverFlake2
           colcon version-check
           cmake --version
       - name: Build
