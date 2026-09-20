@@ -6,15 +6,11 @@
   <Domain Id="101">
     <SharedMemory>
       <Enable>true</Enable>
-      <SubQueueCapacity>256</SubQueueCapacity>
-      <SubHistoryRequest>16</SubHistoryRequest>
-      <PubHistoryCapacity>16</PubHistoryCapacity>
-      <LogLevel>info</LogLevel>
     </SharedMemory>
     <General>
 	    <Interfaces>
-        <NetworkInterface address="192.168.1.50" priority="0" required="false"/>
-        <NetworkInterface autodetermine="true" priority="1"/>
+        <NetworkInterface address="192.168.1.50" priority="0"/>
+        <!--<NetworkInterface autodetermine="true" priority="1"/>-->
 	    </Interfaces>
 	    <AllowMulticast>true</AllowMulticast>
       <EnableMulticastLoopback>true</EnableMulticastLoopback>
