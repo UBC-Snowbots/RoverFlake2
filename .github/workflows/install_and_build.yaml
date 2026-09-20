@@ -25,35 +25,33 @@ jobs:
       - name: Setup Everything
         run: |
           python3 rovercli/main.py setup --distro jazzy --ros-version base --git-protocol https --cd-roverflake n --dst $GITHUB_WORKSPACE/RoverFlake2
-          cd $GITHUB_WORKSPACE/RoverFlake2
       - name: Debug info
         run: |
-          ls
-          ls RoverFlake2
           colcon version-check
           cmake --version
       - name: Build
         run: |
+          cd $GITHUB_WORKSPACE/RoverFlake2
           source /opt/ros/jazzy/setup.bash
           colcon build --packages-skip sweeppy sweepcpp arm_control rover_hmi --parallel-workers 4
           source install/setup.bash
 
-      # - name: Notify Discord (success)
-      #   if: ${{ success() }}
-      #   uses: appleboy/discord-action@v1.0.0
-      #   with:
-      #     webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
-      #     webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
-      #     message: |
-      #       *I'm happy now and I'll let you merge ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
-      #       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Notify Discord (success)
+        if: ${{ success() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            *I'm happy now and I'll let you merge ${{ github.actor }}. _good job!_* || ${{ github.repository }} on `${{ github.ref_name }}`
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-      # - name: Notify Discord (failure)
-      #   if: ${{ failure() }}
-      #   uses: appleboy/discord-action@v1.0.0
-      #   with:
-      #     webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
-      #     webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
-      #     message: |
-      #       _you have saddened me ${{ github.actor }}_
-      #       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Notify Discord (failure)
+        if: ${{ failure() }}
+        uses: appleboy/discord-action@v1.0.0
+        with:
+          webhook_id: ${{ secrets.DISCORD_BOT_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_BOT_WEBHOOK_TOKEN }}
+          message: |
+            _you have saddened me ${{ github.actor }}_
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
