@@ -16,7 +16,7 @@ jobs:
         with:
           repository: 'UBC-Snowbots/rovercli'
           path: 'rovercli'
-          ref: 'e1da77438c3937369058e1dc66e40b8d0a486103'
+          ref: 'baa29a1e4393545930ccbe068a178e7d223b76eb'
 
       - name: Github setup
         run: |
