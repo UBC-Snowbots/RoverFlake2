@@ -25,7 +25,7 @@ jobs:
       - name: Setup Everything
         run: |
           python3 rovercli/main.py setup --distro jazzy --ros-version base --git-protocol https --cd-roverflake n
-          cd ../RoverFlake2
+          cd RoverFlake2
       - name: Debug info
         run: |
           colcon version-check
