@@ -24,8 +24,7 @@ jobs:
           git config --global url."https://github.com/".insteadOf "git@github.com:"
       - name: Setup Everything
         run: |
-          cd rovercli
-          python3 main.py setup --distro jazzy --ros-version base --git-protocol https --cd-roverflake n
+          python3 rovercli/main.py setup --distro jazzy --ros-version base --git-protocol https --cd-roverflake n
           cd ../RoverFlake2
       - name: Debug info
         run: |
