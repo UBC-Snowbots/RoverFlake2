@@ -33,7 +33,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/RoverFlake2
           source /opt/ros/jazzy/setup.bash
-          colcon build --packages-skip sweeppy sweepcpp arm_control rover_hmi --parallel-workers 4
+          colcon build --parallel-workers 4
           source install/setup.bash
 
       - name: Notify Discord (success)
