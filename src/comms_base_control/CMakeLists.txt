@@ -12,6 +12,16 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 
+if(DEFINED ENV{BUILD_DEATH_RAY})
+    add_executable(death_ray_motor_control
+        src/death_ray_motor_control.cpp
+    )
+
+    target_link_libraries(death_ray_motor_control
+        gpiod
+    )
+endif()
+
 # comms_relay talks to pigpiod over a socket, so it only needs the client
 # library (pigpiod_if2), not the root-only in-process pigpio library.
 find_path(PIGPIOD_IF2_INCLUDE_DIR pigpiod_if2.h)

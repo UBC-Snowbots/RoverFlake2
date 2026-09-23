@@ -4,25 +4,36 @@ on: push
 
 jobs:
   setup_and_build_check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Main Repo
+        uses: actions/checkout@v4
+        with:
+          path: 'RoverFlake2'
+
+      - name: Clone rovercli
+        uses: actions/checkout@v4
+        with:
+          repository: 'UBC-Snowbots/rovercli'
+          path: 'rovercli'
+          ref: 'baa29a1e4393545930ccbe068a178e7d223b76eb'
 
       - name: Github setup
         run: |
-          echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo "ROVERFLAKE_ROOT=$GITHUB_WORKSPACE/RoverFlake2" >> "$GITHUB_ENV"
           git config --global url."https://github.com/".insteadOf "git@github.com:"
       - name: Setup Everything
         run: |
-          ./setup_scripts/setup_everything_common.sh
+          python3 rovercli/main.py setup --distro jazzy --ros-version base --git-protocol https --cd-roverflake n --dst $GITHUB_WORKSPACE/RoverFlake2
       - name: Debug info
         run: |
           colcon version-check
           cmake --version
       - name: Build
         run: |
-          source /opt/ros/humble/setup.bash
-          colcon build --packages-skip sweeppy --parallel-workers 4
+          cd $GITHUB_WORKSPACE/RoverFlake2
+          source /opt/ros/jazzy/setup.bash
+          colcon build --parallel-workers 4
           source install/setup.bash
 
       - name: Notify Discord (success)

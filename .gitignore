@@ -17,7 +17,7 @@ msg/_*.py
 build_isolated/
 devel_isolated/
 phidgetlog.log
-
+*.log
 # install files
 random_install_files/*
 
