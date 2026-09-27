@@ -26,16 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# drive_control links against the Phidget C SDK, which its package.xml does
-# not declare. Use the vendor repository as the previous setup script did.
-RUN wget -qO /usr/share/keyrings/phidgets.gpg \
-        https://www.phidgets.com/gpgkey/pubring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/phidgets.gpg] https://www.phidgets.com/debian noble main" \
-        > /etc/apt/sources.list.d/phidgets.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends libphidget22-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR $ROVERFLAKE_ROOT
 
 # The old setup script was removed during the Jazzy migration. Install the
@@ -45,6 +35,16 @@ WORKDIR $ROVERFLAKE_ROOT
 COPY src/ $ROVERFLAKE_ROOT/src/
 RUN apt-get update && rosdep update && rosdep install --from-paths src --ignore-src \
     --skip-keys="serial moteus_msgs gazebo_ros OpenCV" -y --rosdistro jazzy
+
+# drive_control and comms_base_control need native SDK headers that their
+# package.xml files do not declare. The previous setup script installed both.
+RUN wget -qO /usr/share/keyrings/phidgets.gpg \
+        https://www.phidgets.com/gpgkey/pubring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/phidgets.gpg] https://www.phidgets.com/debian noble main" \
+        > /etc/apt/sources.list.d/phidgets.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libphidget22-dev libgpiod-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . $ROVERFLAKE_ROOT
 
