@@ -1,6 +1,9 @@
 # RoverFlake2
 2023 - Present ROS2 repo for rover
 
+### Contributing Guidelines For All Our Repositories:
+[Contributing Code Doc](https://docs.google.com/document/d/1B59aUkZnA1dfNvY3HDDwG8ESrD98x-BsShq9PeywAWM/edit?tab=t.0)
+
 ### Setting up this repo on your computer
 _Reccomended/Required: Ubuntu 24.04_
 
@@ -47,7 +50,5 @@ arm_hardware_interface fails to build:
 'serial' is a ros2 package, its also a git repository. Instead of just copying the code into our repository, git submodules makes it easier to manage different git repositories.
 
 This error means CMake cannot find a package, specifically a ROS2 package. In the above error example CMake cannot find the serial package, which is an external package we use to communicate over USB connections.
-If you get this error for another package, you may just need to install it:
 
-> 'sudo apt install ros-$ROS_DISRTO-<package_name>'
  
