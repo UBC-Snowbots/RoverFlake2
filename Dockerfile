@@ -1,64 +1,52 @@
-# Build with 'docker compose build'
-# Create and enter container with 'docker compose run rover bash'
-# if you have anymore questions ask Aaron
+# Ubuntu runs inside the image on every host. The ROS base image provides both
+# linux/amd64 (Fedora and Intel Mac) and linux/arm64 (Apple Silicon).
+FROM ros:jazzy-ros-base-noble
 
-# official base image in docs (pinned to jammy for reproducibility)
-FROM osrf/ros:humble-desktop-jammy
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC \
+    ROVERFLAKE_ROOT=/RoverFlake2 \
+    RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+    ROS_DOMAIN_ID=101
 
-# consistency with setup files
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
-ENV ROVERFLAKE_ROOT=/RoverFlake2
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV ROS_DOMAIN_ID=101
-
-# install base dependencies (recommend not to change if you want to add niche deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tzdata \
-    sudo \
-    curl \
-    git \
-    wget \
     bash \
-    python3 \
-    python3-pip \
     build-essential \
     cmake \
+    curl \
+    git \
+    libgtkmm-3.0-dev \
+    libsfml-dev \
     python3-colcon-common-extensions \
-    ros-humble-rmw-cyclonedds-cpp \
+    python3-pip \
+    python3-rosdep \
+    ros-jazzy-desktop \
+    ros-jazzy-rmw-cyclonedds-cpp \
+    sudo \
+    tzdata \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# common ROS package deps (use this for niche deps)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-urdf \
-    ros-humble-image-transport \
-    ros-humble-cv-bridge \
-    ros-humble-xacro \
-    ros-humble-rosidl-default-generators \
-    ros-humble-rosidl-default-runtime \
-    ros-humble-robot-localization \
-    ros-humble-imu-filter-madgwick \
-    ros-humble-phidgets-spatial \
+# drive_control links against the Phidget C SDK, which its package.xml does
+# not declare. Use the vendor repository as the previous setup script did.
+RUN wget -qO /usr/share/keyrings/phidgets.gpg \
+        https://www.phidgets.com/gpgkey/pubring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/phidgets.gpg] https://www.phidgets.com/debian noble main" \
+        > /etc/apt/sources.list.d/phidgets.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libphidget22-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR $ROVERFLAKE_ROOT
 
-# copy setup scripts and package manifests first for better layer caching
-COPY setup_scripts/ $ROVERFLAKE_ROOT/setup_scripts/
+# The old setup script was removed during the Jazzy migration. Install the
+# package.xml dependencies with the rosdep command it previously ran.
+# gazebo_ros is a stale Gazebo Classic dependency; OpenCV is already installed
+# by the desktop package but its capitalized manifest key has no rosdep rule.
 COPY src/ $ROVERFLAKE_ROOT/src/
+RUN apt-get update && rosdep update && rosdep install --from-paths src --ignore-src \
+    --skip-keys="serial moteus_msgs gazebo_ros OpenCV" -y --rosdistro jazzy
 
-# run full setup to install dependencies inside the image (auto-confirm prompts)
-RUN yes | bash setup_scripts/setup_everything_common.sh
-
-# (spectrometer python deps now install inside setup_everything_common.sh —
-# same path for native and Docker setups)
-
-# copy everything else (code changes invalidate from here, but deps are cached)
 COPY . $ROVERFLAKE_ROOT
 
-# set entrypoint (already copied above)
-RUN chmod +x docker/entrypoint.sh
-
 ENTRYPOINT ["/RoverFlake2/docker/entrypoint.sh"]
-
 CMD ["/bin/bash"]

@@ -1,0 +1,20 @@
+services:
+  rover:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: roverflake2:dev
+    working_dir: /RoverFlake2
+    tty: true
+    stdin_open: true
+    privileged: true
+    network_mode: host
+    security_opt:
+      - label:disable
+    volumes:
+      - ./:/RoverFlake2
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      DISPLAY: ${DISPLAY}
+      ROVERFLAKE_ROOT: /RoverFlake2
