@@ -1,0 +1,14 @@
+services:
+  rover:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: roverflake2:dev
+    working_dir: /RoverFlake2
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/RoverFlake2
+    environment:
+      DISPLAY: host.docker.internal:0
+      ROVERFLAKE_ROOT: /RoverFlake2

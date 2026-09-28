@@ -2,8 +2,8 @@
 set -e
 
 # source system ros2
-if [ -f "/opt/ros/humble/setup.bash" ]; then
-  source /opt/ros/humble/setup.bash
+if [ -f "/opt/ros/jazzy/setup.bash" ]; then
+  source /opt/ros/jazzy/setup.bash
 fi
 
 # build
