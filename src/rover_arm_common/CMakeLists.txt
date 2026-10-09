@@ -7,6 +7,7 @@ find_package(rover_utils REQUIRED)
 # Header-only package: nothing to compile, just export the include directory.
 install(DIRECTORY include/ DESTINATION include)
 
+ament_export_dependencies(rover_utils)
 ament_export_include_directories(include)
 
 ament_package()

@@ -1,7 +1,8 @@
 
-    #include "motor_addressing.h"
-    #include <rover_math.h>
-    namespace ArmConstants{
+#include "motor_addressing.h"
+#include <rover_utils/include/rover_math.h>
+
+namespace ArmConstants{
     inline constexpr float axis_zero_rads[NUM_AXES] = {0.0,          //* Axis 1 Offset
                                                     0.0,          //* Axis 2 Offset
                                                     0.0,         //* Axis 3 Offset
