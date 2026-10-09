@@ -3,11 +3,11 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "rover_msgs/msg/arm_command.hpp"
-#include "rover_arm_common/urdf_offsets.h"
+#include "rover_arm_common/arm_constants.h"
 #include <chrono>
 #include <thread>
 
-#include <arm_hardware_interface/ArmSerialProtocol.h>
+#include <ArmSerialProtocol.h>
 #include <serial/serial.h>
 
 #define SIMULATE false
@@ -31,7 +31,7 @@ public:
 
   rover_msgs::msg::ArmCommand current_arm_status;
 
-  string joint_names[NUM_JOINTS + 2] = {"joint_1", "joint_2", "joint_3",           "joint_4",
+  string joint_names[NUM_AXES_NO_EE + 2] = {"joint_1", "joint_2", "joint_3",           "joint_4",
                                         "joint_5", "joint_6", "finger_left_joint", "finger_right_joint"};
 
 private:
@@ -52,17 +52,17 @@ private:
     int dir;
   };
 
-  Axis axes[NUM_JOINTS];
+  Axis axes[NUM_AXES];
 
-  float target_position[NUM_JOINTS];
-  float target_velocities[NUM_JOINTS];
+  float target_position[NUM_AXES];
+  float target_velocities[NUM_AXES];
 
   int homed = 0;
   bool homing = false;
   float EE = 0;
-  volatile float current_velocity[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-  volatile float current_position[NUM_JOINTS] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
-  volatile int current_limit_switches[NUM_JOINTS] = {-1, -1, -1, -1, -1, -1, -1};
+  volatile float current_velocity[NUM_AXES] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+  volatile float current_position[NUM_AXES] = {00.00, 00.00, 00.00, 00.00, 00.00, 00.00, 00.00};
+  volatile int current_limit_switches[NUM_AXES] = {-1, -1, -1, -1, -1, -1, -1};
 
   rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr command_subscriber;
   void CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
@@ -80,8 +80,8 @@ private:
   float degToRad(float deg);
   float firmToMoveitOffsetPos(float deg, int axis);
   float firmToMoveitOffsetVel(float deg, int axis);
-  void send_position_command(float pos[NUM_JOINTS]);
-  void send_velocity_command(float vel[NUM_JOINTS]);
+  void send_position_command(float pos[NUM_AXES]);
+  void send_velocity_command(float vel[NUM_AXES]);
 
   void send_test_limits_command();
   void sendHomeCmd(int target_axis);

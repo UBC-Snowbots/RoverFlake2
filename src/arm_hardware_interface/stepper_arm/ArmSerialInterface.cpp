@@ -6,7 +6,7 @@
 ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? new arm offsets. To change, check arm_control/include/armControlParams.h Should be synced with moveit params
 
-   for(int i = 0; i < NUM_JOINTS; i++){
+   for(int i = 0; i < NUM_AXES; i++){
     axes[i].zero_rad = ArmConstants::axis_zero_rads[i]; 
     axes[i].dir = ArmConstants::axis_dirs[i];
     #ifdef PRINTOUT_AXIS_PARAMS
@@ -22,7 +22,7 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
        double period = 1.0/COMM_POLL_RATE;
 
-        current_arm_status.positions.resize(NUM_JOINTS);
+        current_arm_status.positions.resize(NUM_AXES);
 
         command_subscriber = this->create_subscription<rover_msgs::msg::ArmCommand>(
             "/arm/command", 10, std::bind(&ArmSerial::CommandCallback, this, std::placeholders::_1));
@@ -78,15 +78,15 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
     }
     break;
   case ABS_POS_CMD:
-    float target_positions[NUM_JOINTS];
-    for (int i = 0; i < NUM_JOINTS; i++){
+    float target_positions[NUM_AXES];
+    for (int i = 0; i < NUM_AXES; i++){
       target_positions[i] = msg->positions[i];
     }
     if(SIMULATE){
        sensor_msgs::msg::JointState joint_states_;
-       joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.name.resize(NUM_JOINTS);
-        for(int i = 0; i < NUM_JOINTS; i++){
+       joint_states_.position.resize(NUM_AXES);
+       joint_states_.name.resize(NUM_AXES);
+        for(int i = 0; i < NUM_AXES; i++){
         joint_states_.name[i] = joint_names[i];
         joint_states_.position[i] = firmToMoveitOffsetPos(target_positions[i], i);
         joint_states_.velocity[i] = firmToMoveitOffsetVel(current_velocity[i], i);
@@ -101,13 +101,13 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
     }
     break;
     case ABS_VEL_CMD:
-      // double sim_target_velocities[NUM_JOINTS];
-        for (int i = 0; i < NUM_JOINTS_NO_EE; i++){
+      // double sim_target_velocities[NUM_AXES];
+        for (int i = 0; i < NUM_AXES_NO_EE; i++){
       target_velocities[i] = msg->velocities[i];
       #ifdef DEBUG_MSGS
         RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
       #endif// DEBUG_MSGS
-      target_velocities[EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
+      target_velocities[AXIS_EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
       // current_velocity[i] = msg->velocities[i];
 
     }
@@ -116,10 +116,10 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
       // auto curr_time = this->get_clock()->now();
          joint_states_.header.stamp = rclcpp::Clock().now();
 
-       joint_states_.velocity.resize(NUM_JOINTS);
-       joint_states_.position.resize(NUM_JOINTS);
-       joint_states_.name.resize(NUM_JOINTS);
-        for(int i = 0; i < NUM_JOINTS; i++){
+       joint_states_.velocity.resize(NUM_AXES);
+       joint_states_.position.resize(NUM_AXES);
+       joint_states_.name.resize(NUM_AXES);
+        for(int i = 0; i < NUM_AXES; i++){
         joint_states_.name[i] = joint_names[i];
         joint_states_.velocity[i] = firmToMoveitOffsetVel(target_velocities[i], i);
         rclcpp::Time current_time(joint_states_.header.stamp);
@@ -182,16 +182,16 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
  void ArmSerial::parseArmAngleUart(std::string msg){
      //ROS_INFO("Parsing Angle buffer: %s", msg.c_str());
        sensor_msgs::msg::JointState joint_states_;
-       joint_states_.position.resize(NUM_JOINTS_NO_EE + 2);
-       joint_states_.velocity.resize(NUM_JOINTS_NO_EE + 2);
-       joint_states_.name.resize(NUM_JOINTS_NO_EE + 2);
+       joint_states_.position.resize(NUM_AXES_NO_EE + 2);
+       joint_states_.velocity.resize(NUM_AXES_NO_EE + 2);
+       joint_states_.name.resize(NUM_AXES_NO_EE + 2);
 
 
-	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos, &axes[6].curr_pos) == NUM_JOINTS)
+	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos, &axes[6].curr_pos) == NUM_AXES)
 	{
 		// All axes angles are in axes[i].des_angle_pos 
 		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
-         for(int i = 0; i < NUM_JOINTS_NO_EE; i++){
+         for(int i = 0; i < NUM_AXES_NO_EE; i++){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
           joint_states_.position[i] = firmToMoveitOffsetPos(axes[i].curr_pos, i);
@@ -205,8 +205,8 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
         rclcpp::Time prev_time(prev_joint_states.header.stamp);
           joint_states_.name[6] = joint_names[6];
           joint_states_.name[7] = joint_names[7];
-          joint_states_.position[6] = firmToMoveitOffsetPos(axes[EE_INDEX].curr_pos, EE_INDEX);
-          joint_states_.position[7] = firmToMoveitOffsetPos(axes[EE_INDEX].curr_pos * -1, EE_INDEX);
+          joint_states_.position[6] = firmToMoveitOffsetPos(axes[AXIS_EE_INDEX].curr_pos, AXIS_EE_INDEX);
+          joint_states_.position[7] = firmToMoveitOffsetPos(axes[AXIS_EE_INDEX].curr_pos * -1, AXIS_EE_INDEX);
           joint_states_.velocity[6] = 0;
           joint_states_.velocity[7] = 0;
 
@@ -300,7 +300,7 @@ void ArmSerial::sendCommCmd(int target_state) {
 
 
 
-void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
+void ArmSerial::send_position_command(float pos[NUM_AXES]) {
 
     char tx_msg[TX_UART_BUFF];
   
@@ -311,12 +311,12 @@ void ArmSerial::send_position_command(float pos[NUM_JOINTS]) {
 }
 
 
-void ArmSerial::send_velocity_command(float vel[NUM_JOINTS]) {
+void ArmSerial::send_velocity_command(float vel[NUM_AXES]) {
 
     char tx_msg[TX_UART_BUFF];
   
     sprintf(tx_msg, "$V(%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f)\n", vel[0], vel[1], vel[2], vel[3], vel[4], vel[5], vel[6]);
-    for(int i = 0; i < NUM_JOINTS; i++){
+    for(int i = 0; i < NUM_AXES; i++){
       current_velocity[i] = vel[i];
     }
     
