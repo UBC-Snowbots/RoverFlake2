@@ -3,7 +3,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "rover_msgs/msg/arm_command.hpp"
-#include "rover_arm_common/include/rover_arm_common/urdf_offsets.h"
+#include "rover_arm_common/urdf_offsets.h"
 #include <chrono>
 #include <thread>
 
