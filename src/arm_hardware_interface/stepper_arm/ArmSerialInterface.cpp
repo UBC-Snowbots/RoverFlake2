@@ -107,7 +107,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
       #ifdef DEBUG_MSGS
         RCLCPP_INFO(this->get_logger(), "J%i, %lf", i, msg->velocities[i]);
       #endif// DEBUG_MSGS
-      target_velocities[AXIS_EE_INDEX] = msg->end_effector * EE_SPEED_SCALE;
+      target_velocities[AXIS_EE_INDEX] = msg->end_effector;
       // current_velocity[i] = msg->velocities[i];
 
     }
