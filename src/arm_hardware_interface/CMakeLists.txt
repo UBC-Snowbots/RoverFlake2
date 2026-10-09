@@ -64,6 +64,7 @@ endif()
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include/)
+install(DIRECTORY stepper_arm/ DESTINATION stepper_arm/)
 
 #? Not too sure about this...
 install(PROGRAMS launch/can_bringup.sh
@@ -78,6 +79,6 @@ install(TARGETS
     stepper_arm_driver
     DESTINATION lib/${PROJECT_NAME})
 
-ament_export_include_directories(include)
+ament_export_include_directories(include stepper_arm)
 
 ament_package()

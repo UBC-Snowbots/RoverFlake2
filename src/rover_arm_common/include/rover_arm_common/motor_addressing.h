@@ -56,6 +56,7 @@ enum IkIndex : uint8_t {
 };
 
 constexpr int NUM_AXES = 7;
+constexpr int NUM_AXES_NO_EE = 6;
 constexpr int NUM_MOTORS = 7;
 
 // Gripper finger joints have no motors.  They are published as static 0 in
