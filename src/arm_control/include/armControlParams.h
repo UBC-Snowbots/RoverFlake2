@@ -13,7 +13,6 @@
 #define NUM_JOINTS 7
 #define NUM_JOINTS_NO_EE 6
 #define EE_SPEED_SCALE 1
-#define PI 3.14
 
 
 // Uncomment the one you want, comment the one you dont
