@@ -8,10 +8,10 @@
 #include <thread>
 
 #include <ArmSerialProtocol.h>
+#include <math.h>
 #include <serial/serial.h>
 
 #define SIMULATE false
-#define PI 3.14159
 
 #define TX_UART_BUFF 128
 #define RX_UART_BUFF 128
