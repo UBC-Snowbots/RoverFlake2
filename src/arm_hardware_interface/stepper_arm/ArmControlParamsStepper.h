@@ -15,22 +15,18 @@
 #define EE_SPEED_SCALE 1
 #define PI 3.14
 
-
 // Uncomment the one you want, comment the one you dont
-    #define SELECT_MOTEUS_ARM
-    // #define SELECT_OLD_ARM
+    // #define SELECT_MOTEUS_ARM
+    #define SELECT_OLD_ARM
 
     
 #ifdef SELECT_MOTEUS_ARM
-// static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
-static float max_joysticks_output_speed_deg[NUM_JOINTS] = {7.2, 3.6, 3.6, 3.6, 28.8, 28.8, 30.0};
-
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
 #endif
 
 #ifdef SELECT_OLD_ARM
 static float max_joysticks_output_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
 #endif
-
 
 namespace MoteusArmParams{
   static constexpr float base_max_accel = 3.0;
@@ -64,7 +60,7 @@ namespace MoteusArmParams{
 
 
 
-    struct ArmConstants{
+                                                struct ArmConstants{
     static constexpr float axis_zero_rads[NUM_JOINTS] = {0.0,          //* Axis 1 Offset
                                                     0.0,          //* Axis 2 Offset
                                                     0.0,         //* Axis 3 Offset
@@ -97,8 +93,8 @@ namespace MoteusArmParams{
       static constexpr char servo_fk_topic[] = "/arm_moveit_control/delta_joint_cmds"; //forward kinematics (joint space)
       
       // OLD ARM
-      namespace Stepper{
-              static constexpr float axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
+      
+              static constexpr float OLD_axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
                                                           -1.9390,          //* Axis 2 Offset
                                                           -1.3460,         //* Axis 3 Offset
                                                           -2.4108, //+PI      // Axis 4 Offset 
@@ -106,14 +102,13 @@ namespace MoteusArmParams{
                                                           0,  //? Axis 6 Offset
                                                           0};      //? EE axis offset  
           
-          static constexpr int axis_dirs[NUM_JOINTS] =          {1,
+          static constexpr int OLD_axis_dirs[NUM_JOINTS] =          {1,
                                                           1, 
                                                           1, 
                                                           1,
                                                           -1,
                                                           -1,
                                                           1}; //? EE dir
-          };
 
 };
 

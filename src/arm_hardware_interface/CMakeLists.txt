@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED)
+find_package(serial REQUIRED)
 
 # Where comms.h / device_ids.h live. Only the header is needed (we use the
 # MSG_TYPE__* ids and the id masks), nothing from comms.c gets linked.
@@ -27,13 +28,16 @@ endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
 
-include_directories(include ${COMMS_DIR})
+include_directories(include stepper_arm ${COMMS_DIR})
 
 # CAN-FD driver for arm
 add_executable(moteus_driver src/moteus_driver_node.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
 ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common)
 
+# Legacy Stepper Arm
+add_executable(stepper_arm_driver stepper_arm/ArmSerialInterface.cpp)
+target_link_libraries(stepper_arm_driver rclcpp rover_utils serial rover_msgs arm_control)
 
 # Socet CAN driver for other loops
 add_executable(generic_can_hardware_interface src/generic_can_hardware_interface.cpp src/socket_can.cpp ${COMMS_DIR}/comms.c)
@@ -71,6 +75,7 @@ install(TARGETS
     generic_can_hardware_interface
     lighting_translator
     ptz_translator
+    stepper_arm_driver
     DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(include)

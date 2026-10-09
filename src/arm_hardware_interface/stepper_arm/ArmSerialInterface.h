@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 
-#include <rover_arm_common/ArmSerialProtocol.h>
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 #include <serial/serial.h>
 
 #define SIMULATE false
@@ -25,7 +25,6 @@
 
 using std::string;
 
-//! OLD AND CURRENTLY UNUSED. THIS IS FOR THE OLD ARM.
 class ArmSerial : public rclcpp::Node {
 public:
   ArmSerial();
