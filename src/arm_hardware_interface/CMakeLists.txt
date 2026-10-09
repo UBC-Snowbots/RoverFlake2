@@ -37,7 +37,7 @@ ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs r
 
 # Legacy Stepper Arm
 add_executable(stepper_arm_driver stepper_arm/ArmSerialInterface.cpp)
-target_link_libraries(stepper_arm_driver rclcpp rover_utils serial rover_msgs arm_control)
+target_link_libraries(stepper_arm_driver rclcpp rover_utils serial rover_msgs rover_arm_common sensor_msgs)
 
 # Socet CAN driver for other loops
 add_executable(generic_can_hardware_interface src/generic_can_hardware_interface.cpp src/socket_can.cpp ${COMMS_DIR}/comms.c)

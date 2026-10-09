@@ -1,9 +1,9 @@
-#include "arm_control/include/armControlParams.h"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 #include "rover_msgs/msg/arm_command.hpp"
+#include "rover_arm_common/include/rover_arm_common/urdf_offsets.h"
 #include <chrono>
 #include <thread>
 
