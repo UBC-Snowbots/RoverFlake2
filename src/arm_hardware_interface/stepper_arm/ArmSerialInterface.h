@@ -1,13 +1,13 @@
-#include "arm_control/include/armControlParams.h"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 #include "rover_msgs/msg/arm_command.hpp"
+#include "rover_arm_common/urdf_offsets.h"
 #include <chrono>
 #include <thread>
 
-#include <rover_arm_common/ArmSerialProtocol.h>
+#include <arm_hardware_interface/ArmSerialProtocol.h>
 #include <serial/serial.h>
 
 #define SIMULATE false
@@ -25,7 +25,6 @@
 
 using std::string;
 
-//! OLD AND CURRENTLY UNUSED. THIS IS FOR THE OLD ARM.
 class ArmSerial : public rclcpp::Node {
 public:
   ArmSerial();
