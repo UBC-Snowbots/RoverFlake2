@@ -178,7 +178,7 @@ namespace ArmControllerConfig { // Can make into a class later?
 
 
     float ee_speed_scale = 60; // Currently Arbitrary units.
-    float axis_speed_scale = 10; // Degrees. Note that the /joint_states topic and certain topics may be in rads or revolutions. For arm commands, we assume Degrees.
+    float axis_speed_scale = 10; //!doesnt seem to do anything? // Degrees. Note that the /joint_states topic and certain topics may be in rads or revolutions. For arm commands, we assume Degrees.
 
     struct ArmControlInput {
         // Static arrays, not vectors here
