@@ -20,7 +20,6 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
        arm_position_publisher = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
         joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
-       double period = 1.0/COMM_POLL_RATE;
 
         current_arm_status.positions.resize(NUM_AXES);
 
@@ -29,9 +28,11 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
 
         if(!SIMULATE){
         teensy.setPort(port);
+        teensy.setBaudrate(baud);
+        teensy.setTimeout(timeout_uart);
         teensy.open();
-        timer_ = this->create_wall_timer(
-          std::chrono::duration<double>(period),std::bind(&ArmSerial::serial_rx, this));
+        rx_running = true;
+        serialRxThread = std::thread(&ArmSerial::serial_rx, this);
         }
 
         sleep(0.1);
@@ -39,6 +40,16 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
         int flag = 1;
 
     }
+
+ArmSerial::~ArmSerial() {
+  rx_running = false;
+  if (serialRxThread.joinable()) {
+    serialRxThread.join(); // read() times out within timeout_uart, so this returns promptly
+  }
+  if (teensy.isOpen()) {
+    teensy.close();
+  }
+}
 
 // Entry Point
 int main(int argc, char *argv[]) {
@@ -168,14 +179,13 @@ return ((rad*axes[i].dir));
 void ArmSerial::parseLimitSwitchTest(std::string msg){
   int axis = 0;
   int value = 5;
-  if (sscanf(msg.c_str(), "Limit Switch %d is %d.", &axis, &value) == 2){
-    if(axis >= 1 && axis <= 6){
-      if(value == 1 || value == 0){
-        this->current_limit_switches[axis -1];
-        RCLCPP_INFO(this->get_logger(), "limit switches updated");
-      }
-    }
-        RCLCPP_ERROR(this->get_logger(), "Arm limit switch parsing failed");
+  // Firmware sends: "Limit Switch %d, is %d.  \n"  (comma after the axis number)
+  if (sscanf(msg.c_str(), "Limit Switch %d, is %d.", &axis, &value) == 2
+      && axis >= 1 && axis <= 6 && (value == 0 || value == 1)) {
+    this->current_limit_switches[axis - 1] = value;
+    RCLCPP_INFO(this->get_logger(), "Limit switch %d = %d", axis, value);
+  } else {
+    RCLCPP_ERROR(this->get_logger(), "Arm limit switch parsing failed: %s", msg.c_str());
   }
 }
 
@@ -187,10 +197,14 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
        joint_states_.name.resize(NUM_AXES_NO_EE + 2);
 
 
-	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)\n",  &axes[0].curr_pos, &axes[1].curr_pos, &axes[2].curr_pos, &axes[3].curr_pos, &axes[4].curr_pos, &axes[5].curr_pos, &axes[6].curr_pos) == NUM_AXES)
+	float parsed[NUM_AXES];
+	if (sscanf(msg.c_str(), "$my_angleP(%f, %f, %f, %f, %f, %f, %f)", &parsed[0], &parsed[1], &parsed[2], &parsed[3], &parsed[4], &parsed[5], &parsed[6]) == NUM_AXES)
 	{
+		for (int i = 0; i < NUM_AXES; i++) {
+			axes[i].curr_pos = parsed[i]; // only commit once all axes parsed
+		}
 		// All axes angles are in axes[i].des_angle_pos 
-		RCLCPP_INFO(this->get_logger(), "Absolute Angle Position Echo Accepted:");
+		RCLCPP_DEBUG(this->get_logger(), "Absolute Angle Position Echo Accepted");
          for(int i = 0; i < NUM_AXES_NO_EE; i++){
           current_arm_status.positions[i] = axes[i].curr_pos;
           joint_states_.name[i] = joint_names[i];
@@ -220,7 +234,7 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
 	else
 	{
 		// Error handling: could not parse all 6 angles, or message is messed up.
-		RCLCPP_ERROR(this->get_logger(), "Absolute Angle Position Echo Rejected, incorrect syntax");
+		RCLCPP_ERROR(this->get_logger(), "Absolute Angle Position Echo Rejected, incorrect syntax: %s", msg.c_str());
        // fresh_rx_angle = false;
 
 		return;
@@ -234,9 +248,14 @@ void ArmSerial::sendMsg(std::string outMsg) {
     //ROS_INFO("attempting send");
   //  std::string str_outMsg(reinterpret_cast<const char*>(outMsg), TX_UART_BUFF);
     //std::to_string(str_outMsg);  // +1 to copy the null-terminator
-    teensy.write(outMsg);
-  //  RCLCPP_ERROR(this->get_logger(), "Sent via serial: %s", outMsg.c_str());
-   teensy.flushOutput();
+    try {
+      size_t written = teensy.write(outMsg);
+      if (written != outMsg.size()) {
+        RCLCPP_WARN(this->get_logger(), "Serial write short: %zu/%zu bytes", written, outMsg.size());
+      }
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Serial write failed: %s", e.what());
+    }
 }
 
 void ArmSerial::sendHomeCmd(int target_axis) {
@@ -265,40 +284,60 @@ void ArmSerial::sendCommCmd(int target_state) {
 }
 
 
-    void ArmSerial::serial_rx(){
-    //rclcpp::Rate loop_rate(50);
-    std::string next_char = "";
-    std::string buffer = "";
-    int timeoutCounter = 0;
-    //zephyrComm.teensy.flushInput();
-   if (teensy.available() > 0){
-       // ROS_WARN("Reading");
-
-        //timeoutCounter ++;
-       // next_char = teensy.read(); 
-        buffer = teensy.read(RX_UART_BUFF);
-        RCLCPP_WARN(this->get_logger(), "%s", buffer.c_str());
-        // if(next_char == "\n" || next_char == "\r" || next_char == "\0"){
-        //     timeoutCounter = RX_UART_BUFF;
-        // }
-        if (buffer.size() > 0){
-        if(buffer.find("Arm Ready") != std::string::npos){
-        homed = true;
-        homing = false;
-       // fresh_rx_angle = true;
-     }else if(buffer.find("my_angleP") != std::string::npos){
-        parseArmAngleUart(buffer);
-     }else if(buffer.find("Limit Switch")){
-        parseLimitSwitchTest(buffer);
-     }
-
-
-   }
-    
+void ArmSerial::serial_rx(){
+  // Runs on serialRxThread. Blocks in read() (bounded by timeout_uart) instead of polling.
+  while (rx_running && rclcpp::ok()) {
+    std::string chunk;
+    try {
+      size_t n = teensy.available();
+      chunk = teensy.read(n > 0 ? n : 1); // blocks for up to timeout_uart waiting for 1 byte
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", e.what());
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
     }
+    if (chunk.empty()) {
+      continue;
+    }
+    rx_accum += chunk;
+
+    // Extract every complete line; keep any trailing partial line for the next read.
+    size_t nl;
+    while ((nl = rx_accum.find('\n')) != std::string::npos) {
+      std::string line = rx_accum.substr(0, nl);
+      rx_accum.erase(0, nl + 1);
+      processLine(line);
     }
 
+    if (rx_accum.size() > 4 * RX_UART_BUFF) { // no terminator for too long: resync
+      RCLCPP_WARN(this->get_logger(), "RX overflow without newline, dropping %zu bytes", rx_accum.size());
+      rx_accum.clear();
+    }
+  }
+}
 
+void ArmSerial::processLine(const std::string &raw){
+  // Strip '\r', '\0' and spaces left over from "\n\r" terminators or echoed buffers.
+  size_t first = raw.find_first_not_of(" \r\t\0", 0, 4);
+  if (first == std::string::npos) {
+    return; // empty line
+  }
+  size_t last = raw.find_last_not_of(" \r\t\0", std::string::npos, 4);
+  std::string line = raw.substr(first, last - first + 1);
+
+  RCLCPP_DEBUG(this->get_logger(), "RX: %s", line.c_str());
+
+  if (line.find("Arm Ready") != std::string::npos) {
+    homed = true;
+    homing = false;
+  } else if (line.find("$my_angleP") != std::string::npos) {
+    parseArmAngleUart(line.substr(line.find('$')));
+  } else if (line.find("Limit Switch") != std::string::npos && line.find("Testing") == std::string::npos) {
+    parseLimitSwitchTest(line.substr(line.find("Limit Switch")));
+  } else {
+    RCLCPP_INFO(this->get_logger(), "Teensy: %s", line.c_str());
+  }
+}
 
 void ArmSerial::send_position_command(float pos[NUM_AXES]) {
 
