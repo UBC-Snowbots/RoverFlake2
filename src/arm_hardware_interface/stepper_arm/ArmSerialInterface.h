@@ -5,6 +5,7 @@
 #include "rover_msgs/msg/arm_command.hpp"
 #include "rover_arm_common/arm_constants.h"
 #include <chrono>
+#include <atomic>
 #include <thread>
 
 #include <ArmSerialProtocol.h>
@@ -28,6 +29,7 @@ using std::string;
 class ArmSerial : public rclcpp::Node {
 public:
   ArmSerial();
+  ~ArmSerial();
 
   rover_msgs::msg::ArmCommand current_arm_status;
 
@@ -39,7 +41,7 @@ private:
   string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100542B2831AA-if00";
 
   serial::Serial teensy;
-  serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(1000);
+  serial::Timeout timeout_uart = serial::Timeout::simpleTimeout(100); // bounds blocking read()/write()
 
   bool send_angles = true;
 
@@ -72,11 +74,12 @@ private:
   sensor_msgs::msg::JointState prev_joint_states;
   rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr arm_position_publisher;
 
-  rclcpp::TimerBase::SharedPtr timer_;
-
   std::thread serialRxThread;
+  std::atomic<bool> rx_running{false};
+  std::string rx_accum; // bytes received but not yet terminated by '\n'; only touched by serialRxThread
 
   void serial_rx();
+  void processLine(const std::string &line);
   float degToRad(float deg);
   float firmToMoveitOffsetPos(float deg, int axis);
   float firmToMoveitOffsetVel(float deg, int axis);
