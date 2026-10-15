@@ -4,6 +4,7 @@
 
 #include "rover_msgs/msg/arm_command.hpp"
 #include "rover_arm_common/arm_constants.h"
+#include "rover_arm_common/arm_commands.h"
 #include <chrono>
 #include <atomic>
 #include <thread>

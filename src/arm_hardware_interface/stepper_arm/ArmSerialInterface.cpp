@@ -73,7 +73,7 @@ void ArmSerial::CommandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg
   char type = msg->cmd_type;
   switch (type)
   {
-  case HOME_CMD:
+  case CMD_HOME:
     if(!SIMULATE){
       sendHomeCmd(msg->cmd_value);
     }
@@ -239,8 +239,6 @@ void ArmSerial::parseLimitSwitchTest(std::string msg){
 
 		return;
 	}
-
-
  }
 
 void ArmSerial::sendMsg(std::string outMsg) {
@@ -261,12 +259,19 @@ void ArmSerial::sendMsg(std::string outMsg) {
 void ArmSerial::sendHomeCmd(int target_axis) {
   //send home request
     std::string home_msg;
-  if(target_axis != HOME_ALL_ID){
-    home_msg = "$h(" + std::to_string(target_axis) + ")\n";
-  }else{
-    home_msg = "$h(A)\n";
-  }
-
+    switch (target_axis)
+    {
+    case HOME_VALUE_ALL_AXES_EXCEPT_EE:
+      home_msg = "$h(A)\n";
+      break;
+    case HOME_VALUE_ALL_AXES_AND_EE:
+      RCLCPP_ERROR(this->get_logger(), "EE Must be homed individually. Ignoring home command. ");
+      return;
+      break;
+    default:
+      home_msg = "$h(" + std::to_string(target_axis) + ")\n";
+      break;
+    }
   sendMsg(home_msg);
 }
 
