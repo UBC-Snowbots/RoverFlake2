@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'network_reader = network_telemetry.network_reader:main',
+            'ssh_network_reader = network_telemetry.ssh_reader:main',
         ],
     },
 )
