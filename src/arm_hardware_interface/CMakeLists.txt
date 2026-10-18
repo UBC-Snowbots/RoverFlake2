@@ -43,6 +43,11 @@ ament_target_dependencies(generic_can_hardware_interface rclcpp rover_msgs)
 add_executable(ptz_translator src/ptz_translator.cpp ${COMMS_DIR}/comms.c)
 ament_target_dependencies(ptz_translator rclcpp rover_msgs geometry_msgs)
 
+
+add_executable(mini_rover_translator src/mini_rover_translator.cpp ${COMMS_DIR}/comms.c)
+ament_target_dependencies(mini_rover_translator rclcpp rover_msgs geometry_msgs)
+
+
 add_executable(lighting_translator
   src/lighting_translator.cpp
   ${COMMS_DIR}/comms.c
@@ -71,6 +76,7 @@ install(TARGETS
     generic_can_hardware_interface
     lighting_translator
     ptz_translator
+    mini_rover_translator
     DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(include)
