@@ -12,6 +12,9 @@
 #include <ArmSerialProtocol.h>
 #include <math.h>
 #include <serial/serial.h>
+#include <array>
+#include <deque>
+#include <mutex>
 
 #define SIMULATE false
 
@@ -27,6 +30,13 @@
 
 using std::string;
 
+enum class AxisHomingState : uint8_t { NOT_HOMED = 0, HOMING, HOMED };
+
+struct HomingContext {
+  std::array<AxisHomingState, NUM_AXES> axis{}; // value-initialized -> NOT_HOMED
+  bool sequence_active = false;                 // firmware accepted a request and hasn't reported completion
+};
+
 class ArmSerial : public rclcpp::Node {
 public:
   ArmSerial();
@@ -37,6 +47,7 @@ public:
   string joint_names[NUM_AXES_NO_EE + 2] = {"joint_1", "joint_2", "joint_3",           "joint_4",
                                         "joint_5", "joint_6", "finger_left_joint", "finger_right_joint"};
 
+  HomingContext getHomingContext() const; // thread-safe snapshot
 private:
   unsigned long baud = 115200;
   string port = "/dev/serial/by-id/usb-ZEPHYR_UBC_ROVER_Arm_500100542B2831AA-if00";
@@ -78,6 +89,11 @@ private:
   std::thread serialRxThread;
   std::atomic<bool> rx_running{false};
   std::string rx_accum; // bytes received but not yet terminated by '\n'; only touched by serialRxThread
+  HomingContext homing_ctx;               // written only by serialRxThread, from firmware lines
+  std::deque<int> pending_home_requests;  // 0 = all axes, 1..NUM_AXES = single axis; awaiting accept/reject
+  mutable std::mutex homing_mtx;          // guards homing_ctx and pending_home_requests
+  bool handleHomingLine(const std::string &line);
+
 
   void serial_rx();
   void processLine(const std::string &line);

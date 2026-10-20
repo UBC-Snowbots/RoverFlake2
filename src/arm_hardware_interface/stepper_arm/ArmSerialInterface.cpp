@@ -257,21 +257,33 @@ void ArmSerial::sendMsg(std::string outMsg) {
 }
 
 void ArmSerial::sendHomeCmd(int target_axis) {
-  //send home request
-    std::string home_msg;
-    switch (target_axis)
-    {
-    case HOME_VALUE_ALL_AXES_EXCEPT_EE:
-      home_msg = "$h(A)\n";
-      break;
-    case HOME_VALUE_ALL_AXES_AND_EE:
-      RCLCPP_ERROR(this->get_logger(), "EE Must be homed individually. Ignoring home command. ");
+  std::string home_msg;
+  int pending = 0;
+  switch (target_axis)
+  {
+  case HOME_VALUE_ALL_AXES_EXCEPT_EE:
+    home_msg = "$h(A)\n";
+    pending = 0;
+    break;
+  case HOME_VALUE_ALL_AXES_AND_EE:
+    RCLCPP_ERROR(this->get_logger(), "EE Must be homed individually. Ignoring home command. ");
+    return;
+  default:
+    if (target_axis < 0 || target_axis > (NUM_AXES - 1)) { // firmware parses a single digit, 1-based, but we use 0-based index accross ros topics. its annoying...
+      RCLCPP_ERROR(this->get_logger(), "Home request for invalid axis %d ignored", target_axis);
       return;
-      break;
-    default:
-      home_msg = "$h(" + std::to_string(target_axis) + ")\n";
-      break;
     }
+    home_msg = "$h(" + std::to_string(target_axis + 1) + ")\n";
+    pending = target_axis;
+    break;
+  }
+  {
+    // Record before sending so the firmware's reply can't arrive first.
+    // This does NOT change any axis state; only a firmware accept does.
+    std::lock_guard<std::mutex> lk(homing_mtx);
+    pending_home_requests.push_back(pending);
+    while (pending_home_requests.size() > 8) pending_home_requests.pop_front();
+  }
   sendMsg(home_msg);
 }
 
@@ -377,4 +389,102 @@ void ArmSerial::send_test_limits_command(){
   sendMsg(tx_msg);
   RCLCPP_INFO(this->get_logger(), "Test limits Sent %s", tx_msg);
 
+}
+
+static const char *homingStateStr(AxisHomingState s) {
+  switch (s) {
+    case AxisHomingState::NOT_HOMED: return "NOT_HOMED";
+    case AxisHomingState::HOMING:    return "HOMING";
+    case AxisHomingState::HOMED:     return "HOMED";
+  }
+  return "?";
+}
+
+HomingContext ArmSerial::getHomingContext() const {
+  std::lock_guard<std::mutex> lk(homing_mtx);
+  return homing_ctx;
+}
+
+// Called from serialRxThread for every line. Returns true if the line was a homing message.
+bool ArmSerial::handleHomingLine(const std::string &line) {
+  std::lock_guard<std::mutex> lk(homing_mtx);
+
+  auto popPending = [this]() -> int {
+    if (pending_home_requests.empty()) return -1;
+    int r = pending_home_requests.front();
+    pending_home_requests.pop_front();
+    return r;
+  };
+  auto logCtx = [this]() {
+    std::string s;
+    for (int i = 0; i < NUM_AXES; i++) {
+      s += "A" + std::to_string(i + 1) + "=" + homingStateStr(homing_ctx.axis[i]) + " ";
+    }
+    RCLCPP_INFO(this->get_logger(), "Homing ctx: %s%s", s.c_str(),
+                homing_ctx.sequence_active ? "(sequence active)" : "");
+  };
+
+  int axis_num = 0;
+
+  // Boot banner "Axis N attached at STEP: ..." -> firmware restarted, nothing is homed.
+  if (line.rfind("Axis ", 0) == 0 && line.find(" attached at ") != std::string::npos) {
+    homing_ctx = HomingContext{};
+    pending_home_requests.clear();
+    return true;
+  }
+
+  // Accepted: $h(A)
+  if (line.find("Homing All axes") != std::string::npos) {
+    popPending();
+    for (int i = 0; i < NUM_AXES_NO_EE; i++) homing_ctx.axis[i] = AxisHomingState::HOMING;
+    homing_ctx.sequence_active = true;
+    logCtx();
+    return true;
+  }
+
+  // Accepted: $h(N). Firmware doesn't echo N, so use the oldest outstanding request.
+  if (line.find("Specific Axis Requested") != std::string::npos) {
+    int req = popPending();
+    if (req >= 1 && req <= NUM_AXES) {
+      homing_ctx.axis[req - 1] = AxisHomingState::HOMING;
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Firmware accepted a single-axis home, but no matching request is pending");
+    }
+    homing_ctx.sequence_active = true;
+    logCtx();
+    return true;
+  }
+
+  // Rejected: drop the request, leave all states unchanged.
+  if (line.find("Homing Sequence In progress") != std::string::npos ||
+      line.find("Homing Request Denied") != std::string::npos ||
+      line.find("Error parsing requested_axis") != std::string::npos) {
+    int req = popPending();
+    RCLCPP_WARN(this->get_logger(), "Firmware rejected home request (%d, 0=all): %s", req, line.c_str());
+    return true;
+  }
+
+  // Per-axis completion: "Axis N is home."
+  if (line.find(" is home") != std::string::npos &&
+      sscanf(line.c_str(), "Axis %d is home", &axis_num) == 1 &&
+      axis_num >= 1 && axis_num <= NUM_AXES) {
+    homing_ctx.axis[axis_num - 1] = AxisHomingState::HOMED;
+    logCtx();
+    return true;
+  }
+
+  // Sequence finished. Firmware marks the EE homed without ever sending "Axis 7 is home",
+  // so anything still HOMING here is homed as far as the firmware is concerned.
+  if (line.find("Homing complete") != std::string::npos || line.find("Arm Ready") != std::string::npos) {
+    for (auto &s : homing_ctx.axis) {
+      if (s == AxisHomingState::HOMING) s = AxisHomingState::HOMED;
+    }
+    homing_ctx.sequence_active = false;
+    homed = true;     // keep legacy flags in sync
+    homing = false;
+    logCtx();
+    return true;
+  }
+
+  return false;
 }
