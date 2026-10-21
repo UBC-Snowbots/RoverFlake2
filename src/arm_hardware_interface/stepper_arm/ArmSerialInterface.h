@@ -55,16 +55,16 @@ inline constexpr double RETURN_TIMEOUT_S       = 30.0;  // give up and stop afte
 // Per axis: target = center + amp * sin(2*pi * (DANCE_BPM/60) * freq_mult * t + phase)
 //   amp == 0       -> axis doesn't dance (held with 0 velocity)
 //   center == NaN  -> center is wherever the axis is when the dance starts
-inline constexpr float  DANCE_BPM = 20.0f;
+inline constexpr float  DANCE_BPM = 18.0f;
 inline constexpr float  DANCE_CENTER_DEG[NUM_AXES]  = {NaN_POS, NaN_POS, NaN_POS, NaN_POS, NaN_POS, NaN_POS, NaN_POS};
-inline constexpr float  DANCE_AMP_DEG[NUM_AXES]     = {30.0f, 5.0f, 8.0f, 0.0f, 8.0f, 0.0f, 0.0f};
-inline constexpr float  DANCE_FREQ_MULT[NUM_AXES]   = {0.25f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}; // a1: one swing per 4 beats
-inline constexpr float  DANCE_PHASE_DEG[NUM_AXES]   = {0.0f, 0.0f, 180.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // elbow opposes shoulder = bob
-inline constexpr float  DANCE_MAX_VEL_DPS[NUM_AXES] = {50.0f, 23.0f, 30.0f, 90.0f, 55.0f, 90.0f, 0.0f};
-inline constexpr float  DANCE_KP           = 4.0f;  // deg/s per degree of tracking error (on top of feedforward)
+inline constexpr float  DANCE_AMP_DEG[NUM_AXES]     = {40.0f, 10.0f, 10.0f, 60.0f, 10.0f, 0.0f, 0.0f};
+inline constexpr float  DANCE_FREQ_MULT[NUM_AXES]   = {0.25f, 0.6666666666f, 0.666666666666f, 0.25f, 1.0f, 1.0f, 1.0f}; // a1: one swing per 4 beats
+inline constexpr float  DANCE_PHASE_DEG[NUM_AXES]   = {0.0f, 180.0f, 0.0f, 0.0f, 180.0f, 0.0f, 0.0f}; // elbow opposes shoulder = bob
+inline constexpr float  DANCE_MAX_VEL_DPS[NUM_AXES] = {50.0f, 23.0f, 23.0f, 90.0f, 55.0f, 90.0f, 0.0f};
+inline constexpr float  DANCE_KP           = 3.0f;  // deg/s per degree of tracking error (on top of feedforward)
 inline constexpr float  DANCE_DEADBAND_DEG = 0.3f;  // ignore tracking error below this when the setpoint isn't moving
 inline constexpr double DANCE_SETTLE_S     = 3.0;   // time to move to the center pose before swinging
-inline constexpr double DANCE_RAMP_S       = 2.0;   // amplitude fade-in and fade-out time
+inline constexpr double DANCE_RAMP_S       = 10.0;   // amplitude fade-in and fade-out time
 inline constexpr double DANCE_DURATION_S   = 0.0;   // auto wind-down after this long dancing; 0 = until stopped
 
 enum class AxisHomingState : uint8_t { NOT_HOMED = 0, HOMING, HOMED };
