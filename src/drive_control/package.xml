@@ -16,6 +16,10 @@
   <depend>sensor_msgs</depend>
   <depend>rover_msgs</depend>
 
+  <!-- Used by bringup_mini_rover_drive.launch.py -->
+  <exec_depend>joy_linux</exec_depend>
+  <exec_depend>arm_hardware_interface</exec_depend>
+
   <!-- Testing dependencies -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
