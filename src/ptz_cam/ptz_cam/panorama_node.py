@@ -12,8 +12,7 @@ Frames are kept in memory (in capture order, which is what cv2.Stitcher wants) a
 written to out_dir as 00.png, 01.png, ... for offline retries. The stitched result is saved
 as panorama.png and published latched on ~/panorama so a late-joining HMI still receives it.
 
-Follows the same service-per-action pattern as ip_camera_zoom_node so both can be driven
-from the same HMI bindings.
+Panorama actions use services; the separate zoom/focus node uses Empty command topics.
 """
 
 import os
