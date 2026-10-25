@@ -5,7 +5,9 @@
 // MoteusBus implementation
 // =============================================================================
 
-MoteusBus::MoteusBus() {
+MoteusBus::MoteusBus(int motors) {
+    numMotors = motors;
+    telem_.resize(numMotors);
     reinit();
 }
 
@@ -16,7 +18,7 @@ void MoteusBus::reinit() {
     // transport_ = mot::TransportRegistry::singleton().make({}).first;
     transport_ = mot::TransportRegistry::singleton().make({"--can-disable-brs"}).first; // FORCE TO 1mb
 
-    for (int id = 1; id <= NUM_MOTORS; id++) {
+    for (int id = 1; id <= numMotors; id++) {
         mot::Controller::Options opts;
         opts.id        = id;
         opts.transport = transport_;
@@ -30,12 +32,12 @@ void MoteusBus::reinit() {
 }
 
 
-void MoteusBus::cycle() {
+const std::vector<MotorTelem>& MoteusBus::cycle(const std::vector<MotorCommand>& motor_cmds) {
     // build one frame for each motor
     std::vector<mot::CanFdFrame> frames;
-    for (int m = 0; m < NUM_MOTORS; m++) {
+    for (int m = 0; m < numMotors; m++) {
         if(m == 3) continue; // A4 DISABLED
-        auto& c = motor_cmds_[m];
+        auto& c = motor_cmds[m];
         if      (c.active && c.is_stop) frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[m]));
         else if (c.active)              frames.push_back(MoteusProtocol::makePositionFrame(
                                             *controllers_[m], c.position, c.velocity,
@@ -47,9 +49,10 @@ void MoteusBus::cycle() {
     std::vector<mot::CanFdFrame> replies;
     transport_->BlockingCycle(frames.data(), frames.size(), &replies);
 
+    for (auto& t : telem_) t.connected = false;
     for (const auto& frame : replies) {
         int id = frame.source;
-        if (id < 1 || id > NUM_MOTORS) continue; 
+        if (id < 1 || id > numMotors) continue; 
         auto r = MoteusProtocol::parseReply(frame);
         auto& t = telem_[id - 1];
         t.position=r.position; t.velocity=r.velocity; t.torque=r.torque; t.voltage=r.voltage;
@@ -58,8 +61,9 @@ void MoteusBus::cycle() {
         t.power     = std::isnan(r.power)?0.0f:(float)r.power;
         t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
         t.limit_switch = (r.aux2_gpio > 0);
-        axes[id - 1].limit_switch = t.limit_switch;
     }
+
+    return telem_;
 }
 
 
@@ -81,9 +85,9 @@ void MoteusBus::set_position(uint8_t index, float position_revs)
 
 // sends command to a controller
 std::string MoteusBus::diagnostic(uint8_t index, const std::string& cmd) {
-    return controllers_[i]->DiagnosticCommand(cmd);
+    return controllers_[index]->DiagnosticCommand(cmd);
 }
 
-bool MoteusBus::isConnected(mot::Controller& ctrl) {
-    return ctrl.SetQuery();
+bool MoteusBus::isConnected(uint8_t index) {
+    return controllers_[index]->SetQuery().has_value();
 }
