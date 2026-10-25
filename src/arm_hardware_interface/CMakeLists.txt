@@ -30,7 +30,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_buil
 include_directories(include ${COMMS_DIR})
 
 # CAN-FD driver for arm
-add_executable(moteus_driver src/moteus_driver_node.cpp)
+add_executable(moteus_driver src/moteus_driver_node.cpp src/moteus_bus.cpp)
 target_link_libraries(moteus_driver moteus::cpp)
 ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common)
 
