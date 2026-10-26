@@ -75,3 +75,6 @@ log/
 
 # camera panel screenshots
 /screenshots/
+
+**.DS_Store
+.idea/
