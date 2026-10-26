@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Any, List, Optional
 
 try:
@@ -35,6 +36,8 @@ class SshNetworkReaderNode(Node):
         output_topic = self.declare_parameter("output_topic", "network/raw").value
         self._publisher = self.create_publisher(String, output_topic, 10)
         self._timer = self.create_timer(interval, self._poll)
+        self._retries = int(self.declare_parameter("retries", 5).value)
+        self._retry_delay = float(self.declare_parameter("retry_delay_seconds", 3.0).value)
 
     def _poll(self) -> None:
         """Fetch one JSON payload over SSH and publish it for normalization."""
@@ -72,7 +75,23 @@ class SshNetworkReaderNode(Node):
             message.data = json.dumps(payload, separators=(",", ":"))
             self._publisher.publish(message)
         except (OSError, pxssh.ExceptionPxssh, json.JSONDecodeError) as exc:
-            self.get_logger().error("SSH telemetry read failed: %s", exc)
+            # Support the retries and retry delay parameters for transient errors, but log the error for visibility.
+            self.get_logger().error(f"SSH read failed: {exc}")
+            for attempt in range(self._retries):
+                self.get_logger().info(f"Retrying... ({attempt + 1}/{self._retries})")
+                time.sleep(self._retry_delay)
+                try:
+                    session.login(**login_kwargs)
+                    session.sendline(self._command)
+                    session.prompt(timeout=self._timeout)
+                    output = session.before.decode("utf-8", errors="replace")
+                    payload = self._json_payload(output)
+                    message = String()
+                    message.data = json.dumps(payload, separators=(",", ":"))
+                    self._publisher.publish(message)
+                    return  # Success, exit the retry loop
+                except (OSError, pxssh.ExceptionPxssh, json.JSONDecodeError) as exc:
+                    self.get_logger().error(f"SSH read failed on retry {attempt + 1}: {exc}")
         finally:
             if session:
                 session.logout()
