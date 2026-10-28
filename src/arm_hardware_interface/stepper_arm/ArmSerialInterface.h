@@ -40,7 +40,7 @@ inline constexpr float AXIS_BASE_POSITION_DEG[NUM_AXES] = {
     61, // Axis 1 Base
     30, // Axis 2 Shoulder
     20, // Axis 3 Elbow
-    125, // Axis 4 Elbow Twist //!warn: Gear red seems off...
+    95, // Axis 4 Elbow Twist 
     94, // Axis 5 Wrist Pitch
     180, // Axis 6 Wrist Roll
     NaN_POS, // Axis 7 EE
