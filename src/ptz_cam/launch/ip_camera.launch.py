@@ -1,9 +1,10 @@
-"""Bring up the Hi3510 IP camera: gscam RTSP feed + zoom services.
+"""Bring up the Hi3510 IP camera: gscam RTSP feed + zoom/focus command topics.
 
 Feed  : gscam decodes the camera's H.264 RTSP stream to /ip_camera/camera/image_raw (+ camera_info),
         for on-Jetson consumers (e.g. vision). See the network-transport note below.
-Zoom  : ip_camera_zoom_node exposes /ip_camera/zoom_in_start, /ip_camera/zoom_out_start,
-        /ip_camera/zoom_stop (std_srvs/Trigger).
+Zoom  : ip_camera_zoom_node subscribes to /ip_camera/zoom_in_start, zoom_out_start,
+        zoom_stop, focus_in_start, focus_out_start, focus_stop (std_msgs/msg/Empty,
+        all under /ip_camera). Publish once to start, then publish stop to halt.
 
 All connection + zoom settings come from config/ip_camera_params.yaml (single source of
 truth). Override at launch with:  params_file:=/path/to/other.yaml
@@ -70,7 +71,7 @@ def _launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # --- zoom services ----------------------------------------------------
+    # --- zoom/focus command topics ----------------------------------------
     zoom = Node(
         package='ptz_cam',
         executable='ip_camera_zoom',
