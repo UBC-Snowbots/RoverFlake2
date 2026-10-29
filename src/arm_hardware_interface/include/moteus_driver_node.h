@@ -55,7 +55,7 @@
 #include <rover_arm_common/motor_config.h>       // MotorConfig, get_arm_configuration()
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/arm_telemetry.h>      // MotorTelem
-#include "moteus_protocol.h"                       // MoteusProtocol::makeFrame(), parseReply()
+#include "moteus_bus.h"
 
 enum class AxisState
 {
@@ -94,7 +94,7 @@ public:
 private:
     // Startup: push configuration to every motor via "conf set" DiagnosticCommand
     void configureMotors();
-    void configureMotor(int motor_id, mot::Controller& ctrl);
+    void configureMotor(int motor_id);
 
     // "superloop" style. Blocking can transactions (100hz is slow for CANFD, so this should be okay)
     void run();
@@ -117,9 +117,6 @@ private:
     // sets hall sensor type, saves config, re-initialises transport + controllers.
     void runCalibration(int motor_can_id);
 
-    // Re-create transport_ and controllers_ (called after moteus_tool exits).
-    void reInitTransport();
-
     // Publish a calibration status update.
     void publishCalibStatus(int motor_id, int state, const std::string& message);
 
@@ -140,8 +137,7 @@ private:
     // -------------------------------------------------------------------------
     // CAN transport + per-motor controllers
     // -------------------------------------------------------------------------
-    std::shared_ptr<mot::Transport>              transport_;
-    std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor_id - 1
+    std::unique_ptr<MoteusBus> bus_;
 
     // -------------------------------------------------------------------------
     // ROS interfaces
@@ -167,13 +163,13 @@ private:
 
     std::array<MotorCommand, NUM_AXES>   pending_axis_cmds_{};  // ROS intake (axis space)
     std::array<MotorCommand, NUM_AXES>   axis_cmds_{};          // resolved desired (axis space)
-    std::array<MotorCommand, NUM_MOTORS> motor_cmds_{};         // transformed (motor space) — only thing framed
+    std::vector<MotorCommand> motor_cmds_{};         // transformed (motor space) — only thing framed
     std::array<bool, NUM_MOTORS>         motor_zero_req_{};     // 'd exact 0' side-channel (motor space)
     // -------------------------------------------------------------------------
     // Telemetry (see arm_telemetry.h for struct definition)
     // Updated each poll cycle from CAN reply frames.
     // -------------------------------------------------------------------------
-    std::array<MotorTelem, NUM_MOTORS> telem_{};
+    std::vector<MotorTelem> telem_{};
 
     // -------------------------------------------------------------------------
     // Calibration state

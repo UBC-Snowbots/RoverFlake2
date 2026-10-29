@@ -11,6 +11,10 @@ MoteusBus::MoteusBus(int motors) {
     reinit();
 }
 
+// ---------------------------------------------------------------------------
+// reinit — re-create owned transport + controllers after calibration.
+// Uses TransportRegistry (not singleton) so the new transport is fully owned.
+// ---------------------------------------------------------------------------
 void MoteusBus::reinit() {
     controllers_.clear();
     transport_.reset();  // fd is now closed — refcount hit 0
@@ -36,7 +40,7 @@ const std::vector<MotorTelem>& MoteusBus::cycle(const std::vector<MotorCommand>&
     // build one frame for each motor
     std::vector<mot::CanFdFrame> frames;
     for (int m = 0; m < numMotors; m++) {
-        if(m == 3) continue; // A4 DISABLED
+        if(m == 3) continue; // A4 DISABLED // TODO: Remove after finish MoteusBusOptions
         auto& c = motor_cmds[m];
         if      (c.active && c.is_stop) frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[m]));
         else if (c.active)              frames.push_back(MoteusProtocol::makePositionFrame(
@@ -64,23 +68,6 @@ const std::vector<MotorTelem>& MoteusBus::cycle(const std::vector<MotorCommand>&
     }
 
     return telem_;
-}
-
-
-// Zero position of a motor.
-void MoteusBus::zero(uint8_t index)
-{
-    int i = static_cast<int>(index);
-    controllers_[i]->DiagnosticCommand("d exact 0");
-}
-
-void MoteusBus::set_position(uint8_t index, float position_revs)
-{
-  int i = static_cast<int>(index);
-
-  char cmd[32];
-  std::snprintf(cmd, sizeof(cmd), "d exact %f", position_revs);
-  controllers_[i]->DiagnosticCommand(cmd);
 }
 
 // sends command to a controller
