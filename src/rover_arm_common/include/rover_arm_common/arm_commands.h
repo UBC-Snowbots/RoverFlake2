@@ -64,6 +64,14 @@ constexpr char CMD_FORCE_HOME = 'F';
 
 constexpr char CMD_COMMS = 'C';
 
+
+// Dance mode (stepper arm driver).
+//   cmd_value != 0 -> start dancing (all danced axes must be homed, position feedback must be live)
+//   cmd_value == 0 -> wind down (amplitude fades out, then velocities go to 0)
+//   Parameters: DANCE_* in stepper_arm/ArmSerialInterface.h
+constexpr char CMD_DANCE = 'D';
+
+
 // Command space selector — carried in ArmCommand::cmd_value for P/V/S commands.
 // Axes 5/6 are a coupled differential wrist: in axis space (the default) the
 // driver mixes their commands through the differential transform. Motor space
