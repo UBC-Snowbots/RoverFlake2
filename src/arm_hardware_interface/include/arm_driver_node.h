@@ -40,22 +40,24 @@
 #include <array>
 #include <bitset> // for printing out debug bitmasks
 
-#include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/arm_command.hpp"
 #include "rover_msgs/msg/moteus_arm_status.hpp"
 #include "rover_msgs/msg/bldc_servo_status.hpp"
 #include "rover_msgs/msg/bldc_servo_config.hpp"
-#include "rover_msgs/msg/moteus_config_update.hpp"
 #include "rover_msgs/msg/moteus_calibration_request.hpp"
 #include "rover_msgs/msg/moteus_calibration_status.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
 // #include <rover_arm_common/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
-#include <rover_arm_common/motor_config.h>       // MotorConfig, get_arm_configuration()
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/arm_telemetry.h>      // MotorTelem
-#include "moteus_bus.h"
+#include "moteus_node.h"
+
+
+// Half assed debug printout flags - Uncomment to enable these printouts
+// #define DEBUG_LIMIT_SWITCH_RAW_REPLY
+
+
 
 enum class AxisState
 {
@@ -68,47 +70,28 @@ enum class AxisState
 };
 
 struct Axis {
-        int index; // Starts at 0
-        float position = 0;
-        bool limit_switch = 0;
-        bool homed = false;
-        AxisState state = AxisState::INIT;
+    int index; // Starts at 0
+    float position = 0;
+    bool limit_switch = 0;
+    bool homed = false;
+    AxisState state = AxisState::INIT;
 
-        // CONFIG STUFF See motor_config.h -> Set during construction of this class
-        float max_position_rev;
-        float min_position_rev;
-        float homing_speed_revps;
-        int homing_direction; 
-        // bool configured = false;
-        // etc..
+    // CONFIG STUFF See motor_config.h -> Set during construction of this class
+    float max_position_rev;
+    float min_position_rev;
+    float homing_speed_revps;
+    int homing_direction; 
+    // bool configured = false;
+    // etc..
 };
 
-// Half assed debug printout flags - Uncomment to enable these printouts
-// #define DEBUG_LIMIT_SWITCH_RAW_REPLY
-
-
-class MoteusDriverNode : public rclcpp::Node {
+class ArmDriverNode : public MoteusNode {
 public:
-    MoteusDriverNode();
+    ArmDriverNode();
 
 private:
-    // Startup: push configuration to every motor via "conf set" DiagnosticCommand
-    void configureMotors();
-    void configureMotor(int motor_id);
-
-    // "superloop" style. Blocking can transactions (100hz is slow for CANFD, so this should be okay)
-    void run();
-
     // ROS subscription callback: fills pending_cmds_[] (mutex-protected)
     void commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
-
-    // ROS subscription callback: applies a single register update to one motor
-    // via DiagnosticCommand("conf set ...") and updates configs_[] in memory.
-    void configUpdateCallback(const rover_msgs::msg::MoteusConfigUpdate::SharedPtr msg);
-
-    // Apply a (register, value) pair to the in-memory MotorConfig for motor idx.
-    // Keeps configs_[] consistent so subsequent feedback messages reflect edits.
-    void applyConfigToMemory(int idx, const std::string& reg, float val);
 
     // Calibration: receives a MoteusCalibrationRequest and spawns a background thread.
     void calibrationCallback(const rover_msgs::msg::MoteusCalibrationRequest::SharedPtr msg);
@@ -119,57 +102,31 @@ private:
 
     // Publish a calibration status update.
     void publishCalibStatus(int motor_id, int state, const std::string& message);
-
-    // Safety monitoring (called inside poll, only logs on state changes)
-    void checkFaults();
-    void checkAlerts();
-
-    // Publish a string to /arm/config_log (shown in the HMI command log panel)
-    void publishLog(const std::string& msg);
-
-    void zero_position(uint8_t index);
-    void set_position(uint8_t index, float position_revs);
     
     void home_axis(uint8_t index);
 
-    Axis axes[NUM_AXES];
-
-    // -------------------------------------------------------------------------
-    // CAN transport + per-motor controllers
-    // -------------------------------------------------------------------------
-    std::unique_ptr<MoteusBus> bus_;
+    void prepareCommands() override;
+    void handleTelemetry() override;
 
     // -------------------------------------------------------------------------
     // ROS interfaces
     // -------------------------------------------------------------------------
-    rclcpp::TimerBase::SharedPtr                                      timer_;
     rclcpp::Publisher<rover_msgs::msg::MoteusArmStatus>::SharedPtr         feedback_pub_;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr             joint_state_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                    config_log_pub_;
     rclcpp::Publisher<rover_msgs::msg::ArmCommand>::SharedPtr           arm_feedback_pub;
     rclcpp::Subscription<rover_msgs::msg::ArmCommand>::SharedPtr           command_sub_;
-    rclcpp::Subscription<rover_msgs::msg::MoteusConfigUpdate>::SharedPtr       config_update_sub_;
     //TODO Calibration in future PR
     // rclcpp::Subscription<rover_msgs::msg::MoteusCalibrationRequest>::SharedPtr calib_sub_;
     // rclcpp::Publisher<rover_msgs::msg::MoteusCalibrationStatus>::SharedPtr     calib_pub_;
 
-    // -------------------------------------------------------------------------
-    // Configuration (loaded from motor_config.h at construction)
-    // -------------------------------------------------------------------------
-    std::vector<MotorConfig> configs_;
-
 
     std::mutex cmd_mutex_;
 
+    Axis axes[NUM_AXES];
     std::array<MotorCommand, NUM_AXES>   pending_axis_cmds_{};  // ROS intake (axis space)
     std::array<MotorCommand, NUM_AXES>   axis_cmds_{};          // resolved desired (axis space)
-    std::vector<MotorCommand> motor_cmds_{};         // transformed (motor space) — only thing framed
     std::array<bool, NUM_MOTORS>         motor_zero_req_{};     // 'd exact 0' side-channel (motor space)
-    // -------------------------------------------------------------------------
-    // Telemetry (see arm_telemetry.h for struct definition)
-    // Updated each poll cycle from CAN reply frames.
-    // -------------------------------------------------------------------------
-    std::vector<MotorTelem> telem_{};
+    
 
     // -------------------------------------------------------------------------
     // Calibration state
@@ -178,12 +135,6 @@ private:
     std::atomic<bool> calibrating_{false};
     std::mutex        calib_mutex_;   // prevents concurrent calibrations
 
-    // -------------------------------------------------------------------------
-    // State tracking for edge-triggered logging (prevents log spam)
-    // -------------------------------------------------------------------------
-    std::array<int,  NUM_MOTORS> last_fault_{};
-    std::array<int,  NUM_MOTORS> last_mode_{};
-    std::array<bool, NUM_MOTORS> position_alert_raised_{};
 
 
 
