@@ -17,6 +17,7 @@
 
 #include <sensor_msgs/msg/joy.hpp>
 #include <rover_arm_common/motor_addressing.h>
+#include <algorithm> // std::max
 inline static constexpr int MAX_BUTTONS = 20; // can be decreased
 inline static constexpr int MAX_AXES    = 10;
 
@@ -153,6 +154,7 @@ namespace ArmControllerConfig { // Can make into a class later?
     enum class GameController {
         PS4_JOY_LINUX, // Dualshock 4 (PS4) controller, ran from joy_linux (not joy!)
         PS4_JOY_LINUX_ANDRES,
+        PS4_DRIVE, // Dualshock 4 via joy_linux: R2 throttle, L2 reverse, left stick X steering (drive control only)
         SWITCH_PRO_CONTROLLER,
         CYBORG_JOYSTICK
 
@@ -278,8 +280,11 @@ namespace ArmControllerConfig { // Can make into a class later?
     }
 
     // Drive control input: standardized stick values for the drivetrain.
+    // linear_forward/linear_backward are separate throttles (e.g. triggers);
+    // net drive command = linear_forward - linear_backward.
     struct DriveControlInput {
-        float linear  = 0; // Forward/back stick, -1 to 1 (stick up is positive)
+        float linear_forward  = 0; // Forward throttle, 0 to 1
+        float linear_backward = 0; // Reverse throttle, 0 to 1
         float angular = 0; // Turn stick, -1 to 1 (stick left is positive)
         int turbo     = 0; // Speed-boost button state
     };
@@ -287,21 +292,39 @@ namespace ArmControllerConfig { // Can make into a class later?
     // Overload for drive control
     inline static bool process_joy_input(GameController controller, const sensor_msgs::msg::Joy::SharedPtr joy_msg, DriveControlInput &input)
     {
+        // Splits a -1..1 stick axis into the separate forward/backward throttles
+        auto stick_to_throttles = [&input](float stick) {
+            input.linear_forward  = std::max(stick, 0.0f);
+            input.linear_backward = std::max(-stick, 0.0f);
+        };
+
         switch (controller)
         {
         case GameController::PS4_JOY_LINUX:
         case GameController::PS4_JOY_LINUX_ANDRES:
             {
                 using namespace ps4_index;
-                input.linear  = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                stick_to_throttles(joy_msg->axes[axes::LEFT_JOYSTICK_Y]);
                 input.angular = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                input.turbo   = joy_msg->buttons[buttons::X];
+            }
+            break;
+        case GameController::PS4_DRIVE:
+            {
+                using namespace ps4_index;
+                // Triggers rest at +1 and read -1 fully pressed -> normalize to 0..1.
+                // NOTE: joy_linux reports trigger axes as 0 until first touched,
+                // which this reads as half throttle on both -> they cancel out.
+                input.linear_forward  = (1.0f - joy_msg->axes[axes::R2]) / 2.0f;
+                input.linear_backward = (1.0f - joy_msg->axes[axes::L2]) / 2.0f;
+                input.angular = joy_msg->axes[axes::LEFT_JOYSTICK_X];
                 input.turbo   = joy_msg->buttons[buttons::X];
             }
             break;
         case GameController::SWITCH_PRO_CONTROLLER:
             {
                 using namespace switch_index;
-                input.linear  = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                stick_to_throttles(joy_msg->axes[axes::LEFT_JOYSTICK_Y]);
                 input.angular = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
                 input.turbo   = joy_msg->buttons[buttons::B]; // Bottom button, same position as PS4 X
             }
@@ -309,7 +332,7 @@ namespace ArmControllerConfig { // Can make into a class later?
         case GameController::CYBORG_JOYSTICK:
             {
                 using namespace cyborg_index;
-                input.linear  = joy_msg->axes[axes::JOYSTICK_Y];
+                stick_to_throttles(joy_msg->axes[axes::JOYSTICK_Y]);
                 input.angular = joy_msg->axes[axes::JOYSTICK_X];
                 input.turbo   = joy_msg->buttons[buttons::TRIGGER];
             }

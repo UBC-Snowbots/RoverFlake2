@@ -27,7 +27,8 @@ void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
     {
         linear_speed = linear_speed * TURBO_SPEED_MULTIPLIER;
     }
-    twist_msg.linear.x = control_input.linear * linear_speed * -1;
+    float linear = control_input.linear_forward - control_input.linear_backward;
+    twist_msg.linear.x = linear * linear_speed * -1;
     twist_msg.angular.z = control_input.angular * -MAX_ANGULAR_SPEED_MPS;
 
     cmd_vel_pub_->publish(twist_msg);

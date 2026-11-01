@@ -29,7 +29,7 @@ private:
 
     // Which physical gamepad /joy comes from. PS4_JOY_LINUX matches the
     // previously hardcoded mapping (axes 1/3, button 0 turbo).
-    ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::PS4_JOY_LINUX;
+    ArmControllerConfig::GameController game_controller = ArmControllerConfig::GameController::PS4_DRIVE;
 
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;  // Publisher for velocity commands
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;  // Subscription to joystick input
