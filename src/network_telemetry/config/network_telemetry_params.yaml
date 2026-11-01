@@ -1,0 +1,23 @@
+# Parameters for the network_telemetry bringup (launch/network_telemetry.launch.py).
+#
+# ssh_network_reader polls the Ubiquiti radio over SSH and publishes the raw JSON
+# payload; network_telemetry normalizes it into compact per-link telemetry.
+# Override at launch with:  params_file:=/path/to/other.yaml
+ssh_network_reader:
+  ros__parameters:
+    host: "comms_dish"
+    port: 22
+    username: "rover"
+    password: ""
+    ssh_key: ""
+    command: "wstalist"
+    timeout_seconds: 10.0
+    poll_interval_seconds: 5.0
+    output_topic: "network/raw"
+    retries: 5
+    retry_delay_seconds: 3.0
+
+network_telemetry:
+  ros__parameters:
+    input_topic: "network/raw"      # must match ssh_network_reader's output_topic
+    output_topic: "network/telemetry"
