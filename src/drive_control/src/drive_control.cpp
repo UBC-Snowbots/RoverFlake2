@@ -1,100 +1,42 @@
 #include "drive_control.h"
 
+DriveControlNode::DriveControlNode() : Node("drive_control_node") {
 
+    RCLCPP_INFO(this->get_logger(), "DEBUG: Initializing Drive Control Node");
 
-#ifdef REVERT
+    cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 
-    DriveControlNode::DriveControlNode() : Node("drive_control_node") {
+    joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
+    "/joy", rclcpp::SensorDataQoS(),
+    std::bind(&DriveControlNode::joyCallback, this, std::placeholders::_1));
 
-        RCLCPP_INFO(this->get_logger(), "DEBUG: Initializing Drive Control Node");
+    RCLCPP_INFO(this->get_logger(), "Subscribed to /joy topic");
+}
 
-        cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-        
-        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "/joy", rclcpp::SensorDataQoS(),
-        std::bind(&DriveControlNode::joyCallback, this, std::placeholders::_1));
-
-        RCLCPP_INFO(this->get_logger(), "Subscribed to /joy topic");
+void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
+    // Map the raw joy message to standardized drive inputs for the selected controller
+    ArmControllerConfig::DriveControlInput control_input = {};
+    if (!ArmControllerConfig::process_joy_input(this->game_controller, msg, control_input)) {
+        RCLCPP_ERROR(this->get_logger(), "Failure to parse gamepad input. Disregarding joy message");
+        return;
     }
 
-    void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
-        // Define the desired linear and angular velocities based on the joystick inputs
-        geometry_msgs::msg::Twist twist_msg;
-
-        // Get the scaling factor for the desired linear and angular
-        //double scaled_speed = msg->axes[2]*MAX_LINEAR_SPEED;
-
-        // Scale the joystick inputs to the desired linear and angular velocity
-        //* REVERT:
-        // float throttle = msg->axes[2] + 1;
-        // throttle = throttle *4;
-        // twist_msg.linear.x = msg->axes[1] * throttle;
-        // twist_msg.angular.z = msg->axes[0] * -throttle;
-        //* REVERT END
-
-        //! NEW
-        float linear_speed = MAX_LINEAR_SPEED_MPS;
-        if(msg->buttons[0])
-        {
-            linear_speed = linear_speed *1.5;
-        }
-        twist_msg.linear.x = msg->axes[1] * linear_speed * -1;
-        twist_msg.angular.z = msg->axes[3] * -MAX_ANGULAR_SPEED_MPS;
-
-        //! NEW END
-
-        // Publish the desired velocities to /cmd_vel
-        cmd_vel_pub_->publish(twist_msg);
-
-        // twist_msg.linear.x = msg->axes[1] * MAX_LINEAR_SPEED;
-        // twist_msg.angular.z = msg->axes[3] * MAX_ANGULAR_SPEED;
+    geometry_msgs::msg::Twist twist_msg;
+    float linear_speed = MAX_LINEAR_SPEED_MPS;
+    if (control_input.turbo)
+    {
+        linear_speed = linear_speed * TURBO_SPEED_MULTIPLIER;
     }
+    twist_msg.linear.x = control_input.linear * linear_speed * -1;
+    twist_msg.angular.z = control_input.angular * -MAX_ANGULAR_SPEED_MPS;
 
-    int main(int argc, char *argv[]) {
-        rclcpp::init(argc, argv);
-        auto node = std::make_shared<DriveControlNode>();
-        rclcpp::spin(node);
-        rclcpp::shutdown();
-        return 0;
-    }
-                
+    cmd_vel_pub_->publish(twist_msg);
+}
 
-#else
-
-    DriveControlNode::DriveControlNode() : Node("drive_control_node") {
-
-        RCLCPP_INFO(this->get_logger(), "DEBUG: Initializing Drive Control Node");
-
-        cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-        
-        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "/joy", rclcpp::SensorDataQoS(),
-        std::bind(&DriveControlNode::joyCallback, this, std::placeholders::_1));
-
-        RCLCPP_INFO(this->get_logger(), "Subscribed to /joy topic");
-    }
-
-    void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
-        geometry_msgs::msg::Twist twist_msg;
-        float linear_speed = MAX_LINEAR_SPEED_MPS;
-        if(msg->buttons[0])
-        {
-            linear_speed = linear_speed *1.5;
-        }
-        twist_msg.linear.x = msg->axes[1] * linear_speed * -1;
-        twist_msg.angular.z = msg->axes[3] * -MAX_ANGULAR_SPEED_MPS;
-
-        cmd_vel_pub_->publish(twist_msg);
-    }
-
-    int main(int argc, char *argv[]) {
-        rclcpp::init(argc, argv);
-        auto node = std::make_shared<DriveControlNode>();
-        rclcpp::spin(node);
-        rclcpp::shutdown();
-        return 0;
-    }
-            
-#endif
-
-   
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<DriveControlNode>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    return 0;
+}

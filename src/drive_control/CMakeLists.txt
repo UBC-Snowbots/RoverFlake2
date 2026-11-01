@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(rover_arm_common REQUIRED) # needed by controller_config.h (motor_addressing.h)
 
 # mjbots moteus C++ client library (header-only, exposes moteus::cpp target)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
@@ -29,6 +30,15 @@ ament_target_dependencies(drive_control_node
   rclcpp
   geometry_msgs
   sensor_msgs
+  rover_arm_common
+)
+
+# Gamepad mappings + process_joy_input live in arm_control's controller_config.h.
+# Header-only use, so include it straight from the source tree (same pattern as
+# arm_hardware_interface's COMMS_DIR) instead of find_package(arm_control),
+# which would drag in the whole MoveIt dependency stack.
+target_include_directories(drive_control_node PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../arm_control/include
 )
 
 # Link dependencies for motor_control_node

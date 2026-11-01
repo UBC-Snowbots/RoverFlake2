@@ -277,25 +277,46 @@ namespace ArmControllerConfig { // Can make into a class later?
         return true; // Return Success
     }
 
-    // Overload for drive control (later refactor)
-    // inline static bool process_joy_input(GameController controller, sensor_msgs::msg::Joy joy_msg, DriveControlInput &input) 
-    // {
-        
-    //     switch (controller)
-    //     {
-    //     case GameController::PS4_JOY_LINUX:
-            
-    //         break;
-    //     case GameController::SWITCH_PRO_CONTROLLER:
+    // Drive control input: standardized stick values for the drivetrain.
+    struct DriveControlInput {
+        float linear  = 0; // Forward/back stick, -1 to 1 (stick up is positive)
+        float angular = 0; // Turn stick, -1 to 1 (stick left is positive)
+        int turbo     = 0; // Speed-boost button state
+    };
 
-    //         break;
-    //     case GameController::CYBORG_JOYSTICK:
-            
-    //         break;
-    //     default:
-    //         return false;
-
-    //     return true;
-    //     }
-    // }
+    // Overload for drive control
+    inline static bool process_joy_input(GameController controller, const sensor_msgs::msg::Joy::SharedPtr joy_msg, DriveControlInput &input)
+    {
+        switch (controller)
+        {
+        case GameController::PS4_JOY_LINUX:
+        case GameController::PS4_JOY_LINUX_ANDRES:
+            {
+                using namespace ps4_index;
+                input.linear  = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                input.angular = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                input.turbo   = joy_msg->buttons[buttons::X];
+            }
+            break;
+        case GameController::SWITCH_PRO_CONTROLLER:
+            {
+                using namespace switch_index;
+                input.linear  = joy_msg->axes[axes::LEFT_JOYSTICK_Y];
+                input.angular = joy_msg->axes[axes::RIGHT_JOYSTICK_X];
+                input.turbo   = joy_msg->buttons[buttons::B]; // Bottom button, same position as PS4 X
+            }
+            break;
+        case GameController::CYBORG_JOYSTICK:
+            {
+                using namespace cyborg_index;
+                input.linear  = joy_msg->axes[axes::JOYSTICK_Y];
+                input.angular = joy_msg->axes[axes::JOYSTICK_X];
+                input.turbo   = joy_msg->buttons[buttons::TRIGGER];
+            }
+            break;
+        default:
+            return false;
+        }
+        return true;
+    }
 }

@@ -145,7 +145,7 @@ void MotorControlNode::motorControlLoop() {
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         if (!connected_[i]) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 100000,
                 "Motor %d (CAN ID %d) did not reply", i, i + DRIVE_MOTOR_CAN_ID_BASE);
         }
     }
