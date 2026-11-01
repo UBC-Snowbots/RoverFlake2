@@ -13,8 +13,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 
-# Ensure Phidget22 SDK is located
-# set(CMAKE_PREFIX_PATH "/path/to/phidget22/sdk" ${CMAKE_PREFIX_PATH})
+# mjbots moteus C++ client library (header-only, exposes moteus::cpp target)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
 
 # Include directories (header files)
 include_directories(include)
@@ -48,8 +48,8 @@ ament_target_dependencies(wheel_speed_node
   rover_msgs
 )
 
-# Ensure linking with Phidget22 (if not found automatically)
-target_link_libraries(motor_control_node phidget22)
+# Link the moteus client library
+target_link_libraries(motor_control_node moteus::cpp)
 
 # Set include directories
 target_include_directories(drive_control_node PUBLIC
