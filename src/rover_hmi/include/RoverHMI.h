@@ -104,6 +104,11 @@ public:
 
     builder->get_widget("home_all_button", home_all_button);
     home_all_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handleHomeAllButtonClick));
+    builder->get_widget("home_axis_selection", home_axis_selection);
+    home_axis_selection->set_range(0, 7);
+    home_axis_selection->set_increments(1, 1);
+    home_axis_selection->set_digits(0);
+    home_axis_selection->set_value(0);
     builder->get_widget("pos_feed_on_button", pos_feed_on_button);
     pos_feed_on_button->signal_clicked().connect(sigc::mem_fun(*this, &MainHMINode::handlePosFeedOnButtonClick));
     builder->get_widget("pos_feed_off_button", pos_feed_off_button);
@@ -409,6 +414,7 @@ private:
   //* Arm Control Panel
   Gtk::SpinButton* axis_speed_spinbutton[6];
   Gtk::SpinButton* ik_speed_spinbutton[6];
+  Gtk::SpinButton* home_axis_selection;
 
   Gtk::Button* arm_abort_button;  //! Arm Abort Button
 

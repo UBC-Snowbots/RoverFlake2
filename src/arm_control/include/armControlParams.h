@@ -13,9 +13,23 @@
 #define NUM_JOINTS 7
 #define NUM_JOINTS_NO_EE 6
 #define EE_SPEED_SCALE 1
-#define PI 3.14
 
+
+// Uncomment the one you want, comment the one you dont
+    #define SELECT_MOTEUS_ARM
+    // #define SELECT_OLD_ARM
+
+    
+#ifdef SELECT_MOTEUS_ARM
+// static float max_joysticks_output_speed_deg[NUM_JOINTS] = {8, 4, 8, 8, 8, 8};
 static float max_joysticks_output_speed_deg[NUM_JOINTS] = {7.2, 3.6, 3.6, 3.6, 28.8, 28.8, 30.0};
+
+#endif
+
+#ifdef SELECT_OLD_ARM
+static float max_joysticks_output_speed_deg[NUM_JOINTS] = {80, 40, 80, 80, 80, 80};
+#endif
+
 
 namespace MoteusArmParams{
   static constexpr float base_max_accel = 3.0;
@@ -41,65 +55,6 @@ namespace MoteusArmParams{
 
 
 
-
-
-
-
-
-
-
-
-                                                struct ArmConstants{
-    static constexpr float axis_zero_rads[NUM_JOINTS] = {0.0,          //* Axis 1 Offset
-                                                    0.0,          //* Axis 2 Offset
-                                                    0.0,         //* Axis 3 Offset
-                                                    0.0, //+PI      // Axis 4 Offset 
-                                                    0.0,  //2.2060        //* Axis 5 Offset
-                                                    0,  //? Axis 6 Offset
-                                                    0};      //? EE axis offset  
-    
-    static constexpr int axis_dirs[NUM_JOINTS] =    {1,
-                                                     1, 
-                                                     1, 
-                                                     1,
-                                                     1,
-                                                     1,
-                                                     1}; //? EE dir
-      // static constexpr int ee_dir = 1;
-      // static constexpr int ee_zero_rads = 0;
-      // static constexpr std::string_view command_topic = "/arm/command"; //more modern way, but rclcpp uses c style chars, not cpp strings
-      static constexpr char command_topic[] = "/arm/command";
-      static constexpr char sim_ee_topic[] = "/arm/ee_command/sim";
-      
-      
-      
-      static constexpr char sim_command_topic[] = "/arm/sim_command";
-      static constexpr char joint_states_topic[] = "/joint_states";
-      static constexpr char joy_topic[] = "/joy";
-      
-      //Moveit topics
-      static constexpr char servo_ik_topic[] = "/arm_moveit_control/delta_twist_cmds"; //inverse kinematics
-      static constexpr char servo_fk_topic[] = "/arm_moveit_control/delta_joint_cmds"; //forward kinematics (joint space)
-      
-      // OLD ARM
-      
-              static constexpr float OLD_axis_zero_rads[NUM_JOINTS] = {-0.9608,          //* Axis 1 Offset
-                                                          -1.9390,          //* Axis 2 Offset
-                                                          -1.3460,         //* Axis 3 Offset
-                                                          -2.4108, //+PI      // Axis 4 Offset 
-                                                          2.2060-PI/3,  //2.2060        //* Axis 5 Offset
-                                                          0,  //? Axis 6 Offset
-                                                          0};      //? EE axis offset  
-          
-          static constexpr int OLD_axis_dirs[NUM_JOINTS] =          {1,
-                                                          1, 
-                                                          1, 
-                                                          1,
-                                                          -1,
-                                                          -1,
-                                                          1}; //? EE dir
-
-};
 
 //From moveit_control.h (the one we use)
 //         //? new arm offsets

@@ -155,19 +155,18 @@ void MainHMINode::handleCmdVelButton(bool pressed, int button){
 void MainHMINode::handleHomeAllButtonClick(){
     rover_msgs::msg::ArmCommand home_msg;
     home_msg.cmd_type = CMD_HOME;
-    // home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
-    home_msg.cmd_value = AXIS_1_INDEX;
-    // home_msg.cmd_value = AXIS_2_INDEX;
-    // home_msg.cmd_value = AXIS_3_INDEX;
-    // home_msg.cmd_value = AXIS_4_INDEX;
-    // home_msg.cmd_value = AXIS_5_INDEX;
-    // home_msg.cmd_value = AXIS_6_INDEX;
-    // Don't home EE yet, we can deal with that later.
+    
+    int sel = home_axis_selection->get_value_as_int();
+    if (sel == 0) {
+        home_msg.cmd_value = HOME_VALUE_ALL_AXES_EXCEPT_EE;
+    } else if (sel >= 1 && sel <= 6) {
+        home_msg.cmd_value = sel - 1;   // AXIS_1_INDEX = 0 ... AXIS_6_INDEX = 5
+    } else { // 7
+        home_msg.cmd_value = AXIS_EE_INDEX;
+    }
 
     arm_cmd_pub->publish(home_msg);
     RCLCPP_WARN(this->get_logger(), "Home all button clicked!");
-    // RCLCPP_WARN(this->get_logger(), "NOTHING SENT!");
-
 }
 
 void MainHMINode::handleIncAxisButtonClick(int index){

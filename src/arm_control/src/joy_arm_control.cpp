@@ -133,7 +133,7 @@ void ArmJoy::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg){
         target.cmd_type = 'P';
 
     for (int i = 0; i < NUM_JOINTS; i++){
-        target.positions[i] = axes[i].position + control_input.fk_axes[i] * 10;
+        target.positions[i] = axes[i].position + control_input.fk_axes[i] * ArmControllerConfig::axis_speed_scale;
     }
     RCLCPP_WARN(this->get_logger(), "Position control has not been tested on new arm, beware!");
     }else if(CONTROL_MODE == VELOCITY_CONTROL){

@@ -4,6 +4,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "armControlParams.h"
+#include <rover_arm_common/arm_constants.h>
 #include "rover_utils/include/fancyOutput.h"
 class ArmCommandNode : public rclcpp::Node
 {
