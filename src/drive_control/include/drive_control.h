@@ -13,9 +13,9 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "controller_config.h" // ArmControllerConfig::process_joy_input + controller mappings (arm_control pkg)
 
-#define MAX_LINEAR_SPEED_MPS 2.0
-#define MAX_ANGULAR_SPEED_MPS 2.0
-#define TURBO_SPEED_MULTIPLIER 1.5
+#define MAX_LINEAR_SPEED_MPS 1.0
+#define MAX_ANGULAR_SPEED_MPS 1.0
+#define TURBO_SPEED_MULTIPLIER 3
 
 /**
  * @brief DriveControlNode handles joystick input and publishes velocity commands.

@@ -87,12 +87,12 @@ MotorControlNode::~MotorControlNode() {
 
 void MotorControlNode::leftWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float left_velocity = msg->data.empty() ? 0.0f : msg->data[0];  // Extract velocity safely
-    setVelocity({3, 4, 5}, left_velocity);
+    setVelocity({0, 1, 2}, left_velocity);
 }
 
 void MotorControlNode::rightWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float right_velocity = msg->data.empty() ? 0.0f : msg->data[0];
-    setVelocity({0, 1, 2}, right_velocity);
+    setVelocity({3, 4, 5}, right_velocity);
 }
 
 /**

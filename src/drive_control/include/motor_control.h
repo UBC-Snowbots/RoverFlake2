@@ -59,7 +59,7 @@ namespace mot = mjbots::moteus;
 /**
  * Velocity limits
  */
-#define MAX_VELOCITY_MS 3.5
+#define MAX_VELOCITY_MS 5.5
 #define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_REVS (MAX_VELOCITY_MS * MS_TO_REVS)
 
