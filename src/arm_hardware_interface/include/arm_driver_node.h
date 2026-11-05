@@ -128,11 +128,7 @@ private:
     std::array<bool, NUM_MOTORS>         motor_zero_req_{};     // 'd exact 0' side-channel (motor space)
     
 
-    // -------------------------------------------------------------------------
-    // Calibration state
-    // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
-    // -------------------------------------------------------------------------
-    std::atomic<bool> calibrating_{false};
+    
     std::mutex        calib_mutex_;   // prevents concurrent calibrations
 
 

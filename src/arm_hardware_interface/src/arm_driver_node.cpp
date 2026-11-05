@@ -8,7 +8,6 @@
 #include <stdexcept>
 
 static constexpr uint32_t ARM_RUN_RATE_MS = (1000u / 100u); // 100 hz
-#define LOG_QUEUE_SIZE_MSGS 50
 #define SKIP_CALIBRATION
 using namespace std::chrono_literals;
 
@@ -42,6 +41,14 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
         m5.position = m6.position = NAN;
     }
 }
+
+std::vector<std::string> get_arm_motor_names() {
+    std::vector<std::string> names;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        names.push_back(ARM_JOINTS[i].hardware_name);
+    }
+    return names;
+}
 } // namespace
 
 // =============================================================================
@@ -52,11 +59,7 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
 // For per-motor PID/limits see motor_config.h.
 // =============================================================================
 
-ArmDriverNode::ArmDriverNode() : Node("moteus_driver") {
-    // Use a non-singleton transport so we own the only shared_ptr and can truly
-    // release the CAN fd when calibration needs exclusive access to the bus.
-    // transport_ = mot::TransportRegistry::singleton().make({}).first;
-    configs_   = get_arm_configuration();
+ArmDriverNode::ArmDriverNode() : MoteusNode("moteus_driver", "arm", get_arm_configuration(), get_arm_motor_names()) {
 
     for(int i = 0; i < NUM_AXES; i++)
     {
@@ -71,25 +74,16 @@ ArmDriverNode::ArmDriverNode() : Node("moteus_driver") {
         axis.homing_direction   = AxisConfig::homing_direction[i];
     }
 
-    bus_ = std::make_unique<MoteusBus>(NUM_MOTORS);
-    motor_cmds_.resize(NUM_MOTORS);
-    telem_.resize(NUM_MOTORS);
-
     auto qos     = rclcpp::QoS(5).reliable().durability_volatile();
-    auto log_qos = rclcpp::QoS(LOG_QUEUE_SIZE_MSGS).reliable().durability_volatile();
 
     feedback_pub_  = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
     joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
-    config_log_pub_  = this->create_publisher<std_msgs::msg::String>("/arm/config_log", log_qos);
     arm_feedback_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
 
     command_sub_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos,
         std::bind(&ArmDriverNode::commandCallback, this, std::placeholders::_1));
 
-    config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
-        "/arm/config_update", qos,
-        std::bind(&ArmDriverNode::configUpdateCallback, this, std::placeholders::_1));
         
         // TODO Calibration in a future PR
 
@@ -105,9 +99,7 @@ ArmDriverNode::ArmDriverNode() : Node("moteus_driver") {
         RCLCPP_WARN(this->get_logger(), "SKIPPING MOTOR CALIBRATIONS");
         #endif
 
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(10),
-        std::bind(&ArmDriverNode::run, this));
+    
 
     RCLCPP_INFO(this->get_logger(),
         "Moteus driver started: polling %d motors at 100 Hz", NUM_MOTORS);
@@ -183,8 +175,6 @@ void ArmDriverNode::home_axis(uint8_t index)
 }
 
 void ArmDriverNode::prepareCommands() {
-    if (calibrating_.load()) return;
-
     // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
     for (auto& c : axis_cmds_) c.active = false;
 
@@ -303,16 +293,15 @@ void ArmDriverNode::prepareCommands() {
     for (int m = 0; m < NUM_MOTORS; m++)
     {
 
-        if (m != AXIS_5_INDEX && m != AXIS_6_INDEX)
-        {
-            motor_cmds_[m] = axis_cmds_[m];   // straight-through
-            continue;
-        } 
-    combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
-
-    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
-    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
+        if (m == AXIS_5_INDEX || m == AXIS_6_INDEX) continue;
+        motor_cmds_[m] = axis_cmds_[m];   // straight-through
+         
+        combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
     }
+
+    RCLCPP_DEBUG(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
+    RCLCPP_DEBUG(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
+    
     // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
     for (int m = 0; m < NUM_MOTORS; m++) {
         if (motor_zero_req_[m]) { zero_position(m); motor_zero_req_[m] = false;
@@ -321,6 +310,13 @@ void ArmDriverNode::prepareCommands() {
 }
 
 void ArmDriverNode::handleTelemetry() {
+    rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
+    rover_msgs::msg::ArmCommand arm_feedback_msg;
+    arm_feedback_msg.positions.resize(NUM_AXES);
+    moteus_ros_msg.status.resize(NUM_AXES);
+    moteus_ros_msg.config.resize(NUM_AXES);
+    moteus_ros_msg.limit_switches.resize(NUM_AXES);
+
     // ── Stage 8: decode -> telem_, motor->axis (inverse for wrist) ──────────
     for (int id = 1; id <= NUM_MOTORS; id++) {
         auto& t = telem_[id - 1];
@@ -347,22 +343,6 @@ void ArmDriverNode::handleTelemetry() {
     }
     feedback_pub_->publish(moteus_ros_msg);
     arm_feedback_pub->publish(arm_feedback_msg);
-}
-
-void ArmDriverNode::applyConfigToMemory(int idx, const std::string& reg, float val) {
-    auto& c = configs_[idx];
-    if      (reg == "servo.pid_position.kp")        c.kp              = val;
-    else if (reg == "servo.pid_position.ki")        c.ki              = val;
-    else if (reg == "servo.pid_position.kd")        c.kd              = val;
-    else if (reg == "servo.max_current_A")          c.max_current_A   = val;
-    else if (reg == "servo.max_velocity"
-          || reg == "servo.default_velocity_limit") c.max_velocity    = val;
-    else if (reg == "servo.default_accel_limit")    c.max_acceleration = val;
-    else if (reg == "servopos.position_min")        c.position_min    = val;
-    else if (reg == "servopos.position_max")        c.position_max    = val;
-    else if (reg == "servo.max_voltage")            c.max_voltage     = val;
-    else if (reg == "servo.max_power_W")            c.max_power_W     = val;
-    else if (reg == "servo.default_timeout_s")      c.def_timeout     = val;
 }
 
 

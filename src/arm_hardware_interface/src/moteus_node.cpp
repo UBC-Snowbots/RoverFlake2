@@ -1,12 +1,38 @@
 #include "moteus_node.h"
 
+MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names) : Node(node_name) {
+    configs_ = configs;
+    motor_names_ = motor_names;
+    bus_ = std::make_unique<MoteusBus>(configs_.size());
+    motor_cmds_.resize(configs_.size());
+    telem_.resize(configs_.size());
+
+    auto qos     = rclcpp::QoS(5).reliable().durability_volatile();
+    auto log_qos = rclcpp::QoS(LOG_QUEUE_SIZE_MSGS).reliable().durability_volatile();
+
+    config_log_pub_  = this->create_publisher<std_msgs::msg::String>("/" + topic_prefix + "/config_log", log_qos);
+
+    config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
+        "/" + topic_prefix + "/config_update", qos,
+        std::bind(&MoteusNode::configUpdateCallback, this, std::placeholders::_1));
+
+    timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(10),
+        std::bind(&MoteusNode::run, this));
+
+    
+    last_fault_.resize(configs_.size());
+    last_mode_.resize(configs_.size());
+    position_alert_raised_.resize(configs_.size()); 
+}
+
 void MoteusNode::configureMotors() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
+    for (int i = 0; i < (int)configs_.size(); i++) {
         configureMotor(i + 1);
 
         auto& c = configs_[i];
         publishLog(std::string("# Motor ") + std::to_string(i + 1)
-            + " (" + ARM_JOINTS[i].hardware_name + ") configured:"
+            + " (" + motor_names_[i] + ") configured:"
             + " kp=" + c.format(c.kp)
             + " kd=" + c.format(c.kd)
             + " max_current=" + c.format(c.max_current_A) + "A"
@@ -23,15 +49,15 @@ void MoteusNode::configureMotor(int motor_id) {
     if (!maybe_state) {
         RCLCPP_WARN(this->get_logger(),
             "Motor %d (%s) NOT CONNECTED. Skipping config.",
-            motor_id, ARM_JOINTS[motor_id - 1].hardware_name);
+            motor_id, motor_names_[motor_id - 1].c_str());
         publishLog("# Motor " + std::to_string(motor_id)
-            + " (" + ARM_JOINTS[motor_id - 1].hardware_name + ") NOT CONNECTED — skipped");
+            + " (" + motor_names_[motor_id - 1] + ") NOT CONNECTED — skipped");
         return;
     }
 
     RCLCPP_INFO(this->get_logger(),
         "Motor %d (%s) detected. Pushing config...",
-        motor_id, ARM_JOINTS[motor_id - 1].hardware_name);
+        motor_id, motor_names_[motor_id - 1].c_str());
 
     for (const auto& [reg, val] : configs_[motor_id - 1].get_configs()) {
         auto reply = bus_->diagnostic(controller_id, "conf set " + reg + " " + val);
@@ -54,16 +80,10 @@ void MoteusNode::configureMotor(int motor_id) {
 // Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
 // Homing is then Checked. 
 void MoteusNode::run() {
+    if (calibrating_.load()) return;
+
     // Stage 1-5
     prepareCommands();
-
-
-    rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
-    rover_msgs::msg::ArmCommand arm_feedback_msg;
-    arm_feedback_msg.positions.resize(NUM_AXES);
-    moteus_ros_msg.status.resize(NUM_AXES);
-    moteus_ros_msg.config.resize(NUM_AXES);
-    moteus_ros_msg.limit_switches.resize(NUM_AXES);
 
 
     // ── Stage 6-7 :) : frames — built ONLY from motor_cmds_ sends them to bus
@@ -77,6 +97,22 @@ void MoteusNode::run() {
     checkAlerts();
     // ... your existing arm_feedback / MoteusArmStatus / joint_states publish,
     //     with active_cmds_[i]  ->  motor_cmds_[i]  in the des_position/des_velocity lines.
+}
+
+void MoteusNode::applyConfigToMemory(int idx, const std::string& reg, float val) {
+    auto& c = configs_[idx];
+    if      (reg == "servo.pid_position.kp")        c.kp              = val;
+    else if (reg == "servo.pid_position.ki")        c.ki              = val;
+    else if (reg == "servo.pid_position.kd")        c.kd              = val;
+    else if (reg == "servo.max_current_A")          c.max_current_A   = val;
+    else if (reg == "servo.max_velocity"
+          || reg == "servo.default_velocity_limit") c.max_velocity    = val;
+    else if (reg == "servo.default_accel_limit")    c.max_acceleration = val;
+    else if (reg == "servopos.position_min")        c.position_min    = val;
+    else if (reg == "servopos.position_max")        c.position_max    = val;
+    else if (reg == "servo.max_voltage")            c.max_voltage     = val;
+    else if (reg == "servo.max_power_W")            c.max_power_W     = val;
+    else if (reg == "servo.default_timeout_s")      c.def_timeout     = val;
 }
 
 
@@ -97,9 +133,9 @@ void MoteusNode::zero_position(uint8_t index)
 
     bus_->diagnostic(i, "d exact 0");
     RCLCPP_INFO(this->get_logger(),
-    "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
+    "Motor %d (%s) position set to zero (d exact 0)", i + 1, motor_names_[i].c_str());
     publishLog("# Motor " + std::to_string(i + 1)
-        + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
+        + " (" + motor_names_[i] + ") zeroed");
 }
 
 void MoteusNode::set_position(uint8_t index, float position_revs)
@@ -117,7 +153,7 @@ void MoteusNode::set_position(uint8_t index, float position_revs)
 // ---------------------------------------------------------------------------
 
 void MoteusNode::checkFaults() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
+    for (int i = 0; i < (int)configs_.size(); i++) {
         auto& t = telem_[i];
         if (!t.connected) continue;
 
@@ -125,15 +161,15 @@ void MoteusNode::checkFaults() {
             if (t.fault != 0) {
                 RCLCPP_ERROR(this->get_logger(),
                     "Motor %d (%s) FAULT! Code: %d — commands blocked until STOP sent",
-                    i + 1, ARM_JOINTS[i].hardware_name, t.fault);
+                    i + 1, motor_names_[i].c_str(), t.fault);
                 publishLog("# FAULT motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name
+                    + " (" + motor_names_[i]
                     + ") code=" + std::to_string(t.fault));
             } else if (last_fault_[i] != 0) {
                 RCLCPP_INFO(this->get_logger(),
-                    "Motor %d (%s) fault cleared", i + 1, ARM_JOINTS[i].hardware_name);
+                    "Motor %d (%s) fault cleared", i + 1, motor_names_[i].c_str());
                 publishLog("# Motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name + ") fault cleared");
+                    + " (" + motor_names_[i] + ") fault cleared");
             }
             last_fault_[i] = t.fault;
         }
@@ -141,10 +177,10 @@ void MoteusNode::checkFaults() {
         if (t.mode != last_mode_[i]) {
             if (t.mode == 1)
                 RCLCPP_ERROR(this->get_logger(),
-                    "Motor %d (%s) entered FAULT mode", i + 1, ARM_JOINTS[i].hardware_name);
+                    "Motor %d (%s) entered FAULT mode", i + 1, motor_names_[i].c_str());
             else if (t.mode == 0 && last_mode_[i] != 0)
                 RCLCPP_WARN(this->get_logger(),
-                    "Motor %d (%s) is STOPPED (driver disabled)", i + 1, ARM_JOINTS[i].hardware_name);
+                    "Motor %d (%s) is STOPPED (driver disabled)", i + 1, motor_names_[i].c_str());
             last_mode_[i] = t.mode;
         }
     }
@@ -156,7 +192,7 @@ void MoteusNode::checkFaults() {
 // ---------------------------------------------------------------------------
 
 void MoteusNode::checkAlerts() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
+    for (int i = 0; i < (int)configs_.size(); i++) {
         auto& t = telem_[i];
         if (!t.connected) continue;
 
@@ -172,10 +208,10 @@ void MoteusNode::checkAlerts() {
                 float limit = near_max ? c.position_max : c.position_min;
                 RCLCPP_WARN(this->get_logger(),
                     "Motor %d (%s) near %s position limit! pos=%.3f limit=%.3f (padding=%.3f)",
-                    i + 1, ARM_JOINTS[i].hardware_name, which,
+                    i + 1, motor_names_[i].c_str(), which,
                     t.position, limit, padding);
                 publishLog("# WARNING motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name + ") near " + which
+                    + " (" + motor_names_[i] + ") near " + which
                     + " limit: pos=" + std::to_string(t.position)
                     + " limit=" + std::to_string(limit));
             }
@@ -200,9 +236,9 @@ void MoteusNode::configUpdateCallback(
         const rover_msgs::msg::MoteusConfigUpdate::SharedPtr msg)
 {
     int idx = msg->motor_id;
-    if (idx < 0 || idx >= NUM_MOTORS) {
+    if (idx < 0 || idx >= (int)configs_.size()) {
         RCLCPP_WARN(this->get_logger(),
-            "configUpdate: motor_id %d out of range (0..%d)", idx, NUM_MOTORS - 1);
+            "configUpdate: motor_id %d out of range (0..%d)", idx, (int)configs_.size() - 1);
         return;
     }
     if (msg->register_name.empty() || std::isnan(msg->value)) return;
@@ -212,10 +248,10 @@ void MoteusNode::configUpdateCallback(
 
     RCLCPP_INFO(this->get_logger(),
         "configUpdate motor %d (%s): %s = %s",
-        idx + 1, ARM_JOINTS[idx].hardware_name,
+        idx + 1, motor_names_[idx].c_str(),
         msg->register_name.c_str(), val_str.c_str());
     publishLog("# conf motor " + std::to_string(idx + 1)
-        + " (" + ARM_JOINTS[idx].hardware_name + "): "
+        + " (" + motor_names_[idx] + "): "
         + msg->register_name + " = " + val_str);
 
     bus_->diagnostic(idx, cmd);

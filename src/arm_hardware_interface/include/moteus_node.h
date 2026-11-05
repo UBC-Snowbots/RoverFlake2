@@ -4,6 +4,9 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <cmath>
+#include <cstdio>
+#include <atomic>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rover_msgs/msg/moteus_config_update.hpp"
@@ -13,9 +16,11 @@
 #include <rover_arm_common/motor_config.h>       // MotorConfig, get_arm_configuration()
 #include "moteus_bus.h"
 
+constexpr int LOG_QUEUE_SIZE_MSGS = 50;
+
 class MoteusNode : public rclcpp::Node {
     public:
-        MoteusNode();
+        MoteusNode(const std::string& name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names);
 
         virtual ~MoteusNode() = default; // also run the derived class deconstructors
 
@@ -53,9 +58,9 @@ class MoteusNode : public rclcpp::Node {
         // -------------------------------------------------------------------------
         // State tracking for edge-triggered logging (prevents log spam)
         // -------------------------------------------------------------------------
-        std::array<int,  NUM_MOTORS> last_fault_{}; // TODO change to vector
-        std::array<int,  NUM_MOTORS> last_mode_{};
-        std::array<bool, NUM_MOTORS> position_alert_raised_{};
+        std::vector<int> last_fault_{}; 
+        std::vector<int> last_mode_{};
+        std::vector<bool> position_alert_raised_{};
 
         
     protected: // what only derived classes can see
@@ -79,12 +84,19 @@ class MoteusNode : public rclcpp::Node {
         std::vector<MotorConfig> configs_;
 
         std::vector<MotorCommand> motor_cmds_{};         // transformed (motor space) — only thing framed
+        std::vector<std::string> motor_names_;
 
         // -------------------------------------------------------------------------
         // Telemetry (see arm_telemetry.h for struct definition)
         // Updated each poll cycle from CAN reply frames.
         // -------------------------------------------------------------------------
         std::vector<MotorTelem> telem_{};
+
+        // -------------------------------------------------------------------------
+        // Calibration state
+        // When true, poll() returns immediately so the CAN bus is free for moteus_tool.
+        // -------------------------------------------------------------------------
+        std::atomic<bool> calibrating_{false};
 
 
     
