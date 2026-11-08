@@ -28,11 +28,12 @@ def generate_launch_description():
                 ('out', f'/{camera_name}/image_raw_decoded'),
             ],
             parameters=[
-                {'in.ffmpeg.decoders.hevc': 'hevc'},
-                {'in.ffmpeg.decoders.h264': 'h264'},
+                {'in_transport': 'ffmpeg'},
+                {'out_transport': 'raw'},
+                {'ffmpeg_image_transport.decoders.hevc': 'hevc'},
+                {'ffmpeg_image_transport.decoders.h264': 'h264'},
             ],
-            output='screen',
-            arguments=['ffmpeg', 'raw']
+            output='screen'
         )
         broadcastor_nodes.append(broadcastor_node)
 
