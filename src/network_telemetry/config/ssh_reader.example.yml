@@ -1,0 +1,11 @@
+ssh_network_reader:
+  ros__parameters:
+    host: "192.168.1.20"
+    port: 22
+    username: "ubnt"
+    password: "YOUR_SSH_PASSWORD"
+    ssh_key: ""
+    command: "wstalist"
+    timeout_seconds: 10.0
+    poll_interval_seconds: 5.0
+    output_topic: "network/raw"
