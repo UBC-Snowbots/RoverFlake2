@@ -97,8 +97,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
+      lower="-0.35"
+      upper="0.35"
       effort="0"
       velocity="0" />
   </joint>
@@ -124,7 +124,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_front_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
       <material
         name="">
@@ -138,7 +138,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_front_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
     </collision>
   </link>
@@ -208,8 +208,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
+      lower="-1"
+      upper="1.2"
       effort="0"
       velocity="0" />
   </joint>
@@ -235,7 +235,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_mid_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
       <material
         name="">
@@ -249,7 +249,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_mid_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
     </collision>
   </link>
@@ -288,7 +288,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_back_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
       <material
         name="">
@@ -302,7 +302,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_back_left.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_left.STL" />
       </geometry>
     </collision>
   </link>
@@ -372,10 +372,15 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
+      lower="-0.35"
+      upper="0.35"
       effort="0"
       velocity="0" />
+    <!-- Rockers are coupled through the differential: R = -L -->
+    <mimic
+      joint="RockerL_joint"
+      multiplier="-1"
+      offset="0" />
   </joint>
   <link
     name="WFR_Link">
@@ -399,7 +404,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_front_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
       <material
         name="">
@@ -413,7 +418,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_front_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
     </collision>
   </link>
@@ -483,8 +488,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0"
-      upper="0"
+      lower="-1"
+      upper="1.2"
       effort="0"
       velocity="0" />
   </joint>
@@ -510,7 +515,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_mid_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
       <material
         name="">
@@ -524,7 +529,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_mid_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
     </collision>
   </link>
@@ -563,7 +568,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_back_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
       <material
         name="">
@@ -577,7 +582,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/mini_rover/wheel_back_right.STL" />
+          filename="package://rover_description/meshes/mini_rover/wheel_right.STL" />
       </geometry>
     </collision>
   </link>
@@ -647,10 +652,16 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="0"
-      upper="0"
+      lower="-0.35"
+      upper="0.35"
       effort="0"
       velocity="0" />
+    <!-- Differential bar follows the rockers. Multiplier is a placeholder: tune it so the bar
+         visually tracks the rocker linkage (ratio = rocker link arm / differential arm). -->
+    <mimic
+      joint="RockerL_joint"
+      multiplier="1"
+      offset="0" />
   </joint>
   <link
     name="LiDAR_Link">
