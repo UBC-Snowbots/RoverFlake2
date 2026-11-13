@@ -49,6 +49,23 @@ std::vector<std::string> get_arm_motor_names() {
     }
     return names;
 }
+
+MoteusBusOptions get_arm_bus_options() {
+    std::vector<int> ids;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ids.push_back(i+1);
+    }
+    std::vector<bool> enabled(NUM_MOTORS, true);
+    enabled[3] = false; // keeps A4 off like before
+
+
+    MoteusBusOptions opts;
+    opts.can_ids = ids;
+    opts.enabled = enabled;
+    opts.query_aux2 = true;
+    return opts;
+}
+
 } // namespace
 
 // =============================================================================
@@ -59,7 +76,7 @@ std::vector<std::string> get_arm_motor_names() {
 // For per-motor PID/limits see motor_config.h.
 // =============================================================================
 
-ArmDriverNode::ArmDriverNode() : MoteusNode("moteus_driver", "arm", get_arm_configuration(), get_arm_motor_names()) {
+ArmDriverNode::ArmDriverNode() : MoteusNode("moteus_driver", "arm", get_arm_configuration(), get_arm_motor_names(), get_arm_bus_options()) {
 
     for(int i = 0; i < NUM_AXES; i++)
     {

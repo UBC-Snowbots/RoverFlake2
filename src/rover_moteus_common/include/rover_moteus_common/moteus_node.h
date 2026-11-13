@@ -20,7 +20,7 @@ constexpr int LOG_QUEUE_SIZE_MSGS = 50;
 
 class MoteusNode : public rclcpp::Node {
     public:
-        MoteusNode(const std::string& name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names);
+        MoteusNode(const std::string& name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names, const MoteusBusOptions& opts);
 
         virtual ~MoteusNode() = default; // also run the derived class deconstructors
 

@@ -1,9 +1,17 @@
 #include <rover_moteus_common/moteus_node.h>
+#include <stdexcept>
 
-MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names) : Node(node_name) {
+MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names, const MoteusBusOptions& opts) : Node(node_name) {
+    if (opts.can_ids.size() != configs.size()) {
+        throw std::invalid_argument(
+            "MoteusNode: " + std::to_string(opts.can_ids.size()) + " CAN IDs but "
+            + std::to_string(configs.size()) + " motor configs");
+    }
+
     configs_ = configs;
     motor_names_ = motor_names;
-    bus_ = std::make_unique<MoteusBus>(configs_.size());
+    bus_ = std::make_unique<MoteusBus>(opts);
+
     motor_cmds_.resize(configs_.size());
     telem_.resize(configs_.size());
 

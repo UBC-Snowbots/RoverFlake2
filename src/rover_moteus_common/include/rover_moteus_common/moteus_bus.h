@@ -12,15 +12,16 @@
 #include <rover_moteus_common/motor_telem.h>  
 
 struct MoteusBusOptions {
- // TODO later
- // will specify things like CAN IDS
- // what motors are disabled
- // --can-disable-brs
+    std::vector<int> can_ids; // each CAN ID of motor index i
+    std::vector<bool> enabled; // is motor is disabled never sends a frame
+    bool query_aux2 = false;
+    std::vector<std::string> transport_args = {"--can-disable-brs"};
 };
 
 class MoteusBus {
     public:
-        MoteusBus(int motors);
+        MoteusBus(const MoteusBusOptions& opts);
+
 
         // Builds one frame per motor, sends them all then decode their replies into MotorTelem
         const std::vector<MotorTelem>& cycle(const std::vector<MotorCommand>&  motor_cmds); 
@@ -38,6 +39,8 @@ class MoteusBus {
         int numMotors;
         std::vector<MotorTelem> telem_;
         std::shared_ptr<mot::Transport>              transport_;
-        std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor_id - 1
+        std::vector<std::shared_ptr<mot::Controller>> controllers_;  // index = motor index (CAN ID is opts_.can_ids[i])
+        std::vector<int> id_to_index_;
+        MoteusBusOptions opts_;
 
 };
