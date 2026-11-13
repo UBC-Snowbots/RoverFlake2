@@ -1,4 +1,4 @@
-#include "moteus_node.h"
+#include <rover_moteus_common/moteus_node.h>
 
 MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names) : Node(node_name) {
     configs_ = configs;

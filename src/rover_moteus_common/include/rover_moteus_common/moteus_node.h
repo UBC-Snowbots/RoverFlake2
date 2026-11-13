@@ -13,7 +13,7 @@
 #include "std_msgs/msg/string.hpp"
 
 
-#include <rover_arm_common/motor_config.h>       // MotorConfig, get_arm_configuration()
+#include <rover_moteus_common/motor_config.h>  
 #include "moteus_bus.h"
 
 constexpr int LOG_QUEUE_SIZE_MSGS = 50;

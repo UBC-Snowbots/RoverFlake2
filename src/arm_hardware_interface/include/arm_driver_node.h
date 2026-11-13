@@ -48,10 +48,12 @@
 #include "rover_msgs/msg/moteus_calibration_status.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
-// #include <rover_arm_common/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
+#include <rover_arm_common/motor_addressing.h>   // NUM_MOTORS, ARM_JOINTS, unit converters
+#include <rover_arm_common/motor_config.h>
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/arm_telemetry.h>      // MotorTelem
-#include "moteus_node.h"
+
+#include <rover_moteus_common/moteus_node.h>
 
 
 // Half assed debug printout flags - Uncomment to enable these printouts

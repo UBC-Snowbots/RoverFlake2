@@ -1,5 +1,6 @@
-#include "moteus_bus.h"
-#include "moteus_protocol.h"
+#include <rover_moteus_common/moteus_bus.h>
+#include <rover_moteus_common/moteus_protocol.h>
+
 
 // =============================================================================
 // MoteusBus implementation

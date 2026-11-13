@@ -8,8 +8,8 @@
 #include <cstdio>
 
 #include "moteus_protocol.h"                       // MoteusProtocol::makeFrame(), parseReply()
-#include <rover_arm_common/arm_commands.h>
-#include <rover_arm_common/arm_telemetry.h>  
+#include <rover_moteus_common/motor_command.h>
+#include <rover_moteus_common/motor_telem.h>  
 
 struct MoteusBusOptions {
  // TODO later

@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED)
+find_package(rover_moteus_common REQUIRED)
 
 # Where comms.h / device_ids.h live. Only the header is needed (we use the
 # MSG_TYPE__* ids and the id masks), nothing from comms.c gets linked.
@@ -25,14 +26,11 @@ message(FATAL_ERROR
 "Set -DCOMMS_INCLUDE_DIR=<dir containing comms.h>.")
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
-
 include_directories(include ${COMMS_DIR})
 
 # CAN-FD driver for arm
-add_executable(moteus_driver src/arm_driver_node.cpp src/moteus_node.cpp src/moteus_bus.cpp)
-target_link_libraries(moteus_driver moteus::cpp)
-ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common)
+add_executable(moteus_driver src/arm_driver_node.cpp)
+ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common rover_moteus_common)
 
 
 # Socet CAN driver for other loops
