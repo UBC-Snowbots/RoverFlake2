@@ -1,5 +1,7 @@
 import os
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -10,8 +12,19 @@ CFG_PATH   = os.path.join(SHARED_DIR, "config")
 
 
 def generate_launch_description():
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            "urdf",
+            default_value="Chassis_jan25.SLDASM.urdf",
+            description="URDF file in rover_description/urdf to display (e.g. mini_rover.urdf)",
+        ),
+        OpaqueFunction(function=launch_setup),
+    ])
+
+
+def launch_setup(context):
     rviz_config_file = os.path.join(CFG_PATH, "full_urdf_display.rviz")
-    urdf_file_path = os.path.join(URDF_PATH, "Chassis_jan25.SLDASM.urdf")
+    urdf_file_path = os.path.join(URDF_PATH, LaunchConfiguration("urdf").perform(context))
 
     with open(urdf_file_path, 'r') as f:
         robot_description_content = f.read()
@@ -49,8 +62,8 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description_content}],
     )
 
-    return LaunchDescription([
+    return [
         rviz_node,
         full_urdf_publisher,
         joint_state_publisher_gui_node,
-    ])
+    ]
