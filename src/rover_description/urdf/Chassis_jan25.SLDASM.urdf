@@ -26,7 +26,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/base_link.STL" />
+          filename="package://rover_description/meshes/chassis/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -40,7 +40,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/base_link.STL" />
+          filename="package://rover_description/meshes/chassis/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -66,7 +66,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_rocker.STL" />
+          filename="package://rover_description/meshes/chassis/right_rocker.STL" />
       </geometry>
       <material
         name="">
@@ -80,7 +80,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_rocker.STL" />
+          filename="package://rover_description/meshes/chassis/right_rocker.STL" />
       </geometry>
     </collision>
   </link>
@@ -124,7 +124,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_bogie.STL" />
+          filename="package://rover_description/meshes/chassis/right_bogie.STL" />
       </geometry>
       <material
         name="">
@@ -138,7 +138,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_bogie.STL" />
+          filename="package://rover_description/meshes/chassis/right_bogie.STL" />
       </geometry>
     </collision>
   </link>
@@ -182,7 +182,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_rocker.STL" />
+          filename="package://rover_description/meshes/chassis/left_rocker.STL" />
       </geometry>
       <material
         name="">
@@ -196,7 +196,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_rocker.STL" />
+          filename="package://rover_description/meshes/chassis/left_rocker.STL" />
       </geometry>
     </collision>
   </link>
@@ -240,7 +240,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_bogie.STL" />
+          filename="package://rover_description/meshes/chassis/left_bogie.STL" />
       </geometry>
       <material
         name="">
@@ -254,7 +254,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_bogie.STL" />
+          filename="package://rover_description/meshes/chassis/left_bogie.STL" />
       </geometry>
     </collision>
   </link>
@@ -298,7 +298,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/differential.STL" />
+          filename="package://rover_description/meshes/chassis/differential.STL" />
       </geometry>
       <material
         name="">
@@ -312,7 +312,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/differential.STL" />
+          filename="package://rover_description/meshes/chassis/differential.STL" />
       </geometry>
     </collision>
   </link>
@@ -351,7 +351,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_link.STL" />
+          filename="package://rover_description/meshes/chassis/right_link.STL" />
       </geometry>
       <material
         name="">
@@ -365,7 +365,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_link.STL" />
+          filename="package://rover_description/meshes/chassis/right_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -404,7 +404,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_link.STL" />
+          filename="package://rover_description/meshes/chassis/left_link.STL" />
       </geometry>
       <material
         name="">
@@ -418,7 +418,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_link.STL" />
+          filename="package://rover_description/meshes/chassis/left_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -457,7 +457,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_gps.STL" />
+          filename="package://rover_description/meshes/misc/chassis_left_gps.STL" />
       </geometry>
       <material
         name="">
@@ -471,7 +471,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/left_gps.STL" />
+          filename="package://rover_description/meshes/misc/chassis_left_gps.STL" />
       </geometry>
     </collision>
   </link>
@@ -510,7 +510,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_gps.STL" />
+          filename="package://rover_description/meshes/misc/chassis_right_gps.STL" />
       </geometry>
       <material
         name="">
@@ -524,7 +524,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/right_gps.STL" />
+          filename="package://rover_description/meshes/misc/chassis_right_gps.STL" />
       </geometry>
     </collision>
   </link>
@@ -563,7 +563,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/imu.STL" />
+          filename="package://rover_description/meshes/misc/chassis_imu.STL" />
       </geometry>
       <material
         name="">
@@ -577,7 +577,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://rover_description/meshes/imu.STL" />
+          filename="package://rover_description/meshes/misc/chassis_imu.STL" />
       </geometry>
     </collision>
   </link>

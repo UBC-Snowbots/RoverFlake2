@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'RockerL_joint', 'WFL_joint', 'BogieL_joint', 'WML_joint', 'WBL_joint', 'RockerR_joint', 'WFR_joint', 'BogieR_joint', 'WMR_joint', 'WBR_joint', 'Differential_joint', ]
