@@ -16,6 +16,7 @@
   <depend>sensor_msgs</depend>
   <depend>rover_msgs</depend>
   <depend>rover_arm_common</depend>
+  <depend>rover_moteus_common</depend>
 
   <!-- Used by bringup_mini_rover_drive.launch.py -->
   <exec_depend>joy_linux</exec_depend>
