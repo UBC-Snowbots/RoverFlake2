@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED)
+find_package(rover_moteus_common REQUIRED)
 
 # Where comms.h / device_ids.h live. Only the header is needed (we use the
 # MSG_TYPE__* ids and the id masks), nothing from comms.c gets linked.
@@ -25,14 +26,11 @@ message(FATAL_ERROR
 "Set -DCOMMS_INCLUDE_DIR=<dir containing comms.h>.")
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
-
 include_directories(include ${COMMS_DIR})
 
 # CAN-FD driver for arm
-add_executable(moteus_driver src/moteus_driver_node.cpp)
-target_link_libraries(moteus_driver moteus::cpp)
-ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common)
+add_executable(moteus_driver src/arm_driver_node.cpp)
+ament_target_dependencies(moteus_driver rclcpp rover_msgs std_msgs sensor_msgs rover_arm_common rover_moteus_common)
 
 
 # Socet CAN driver for other loops
@@ -42,6 +40,11 @@ ament_target_dependencies(generic_can_hardware_interface rclcpp rover_msgs)
 
 add_executable(ptz_translator src/ptz_translator.cpp ${COMMS_DIR}/comms.c)
 ament_target_dependencies(ptz_translator rclcpp rover_msgs geometry_msgs)
+
+
+add_executable(mini_rover_translator src/mini_rover_translator.cpp ${COMMS_DIR}/comms.c)
+ament_target_dependencies(mini_rover_translator rclcpp rover_msgs geometry_msgs)
+
 
 add_executable(lighting_translator
   src/lighting_translator.cpp
@@ -57,7 +60,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include/)
 
@@ -71,6 +74,7 @@ install(TARGETS
     generic_can_hardware_interface
     lighting_translator
     ptz_translator
+    mini_rover_translator
     DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(include)
