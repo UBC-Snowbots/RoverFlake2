@@ -11,8 +11,8 @@ from sensor_msgs.msg import JointState
 from rover_msgs.msg import ArmCommand
 
 JOINTS = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"]
-# Copy of ArmConstants::axis_dirs (rover_arm_common/arm_constants.h), the ones the driver uses
-AXIS_DIRS = [1, 1, 1, 1, 1, 1]
+# Copy of ArmConstants::Stepper::axis_dirs (rover_arm_common/arm_constants.h), the ones the driver uses
+AXIS_DIRS = [1, 1, 1, 1, -1, -1]
 # Same per-axis caps the driver uses when returning after homing (RETURN_MAX_VEL_DPS), deg/s
 MAX_DEG_S = [50.0, 23.0, 30.0, 90.0, 55.0, 90.0]
 # Firmware treats anything slower than this as stopped (ARM_DEG_VELOCITY_RESOLUTION)

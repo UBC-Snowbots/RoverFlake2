@@ -7,8 +7,8 @@ ArmSerial::ArmSerial() : Node("ArmSerialDriver") {
   //? new arm offsets. To change, check arm_control/include/armControlParams.h Should be synced with moveit params
 
    for(int i = 0; i < NUM_AXES; i++){
-    axes[i].zero_rad = ArmConstants::axis_zero_rads[i]; 
-    axes[i].dir = ArmConstants::axis_dirs[i];
+    axes[i].zero_rad = ArmConstants::Stepper::axis_zero_rads[i]; 
+    axes[i].dir = ArmConstants::Stepper::axis_dirs[i];
     #ifdef PRINTOUT_AXIS_PARAMS
       RCLCPP_INFO(this->get_logger(), "Axis %i /// DIR[ %i ] /// OFFSET TO URDF's ZERO_RAD[ %f ] ", i+1, axes[i].dir, axes[i].zero_rad);
     #endif
