@@ -90,3 +90,10 @@ git apply ffmpeg_nvmpi.patch
 ./configure --enable-nvmpi
 make
 ```
+
+This command fixes the realsense by stopping the depth from colliding with rgb in the byid symlink
+```
+sudo tee /etc/udev/rules.d/99-realsense-v4l.rules > /dev/null << 'EOF'
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0ad3", ENV{ID_SERIAL}!="", ENV{ID_USB_INTERFACE_NUM}!="", SYMLINK+="v4l/by-id/usb-$env{ID_SERIAL}-if$env{ID_USB_INTERFACE_NUM}-video-index$attr{index}"
+EOF
+```
