@@ -85,7 +85,16 @@ ServoControlNode::ServoControlNode()
         RCLCPP_INFO(this->get_logger(), "Connected to pigpio daemon (handle %d)", pi_);
     }
 
-    loadServos(servo_types_dir);
+    try {
+        loadServos(servo_types_dir);
+    } catch (...) {
+        // The destructor won't run for a half-built node, so close the
+        // pigpiod connection here before reporting the bad config.
+        if (pi_ >= 0) {
+            pigpio_stop(pi_);
+        }
+        throw;
+    }
     for (auto& [name, entry] : servos_) {
         entry.servo.close();
     }
@@ -256,7 +265,10 @@ void ServoControlNode::handleServoCommand(const ServoCommand::SharedPtr msg) {
     const uint16_t hold_ms =
         msg->hold_ms != 0 ? msg->hold_ms : static_cast<uint16_t>(default_hold_ms_);
 
-    servo.setPulseUs(pwm);
+    if (!servo.setPulseUs(pwm)) {
+        RCLCPP_ERROR(this->get_logger(), "%s servo: pigpio daemon refused %.0f us", name, pwm);
+        return;
+    }
     RCLCPP_INFO(this->get_logger(), "%s servo -> %.0f us (holding %u ms)", name, pwm, hold_ms);
 
     scheduleReturnToRest(name, hold_ms);
@@ -270,7 +282,8 @@ void ServoControlNode::scheduleReturnToRest(const std::string& name, uint16_t ho
             // One-shot: stop the timer before doing the work so it cannot repeat.
             return_timers_[name]->cancel();
             Servo& servo = servos_.at(name).servo;
-            servo.goToMin();
+            // Rest is the closed position, the same state the node starts in.
+            servo.close();
             RCLCPP_INFO(this->get_logger(), "%s servo returned to rest (%.0f us)", name.c_str(),
                         servo.pulseUs());
         });

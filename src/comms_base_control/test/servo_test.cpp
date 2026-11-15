@@ -62,3 +62,16 @@ TEST_CASE("servo without a pigpiod connection refuses to move")
     REQUIRE_FALSE(servo.open());
     REQUIRE(sent.empty());
 }
+
+TEST_CASE("servo type validation rejects non-finite calibration")
+{
+    ServoType type = latchType();
+    REQUIRE_NOTHROW(type.validate());
+
+    type.open_us = std::nanf("");
+    REQUIRE_THROWS(type.validate());
+
+    type = latchType();
+    type.min_us = INFINITY;
+    REQUIRE_THROWS(type.validate());
+}

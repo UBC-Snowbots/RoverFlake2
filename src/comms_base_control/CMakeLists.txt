@@ -13,6 +13,7 @@ find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 if(DEFINED ENV{BUILD_DEATH_RAY})

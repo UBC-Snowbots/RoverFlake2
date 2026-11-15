@@ -14,6 +14,10 @@ constexpr float PIGPIO_MIN_PULSE_US = 500.0f;
 constexpr float PIGPIO_MAX_PULSE_US = 2500.0f;
 
 void requireWithin(const ServoType& type, const char* field, float value, float lo, float hi) {
+    if (!std::isfinite(value)) {
+        throw std::runtime_error("servo type '" + type.name + "': " + field +
+                                 " is not a finite number");
+    }
     if (value < lo || value > hi) {
         throw std::runtime_error("servo type '" + type.name + "': " + field + " = " +
                                  std::to_string(std::lround(value)) + " us is outside [" +

@@ -35,7 +35,7 @@ private:
     void loadServos(const std::string& servo_types_dir);
 
     /*  Motion is one-shot: the servo moves to the commanded position, holds for
-     *  hold_ms, then returns to its minimum pulse width.
+     *  hold_ms, then returns to rest (its close_us position).
      *
      *  Go to max/min PWM (mode 0/1)
      *  ~ ros2 topic pub --once /servo_control_node/servo_command rover_msgs/msg/ServoCommand "{servo: 0, mode: 1}"
