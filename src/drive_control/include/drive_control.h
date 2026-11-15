@@ -12,12 +12,13 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "controller_config.h" // ArmControllerConfig::process_joy_input + controller mappings (arm_control pkg)
+#include "measured_params.h"   // TRACK_WIDTH_METERS
 
-#define MAX_LINEAR_SPEED_MPS 1.0
-// Full-stick yaw rate (rad/s). 2.3 rad/s with the 0.86 m track width gives a
-// full-stick pivot wheel speed of ~1 m/s (2.3 * 0.86 / 2), matching the
-// linear full-stick wheel speed.
-#define MAX_ANGULAR_SPEED_RADPS 2.3
+#define MAX_LINEAR_SPEED_MPS 1.4
+// Full-stick yaw rate (rad/s), derived so a full-stick pivot drives the
+// wheels at the same surface speed as full-stick linear:
+// v_wheel = omega * track/2 = MAX_LINEAR_SPEED_MPS  =>  ~2.33 rad/s
+#define MAX_ANGULAR_SPEED_RADPS (2.0 * MAX_LINEAR_SPEED_MPS / TRACK_WIDTH_METERS)
 #define TURBO_SPEED_MULTIPLIER 3
 
 /**

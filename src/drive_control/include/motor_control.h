@@ -6,6 +6,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "rover_msgs/msg/drive_feedback.hpp"
 #include "moteus.h" // mjbots moteus C++ client (src/external_pkgs/moteus)
+#include "measured_params.h" // WHEEL_RADIUS_METERS
 
 #include <algorithm> // For std::clamp
 #include <cmath>     // For M_PI, NAN
@@ -23,7 +24,7 @@ namespace mot = mjbots::moteus;
  * moteus_tool. No gear-ratio math is needed on the host side.
  */
 #define NUM_MOTORS 6
-#define WHEEL_RADIUS_METERS 0.1
+// WHEEL_RADIUS_METERS comes from measured_params.h
 #define WHEEL_CIRCUMFERENCE_METERS (2.0 * M_PI * WHEEL_RADIUS_METERS)
 
 /**
