@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Real old stepper arm. The sim keeps using dev_arm.ros2_control.xacro (fake arm). -->
+    <xacro:macro name="dev_arm_real_joint" params="name">
+        <joint name="${name}">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="dev_arm_real_ros2_control" params="name">
+        <ros2_control name="${name}" type="system">
+            <hardware>
+                <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+                <param name="joint_commands_topic">/arm/joint_commands</param>
+                <param name="joint_states_topic">/arm/joint_states</param>
+                <param name="trigger_joint_command_threshold">-1</param>
+            </hardware>
+            <xacro:dev_arm_real_joint name="joint_1"/>
+            <xacro:dev_arm_real_joint name="joint_2"/>
+            <xacro:dev_arm_real_joint name="joint_3"/>
+            <xacro:dev_arm_real_joint name="joint_4"/>
+            <xacro:dev_arm_real_joint name="joint_5"/>
+            <xacro:dev_arm_real_joint name="joint_6"/>
+            <!-- Fingers are read only, so RViz can draw them. Nothing commands them from here yet. -->
+            <joint name="finger_left_joint">
+                <state_interface name="position"/>
+            </joint>
+            <joint name="finger_right_joint">
+                <state_interface name="position"/>
+            </joint>
+        </ros2_control>
+    </xacro:macro>
+</robot>

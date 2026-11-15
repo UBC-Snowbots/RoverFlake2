@@ -99,6 +99,8 @@ install(
   LIBRARY DESTINATION lib
 )
 
+install(PROGRAMS scripts/arm_velocity_translator.py DESTINATION lib/${PROJECT_NAME})
+
 ament_export_libraries(${PROJECT_NAME})
 ament_export_include_directories(include)
 ament_package()

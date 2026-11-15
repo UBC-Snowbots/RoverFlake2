@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dev_arm">
+    <!-- Same arm body as dev_arm.urdf.xacro, but wired to the real arm instead of the fake one -->
+    <xacro:include filename="$(find dev_arm_description)/urdf/dev_arm.urdf" />
+
+    <xacro:include filename="dev_arm_real.ros2_control.xacro" />
+
+    <xacro:dev_arm_real_ros2_control name="RealStepperArm"/>
+</robot>

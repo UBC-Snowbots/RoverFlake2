@@ -1,0 +1,35 @@
+# ros2_control settings for the REAL old stepper arm (real_arm_rviz.launch.py).
+# The sim uses ros2_controllers.yaml instead.
+controller_manager:
+  ros__parameters:
+    update_rate: 25  # Hz
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+arm_controller:
+  ros__parameters:
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+      - joint_4
+      - joint_5
+      - joint_6
+    # The arm firmware only runs in velocity mode, so the controller outputs velocities
+    command_interfaces:
+      - velocity
+    state_interfaces:
+      - position
+      - velocity
+    # velocity sent = planned velocity + p * (planned position - real position)
+    gains:
+      joint_1: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
+      joint_2: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
+      joint_3: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
+      joint_4: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
+      joint_5: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
+      joint_6: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0, ff_velocity_scale: 1.0}
