@@ -15,21 +15,26 @@ WheelSpeedNode::WheelSpeedNode() : Node("wheel_speed_node") {  // Initialize the
 
 // Callback function that processes velocity commands received in the form of Twist messages
 void WheelSpeedNode::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg) {
-    // Extract the linear and angular velocity from the incoming message
+    // Extract the linear (m/s) and angular (rad/s) velocity from the incoming message
     double linear = msg->linear.x;
     double angular = msg->angular.z;
 
+    // Skid-steer kinematics: each side's wheel surface speed differs from the
+    // chassis speed by yaw_rate * half the track width.
+    double v_diff = angular * (TRACK_WIDTH_METERS / 2.0);
+
     // Create vectors of motor commands that correspond to the calculated speeds for left and right wheels
+    // (left side signs are inverted because the left motors are mounted mirrored)
     std::vector<double> left_wheel_commands = {
-        -linear + angular,   // Left Front Wheel
-        -linear + angular,   // Left Mid Wheel
-        -linear + angular    // Left Rear Wheel
+        -linear + v_diff,   // Left Front Wheel
+        -linear + v_diff,   // Left Mid Wheel
+        -linear + v_diff    // Left Rear Wheel
     };
 
     std::vector<double> right_wheel_commands = {
-        linear + angular,  // Right Front Wheel
-        linear + angular,  // Right Mid Wheel
-        linear + angular   // Right Rear Wheel
+        linear + v_diff,  // Right Front Wheel
+        linear + v_diff,  // Right Mid Wheel
+        linear + v_diff   // Right Rear Wheel
     };
 
     // Publish the separate left and right wheel speed messages

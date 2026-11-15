@@ -58,8 +58,12 @@ namespace mot = mjbots::moteus;
 
 /**
  * Velocity limits
+ *
+ * MAX_VELOCITY_MS matches the measured top speed of the drive motors
+ * (back-EMF/config ceiling on the moteus side), so commands and
+ * DriveFeedback targets never exceed what the hardware can actually do.
  */
-#define MAX_VELOCITY_MS 5.5
+#define MAX_VELOCITY_MS 4.2
 #define MIN_VELOCITY_MS 0.05
 #define MAX_VELOCITY_REVS (MAX_VELOCITY_MS * MS_TO_REVS)
 

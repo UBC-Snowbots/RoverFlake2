@@ -14,7 +14,10 @@
 #include "controller_config.h" // ArmControllerConfig::process_joy_input + controller mappings (arm_control pkg)
 
 #define MAX_LINEAR_SPEED_MPS 1.0
-#define MAX_ANGULAR_SPEED_MPS 1.0
+// Full-stick yaw rate (rad/s). 2.3 rad/s with the 0.86 m track width gives a
+// full-stick pivot wheel speed of ~1 m/s (2.3 * 0.86 / 2), matching the
+// linear full-stick wheel speed.
+#define MAX_ANGULAR_SPEED_RADPS 2.3
 #define TURBO_SPEED_MULTIPLIER 3
 
 /**

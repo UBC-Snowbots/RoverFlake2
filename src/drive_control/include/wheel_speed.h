@@ -19,6 +19,6 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
-    static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
-    static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
+    static constexpr double WHEEL_RADIUS_METERS = 0.1;  // Wheel radius
+    static constexpr double TRACK_WIDTH_METERS = 0.86;  // Distance between left and right wheels (center to center)
 };
