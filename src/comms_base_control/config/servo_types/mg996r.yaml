@@ -1,0 +1,7 @@
+# DM MG996R. Capped at 1750 us for now (the range tested on the claw);
+# the servo is usually rated 500-2500 us, which hasn't been checked yet.
+# close = catch (the startup state), open = release.
+min_us: 500
+max_us: 1750
+open_us: 1750
+close_us: 500

@@ -1,0 +1,16 @@
+# Which servo sits on which pin. "type" names a file in config/servo_types/.
+# Optional per-servo keys:
+#   open_us / close_us  override the type's defaults (must stay within its min/max)
+#   on_shutdown         min | max | open | close | release (default: release)
+/servo_control_node:
+  ros__parameters:
+    default_hold_ms: 1000
+    servos:
+      rp:
+        type: unknown_500_2500
+        gpio_pin: 17
+        on_shutdown: max
+      claw:
+        type: mg996r
+        gpio_pin: 27
+        on_shutdown: release
