@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    video_device: "/dev/v4l/by-id/usb-Intel_R__RealSense_TM__Depth_Camera_415_Intel_R__RealSense_TM__Depth_Camera_415_806413020644-video-index0"
+    video_device: "/dev/v4l/by-id/usb-Intel_R__RealSense_TM__Depth_Camera_415_Intel_R__RealSense_TM__Depth_Camera_415_806413020644-if03-video-index0"
     #image_width: 640
     #image_height: 480
     #framerate: 30.0
