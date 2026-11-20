@@ -130,11 +130,58 @@ void HeartNode::heartRequestCallback(const rover_msgs::msg::HeartRequest::Shared
         // RCLCPP_INFO(this->get_logger(), "Subsystem %s KILLED", request->subsystem_name.c_str());
         break;
     }
+    heartbeat(); // send feedback right away so HMIs don't wait a full beat to update
 }
 
 
 
+void HeartNode::reapChildren(){
+    int status = 0;
+    pid_t done;
+    while((done = waitpid(-1, &status, WNOHANG)) > 0){
+        for(auto &pair : subsystems){
+            SubSystem &subsys = pair.second;
+            if(subsys.pid == done && subsys.online){
+                subsys.online = false;
+                RCLCPP_WARN(this->get_logger(), "Subsystem %s (PID %d) exited on its own (status %d)",
+                            subsys.name.c_str(), done, status);
+            }
+        }
+    }
+}
+
+HeartNode::~HeartNode(){
+    if(!kill_subsystems_on_exit){
+        return;
+    }
+    std::vector<pid_t> groups;
+    for(auto &pair : subsystems){
+        if(pair.second.online && pair.second.gpid > 0){
+            fprintf(stderr, "[heart] shutting down, killing subsystem %s\n", pair.second.name.c_str());
+            killpg(pair.second.gpid, SIGINT);
+            groups.push_back(pair.second.gpid);
+        }
+    }
+    // Give them ~3 s to exit cleanly on SIGINT, then SIGTERM whatever is left.
+    for(int tries = 0; tries < 30 && !groups.empty(); tries++){
+        usleep(100000);
+        for(auto it = groups.begin(); it != groups.end();){
+            waitpid(*it, nullptr, WNOHANG);
+            if(killpg(*it, 0) < 0 && errno == ESRCH){
+                it = groups.erase(it);
+            }else{
+                ++it;
+            }
+        }
+    }
+    for(pid_t g : groups){
+        fprintf(stderr, "[heart] process group %d ignored SIGINT, sending SIGTERM\n", g);
+        killpg(g, SIGTERM);
+    }
+}
+
 void HeartNode::heartbeat(){
+    reapChildren();
     rover_msgs::msg::HeartRequest msg;
     msg.header = rover_utils::createHeader(); 
     for(const auto &pair : subsystems){
