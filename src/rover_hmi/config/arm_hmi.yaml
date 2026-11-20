@@ -1,0 +1,23 @@
+# Arm HMI bringup config (launch/arm_hmi.launch.py).
+# The HMI never runs processes itself: it asks its own heart (heart_arm_hmi) to start/stop them.
+# Uses its own request/feedback topics so it doesn't collide with the rover's daemonized hearts.
+# No rebuild needed after editing this file, just relaunch (it's installed to share/, so
+# rebuild only if you're not using --symlink-install).
+
+/heart_arm_hmi: # name must start with heart_ ; host id shows up as "arm_hmi"
+  ros__parameters:
+    subsystems:
+      stepper_arm_driver: "ros2 run arm_hardware_interface stepper_arm_driver"
+      arm_joy: "ros2 launch rover_hmi arm_joy.launch.py"
+    request_topic: "/heart_arm_hmi/request"
+    heart_feedback_topic: "/heart_arm_hmi/running_subsystems"
+    heartbeat_rate: 2.0
+    kill_subsystems_on_exit: true # closing the launch stops the driver/joy too
+
+/main_hmi_node:
+  ros__parameters:
+    heart_request_topic: "/heart_arm_hmi/request"
+    heart_feedback_topic: "/heart_arm_hmi/running_subsystems"
+    heart_timeout_ms: 2000 # no heartbeat for this long -> buttons show NO HEART
+    arm_driver_subsystem: "stepper_arm_driver" # must match a key under /heart_arm_hmi subsystems
+    arm_joy_subsystem: "arm_joy"

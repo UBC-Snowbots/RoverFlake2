@@ -4,6 +4,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rover_utils/include/roverCommon.h>
 #include <rover_msgs/msg/heart_request.hpp>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
 using namespace ConsoleFormat;
 class HeartNode : public rclcpp::Node
 {
@@ -22,6 +25,10 @@ public:
     this->get_parameter("request_topic", topic_param);
     this->get_parameter("heart_feedback_topic", feedback_topic_param);
     this->get_parameter("heartbeat_rate", heartbeat_rate_param);
+    // Optional: kill every running subsystem when this heart shuts down. Off by default so the
+    // daemonized rover hearts keep their old behaviour; turn on for hearts owned by a launch file
+    // (e.g. the arm HMI's heart) so closing the launch doesn't orphan the driver.
+    this->get_parameter_or("kill_subsystems_on_exit", kill_subsystems_on_exit, false);
 
     // std::string request_topic = my_name + "/request";
     my_host_id = my_name;
@@ -66,14 +73,15 @@ public:
 
     // runSubSystem(subsystems_vector[0]);
     }
+    ~HeartNode();
 private: 
 struct SubSystem{
     std::string name;
     std::string exec_command;
     int index = -1;
-    pid_t pid;
-    pid_t gpid;
-    pid_t sid;
+    pid_t pid = -1;
+    pid_t gpid = -1;
+    pid_t sid = -1;
     bool online = false;
 };
 std::map<std::string, rclcpp::Parameter> params;
@@ -82,12 +90,14 @@ std::unordered_map<std::string, SubSystem> subsystems;
 // std::unordered_map<std::string, std::SubSystem>;
 
 std::string my_host_id;
+bool kill_subsystems_on_exit = false;
 
 std::vector<SubSystem> subsystems_vector;
 
 void runSubSystem(SubSystem& subsys);
 void killSubSystem(SubSystem& subsys);
 void heartbeat();
+void reapChildren(); // notice subsystems that exited on their own (crash, missing hardware, etc)
 
 // void runChildNode(std::string pkg, std::string node_or_launch_file, std::string subsytem_name, int type = NODE, bool kill_orphan = true);
 void killProcessGroup(pid_t pgid); //! Should prob have a error return

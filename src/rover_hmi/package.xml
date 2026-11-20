@@ -19,6 +19,11 @@
   <depend>arm_control</depend>
   <!-- <depend>rover_utils</depend> -->
 
+  <!-- launch/arm_hmi.launch.py + arm_joy.launch.py -->
+  <exec_depend>rover_manager</exec_depend>
+  <exec_depend>arm_hardware_interface</exec_depend>
+  <exec_depend>joy_linux</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
