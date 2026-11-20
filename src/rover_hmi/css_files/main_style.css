@@ -38,3 +38,27 @@
     color: ghostwhite;
 }
 
+
+/* Arm HMI heart buttons (Arm Driver / Joy Control). background-image: none is
+   required, otherwise the theme's gradient paints over background-color. */
+.arm_heart_ON, .arm_heart_ON:hover {
+    background-image: none;
+    background-color: rgb(61, 220, 61);
+    color: black;
+    font-weight: bold;
+    border: 3px solid rgb(20, 90, 20);
+}
+.arm_heart_OFF, .arm_heart_OFF:hover {
+    background-image: none;
+    background-color: rgb(55, 55, 55);
+    color: white;
+    font-weight: bold;
+    border: 3px solid rgb(61, 220, 61);
+}
+.arm_heart_NOHEART, .arm_heart_NOHEART:hover {
+    background-image: none;
+    background-color: rgb(255, 150, 0);
+    color: black;
+    font-weight: bold;
+    border: 3px solid rgb(120, 60, 0);
+}
