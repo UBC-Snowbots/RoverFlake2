@@ -37,6 +37,69 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
+//* ---------- Heart-managed subsystems ----------
+
+bool MainHMINode::heartAlive(const HeartSubsystem& subsys){
+    if(subsys.last_feedback.nanoseconds() == 0){
+        return false;
+    }
+    return (this->now() - subsys.last_feedback).nanoseconds() <= static_cast<int64_t>(heart_timeout_ms) * 1'000'000;
+}
+
+void MainHMINode::heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg){
+    for(int i = 0; i < HEART_NUM_SUBSYSTEMS; i++){
+        if(heart_subsystems[i].name == msg->subsystem_name){
+            heart_subsystems[i].running = msg->running;
+            heart_subsystems[i].last_feedback = this->now(); // local receive time, immune to clock skew
+            updateHeartSubsystemButton(i);
+        }
+    }
+}
+
+void MainHMINode::handleHeartSubsystemButtonClick(int index){
+    HeartSubsystem& subsys = heart_subsystems[index];
+    if(!heartAlive(subsys)){
+        RCLCPP_ERROR(this->get_logger(), "No heartbeat for %s, is the heart running? (launch rover_hmi arm_hmi.launch.py)",
+                     subsys.name.c_str());
+        return;
+    }
+    rover_msgs::msg::HeartRequest msg;
+    msg.subsystem_name = subsys.name;
+    msg.running = !subsys.running;
+    heart_request_pub->publish(msg);
+    RCLCPP_WARN(this->get_logger(), "Requesting %s %s", subsys.name.c_str(), msg.running ? "ENGAGE" : "DISENGAGE");
+}
+
+void MainHMINode::updateHeartSubsystemButton(int index){
+    HeartSubsystem& subsys = heart_subsystems[index];
+    if(subsys.button == nullptr){
+        return;
+    }
+    std::string state;
+    std::string label;
+    if(!heartAlive(subsys)){
+        state = "arm_heart_NOHEART";
+        label = subsys.title + "\nNO HEART";
+    }else if(subsys.running){
+        state = "arm_heart_ON";
+        label = subsys.title + " ON\nclick to DISENGAGE";
+    }else{
+        state = "arm_heart_OFF";
+        label = subsys.title + " OFF\nclick to ENGAGE";
+    }
+    if(state == subsys.shown_state){
+        return;
+    }
+    auto context = subsys.button->get_style_context();
+    if(!subsys.shown_state.empty()){
+        context->remove_class(subsys.shown_state);
+    }
+    context->remove_class("arm_heart_NOHEART"); // initial class from glade
+    context->add_class(state);
+    subsys.button->set_label(label);
+    subsys.shown_state = state;
+}
+
 void MainHMINode::moteusDebugFeedbackCallback(const rover_msgs::msg::MoteusArmStatus::SharedPtr msg)
 {
     // Handle drawss

@@ -2,6 +2,7 @@
 #include <HMICommon.h>
 #include <rover_msgs/msg/arm_command.hpp>
 #include <rover_msgs/msg/moteus_arm_status.hpp>
+#include <rover_msgs/msg/heart_request.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
@@ -52,6 +53,18 @@ public:
         "/arm_moveit_control/delta_twist_cmds", qos);  
     cmd_vel_monitor_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, std::bind(&MainHMINode::cmdVelCallback, this, std::placeholders::_1));
+
+    //* Heart: the HMI doesn't run processes itself, it asks a heart (see launch/arm_hmi.launch.py) to.
+    std::string heart_request_topic = this->declare_parameter<std::string>("heart_request_topic", "/heart_arm_hmi/request");
+    std::string heart_feedback_topic = this->declare_parameter<std::string>("heart_feedback_topic", "/heart_arm_hmi/running_subsystems");
+    heart_timeout_ms = this->declare_parameter<int>("heart_timeout_ms", 2000);
+    heart_subsystems[HEART_ARM_DRIVER].name = this->declare_parameter<std::string>("arm_driver_subsystem", "stepper_arm_driver");
+    heart_subsystems[HEART_ARM_DRIVER].title = "Arm Driver";
+    heart_subsystems[HEART_ARM_JOY].name = this->declare_parameter<std::string>("arm_joy_subsystem", "arm_joy");
+    heart_subsystems[HEART_ARM_JOY].title = "Joy Control";
+    heart_request_pub = this->create_publisher<rover_msgs::msg::HeartRequest>(heart_request_topic, 10);
+    heart_feedback_sub = this->create_subscription<rover_msgs::msg::HeartRequest>(
+        heart_feedback_topic, 20, std::bind(&MainHMINode::heartFeedbackCallback, this, std::placeholders::_1));
 
 
 
@@ -288,6 +301,19 @@ public:
           sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleIKSpeedUpdate), i));
     }
 
+    builder->get_widget("arm_driver_heart_button", heart_subsystems[HEART_ARM_DRIVER].button);
+    builder->get_widget("arm_joy_heart_button", heart_subsystems[HEART_ARM_JOY].button);
+    for (int i = 0; i < HEART_NUM_SUBSYSTEMS; i++)
+    {
+      heart_subsystems[i].button->signal_clicked().connect(
+          sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleHeartSubsystemButtonClick), i));
+      updateHeartSubsystemButton(i);
+    }
+    // Refresh button state even when no feedback arrives, so a dead heart shows up as NO HEART.
+    heart_ui_timer = this->create_wall_timer(std::chrono::milliseconds(250), [this]() {
+      for (int i = 0; i < HEART_NUM_SUBSYSTEMS; i++) updateHeartSubsystemButton(i);
+    });
+
     builder->get_widget("next_panel_button", next_panel_button);
     next_panel_button->signal_clicked().connect(
         sigc::bind(sigc::mem_fun(*this, &MainHMINode::handleCardButtonSwitch), true));
@@ -365,6 +391,32 @@ private:
   void handleCardButtonSwitch(bool next);
 
   void handleIKTestButtonClick();
+
+  //* Heart-managed subsystems (arm driver, joystick control)
+  enum heart_subsystem_index
+  {
+    HEART_ARM_DRIVER,
+    HEART_ARM_JOY,
+    HEART_NUM_SUBSYSTEMS
+  };
+  struct HeartSubsystem
+  {
+    std::string name;   // subsystem key in the heart's yaml
+    std::string title;  // shown on the button
+    Gtk::Button* button = nullptr;
+    bool running = false;
+    rclcpp::Time last_feedback{ 0, 0, RCL_ROS_TIME };
+    std::string shown_state;  // last applied css class, avoids restyling every tick
+  };
+  HeartSubsystem heart_subsystems[HEART_NUM_SUBSYSTEMS];
+  int heart_timeout_ms = 2000;
+  bool heartAlive(const HeartSubsystem& subsys);
+  void heartFeedbackCallback(const rover_msgs::msg::HeartRequest::SharedPtr msg);
+  void handleHeartSubsystemButtonClick(int index);
+  void updateHeartSubsystemButton(int index);
+  rclcpp::Publisher<rover_msgs::msg::HeartRequest>::SharedPtr heart_request_pub;
+  rclcpp::Subscription<rover_msgs::msg::HeartRequest>::SharedPtr heart_feedback_sub;
+  rclcpp::TimerBase::SharedPtr heart_ui_timer;
   // void armFeebackCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg);
 
   Gtk::Window* middle_window;

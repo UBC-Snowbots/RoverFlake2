@@ -466,7 +466,7 @@
                   </packing>
                 </child>
                 <child>
-                  <!-- n-columns=3 n-rows=3 -->
+                  <!-- n-columns=3 n-rows=4 -->
                   <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -571,6 +571,41 @@ sends $h(A)</property>
                     </child>
                     <child>
                       <placeholder/>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="arm_driver_heart_button">
+                        <property name="label" translatable="yes">Arm Driver
+NO HEART</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Engage / disengage the arm hardware driver (stepper_arm_driver), run by the arm HMI heart.</property>
+                        <style>
+                          <class name="arm_heart_NOHEART"/>
+                        </style>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="arm_joy_heart_button">
+                        <property name="label" translatable="yes">Joy Control
+NO HEART</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Engage / disengage joystick arm control (joy_linux_node + joy_arm_control), run by the arm HMI heart.</property>
+                        <style>
+                          <class name="arm_heart_NOHEART"/>
+                        </style>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">3</property>
+                        <property name="width">2</property>
+                      </packing>
                     </child>
                   </object>
                   <packing>
