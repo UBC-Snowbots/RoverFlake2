@@ -78,13 +78,13 @@ void MainHMINode::updateHeartSubsystemButton(int index){
     std::string state;
     std::string label;
     if(!heartAlive(subsys)){
-        state = "dash_status_unknown";
+        state = "arm_heart_NOHEART";
         label = subsys.title + "\nNO HEART";
     }else if(subsys.running){
-        state = "subsys_button_KILL_ONLINE";
+        state = "arm_heart_ON";
         label = subsys.title + " ON\nclick to DISENGAGE";
     }else{
-        state = "subsys_button_RUN_OFFLINE";
+        state = "arm_heart_OFF";
         label = subsys.title + " OFF\nclick to ENGAGE";
     }
     if(state == subsys.shown_state){
@@ -94,7 +94,7 @@ void MainHMINode::updateHeartSubsystemButton(int index){
     if(!subsys.shown_state.empty()){
         context->remove_class(subsys.shown_state);
     }
-    context->remove_class("dash_status_unknown"); // initial class from glade
+    context->remove_class("arm_heart_NOHEART"); // initial class from glade
     context->add_class(state);
     subsys.button->set_label(label);
     subsys.shown_state = state;

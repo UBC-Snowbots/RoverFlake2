@@ -581,7 +581,7 @@ NO HEART</property>
                         <property name="receives-default">True</property>
                         <property name="tooltip-text" translatable="yes">Engage / disengage the arm hardware driver (stepper_arm_driver), run by the arm HMI heart.</property>
                         <style>
-                          <class name="dash_status_unknown"/>
+                          <class name="arm_heart_NOHEART"/>
                         </style>
                       </object>
                       <packing>
@@ -598,7 +598,7 @@ NO HEART</property>
                         <property name="receives-default">True</property>
                         <property name="tooltip-text" translatable="yes">Engage / disengage joystick arm control (joy_linux_node + joy_arm_control), run by the arm HMI heart.</property>
                         <style>
-                          <class name="dash_status_unknown"/>
+                          <class name="arm_heart_NOHEART"/>
                         </style>
                       </object>
                       <packing>
