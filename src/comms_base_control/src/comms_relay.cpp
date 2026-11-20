@@ -6,6 +6,7 @@
 #include <cmath>
 #include <set>
 #include <stdexcept>
+#include <utility>
 
 using ServoCommand = rover_msgs::msg::ServoCommand;
 using Trigger = std_srvs::srv::Trigger;
@@ -155,12 +156,15 @@ void ServoControlNode::loadServos(const std::string& servo_types_dir) {
         }
         ServoType type =
             loadServoType(servo_types_dir, this->get_parameter(p + "type").as_string());
-        // Per-servo overrides of the type's open/close positions.
-        if (this->has_parameter(p + "open_us")) {
-            type.open_us = numberParam(this->get_parameter(p + "open_us"));
-        }
-        if (this->has_parameter(p + "close_us")) {
-            type.close_us = numberParam(this->get_parameter(p + "close_us"));
+        // Per-servo overrides, e.g. a mechanism that allows less travel than
+        // the servo model itself.
+        for (auto [key, field] : {std::pair{"min_us", &ServoType::min_us},
+                                  std::pair{"max_us", &ServoType::max_us},
+                                  std::pair{"open_us", &ServoType::open_us},
+                                  std::pair{"close_us", &ServoType::close_us}}) {
+            if (this->has_parameter(p + key)) {
+                type.*field = numberParam(this->get_parameter(p + key));
+            }
         }
         try {
             type.validate();

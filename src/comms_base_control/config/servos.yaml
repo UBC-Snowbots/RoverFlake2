@@ -1,16 +1,19 @@
 # Which servo sits on which pin. "type" names a file in config/servo_types/.
 # Optional per-servo keys:
-#   open_us / close_us  override the type's defaults (must stay within its min/max)
+#   min_us / max_us     narrow the type's travel for this mechanism
+#   open_us / close_us  override the type's defaults (must stay within min/max)
 #   on_shutdown         min | max | open | close | release (default: release)
 /servo_control_node:
   ros__parameters:
     default_hold_ms: 1000
     servos:
-      rp:
-        type: unknown_500_2500
+      rp:     # rack-and-pinion: extends the arms out the bottom of the relay box
+        type: mg996r
         gpio_pin: 17
         on_shutdown: max
-      claw:
+      claw:   # open/close claw on the side of the relay box
         type: mg996r
         gpio_pin: 27
+        max_us: 1750   # the claw's travel limit
+        open_us: 1750
         on_shutdown: release

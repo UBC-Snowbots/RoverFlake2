@@ -1,6 +1,0 @@
-# Rack-and-pinion drive servo on the comms relay. The model is unknown;
-# rename this file after it once known (e.g. mg996r.yaml) and update servos.yaml.
-min_us: 500
-max_us: 2500
-open_us: 2500
-close_us: 500
