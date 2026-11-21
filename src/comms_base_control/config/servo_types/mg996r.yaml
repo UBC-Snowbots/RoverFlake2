@@ -1,0 +1,5 @@
+# DM MG996R (both comms relay servos).
+min_us: 500
+max_us: 2500
+open_us: 2500
+close_us: 500
