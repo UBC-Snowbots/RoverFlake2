@@ -12,6 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(rover_utils REQUIRED)
 
 # Ensure Phidget22 SDK is located
 # set(CMAKE_PREFIX_PATH "/path/to/phidget22/sdk" ${CMAKE_PREFIX_PATH})
@@ -29,6 +30,7 @@ ament_target_dependencies(drive_control_node
   rclcpp
   geometry_msgs
   sensor_msgs
+  rover_utils
 )
 
 # Link dependencies for motor_control_node
