@@ -1,7 +1,7 @@
 # Single source of truth for the Hi3510 / Hisilicon OEM IP camera (feed + zoom).
 #
 # Loaded by launch/ip_camera.launch.py, which builds the gscam RTSP pipeline from
-# these values AND passes the connection/zoom subset to the zoom service node.
+# these values AND passes the connection/zoom subset to the zoom command node.
 # Do NOT duplicate these values in source or in another config file.
 ip_camera:
   # --- Connection (shared by feed + zoom) ---

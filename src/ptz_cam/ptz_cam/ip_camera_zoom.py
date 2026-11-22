@@ -2,15 +2,21 @@
 """Zoom + focus control for the Hi3510 IP camera via its ptzctrl.cgi endpoint.
 
 Both zoom and focus are continuous, motor-driven moves: the motor keeps moving until it
-receives a stop. This node therefore exposes press/release-style services rather than a
-single fire-and-forget trigger (start = button down, stop = button up):
+receives a stop. This node therefore subscribes to press/release-style command topics
+(start = button down, stop = button up). Each Empty message triggers one action:
 
-    /ip_camera/zoom_in_start    (std_srvs/Trigger)  -> -act=zoomin
-    /ip_camera/zoom_out_start   (std_srvs/Trigger)  -> -act=zoomout
-    /ip_camera/zoom_stop        (std_srvs/Trigger)  -> -act=stop
-    /ip_camera/focus_in_start   (std_srvs/Trigger)  -> -act=focusin
-    /ip_camera/focus_out_start  (std_srvs/Trigger)  -> -act=focusout
-    /ip_camera/focus_stop       (std_srvs/Trigger)  -> -act=stop
+    /ip_camera/zoom_in_start    (std_msgs/msg/Empty)  -> -act=zoomin
+    /ip_camera/zoom_out_start   (std_msgs/msg/Empty)  -> -act=zoomout
+    /ip_camera/zoom_stop        (std_msgs/msg/Empty)  -> -act=stop
+    /ip_camera/focus_in_start   (std_msgs/msg/Empty)  -> -act=focusin
+    /ip_camera/focus_out_start  (std_msgs/msg/Empty)  -> -act=focusout
+    /ip_camera/focus_stop       (std_msgs/msg/Empty)  -> -act=stop
+
+Example (with the node in the /ip_camera namespace):
+    ros2 topic pub --once /ip_camera/zoom_in_start std_msgs/msg/Empty '{}'
+    ros2 topic pub --once /ip_camera/zoom_stop std_msgs/msg/Empty '{}'
+
+HTTP failures are logged by the node; command topics do not return acknowledgements.
 
 Note: -act=stop halts whichever motor is moving, so zoom_stop and focus_stop are the same
 underlying call; both exist so each HMI button has its own release binding.
@@ -31,7 +37,7 @@ from requests.auth import HTTPBasicAuth
 
 import rclpy
 from rclpy.node import Node
-from std_srvs.srv import Trigger
+from std_msgs.msg import Empty
 
 
 class IPCameraZoomNode(Node):
@@ -59,7 +65,6 @@ class IPCameraZoomNode(Node):
         self._step = self.get_parameter('zoom_step').value
         self._request_timeout = self.get_parameter('request_timeout').value
 
-        # Each service just fires a fixed -act value on the CGI endpoint.
         for name, act in (
             ('zoom_in_start', 'zoomin'),
             ('zoom_out_start', 'zoomout'),
@@ -68,14 +73,13 @@ class IPCameraZoomNode(Node):
             ('focus_out_start', 'focusout'),
             ('focus_stop', 'stop'),
         ):
-            self.create_service(Trigger, name, self._make_cb(act))
+            self.create_subscription(Empty, name, self._make_cb(act), 10)
 
         self.get_logger().info(f'IP camera zoom/focus node ready. Endpoint: {self._url}')
 
     def _make_cb(self, act):
-        def _cb(request, response):
-            response.success, response.message = self._send_action(act)
-            return response
+        def _cb(message):
+            self._send_action(act)
         return _cb
 
     def _send_action(self, act):
