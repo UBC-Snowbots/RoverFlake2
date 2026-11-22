@@ -11,6 +11,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 if(DEFINED ENV{BUILD_DEATH_RAY})
     add_executable(death_ray_motor_control
@@ -60,19 +64,27 @@ install(TARGETS
 
 if(PIGPIOD_IF2_INCLUDE_DIR AND PIGPIOD_IF2_LIBRARY)
   find_package(Threads REQUIRED)
-  add_executable(comms_relay src/comms_relay.cpp)
+  add_executable(comms_relay src/comms_relay.cpp src/servo.cpp)
   target_include_directories(comms_relay PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/comms_base_control>
     $<INSTALL_INTERFACE:include>
   )
   target_include_directories(comms_relay PRIVATE ${PIGPIOD_IF2_INCLUDE_DIR})
+  # Humble's yaml-cpp (0.7) exports a plain target; newer versions namespace it.
+  if(TARGET yaml-cpp::yaml-cpp)
+    target_link_libraries(comms_relay yaml-cpp::yaml-cpp)
+  else()
+    target_link_libraries(comms_relay yaml-cpp)
+  endif()
   target_link_libraries(comms_relay ${PIGPIOD_IF2_LIBRARY} Threads::Threads rt)
-  ament_target_dependencies(comms_relay rclcpp std_msgs rover_msgs)
+  ament_target_dependencies(comms_relay rclcpp std_msgs rover_msgs std_srvs ament_index_cpp)
   install(TARGETS comms_relay DESTINATION lib/${PROJECT_NAME})
 else()
   message(WARNING "pigpiod_if2 not found; skipping comms_relay target")
 endif()
+
+install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
