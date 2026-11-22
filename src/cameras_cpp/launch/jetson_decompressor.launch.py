@@ -30,8 +30,8 @@ def generate_launch_description():
             parameters=[
                 {'in_transport': 'ffmpeg'},
                 {'out_transport': 'raw'},
-                {'ffmpeg_image_transport.decoders.hevc': 'hevc'},
-                {'ffmpeg_image_transport.decoders.h264': 'h264'},
+                {'in.ffmpeg.decoders.h264': 'h264'},
+                {'in.ffmpeg.decoders.hevc': 'hevc'},
             ],
             output='screen'
         )
