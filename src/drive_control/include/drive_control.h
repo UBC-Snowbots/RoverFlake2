@@ -11,7 +11,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "controller_config.h" // ArmControllerConfig::process_joy_input + controller mappings (arm_control pkg)
+#include <rover_utils/include/controller_config.h> // ArmControllerConfig::process_joy_input + controller mappings (rover_utils pkg)
 #include "measured_params.h"   // TRACK_WIDTH_METERS
 
 #define MAX_LINEAR_SPEED_MPS 1.4

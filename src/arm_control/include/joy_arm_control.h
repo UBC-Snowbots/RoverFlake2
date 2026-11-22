@@ -4,7 +4,7 @@
 #include "rover_msgs/msg/arm_command.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
-#include "controller_config.h"
+#include <rover_utils/include/controller_config.h>
 #include <rover_arm_common/arm_commands.h>       // CMD_*, MotorCommand
 #include <rover_arm_common/motor_config.h>
 #include <rover_arm_common/motor_addressing.h>

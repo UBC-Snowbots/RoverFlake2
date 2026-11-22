@@ -16,7 +16,6 @@
 #pragma once
 
 #include <sensor_msgs/msg/joy.hpp>
-#include <rover_arm_common/motor_addressing.h>
 #include <algorithm> // std::max
 inline static constexpr int MAX_BUTTONS = 20; // can be decreased
 inline static constexpr int MAX_AXES    = 10;

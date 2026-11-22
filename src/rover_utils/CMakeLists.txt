@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rover_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # find_package(rover_utils REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
