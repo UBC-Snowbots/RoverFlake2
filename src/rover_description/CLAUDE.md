@@ -5,8 +5,6 @@ Holds the URDFs for every robot. Add new robots here instead of creating separat
 ## Layout
 
 - `urdf/` — one file per robot (`mini_rover.urdf`, `chassis.urdf` = big rover).
-  `Chassis_jan25.SLDASM.urdf` is the raw big-rover export (locked joints, no wheels) — superseded by `chassis.urdf`.
-  `Chassis_LiDAR.SLDASM.urdf` and `ee_urdf_try3.urdf` are known broken: their meshes aren't in the repo.
 - `meshes/chassis/`, `meshes/mini_rover/`, `meshes/arm/` — robot-specific geometry.
 - `meshes/misc/` — sensors (IMU, GPS, LiDAR). Files are prefixed by robot (`mini_rover_imu.STL`)
   because each was exported in its own assembly's link frame, so they can't be shared across robots as-is.
