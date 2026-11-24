@@ -15,7 +15,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             "urdf",
-            default_value="Chassis_jan25.SLDASM.urdf",
+            default_value="chassis.urdf",
             description="URDF file in rover_description/urdf to display (e.g. mini_rover.urdf)",
         ),
         OpaqueFunction(function=launch_setup),
