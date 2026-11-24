@@ -76,13 +76,7 @@ void MoteusNode::configureMotor(int motor_id) {
 
 // ---------------------------------------------------------------------------
 // Run loop — runs at 100 Hz
-//
-// Step 1: merge pending_cmds_ into active_cmds_  (mutex-protected, O(N))
-// Step 2: build one CAN frame per motor           (see moteus_protocol.h)
-// Step 3: BlockingCycle — send all frames, wait for all replies
-// Step 4: decode replies into telem_[]            (see arm_telemetry.h)
-// Step 5: safety checks                           (checkFaults, checkAlerts)
-// Step 6: publish /arm/moteus_feedback and /joint_states
+// prepareCommands -> cycle -> handleTelemetry -> checkAlerts
 // ---------------------------------------------------------------------------
 
 // Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
@@ -94,7 +88,7 @@ void MoteusNode::run() {
     prepareCommands();
 
 
-    // ── Stage 6-7 :) : frames — built ONLY from motor_cmds_ sends them to bus
+    // ── Stage 6-7 : frames — built ONLY from motor_cmds_ sends them to bus
     // and returns telemetry ───────────────────────
     telem_ = bus_->cycle(motor_cmds_);
     
@@ -103,8 +97,6 @@ void MoteusNode::run() {
 
     // ── Stage 9: safety + publish (unchanged, but read motor_cmds_ for des_) ─
     checkAlerts();
-    // ... your existing arm_feedback / MoteusArmStatus / joint_states publish,
-    //     with active_cmds_[i]  ->  motor_cmds_[i]  in the des_position/des_velocity lines.
 }
 
 void MoteusNode::applyConfigToMemory(int idx, const std::string& reg, float val) {

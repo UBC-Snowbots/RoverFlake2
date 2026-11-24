@@ -23,13 +23,16 @@ void DriveControlNode::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
 
     geometry_msgs::msg::Twist twist_msg;
     float linear_speed = MAX_LINEAR_SPEED_MPS;
+    float angular_speed = MAX_ANGULAR_SPEED_RADPS;
     if (control_input.turbo)
     {
+        // Scale both so the turn radius stays constant at turbo speed
         linear_speed = linear_speed * TURBO_SPEED_MULTIPLIER;
+        angular_speed = angular_speed * TURBO_SPEED_MULTIPLIER;
     }
     float linear = control_input.linear_forward - control_input.linear_backward;
-    twist_msg.linear.x = linear * linear_speed * -1;
-    twist_msg.angular.z = control_input.angular * -MAX_ANGULAR_SPEED_MPS;
+    twist_msg.linear.x = linear * linear_speed * 1;
+    twist_msg.angular.z = control_input.angular * angular_speed;
 
     cmd_vel_pub_->publish(twist_msg);
 }

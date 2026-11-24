@@ -13,6 +13,15 @@ namespace {
     }
     std::vector<std::string> get_drive_motor_names() {
         // ID 1-6
+        /*
+            Right now:
+            ID 1 left_front - isnt connected
+            ID 2 left_mid - connected but doesnt move
+            ID 3 - isnt connected
+            ID 4 right_rear - connected 
+            ID 5 left_rear - connected
+            ID 6 right_front - connected
+        */
         return {"left_front", "left_mid", "left_rear", "right_front", "right_mid", "right_rear"};
     }
 
@@ -54,6 +63,7 @@ DriveDriverNode::DriveDriverNode() : MoteusNode("motor_control_node", "drive", g
         "right_wheel_speeds", rclcpp::QoS(10), std::bind(&DriveDriverNode::rightWheelCallback, this, std::placeholders::_1));
     
     last_cycle_time_ = this->now();
+    last_cmd_time_ = this->now();
 }
 
 void DriveDriverNode::prepareCommands() {
@@ -66,8 +76,16 @@ void DriveDriverNode::prepareCommands() {
         return;
     }
 
+    
+
     rclcpp::Time now = this->now();
-        double dt = (now-last_cycle_time_).seconds();
+    double dt = (now-last_cycle_time_).seconds();
+
+    if ((now - last_cmd_time_).seconds() > CMD_TIMEOUT) {
+        // command timeout
+        for (int i = 0; i < NUM_MOTORS; i++) target_velocities_revs_[i] = 0;
+    }
+    
     last_cycle_time_ = now;
     for (int i = 0; i < NUM_MOTORS; i++) {
         auto& c = motor_cmds_[i];
@@ -105,11 +123,13 @@ void DriveDriverNode::setVelocity(const std::vector<int>& selected_motors, float
 
 void DriveDriverNode::leftWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float left_velocity = msg->data.empty() ? 0.0f : msg->data[0];  // Extract velocity safely
+    last_cmd_time_ = this->now();
     setVelocity({0, 1, 2}, left_velocity);
 }
 
 void DriveDriverNode::rightWheelCallback(const std::shared_ptr<std_msgs::msg::Float64MultiArray> msg) {
     float right_velocity = msg->data.empty() ? 0.0f : msg->data[0];
+    last_cmd_time_ = this->now();
     setVelocity({3, 4, 5}, right_velocity);
 }
 

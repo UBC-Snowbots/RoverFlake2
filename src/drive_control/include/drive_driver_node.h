@@ -44,9 +44,11 @@ constexpr int DRIVE_MOTOR_CAN_ID_BASE = 1;
 /**
  * Time-related constants for loops
  *
- * The moteus watchdog (`servo.default_timeout_s`, 0.1 s by default) stops the
- * motors automatically if command frames stop arriving, replacing the Phidget
- * failsafe. The control loop below re-sends commands well within that window.
+ * The moteus watchdog (`servo.default_timeout_s`, 0.1 s by default) only
+ * fires if THIS node stops sending frames (crash / Ctrl-C); the motors then
+ * brake (mode 11) until a stop is received, which this node sends on its
+ * first cycle. It does NOT stop the rover if the command source
+ * (joystick / HMI / wheel_speed_node) dies: the last velocity keeps being sent.
  */
 constexpr int DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS = 1000; // Publish frequency for drive_feedback_pub_
 
@@ -62,6 +64,8 @@ constexpr double MAX_VELOCITY_REVS = (MAX_VELOCITY_MS * MS_TO_REVS);
  * Phidget setup. Enforced by the moteus motion profile via accel_limit.
  */
 constexpr double MAX_ACCEL_REVS = (50.0 / (2.0 * M_PI));
+
+constexpr double CMD_TIMEOUT = 0.5;
 
 
 class DriveDriverNode : public MoteusNode {
@@ -93,6 +97,8 @@ class DriveDriverNode : public MoteusNode {
         rclcpp::TimerBase::SharedPtr feedback_timer_;
 
         rclcpp::Time last_cycle_time_;
+        rclcpp::Time last_cmd_time_;
+
         // The most recent velocity command per motor, in output-shaft rev/s,
         // clamped to the max velocity
         double target_velocities_revs_[NUM_MOTORS] = {0.0};

@@ -6,6 +6,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include <vector>
 #include "rclcpp/qos.hpp"  // Include QoS header
+#include "measured_params.h" // TRACK_WIDTH_METERS, WHEEL_RADIUS_METERS
 
 class WheelSpeedNode : public rclcpp::Node {
 public:
@@ -18,7 +19,4 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr left_wheel_pub_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr right_wheel_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
-
-    static constexpr double WHEEL_RADIUS_METERS = 0.3;  // Wheel radius
-    static constexpr double TRACK_WIDTH_METERS = 0.6;   // Distance between left and right wheels
 };
