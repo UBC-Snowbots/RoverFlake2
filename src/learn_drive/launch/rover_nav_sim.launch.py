@@ -14,6 +14,8 @@ Two lidar modes:
                           Start the lidar's driver first (frame_id laser), then:
                           ros2 launch ~/learn_ws/src/learn_drive/launch/rover_nav_sim.launch.py lidar:=real
                           Optional: lidar_yaw:=180 if the room appears rotated the wrong way round.
+  person:=true            (fake mode) an open field with a person in it, for testing lidar_follow.py.
+                          "Publish Point" in RViz makes the person walk to the clicked spot.
 """
 import os
 
@@ -32,9 +34,18 @@ RVIZ_CONFIG = os.path.join(CONFIG_DIR, 'rover_nav.rviz')
 # The Nav2 servers we use, in the order the lifecycle manager starts them
 NAV2_NODES = ['controller_server', 'planner_server', 'behavior_server', 'bt_navigator']
 
+# Person mode's field (x, y, radius): mostly open, a few rocks to the sides and a wall-like
+# row of rocks further out, so the follower has non-people to ignore
+FOLLOW_ROCKS = [
+    -2.0, 3.0, 0.4, -2.0, -3.0, 0.4, 6.0, 3.5, 0.5, 6.0, -3.5, 0.5,
+    9.0, -4.0, 0.5, 9.0, -3.2, 0.5, 9.0, -2.4, 0.5, 9.0, -1.6, 0.5, 9.0, -0.8, 0.5, 9.0, 0.0, 0.5,
+    9.0, 0.8, 0.5, 9.0, 1.6, 0.5, 9.0, 2.4, 0.5, 9.0, 3.2, 0.5, 9.0, 4.0, 0.5,
+]
+
 
 def make_nodes(context):
     lidar = LaunchConfiguration('lidar').perform(context)
+    person = LaunchConfiguration('person').perform(context).lower() == 'true'
     lidar_yaw_rad = str(float(LaunchConfiguration('lidar_yaw').perform(context)) * 3.141592653589793 / 180.0)
     leo_urdf = os.path.join(get_package_share_directory('leo_description'), 'urdf', 'leo.urdf.xacro')
     robot_description = xacro.process_file(leo_urdf).toxml()
@@ -53,7 +64,9 @@ def make_nodes(context):
             Node(package='tf2_ros', executable='static_transform_publisher', name='laser_mount',
                  arguments=['--x', '0', '--y', '0', '--z', '0.3',
                             '--frame-id', 'base_footprint', '--child-frame-id', 'laser']),
-            Node(package='learn_drive', executable='fake_lidar', output='screen'),
+            Node(package='learn_drive', executable='fake_lidar', output='screen',
+                 parameters=[{'person': True, 'person_x': 2.0, 'person_y': 0.0,
+                              'dropout': 0.4, 'rocks': FOLLOW_ROCKS}] if person else []),
         ]
 
     return [
@@ -94,5 +107,7 @@ def generate_launch_description():
         DeclareLaunchArgument('lidar', default_value='fake', description='fake or real'),
         DeclareLaunchArgument('lidar_yaw', default_value='0',
                               description='real mode: which way the lidar faces, in degrees'),
+        DeclareLaunchArgument('person', default_value='false',
+                              description='fake mode: open field with a walking person (for lidar_follow.py)'),
         OpaqueFunction(function=make_nodes),
     ])

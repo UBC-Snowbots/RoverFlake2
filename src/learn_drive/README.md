@@ -1,6 +1,6 @@
 # learn_drive: autonomy development package (Tim)
 
-Status as of **2026-11-22**. Branch: `tim/autonav-dev`.
+Status as of **2026-11-24**. Branch: `tim/autonav-dev`.
 
 This package holds everything built so far for autonomous driving: a Nav2 setup for our rover that runs in a fake world on a laptop, a driver for the Scanse Sweep lidar, an IMU demo, and a script that drives a square on its own (tested on the real mini rover). It also documents how to bring up the mini rover's drive and what was learned testing it.
 
@@ -20,6 +20,7 @@ None of this is wired into the team's main launch files yet. It is development w
 | **Sweep checker** (`scripts/sweep_check.py`) | Talks to the Sweep without ROS and reports whether it is returning good readings | Laptop + Sweep | Works |
 | **IMU demo** (`imu_viz.launch.py`) | A rover model in RViz turns and moves the way you move the Phidget IMU in your hand | Laptop + Phidget IMU | Works (demo only; an IMU can't measure distance for real navigation) |
 | **Square drive** (`scripts/square_drive.py`) | Drives a square on its own: straight sides, 90° corners measured with the IMU | Team Unity sim (SimFlake) and the **real mini rover** | Works. Full 1 m square on the mini rover on 2026-11-22 |
+| **Lidar follow** (`scripts/lidar_follow.py`) | Follows a person using only the lidar, keeping 2 m away; stops if it loses them | Laptop simulation (`person:=true`) and the mini rover | Tested in simulation; first real test planned for the next session |
 | **Mini rover bring-up** (section 4.6) | Step-by-step: CAN drive, IMU, test commands, square | The mini rover's onboard computer | Works |
 
 ### What is not done yet (for the Assist Astronaut task, #243)
@@ -91,7 +92,7 @@ source ~/RoverFlake2/install/setup.bash
 learn_drive/
 ├── learn_drive/
 │   ├── fake_rover.py          pretend rover: obeys /cmd_vel, publishes /odom + TF
-│   ├── fake_lidar.py          pretend lidar in a pretend rock field: publishes /scan
+│   ├── fake_lidar.py          pretend lidar in a pretend rock field (optionally with a walking person): publishes /scan
 │   ├── sweep_driver.py        Scanse Sweep lidar driver: publishes /scan
 │   ├── imu_rover_motion.py    IMU demo: rover model turns and moves with the IMU
 │   └── imu_to_rover_tf.py     IMU demo, tilt/turn only
@@ -105,6 +106,7 @@ learn_drive/
 │   └── imu.rviz               RViz layout for the IMU demo
 └── scripts/                   run directly with python3 (not built)
     ├── square_drive.py        drives a square on its own
+    ├── lidar_follow.py        follows a person using only the lidar
     └── sweep_check.py         Sweep lidar check, no ROS needed
 ```
 
@@ -126,6 +128,7 @@ RViz opens, looking down on the rover at the start point.
 
 - **Send a goal:** click **2D Goal Pose** in RViz's top bar, then click and drag on the map. Nav2 plans a path (shown as a line) and drives there.
 - **Add a rock:** click **2D Pose Estimate** (reused for this, since there's no map to localize against) or **Publish Point**, then click on the map. The pretend lidar sees it immediately.
+- **Person mode:** add `person:=true` to the launch command for an open field with a person in it (blue cylinder), for testing `lidar_follow.py` (section 4.7). In this mode **Publish Point** makes the person walk to the clicked spot instead of adding a rock, and 40% of lidar directions get no reading, like the Sweep.
 - **What RViz shows:**
   - Global and local costmaps: the grids Nav2 uses to judge where is safe. Bright cells are obstacles; the fading halo around them is the keep-away margin.
   - Planned Path (`/plan`): the route Nav2 found.
@@ -352,6 +355,107 @@ python3 ~/square_drive.py --ros-args -p cmd_vel_topic:=/cmd_vel_square -p distan
 - Add `-p gps_topic:=/gnss_fix` if you want the end-of-run GPS line. The rover's GPS publishes there, not on `/gps/fix`. GPS error (metres) is bigger than this square, though, so score it with a tape measure instead.
 - To get true side lengths: tape one side, then set `side_length` to (wanted length) × (side_length used) ÷ (measured length).
 
+
+### 4.7 Follow a person with the lidar (`scripts/lidar_follow.py`)
+
+It only uses `/scan` and `/cmd_vel`. No odometry, Nav2, GPS or TF is needed, because it reacts to what the lidar sees right now ("person 3 m away, 10° left").
+
+How it works:
+
+1. **It only looks in front.** It keeps readings within ±60° of straight ahead and further than 0.35 m. The rest is the rover's own body, since the lidar sits at the front middle.
+2. **It groups readings into blobs.** Neighbouring readings at similar distances form a blob. Blobs wider than 0.9 m (walls, furniture) are ignored, so the small blobs left are person-sized.
+3. **It locks on.** At the start, and again after losing you, it locks onto the closest person-sized blob within ±30° of straight ahead and within 3 m. After that, every lidar turn it picks the person-sized blob nearest to where you were. It also allows for how the rover itself moved since the last turn.
+4. **It drives.**
+   - It turns toward you at 1.5 × the angle off-centre (in rad/s), capped at 1.0 rad/s. Within 8° of straight ahead it doesn't turn.
+   - It drives forward at 0.5 × (distance − 2 m) (in m/s), capped at 0.6 m/s. It stops within 0.2 m of 2 m.
+   - If you're more than 35° off to the side, it turns on the spot first.
+   - It never reverses.
+5. **Safety.**
+   - Not seeing you for 1 s (at least 3 lidar turns): it stops and unlocks. Step back in front of it, within 3 m, to start again.
+   - Anything closer than 0.7 m within ±25° ahead: no forward driving.
+   - No lidar data for 1 s: it stops.
+   - It sends commands 20 times a second, and Ctrl+C sends a stop.
+
+Distances are measured from the lidar, not the rover's centre.
+
+**In the laptop simulation.** Terminal 1:
+
+```bash
+ros2 launch ~/RoverFlake2/src/learn_drive/launch/rover_nav_sim.launch.py person:=true
+```
+
+Terminal 2:
+
+```bash
+python3 ~/RoverFlake2/src/learn_drive/scripts/lidar_follow.py
+```
+
+It locks onto the person 2 m ahead. In RViz, click **Publish Point** and then click somewhere: the person walks there at 0.7 m/s, and the rover follows and stops 2 m away. To see where it thinks the person is, use Add → By topic → `/follow/target` → PointStamped. Don't send Nav2 goals at the same time, because both would be driving.
+
+**On the mini rover.** Bring up CAN and the translator as in 4.6, and run the Sweep driver on the rover's computer (`ros2 run learn_drive sweep_driver`). The IMU and GPS aren't needed. Copy the script over from your laptop:
+
+```bash
+scp ~/RoverFlake2/src/learn_drive/scripts/lidar_follow.py rv@<rover address>:~/
+```
+
+Step 1: **which way the lidar faces.** This is a dry run: it prints what it sees but doesn't drive. Open the view all the way round, and ignore anything closer than 1 m so the rover's body isn't counted:
+
+```bash
+python3 ~/lidar_follow.py --ros-args -p dry_run:=true -p view_half_angle_deg:=180 -p min_range:=1.0
+```
+
+Stand about 1.5 m straight in front of the rover, with nothing else within 2 m. Read where it says you are. That's either the "Nearest thing it can see: …" line, or, if it has locked on, the "Following: you are … away, …" line:
+
+- **"straight ahead":** the direction is right. Use `lidar_yaw_deg:=0`.
+- **"X deg left":** use `lidar_yaw_deg:=-X`.
+- **"X deg right":** use `lidar_yaw_deg:=X`.
+
+Rerun with that setting. Then step to the rover's left (your right, if you're facing it). It should say "left". If it says "right", the lidar's left and right are mirrored: restart the Sweep driver with `-p flip:=true` and redo this step.
+
+Step 2: **the cutoff for the rover's body.** Run a dry run with the normal view, plus the `lidar_yaw_deg` from step 1, and nobody in front:
+
+```bash
+python3 ~/lidar_follow.py --ros-args -p dry_run:=true -p lidar_yaw_deg:=<from step 1>
+```
+
+If "Nearest thing it can see" keeps showing something close at the same spot, it's part of the rover. Raise `min_range` (for example `-p min_range:=0.5`) or narrow the view (for example `-p view_half_angle_deg:=45`) until it doesn't. Then stand in front: it should say "Locked on", and following lines should track you as you move, still without driving.
+
+Step 3: **drive for real.** Keep someone next to the rover, ready to press Ctrl+C. `turn_sign:=-1` is needed because the mini rover currently turns the wrong way (section 6). Use the lowest commands that actually move it for the two minimum speeds:
+
+```bash
+python3 ~/lidar_follow.py --ros-args -p lidar_yaw_deg:=<from step 1> -p turn_sign:=-1 \
+  -p min_linear_speed:=0.5 -p min_turn_speed:=0.4
+```
+
+Walk slowly away: it should follow. Stop: it should stop about 2 m from you. Step to the side: it should turn toward you. Walk off out of view: it should stop and print "Lost you".
+
+| Problem | Fix |
+|---|---|
+| Turns back and forth around you | Raise `turn_deadband_deg` (for example 12), or lower `max_turn_speed` |
+| Says it's driving but doesn't move | Raise `min_linear_speed` / `min_turn_speed` to commands that actually move it |
+| Locks onto a chair or table leg | Start with nothing else within 3 m in front |
+| Loses you when you're 3 m or more away | Spin the Sweep slower for more readings per turn: restart the driver with `-p motor_hz:=3` |
+| Follows too closely or too far | `follow_distance` (metres, from the lidar) |
+
+Main settings (all `-p name:=value`):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `dry_run` | false | Print everything, drive nothing |
+| `lidar_yaw_deg` | 0 | Which way the lidar's 0° points, relative to the rover's front (+ = left) |
+| `view_half_angle_deg` / `min_range` / `max_range` | 60 / 0.35 / 6.0 | What it looks at: ± angle from straight ahead, and the distance range |
+| `follow_distance` | 2.0 | Metres to stay away |
+| `max_linear_speed` / `min_linear_speed` | 0.6 / 0.0 | Forward command limits (m/s) |
+| `max_turn_speed` / `min_turn_speed` | 1.0 / 0.0 | Turn command limits (rad/s) |
+| `turn_sign` | 1 | −1 if a left (+) turn command makes the rover turn right |
+| `start_max_distance` / `start_half_angle_deg` | 3.0 / 30 | Where you must stand for it to lock on |
+| `max_width` | 0.9 | Blobs wider than this aren't people |
+| `lost_timeout` | 1.0 | Seconds without seeing you before stopping |
+| `stop_distance` | 0.7 | Something this close ahead: no forward driving |
+| `cmd_vel_topic` / `scan_topic` | `/cmd_vel` / `/scan` | Topic names |
+
+The Sweep has been losing its readings after a few minutes of running, so keep runs short.
+
 ---
 
 ## 5. How it works
@@ -559,7 +663,7 @@ ros2 topic pub -r 5 /astronaut/position geometry_msgs/msg/PointStamped \
 
 ### Driving-side plan
 
-1. **Follow node.** Build and test it in the Nav2 simulation, with a fake astronaut clicked around in RViz. Options: Nav2's `follow_point` behavior tree, which replans toward a moving goal about once a second and cuts a set distance (2 m) off the end of the path; or Nav2's Following Server, which has a `desired_distance` setting and searches if it loses the target.
+1. **Follow node.** `lidar_follow.py` (4.7) already does the driving part of following, with the person found by the lidar. Its driving logic only needs "person at this distance and angle", so Pranav's `/astronaut/position` can replace the lidar blob as the input. For following around obstacles, the next version would feed the position to Nav2 instead. Options: Nav2's `follow_point` behavior tree, which replans toward a moving goal about once a second and cuts a set distance (2 m) off the end of the path; or Nav2's Following Server, which has a `desired_distance` setting and searches if it loses the target.
 2. **COME:** a single Nav2 goal at the astronaut's last position, 2 m short.
 3. **STAY:** cancel the Nav2 goal so nothing publishes `/cmd_vel`. The translator and firmware stop the motors within 0.5 s.
 4. **Mini rover odometry:** a node publishing `/odom` and the TF `odom → base_link`, from calibrated speed plus the IMU heading, until the rover has encoders.
