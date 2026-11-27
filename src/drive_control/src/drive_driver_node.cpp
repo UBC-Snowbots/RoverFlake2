@@ -12,6 +12,7 @@ namespace {
         return motors;
     }
     std::vector<std::string> get_drive_motor_names() {
+        // TODO: change so drive train is fixed version
         // ID 1-6
         /*
             Right now:
