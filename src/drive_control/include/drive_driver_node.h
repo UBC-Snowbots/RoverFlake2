@@ -2,6 +2,7 @@
 #include <rover_moteus_common/moteus_node.h>
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "rover_msgs/msg/drive_feedback.hpp"
+#include "measured_params.h"
 
 #include <algorithm> // For std::clamp
 #include <cmath>     // For M_PI, NAN
@@ -17,7 +18,6 @@
  * moteus_tool. No gear-ratio math is needed on the host side.
  */
 constexpr int NUM_MOTORS = 6;
-constexpr double WHEEL_RADIUS_METERS = 0.1;
 constexpr double WHEEL_CIRCUMFERENCE_METERS = (2.0 * M_PI * WHEEL_RADIUS_METERS);
 
 /**
@@ -33,7 +33,7 @@ constexpr double REVS_TO_RADS = (2.0 * M_PI);
  * CAN addressing
  *
  * Motor index i (0-5) maps to moteus CAN ID i + DRIVE_MOTOR_CAN_ID_BASE.
- * Right wheels: indices 0-2, left wheels: indices 3-5.
+ * Right wheels: indices 3-5, left wheels: indices 0-2.
  *
  * NOTE: the arm (arm_hardware_interface/moteus_driver) also uses CAN IDs 1-6.
  * This node and the arm driver must NOT run on the same CAN bus at the same
@@ -44,18 +44,25 @@ constexpr int DRIVE_MOTOR_CAN_ID_BASE = 1;
 /**
  * Time-related constants for loops
  *
- * The moteus watchdog (`servo.default_timeout_s`, 0.1 s by default) only
- * fires if THIS node stops sending frames (crash / Ctrl-C); the motors then
- * brake (mode 11) until a stop is received, which this node sends on its
- * first cycle. It does NOT stop the rover if the command source
- * (joystick / HMI / wheel_speed_node) dies: the last velocity keeps being sent.
+ * Two separate safety stops:
+ *  - Command timeout (CMD_TIMEOUT_S): if no left/right_wheel_speeds message
+ *    arrives within this window, prepareCommands() sets all target velocities
+ *    to 0. This covers the joystick, HMI, or wheel_speed_node dying while
+ *    this node keeps running.
+ *  - moteus watchdog (`servo.default_timeout_s`, 0.1 s by default): only fires
+ *    if THIS node stops sending frames (crash / Ctrl-C). The motors then enter
+ *    mode 11 (position timeout) and brake until a stop command is received;
+ *    this node sends one on its first cycle.
+ *
+ * MoteusNode::run() re-sends commands every 10 ms, well within the watchdog
+ * window, so the watchdog does not fire during normal operation.
  */
 constexpr int DRIVE_FEEDBACK_PUBLISH_FREQUENCY_MS = 1000; // Publish frequency for drive_feedback_pub_
 
 /**
  * Velocity limits
  */
-constexpr double MAX_VELOCITY_MS = 5.5;
+constexpr double MAX_VELOCITY_MS = 4.2;
 constexpr double MIN_VELOCITY_MS = 0.05;
 constexpr double MAX_VELOCITY_REVS = (MAX_VELOCITY_MS * MS_TO_REVS);
 
@@ -65,7 +72,7 @@ constexpr double MAX_VELOCITY_REVS = (MAX_VELOCITY_MS * MS_TO_REVS);
  */
 constexpr double MAX_ACCEL_REVS = (50.0 / (2.0 * M_PI));
 
-constexpr double CMD_TIMEOUT = 0.5;
+constexpr double CMD_TIMEOUT_S = 0.5;
 
 
 class DriveDriverNode : public MoteusNode {

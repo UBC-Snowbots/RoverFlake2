@@ -81,7 +81,7 @@ void DriveDriverNode::prepareCommands() {
     rclcpp::Time now = this->now();
     double dt = (now-last_cycle_time_).seconds();
 
-    if ((now - last_cmd_time_).seconds() > CMD_TIMEOUT) {
+    if ((now - last_cmd_time_).seconds() > CMD_TIMEOUT_S) {
         // command timeout
         for (int i = 0; i < NUM_MOTORS; i++) target_velocities_revs_[i] = 0;
     }
