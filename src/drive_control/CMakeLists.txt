@@ -13,16 +13,14 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rover_msgs REQUIRED)
 find_package(rover_arm_common REQUIRED) # needed by controller_config.h (motor_addressing.h)
-
-# mjbots moteus C++ client library (header-only, exposes moteus::cpp target)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_pkgs/moteus moteus_build)
+find_package(rover_moteus_common REQUIRED)
 
 # Include directories (header files)
 include_directories(include)
 
 # Define executables
 add_executable(drive_control_node src/drive_control.cpp)
-add_executable(motor_control_node src/motor_control.cpp)
+add_executable(motor_control_node src/drive_driver_node.cpp)
 add_executable(wheel_speed_node src/wheel_speed.cpp)
 
 # Link dependencies for drive_control_node
@@ -47,6 +45,8 @@ ament_target_dependencies(motor_control_node
   geometry_msgs
   sensor_msgs
   rover_msgs
+  rover_moteus_common
+  std_msgs
 )
 
 # Link dependencies for wheel_speed_node
@@ -57,9 +57,6 @@ ament_target_dependencies(wheel_speed_node
   std_msgs  # Added std_msgs
   rover_msgs
 )
-
-# Link the moteus client library
-target_link_libraries(motor_control_node moteus::cpp)
 
 # Set include directories
 target_include_directories(drive_control_node PUBLIC

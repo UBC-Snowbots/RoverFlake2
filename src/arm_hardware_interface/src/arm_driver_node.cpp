@@ -1,4 +1,4 @@
-#include "moteus_driver_node.h"
+#include "arm_driver_node.h"
 #include "axis_5_6_differential.h"
 #include <cmath>
 #include <cstdlib>
@@ -8,7 +8,6 @@
 #include <stdexcept>
 
 static constexpr uint32_t ARM_RUN_RATE_MS = (1000u / 100u); // 100 hz
-#define LOG_QUEUE_SIZE_MSGS 50
 #define SKIP_CALIBRATION
 using namespace std::chrono_literals;
 
@@ -42,21 +41,42 @@ void combine_wrist(const MotorCommand& a5, const MotorCommand& a6,
         m5.position = m6.position = NAN;
     }
 }
+
+std::vector<std::string> get_arm_motor_names() {
+    std::vector<std::string> names;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        names.push_back(ARM_JOINTS[i].hardware_name);
+    }
+    return names;
+}
+
+MoteusBusOptions get_arm_bus_options() {
+    std::vector<int> ids;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        ids.push_back(i+1);
+    }
+    std::vector<bool> enabled(NUM_MOTORS, true);
+    enabled[3] = false; // keeps A4 off like before
+
+
+    MoteusBusOptions opts;
+    opts.can_ids = ids;
+    opts.enabled = enabled;
+    opts.query_aux2 = true;
+    return opts;
+}
+
 } // namespace
 
 // =============================================================================
-// MoteusDriverNode implementation
+// ArmDriverNode implementation
 //
 // For protocol details, units, and data field contents see moteus_protocol.h.
 // For joint mapping and direction signs see motor_addressing.h.
 // For per-motor PID/limits see motor_config.h.
 // =============================================================================
 
-MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
-    // Use a non-singleton transport so we own the only shared_ptr and can truly
-    // release the CAN fd when calibration needs exclusive access to the bus.
-    // transport_ = mot::TransportRegistry::singleton().make({}).first;
-    configs_   = get_arm_configuration();
+ArmDriverNode::ArmDriverNode() : MoteusNode("moteus_driver", "arm", get_arm_configuration(), get_arm_motor_names(), get_arm_bus_options()) {
 
     for(int i = 0; i < NUM_AXES; i++)
     {
@@ -71,23 +91,16 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
         axis.homing_direction   = AxisConfig::homing_direction[i];
     }
 
-    reInitTransport();
-
     auto qos     = rclcpp::QoS(5).reliable().durability_volatile();
-    auto log_qos = rclcpp::QoS(LOG_QUEUE_SIZE_MSGS).reliable().durability_volatile();
 
     feedback_pub_  = this->create_publisher<rover_msgs::msg::MoteusArmStatus>("/arm/moteus_feedback", qos);
     joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", qos);
-    config_log_pub_  = this->create_publisher<std_msgs::msg::String>("/arm/config_log", log_qos);
     arm_feedback_pub = this->create_publisher<rover_msgs::msg::ArmCommand>("/arm/feedback", qos);
 
     command_sub_ = this->create_subscription<rover_msgs::msg::ArmCommand>(
         "/arm/command", qos,
-        std::bind(&MoteusDriverNode::commandCallback, this, std::placeholders::_1));
+        std::bind(&ArmDriverNode::commandCallback, this, std::placeholders::_1));
 
-    config_update_sub_ = this->create_subscription<rover_msgs::msg::MoteusConfigUpdate>(
-        "/arm/config_update", qos,
-        std::bind(&MoteusDriverNode::configUpdateCallback, this, std::placeholders::_1));
         
         // TODO Calibration in a future PR
 
@@ -95,7 +108,7 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
     //     "/arm/calibration_status", qos);
     // calib_sub_ = this->create_subscription<rover_msgs::msg::MoteusCalibrationRequest>(
     //     "/arm/calibration_request", qos,
-    //     std::bind(&MoteusDriverNode::calibrationCallback, this, std::placeholders::_1));
+    //     std::bind(&ArmDriverNode::calibrationCallback, this, std::placeholders::_1));
 
         #ifndef SKIP_CALIBRATION
         // configureMotors();
@@ -103,60 +116,10 @@ MoteusDriverNode::MoteusDriverNode() : Node("moteus_driver") {
         RCLCPP_WARN(this->get_logger(), "SKIPPING MOTOR CALIBRATIONS");
         #endif
 
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(10),
-        std::bind(&MoteusDriverNode::run, this));
+    
 
     RCLCPP_INFO(this->get_logger(),
         "Moteus driver started: polling %d motors at 100 Hz", NUM_MOTORS);
-}
-
-// ---------------------------------------------------------------------------
-// Startup configuration — pushes MotorConfig values to firmware
-// ---------------------------------------------------------------------------
-
-void MoteusDriverNode::publishLog(const std::string& msg) {
-    std_msgs::msg::String m;
-    m.data = msg;
-    config_log_pub_->publish(m);
-}
-
-void MoteusDriverNode::configureMotors() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        configureMotor(i + 1, *controllers_[i]);
-
-        auto& c = configs_[i];
-        publishLog(std::string("# Motor ") + std::to_string(i + 1)
-            + " (" + ARM_JOINTS[i].hardware_name + ") configured:"
-            + " kp=" + c.format(c.kp)
-            + " kd=" + c.format(c.kd)
-            + " max_current=" + c.format(c.max_current_A) + "A"
-            + " pos=[" + c.format(c.position_min) + ", " + c.format(c.position_max) + "]rev"
-            + " max_vel=" + c.format(c.max_velocity) + "rev/s"
-            + " gear=" + c.format(c.gear_reduction));
-    }
-}
-
-void MoteusDriverNode::configureMotor(int motor_id, mot::Controller& ctrl) {
-    auto maybe_state = ctrl.SetQuery();
-    if (!maybe_state) {
-        RCLCPP_WARN(this->get_logger(),
-            "Motor %d (%s) NOT CONNECTED. Skipping config.",
-            motor_id, ARM_JOINTS[motor_id - 1].hardware_name);
-        publishLog("# Motor " + std::to_string(motor_id)
-            + " (" + ARM_JOINTS[motor_id - 1].hardware_name + ") NOT CONNECTED — skipped");
-        return;
-    }
-
-    RCLCPP_INFO(this->get_logger(),
-        "Motor %d (%s) detected. Pushing config...",
-        motor_id, ARM_JOINTS[motor_id - 1].hardware_name);
-
-    for (const auto& [reg, val] : configs_[motor_id - 1].get_configs()) {
-        auto reply = ctrl.DiagnosticCommand("conf set " + reg + " " + val);
-        RCLCPP_INFO(this->get_logger(), "[%d] %s = %s (reply: %s)",
-            motor_id, reg.c_str(), val.c_str(), reply.c_str());
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +127,7 @@ void MoteusDriverNode::configureMotor(int motor_id, mot::Controller& ctrl) {
 // (See arm_commands.h for command code definitions and MotorCommand struct.)
 // ---------------------------------------------------------------------------
 
-void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
+void ArmDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::SharedPtr msg) {
     std::lock_guard<std::mutex> lock(cmd_mutex_);
     char cmd_type = msg->cmd_type;
 
@@ -221,49 +184,14 @@ void MoteusDriverNode::commandCallback(const rover_msgs::msg::ArmCommand::Shared
     RCLCPP_WARN(this->get_logger(), "Unknown cmd_type: '%c' (%d)", cmd_type, (int)cmd_type);
 }
 
-// Zero position of a motor.
-void MoteusDriverNode::zero_position(uint8_t index)
-{
-    int i = static_cast<int>(index);
 
-    controllers_[i]->DiagnosticCommand("d exact 0");
-    RCLCPP_INFO(this->get_logger(),
-    "Motor %d (%s) position set to zero (d exact 0)", i + 1, ARM_JOINTS[i].hardware_name);
-    publishLog("# Motor " + std::to_string(i + 1)
-        + " (" + ARM_JOINTS[i].hardware_name + ") zeroed");
-}
-
-void MoteusDriverNode::set_position(uint8_t index, float position_revs)
-{
-  int i = static_cast<int>(index);
-
-  char cmd[32];
-  std::snprintf(cmd, sizeof(cmd), "d exact %f", position_revs);
-  controllers_[i]->DiagnosticCommand(cmd);
-}
-
-void MoteusDriverNode::home_axis(uint8_t index)
+void ArmDriverNode::home_axis(uint8_t index)
 {
     // Just set axis state to request homing
     this->axes[index].state = AxisState::REQUESTING_HOMING;
 }
 
-// ---------------------------------------------------------------------------
-// Run loop — runs at 100 Hz
-//
-// Step 1: merge pending_cmds_ into active_cmds_  (mutex-protected, O(N))
-// Step 2: build one CAN frame per motor           (see moteus_protocol.h)
-// Step 3: BlockingCycle — send all frames, wait for all replies
-// Step 4: decode replies into telem_[]            (see arm_telemetry.h)
-// Step 5: safety checks                           (checkFaults, checkAlerts)
-// Step 6: publish /arm/moteus_feedback and /joint_states
-// ---------------------------------------------------------------------------
-
-// Pending commands from ros -> merge into active commands, but are rejected if there is homing and whatnot.
-// Homing is then Checked. 
-void MoteusDriverNode::run() {
-    if (calibrating_.load()) return;
-
+void ArmDriverNode::prepareCommands() {
     // ── Stage 0: fresh axis_cmds_ every cycle (no stale carry) ──────────────
     for (auto& c : axis_cmds_) c.active = false;
 
@@ -382,56 +310,35 @@ void MoteusDriverNode::run() {
     for (int m = 0; m < NUM_MOTORS; m++)
     {
 
-        if (m != AXIS_5_INDEX && m != AXIS_6_INDEX)
-        {
-            motor_cmds_[m] = axis_cmds_[m];   // straight-through
-            continue;
-        } 
-    combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
-
-    RCLCPP_INFO(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
-    RCLCPP_INFO(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
+        if (m == AXIS_5_INDEX || m == AXIS_6_INDEX) continue;
+        motor_cmds_[m] = axis_cmds_[m];   // straight-through
+         
+        combine_wrist(axis_cmds_[AXIS_5_INDEX], axis_cmds_[AXIS_6_INDEX], motor_cmds_[AXIS_5_INDEX], motor_cmds_[AXIS_6_INDEX]);
     }
+
+    RCLCPP_DEBUG(this->get_logger(), "Axis 5/6 Converted from Axis Space to Motor Space \n VELOCITY: %0.3f %0.3f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].velocity, axis_cmds_[AXIS_6_INDEX].velocity, motor_cmds_[AXIS_5_INDEX].velocity, motor_cmds_[AXIS_6_INDEX].velocity);
+    RCLCPP_DEBUG(this->get_logger(), "POSITION: %0.3f %0.1f -> %0.3f %0.3f \n", axis_cmds_[AXIS_5_INDEX].position, axis_cmds_[AXIS_6_INDEX].position, motor_cmds_[AXIS_5_INDEX].position, motor_cmds_[AXIS_6_INDEX].position);
+    
     // ── Stage 5: motor-space zero side-channel (diagnostic, no frame) ───────
     for (int m = 0; m < NUM_MOTORS; m++) {
         if (motor_zero_req_[m]) { zero_position(m); motor_zero_req_[m] = false;
                                   motor_cmds_[m].active = false; }
     }
+}
 
-    // ── Stage 6: frames — built ONLY from motor_cmds_ ───────────────────────
-    std::vector<mot::CanFdFrame> frames;
-    for (int m = 0; m < NUM_MOTORS; m++) {
-        if(m == 3) continue; // A4 DISABLED
-        auto& c = motor_cmds_[m];
-        if      (c.active && c.is_stop) frames.push_back(MoteusProtocol::makeStopFrame(*controllers_[m]));
-        else if (c.active)              frames.push_back(MoteusProtocol::makePositionFrame(
-                                            *controllers_[m], c.position, c.velocity,
-                                            c.max_velocity, c.max_acceleration));
-        else                            frames.push_back(MoteusProtocol::makeQueryFrame(*controllers_[m]));
-    }
-
-    // ── Stage 7: bus ────────────────────────────────────────────────────────
-    std::vector<mot::CanFdFrame> replies;
-    transport_->BlockingCycle(frames.data(), frames.size(), &replies);
+void ArmDriverNode::handleTelemetry() {
     rover_msgs::msg::MoteusArmStatus moteus_ros_msg;
     rover_msgs::msg::ArmCommand arm_feedback_msg;
     arm_feedback_msg.positions.resize(NUM_AXES);
     moteus_ros_msg.status.resize(NUM_AXES);
     moteus_ros_msg.config.resize(NUM_AXES);
     moteus_ros_msg.limit_switches.resize(NUM_AXES);
+
     // ── Stage 8: decode -> telem_, motor->axis (inverse for wrist) ──────────
-    for (auto& t : telem_) t.connected = false;
-    for (const auto& frame : replies) {
-        int id = frame.source;
-        if (id < 1 || id > NUM_MOTORS) continue; 
-        auto r = MoteusProtocol::parseReply(frame);
+    for (int id = 1; id <= NUM_MOTORS; id++) {
         auto& t = telem_[id - 1];
-        t.position=r.position; t.velocity=r.velocity; t.torque=r.torque; t.voltage=r.voltage;
-        t.temperature=r.temperature;
-        t.q_current = std::isnan(r.q_current)?0.0f:(float)r.q_current;
-        t.power     = std::isnan(r.power)?0.0f:(float)r.power;
-        t.mode=(int)r.mode; t.fault=(int)r.fault; t.connected=true;
-        t.limit_switch = (r.aux2_gpio > 0);
+        if (!t.connected) continue;
+
         axes[id - 1].limit_switch = t.limit_switch;
         moteus_ros_msg.status[id -1].curr_current_amps = t.q_current;
         moteus_ros_msg.status[id -1].curr_torque = t.torque;
@@ -453,147 +360,6 @@ void MoteusDriverNode::run() {
     }
     feedback_pub_->publish(moteus_ros_msg);
     arm_feedback_pub->publish(arm_feedback_msg);
-
-    // ── Stage 9: safety + publish (unchanged, but read motor_cmds_ for des_) ─
-    checkAlerts();
-    // ... your existing arm_feedback / MoteusArmStatus / joint_states publish,
-    //     with active_cmds_[i]  ->  motor_cmds_[i]  in the des_position/des_velocity lines.
-}
-
-
-// ---------------------------------------------------------------------------
-// Fault detection — edge-triggered (logs only on state change, not every cycle)
-// ---------------------------------------------------------------------------
-
-void MoteusDriverNode::checkFaults() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto& t = telem_[i];
-        if (!t.connected) continue;
-
-        if (t.fault != last_fault_[i]) {
-            if (t.fault != 0) {
-                RCLCPP_ERROR(this->get_logger(),
-                    "Motor %d (%s) FAULT! Code: %d — commands blocked until STOP sent",
-                    i + 1, ARM_JOINTS[i].hardware_name, t.fault);
-                publishLog("# FAULT motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name
-                    + ") code=" + std::to_string(t.fault));
-            } else if (last_fault_[i] != 0) {
-                RCLCPP_INFO(this->get_logger(),
-                    "Motor %d (%s) fault cleared", i + 1, ARM_JOINTS[i].hardware_name);
-                publishLog("# Motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name + ") fault cleared");
-            }
-            last_fault_[i] = t.fault;
-        }
-
-        if (t.mode != last_mode_[i]) {
-            if (t.mode == 1)
-                RCLCPP_ERROR(this->get_logger(),
-                    "Motor %d (%s) entered FAULT mode", i + 1, ARM_JOINTS[i].hardware_name);
-            else if (t.mode == 0 && last_mode_[i] != 0)
-                RCLCPP_WARN(this->get_logger(),
-                    "Motor %d (%s) is STOPPED (driver disabled)", i + 1, ARM_JOINTS[i].hardware_name);
-            last_mode_[i] = t.mode;
-        }
-    }
-}
-
-
-// ---------------------------------------------------------------------------
-// Position limit alerts — warns when approaching configured bounds
-// ---------------------------------------------------------------------------
-
-void MoteusDriverNode::checkAlerts() {
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        auto& t = telem_[i];
-        if (!t.connected) continue;
-
-        auto&  c       = configs_[i];
-        float  padding = c.position_warn_rev_padding;
-        bool near_max  = t.position >= (c.position_max - padding);
-        bool near_min  = t.position <= (c.position_min + padding);
-
-        if (near_max || near_min) {
-            if (!position_alert_raised_[i]) {
-                position_alert_raised_[i] = true;
-                const char* which = near_max ? "MAX" : "MIN";
-                float limit = near_max ? c.position_max : c.position_min;
-                RCLCPP_WARN(this->get_logger(),
-                    "Motor %d (%s) near %s position limit! pos=%.3f limit=%.3f (padding=%.3f)",
-                    i + 1, ARM_JOINTS[i].hardware_name, which,
-                    t.position, limit, padding);
-                publishLog("# WARNING motor " + std::to_string(i + 1)
-                    + " (" + ARM_JOINTS[i].hardware_name + ") near " + which
-                    + " limit: pos=" + std::to_string(t.position)
-                    + " limit=" + std::to_string(limit));
-            }
-        } else {
-            position_alert_raised_[i] = false;
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Real-time config update — HMI publishes to /arm/config_update
-//
-// Applies a single "conf set <register> <value>" to the requested motor and
-// updates the in-memory MotorConfig so subsequent feedback messages reflect
-// the change.  The moteus firmware applies the value immediately (RAM only —
-// not persisted to flash unless you separately run "conf write").
-// ---------------------------------------------------------------------------
-
-void MoteusDriverNode::configUpdateCallback(
-        const rover_msgs::msg::MoteusConfigUpdate::SharedPtr msg)
-{
-    int idx = msg->motor_id;
-    if (idx < 0 || idx >= NUM_MOTORS) {
-        RCLCPP_WARN(this->get_logger(),
-            "configUpdate: motor_id %d out of range (0..%d)", idx, NUM_MOTORS - 1);
-        return;
-    }
-    if (msg->register_name.empty() || std::isnan(msg->value)) return;
-
-    const std::string val_str = std::to_string(msg->value);
-    const std::string cmd = "conf set " + msg->register_name + " " + val_str;
-
-    RCLCPP_INFO(this->get_logger(),
-        "configUpdate motor %d (%s): %s = %s",
-        idx + 1, ARM_JOINTS[idx].hardware_name,
-        msg->register_name.c_str(), val_str.c_str());
-    publishLog("# conf motor " + std::to_string(idx + 1)
-        + " (" + ARM_JOINTS[idx].hardware_name + "): "
-        + msg->register_name + " = " + val_str);
-
-    controllers_[idx]->DiagnosticCommand(cmd);
-
-    // For max_velocity, the moteus firmware has two registers that must both
-    // be updated to cap velocity consistently during motion profile planning.
-    if (msg->register_name == "servo.max_velocity") {
-        controllers_[idx]->DiagnosticCommand(
-            "conf set servo.default_velocity_limit " + val_str);
-    } else if (msg->register_name == "servo.default_velocity_limit") {
-        controllers_[idx]->DiagnosticCommand(
-            "conf set servo.max_velocity " + val_str);
-    }
-
-    applyConfigToMemory(idx, msg->register_name, msg->value);
-}
-
-void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, float val) {
-    auto& c = configs_[idx];
-    if      (reg == "servo.pid_position.kp")        c.kp              = val;
-    else if (reg == "servo.pid_position.ki")        c.ki              = val;
-    else if (reg == "servo.pid_position.kd")        c.kd              = val;
-    else if (reg == "servo.max_current_A")          c.max_current_A   = val;
-    else if (reg == "servo.max_velocity"
-          || reg == "servo.default_velocity_limit") c.max_velocity    = val;
-    else if (reg == "servo.default_accel_limit")    c.max_acceleration = val;
-    else if (reg == "servopos.position_min")        c.position_min    = val;
-    else if (reg == "servopos.position_max")        c.position_max    = val;
-    else if (reg == "servo.max_voltage")            c.max_voltage     = val;
-    else if (reg == "servo.max_power_W")            c.max_power_W     = val;
-    else if (reg == "servo.default_timeout_s")      c.def_timeout     = val;
 }
 
 
@@ -613,7 +379,7 @@ void MoteusDriverNode::applyConfigToMemory(int idx, const std::string& reg, floa
 //   9. Set calibrating_ = false
 // ---------------------------------------------------------------------------
 
-void MoteusDriverNode::publishCalibStatus(int motor_id, int state, const std::string& message) {
+void ArmDriverNode::publishCalibStatus(int motor_id, int state, const std::string& message) {
     //! Calibration is not implementet yet
     // rover_msgs::msg::MoteusCalibrationStatus s;
     // s.motor_id = motor_id;
@@ -624,29 +390,6 @@ void MoteusDriverNode::publishCalibStatus(int motor_id, int state, const std::st
     // RCLCPP_INFO(this->get_logger(), "[calib] motor %d: %s", motor_id, message.c_str());
 }
 
-// ---------------------------------------------------------------------------
-// reInitTransport — re-create owned transport + controllers after calibration.
-// Uses TransportRegistry (not singleton) so the new transport is fully owned.
-// ---------------------------------------------------------------------------
-void MoteusDriverNode::reInitTransport() {
-    controllers_.clear();
-    transport_.reset();  // fd is now closed — refcount hit 0
-
-    // transport_ = mot::TransportRegistry::singleton().make({}).first;
-    transport_ = mot::TransportRegistry::singleton().make({"--can-disable-brs"}).first; // FORCE TO 1mb
-
-    for (int id = 1; id <= NUM_MOTORS; id++) {
-        mot::Controller::Options opts;
-        opts.id        = id;
-        opts.transport = transport_;
-        opts.query_format.q_current = mot::kFloat;
-        opts.query_format.power     = mot::kFloat;
-        opts.query_format.aux2_gpio = mot::kInt8;
-        opts.position_format.velocity_limit = mot::kFloat;   
-        opts.position_format.accel_limit    = mot::kFloat;  
-        controllers_.push_back(std::make_shared<mot::Controller>(opts));
-    }
-}
 
 //TODO Calibration in follow up PR (maybe after comp)
 // ---------------------------------------------------------------------------
@@ -666,7 +409,7 @@ void MoteusDriverNode::reInitTransport() {
 // Step 7  configureMotors() — re-push PID/limits into RAM.
 // Step 8  Resume run loop.
 // ---------------------------------------------------------------------------
-void MoteusDriverNode::runCalibration(int motor_can_id) {
+void ArmDriverNode::runCalibration(int motor_can_id) {
     RCLCPP_ERROR(this->get_logger(), "Sorry, calibration is under construction... coming soon to a PR near you");
     // using namespace std::chrono_literals;
 
@@ -748,7 +491,7 @@ void MoteusDriverNode::runCalibration(int motor_can_id) {
 }
 
 //TODO Calibration in future PR
-void MoteusDriverNode::calibrationCallback(
+void ArmDriverNode::calibrationCallback(
         const rover_msgs::msg::MoteusCalibrationRequest::SharedPtr msg)
 {
     RCLCPP_ERROR(this->get_logger(), "Calibration is not implemented\n");
@@ -778,7 +521,7 @@ void MoteusDriverNode::calibrationCallback(
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MoteusDriverNode>());
+    rclcpp::spin(std::make_shared<ArmDriverNode>());
     rclcpp::shutdown();
     return 0;
 }

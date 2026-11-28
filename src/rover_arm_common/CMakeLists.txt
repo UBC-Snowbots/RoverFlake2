@@ -3,9 +3,12 @@ project(rover_arm_common)
 
 find_package(ament_cmake REQUIRED)
 
+find_package(rover_moteus_common REQUIRED)
+
 # Header-only package: nothing to compile, just export the include directory.
 install(DIRECTORY include/ DESTINATION include)
 
 ament_export_include_directories(include)
+ament_export_dependencies(rover_moteus_common)
 
 ament_package()
