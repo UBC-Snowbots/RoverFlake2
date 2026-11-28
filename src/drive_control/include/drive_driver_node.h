@@ -29,17 +29,7 @@ constexpr double MS_TO_REVS = (1.0 / WHEEL_CIRCUMFERENCE_METERS);
 constexpr double REVS_TO_RADS = (2.0 * M_PI);
 
 
-/**
- * CAN addressing
- *
- * Motor index i (0-5) maps to moteus CAN ID i + DRIVE_MOTOR_CAN_ID_BASE.
- * Right wheels: indices 3-5, left wheels: indices 0-2.
- *
- * NOTE: the arm (arm_hardware_interface/moteus_driver) also uses CAN IDs 1-6.
- * This node and the arm driver must NOT run on the same CAN bus at the same
- * time until one of them is moved to a different ID range.
- */
-constexpr int DRIVE_MOTOR_CAN_ID_BASE = 1;
+constexpr int DRIVE_MOTOR_CAN_ID_BASE = 10;
 
 /**
  * Time-related constants for loops
@@ -73,6 +63,7 @@ constexpr double MAX_VELOCITY_REVS = (MAX_VELOCITY_MS * MS_TO_REVS);
 constexpr double MAX_ACCEL_REVS = (50.0 / (2.0 * M_PI));
 
 constexpr double CMD_TIMEOUT_S = 0.5;
+constexpr int DRIVE_PERIOD_MS = 20; // run loop period; slower than the 10 ms default to leave time for wheel speed callbacks. Must stay well under the 0.1 s moteus watchdog.
 
 
 class DriveDriverNode : public MoteusNode {

@@ -1,7 +1,7 @@
 #include <rover_moteus_common/moteus_node.h>
 #include <stdexcept>
 
-MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names, const MoteusBusOptions& opts) : Node(node_name) {
+MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_prefix, std::vector<MotorConfig> configs, std::vector<std::string> motor_names, const MoteusBusOptions& opts, int period_ms) : Node(node_name) {
     if (opts.can_ids.size() != configs.size()) {
         throw std::invalid_argument(
             "MoteusNode: " + std::to_string(opts.can_ids.size()) + " CAN IDs but "
@@ -25,7 +25,7 @@ MoteusNode::MoteusNode(const std::string& node_name, const std::string& topic_pr
         std::bind(&MoteusNode::configUpdateCallback, this, std::placeholders::_1));
 
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(10),
+        std::chrono::milliseconds(period_ms),
         std::bind(&MoteusNode::run, this));
 
     

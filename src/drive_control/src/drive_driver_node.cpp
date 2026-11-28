@@ -13,17 +13,7 @@ namespace {
     }
     std::vector<std::string> get_drive_motor_names() {
         // TODO: change so drive train is fixed version
-        // ID 1-6
-        /*
-            Right now:
-            ID 1 left_front - isnt connected
-            ID 2 left_mid - connected but doesnt move
-            ID 3 - isnt connected
-            ID 4 right_rear - connected 
-            ID 5 left_rear - connected
-            ID 6 right_front - connected
-        */
-        return {"left_front", "left_mid", "left_rear", "right_front", "right_mid", "right_rear"};
+        return {"left_rear", "left_mid", "left_front", "right_front", "right_mid", "right_rear"};
     }
 
     MoteusBusOptions get_drive_bus_options() {
@@ -41,7 +31,7 @@ namespace {
         return opts;
     }
 }
-DriveDriverNode::DriveDriverNode() : MoteusNode("motor_control_node", "drive", get_drive_configuration(), get_drive_motor_names(), get_drive_bus_options()) {
+DriveDriverNode::DriveDriverNode() : MoteusNode("motor_control_node", "drive", get_drive_configuration(), get_drive_motor_names(), get_drive_bus_options(), DRIVE_PERIOD_MS) {
     RCLCPP_INFO(this->get_logger(), "Motor Control Node Initiated");
 
     auto qos = rclcpp::QoS(rclcpp::KeepLast(64));
@@ -81,9 +71,10 @@ void DriveDriverNode::prepareCommands() {
 
     rclcpp::Time now = this->now();
     double dt = (now-last_cycle_time_).seconds();
-
+    RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "cycle dt=%.1f ms", dt * 1000.0);
     if ((now - last_cmd_time_).seconds() > CMD_TIMEOUT_S) {
         // command timeout
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "cmd timeout, zeroing");
         for (int i = 0; i < NUM_MOTORS; i++) target_velocities_revs_[i] = 0;
     }
     
